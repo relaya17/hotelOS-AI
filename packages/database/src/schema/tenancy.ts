@@ -84,6 +84,34 @@ export const rooms = sqliteTable(
   ],
 );
 
+export const bookings = sqliteTable(
+  "bookings",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    roomId: text("room_id")
+      .notNull()
+      .references(() => rooms.id),
+    guestName: text("guest_name").notNull(),
+    guestEmail: text("guest_email").notNull(),
+    checkInDate: text("check_in_date").notNull(),
+    checkOutDate: text("check_out_date").notNull(),
+    status: text("status").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("bookings_hotel_idx").on(table.hotelId),
+    index("bookings_tenant_idx").on(table.tenantId),
+    index("bookings_room_idx").on(table.roomId),
+    index("bookings_hotel_status_idx").on(table.hotelId, table.status),
+  ],
+);
+
 export const users = sqliteTable(
   "users",
   {

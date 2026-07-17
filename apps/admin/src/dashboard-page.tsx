@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
-import { Button } from "@hotelos/ui";
+import { useEffect, useState, type FormEvent } from "react";
+import { Button, TextField } from "@hotelos/ui";
 import {
+  createBooking,
+  listBookings,
   listHotels,
   listRooms,
+  type BookingDto,
   type HotelDto,
   type RoomDto,
 } from "./api-client.js";
@@ -13,21 +16,40 @@ export type DashboardPageProps = {
   readonly onLogout: () => void;
 };
 
-const statusLabel: Record<RoomDto["status"], string> = {
+const roomStatusLabel: Record<RoomDto["status"], string> = {
   vacant: "פנוי",
   occupied: "תפוס",
   dirty: "ממתין לניקיון",
   maintenance: "תחזוקה",
 };
 
+const bookingStatusLabel: Record<BookingDto["status"], string> = {
+  confirmed: "מאושרת",
+  checked_in: "בבית המלון",
+  checked_out: "עשתה צ׳ק־אאוט",
+  cancelled: "בוטלה",
+};
+
 export function DashboardPage({ user, onLogout }: DashboardPageProps) {
   const [hotels, setHotels] = useState<readonly HotelDto[]>([]);
   const [selectedHotelId, setSelectedHotelId] = useState<string | undefined>();
   const [rooms, setRooms] = useState<readonly RoomDto[]>([]);
+  const [bookings, setBookings] = useState<readonly BookingDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [roomsLoading, setRoomsLoading] = useState(false);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [roomsError, setRoomsError] = useState<string | undefined>();
+  const [bookingsError, setBookingsError] = useState<string | undefined>();
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | undefined>();
+
+  const vacantRooms = rooms.filter((room) => room.status === "vacant");
+  const [roomId, setRoomId] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [checkInDate, setCheckInDate] = useState("2026-07-21");
+  const [checkOutDate, setCheckOutDate] = useState("2026-07-24");
 
   useEffect(() => {
     let cancelled = false;
@@ -64,35 +86,84 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
   useEffect(() => {
     if (selectedHotelId === undefined) {
       setRooms([]);
+      setBookings([]);
       return;
     }
     const hotelId = selectedHotelId;
     let cancelled = false;
-    async function loadRooms() {
+
+    async function loadHotelData() {
       setRoomsLoading(true);
+      setBookingsLoading(true);
       setRoomsError(undefined);
+      setBookingsError(undefined);
       try {
-        const data = await listRooms(hotelId);
+        const [roomData, bookingData] = await Promise.all([
+          listRooms(hotelId),
+          listBookings(hotelId),
+        ]);
         if (!cancelled) {
-          setRooms(data);
+          setRooms(roomData);
+          setBookings(bookingData);
+          const firstVacant = roomData.find((room) => room.status === "vacant");
+          setRoomId(firstVacant?.id ?? "");
         }
       } catch (loadError) {
         if (!cancelled) {
-          setRoomsError(
-            loadError instanceof Error ? loadError.message : "שגיאה בטעינת חדרים",
-          );
+          const message =
+            loadError instanceof Error ? loadError.message : "שגיאה בטעינה";
+          setRoomsError(message);
+          setBookingsError(message);
         }
       } finally {
         if (!cancelled) {
           setRoomsLoading(false);
+          setBookingsLoading(false);
         }
       }
     }
-    void loadRooms();
+
+    void loadHotelData();
     return () => {
       cancelled = true;
     };
   }, [selectedHotelId]);
+
+  async function onCreateBooking(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (selectedHotelId === undefined || roomId === "") {
+      setCreateError("בחרו מלון וחדר פנוי");
+      return;
+    }
+    setCreating(true);
+    setCreateError(undefined);
+    try {
+      await createBooking(selectedHotelId, {
+        roomId,
+        guestName,
+        guestEmail,
+        checkInDate,
+        checkOutDate,
+        status: "confirmed",
+      });
+      const [roomData, bookingData] = await Promise.all([
+        listRooms(selectedHotelId),
+        listBookings(selectedHotelId),
+      ]);
+      setRooms(roomData);
+      setBookings(bookingData);
+      setGuestName("");
+      setGuestEmail("");
+      const nextVacant = roomData.find((room) => room.status === "vacant");
+      setRoomId(nextVacant?.id ?? "");
+    } catch (submitError) {
+      setCreateError(
+        submitError instanceof Error ? submitError.message : "יצירה נכשלה",
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
 
   function logout() {
     clearSession();
@@ -118,15 +189,13 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
 
       <section className="card" aria-labelledby="hotels-title">
         <h2 id="hotels-title">מלונות ברשת</h2>
-        <p className="hint">בחרו מלון כדי לראות את החדרים</p>
-
+        <p className="hint">בחרו מלון כדי לראות חדרים והזמנות</p>
         {loading ? <p className="state">טוען מלונות…</p> : null}
         {error !== undefined ? (
           <p className="state state--error" role="alert">
             {error}
           </p>
         ) : null}
-
         {!loading && error === undefined ? (
           <ul className="hotel-list">
             {hotels.map((hotel, index) => {
@@ -178,12 +247,110 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
                   </p>
                 </div>
                 <span className={`status status--${room.status}`}>
-                  {statusLabel[room.status]}
+                  {roomStatusLabel[room.status]}
                 </span>
               </li>
             ))}
           </ul>
         ) : null}
+      </section>
+
+      <section className="card" aria-labelledby="bookings-title">
+        <h2 id="bookings-title">הזמנות</h2>
+        {bookingsLoading ? <p className="state">טוען הזמנות…</p> : null}
+        {bookingsError !== undefined ? (
+          <p className="state state--error" role="alert">
+            {bookingsError}
+          </p>
+        ) : null}
+        {!bookingsLoading && bookingsError === undefined ? (
+          <ul className="room-list">
+            {bookings.map((booking) => (
+              <li key={booking.id} className="room-item">
+                <div>
+                  <h3>{booking.guestName}</h3>
+                  <p>
+                    חדר {booking.roomNumber} · {booking.checkInDate} →{" "}
+                    {booking.checkOutDate}
+                  </p>
+                </div>
+                <span className={`status status--booking-${booking.status}`}>
+                  {bookingStatusLabel[booking.status]}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        <form className="create-form" onSubmit={onCreateBooking} noValidate>
+          <h3>הזמנה חדשה</h3>
+          <label className="select-field">
+            <span>חדר פנוי</span>
+            <select
+              value={roomId}
+              onChange={(event) => {
+                setRoomId(event.target.value);
+              }}
+              required
+            >
+              <option value="" disabled>
+                בחרו חדר
+              </option>
+              {vacantRooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.number} · {room.roomType}
+                </option>
+              ))}
+            </select>
+          </label>
+          <TextField
+            label="שם אורח"
+            name="guestName"
+            value={guestName}
+            onChange={(event) => {
+              setGuestName(event.target.value);
+            }}
+            required
+          />
+          <TextField
+            label="אימייל אורח"
+            name="guestEmail"
+            type="email"
+            value={guestEmail}
+            onChange={(event) => {
+              setGuestEmail(event.target.value);
+            }}
+            required
+          />
+          <TextField
+            label="צ׳ק־אין"
+            name="checkInDate"
+            type="date"
+            value={checkInDate}
+            onChange={(event) => {
+              setCheckInDate(event.target.value);
+            }}
+            required
+          />
+          <TextField
+            label="צ׳ק־אאוט"
+            name="checkOutDate"
+            type="date"
+            value={checkOutDate}
+            onChange={(event) => {
+              setCheckOutDate(event.target.value);
+            }}
+            required
+          />
+          {createError !== undefined ? (
+            <p className="state state--error" role="alert">
+              {createError}
+            </p>
+          ) : null}
+          <Button type="submit" disabled={creating || vacantRooms.length === 0}>
+            {creating ? "יוצר…" : "צור הזמנה"}
+          </Button>
+        </form>
       </section>
 
       <style>{`
@@ -208,14 +375,8 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
           color: var(--color-sea-deep);
           font-weight: 700;
         }
-        h1 {
-          font-size: var(--text-display);
-          margin: 0;
-        }
-        .sub {
-          margin: var(--space-2) 0 0;
-          color: var(--color-ink-soft);
-        }
+        h1 { font-size: var(--text-display); margin: 0; }
+        .sub { margin: var(--space-2) 0 0; color: var(--color-ink-soft); }
         .card {
           background: rgb(255 250 242 / 90%);
           border: 1px solid rgb(16 36 31 / 10%);
@@ -224,66 +385,70 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
           padding: clamp(1.2rem, 2.5vw, 1.8rem);
           animation: rise 380ms ease both;
         }
-        .card h2 {
-          font-size: var(--text-title);
-          margin: 0;
-        }
-        .hint {
-          margin: var(--space-2) 0 var(--space-4);
-          color: var(--color-ink-soft);
-        }
+        .card h2 { font-size: var(--text-title); margin: 0; }
+        .hint { margin: var(--space-2) 0 var(--space-4); color: var(--color-ink-soft); }
         .hotel-list, .room-list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: grid;
-          gap: var(--space-3);
+          list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3);
         }
         .hotel-item, .room-item {
-          display: flex;
-          justify-content: space-between;
-          gap: var(--space-3);
-          align-items: center;
-          width: 100%;
-          text-align: start;
-          padding: var(--space-4);
-          border: 1px solid rgb(16 36 31 / 10%);
-          border-radius: var(--radius-sm);
-          background: var(--color-paper-elevated);
-          color: inherit;
-          font: inherit;
-          cursor: pointer;
-          animation: rise 420ms ease both;
+          display: flex; justify-content: space-between; gap: var(--space-3);
+          align-items: center; width: 100%; text-align: start;
+          padding: var(--space-4); border: 1px solid rgb(16 36 31 / 10%);
+          border-radius: var(--radius-sm); background: var(--color-paper-elevated);
+          color: inherit; font: inherit; animation: rise 420ms ease both;
         }
+        .hotel-item { cursor: pointer; }
         .hotel-item--selected {
           border-color: rgb(15 106 92 / 45%);
           box-shadow: inset 0 0 0 1px rgb(15 106 92 / 25%);
         }
         .hotel-item h3, .room-item h3 {
-          margin: 0;
-          font-family: var(--font-display);
-          font-size: 1.25rem;
+          margin: 0; font-family: var(--font-display); font-size: 1.25rem;
         }
         .hotel-item p, .room-item p {
-          margin: var(--space-1) 0 0;
-          color: var(--color-ink-soft);
-          font-size: var(--text-small);
+          margin: var(--space-1) 0 0; color: var(--color-ink-soft); font-size: var(--text-small);
         }
         .badge, .status {
-          font-size: var(--text-small);
-          font-weight: 700;
-          padding: 0.35rem 0.7rem;
-          border-radius: 999px;
-          white-space: nowrap;
+          font-size: var(--text-small); font-weight: 700;
+          padding: 0.35rem 0.7rem; border-radius: 999px; white-space: nowrap;
         }
-        .badge {
-          color: var(--color-sea-deep);
-          background: rgb(15 106 92 / 12%);
-        }
+        .badge { color: var(--color-sea-deep); background: rgb(15 106 92 / 12%); }
         .status--vacant { color: #0f6a5c; background: rgb(15 106 92 / 12%); }
         .status--occupied { color: #1f4b7a; background: rgb(31 75 122 / 12%); }
         .status--dirty { color: #8a5a12; background: rgb(138 90 18 / 12%); }
         .status--maintenance { color: #9b2c2c; background: rgb(155 44 44 / 12%); }
+        .status--booking-confirmed { color: #0f6a5c; background: rgb(15 106 92 / 12%); }
+        .status--booking-checked_in { color: #1f4b7a; background: rgb(31 75 122 / 12%); }
+        .status--booking-checked_out { color: #445; background: rgb(68 68 85 / 10%); }
+        .status--booking-cancelled { color: #9b2c2c; background: rgb(155 44 44 / 12%); }
+        .create-form {
+          margin-top: var(--space-5);
+          display: grid;
+          gap: var(--space-3);
+          border-top: 1px solid rgb(16 36 31 / 10%);
+          padding-top: var(--space-4);
+        }
+        .create-form h3 {
+          margin: 0;
+          font-family: var(--font-display);
+          font-size: 1.2rem;
+        }
+        .select-field {
+          display: grid;
+          gap: var(--space-2);
+        }
+        .select-field span {
+          font-size: var(--text-small);
+          font-weight: 600;
+          color: var(--color-ink-soft);
+        }
+        .select-field select {
+          font: inherit;
+          border: 1px solid rgb(16 36 31 / 18%);
+          border-radius: var(--radius-sm);
+          padding: 0.85rem 0.95rem;
+          background: var(--color-paper-elevated);
+        }
         .state { margin: 0; color: var(--color-ink-soft); }
         .state--error { color: var(--color-danger); }
         @keyframes rise {

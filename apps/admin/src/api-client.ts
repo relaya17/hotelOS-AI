@@ -33,6 +33,17 @@ export type RoomDto = {
   readonly status: "vacant" | "occupied" | "dirty" | "maintenance";
 };
 
+export type BookingDto = {
+  readonly id: string;
+  readonly roomId: string;
+  readonly roomNumber: string;
+  readonly guestName: string;
+  readonly guestEmail: string;
+  readonly checkInDate: string;
+  readonly checkOutDate: string;
+  readonly status: "confirmed" | "checked_in" | "checked_out" | "cancelled";
+};
+
 type ApiError = {
   readonly error: {
     readonly code: string;
@@ -153,4 +164,75 @@ export async function listRooms(hotelId: string): Promise<readonly RoomDto[]> {
     throw new Error("Invalid rooms response");
   }
   return body.data as RoomDto[];
+}
+
+export async function listBookings(
+  hotelId: string,
+): Promise<readonly BookingDto[]> {
+  const token = readAccessToken();
+  if (!token) {
+    throw new Error("Missing session");
+  }
+
+  const response = await fetch(`${API_BASE}/v1/hotels/${hotelId}/bookings`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await parseJson(response);
+  if (response.status === 401) {
+    clearSession();
+    throw new Error("Session expired");
+  }
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Failed to load bookings"));
+  }
+
+  const body = payload as { data?: unknown };
+  if (!Array.isArray(body.data)) {
+    throw new Error("Invalid bookings response");
+  }
+  return body.data as BookingDto[];
+}
+
+export async function createBooking(
+  hotelId: string,
+  input: {
+    roomId: string;
+    guestName: string;
+    guestEmail: string;
+    checkInDate: string;
+    checkOutDate: string;
+    status?: "confirmed" | "checked_in";
+  },
+): Promise<BookingDto> {
+  const token = readAccessToken();
+  if (!token) {
+    throw new Error("Missing session");
+  }
+
+  const response = await fetch(`${API_BASE}/v1/hotels/${hotelId}/bookings`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  const payload = await parseJson(response);
+  if (response.status === 401) {
+    clearSession();
+    throw new Error("Session expired");
+  }
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Failed to create booking"));
+  }
+
+  const body = payload as { data?: BookingDto };
+  if (!body.data) {
+    throw new Error("Invalid create booking response");
+  }
+  return body.data;
 }

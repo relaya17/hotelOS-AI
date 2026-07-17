@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { HotelOsDb } from "./client.js";
 import {
+  bookings,
   departments,
   hotelChains,
   hotels,
@@ -87,6 +88,39 @@ export async function seedDemoTenant(
     { id: "70000000-0000-4000-8000-000000000401", number: "401", floor: "4", roomType: "standard", status: "vacant" },
     { id: "70000000-0000-4000-8000-000000000402", number: "402", floor: "4", roomType: "sea_view", status: "occupied" },
     { id: "70000000-0000-4000-8000-000000000501", number: "501", floor: "5", roomType: "suite", status: "dirty" },
+  ]);
+
+  ensureDemoBookings(db, now, [
+    {
+      id: "80000000-0000-4000-8000-000000000001",
+      hotelId: DEMO_HOTEL_TLV_ID,
+      roomId: "70000000-0000-4000-8000-000000000201",
+      guestName: "נועה כהן",
+      guestEmail: "noa@example.com",
+      checkInDate: "2026-07-16",
+      checkOutDate: "2026-07-19",
+      status: "checked_in",
+    },
+    {
+      id: "80000000-0000-4000-8000-000000000002",
+      hotelId: DEMO_HOTEL_TLV_ID,
+      roomId: "70000000-0000-4000-8000-000000000101",
+      guestName: "David Levi",
+      guestEmail: "david@example.com",
+      checkInDate: "2026-07-20",
+      checkOutDate: "2026-07-23",
+      status: "confirmed",
+    },
+    {
+      id: "80000000-0000-4000-8000-000000000003",
+      hotelId: DEMO_HOTEL_EILAT_ID,
+      roomId: "70000000-0000-4000-8000-000000000402",
+      guestName: "Maya Azulay",
+      guestEmail: "maya@example.com",
+      checkInDate: "2026-07-15",
+      checkOutDate: "2026-07-18",
+      status: "checked_in",
+    },
   ]);
 
   const existingDepartment = db
@@ -194,6 +228,46 @@ function ensureDemoRooms(
         number: item.number,
         floor: item.floor,
         roomType: item.roomType,
+        status: item.status,
+        createdAt,
+      })
+      .run();
+  }
+}
+
+function ensureDemoBookings(
+  db: HotelOsDb,
+  createdAt: string,
+  items: readonly {
+    id: string;
+    hotelId: string;
+    roomId: string;
+    guestName: string;
+    guestEmail: string;
+    checkInDate: string;
+    checkOutDate: string;
+    status: string;
+  }[],
+): void {
+  for (const item of items) {
+    const existing = db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.id, item.id))
+      .get();
+    if (existing) {
+      continue;
+    }
+    db.insert(bookings)
+      .values({
+        id: item.id,
+        tenantId: DEMO_TENANT_ID,
+        hotelId: item.hotelId,
+        roomId: item.roomId,
+        guestName: item.guestName,
+        guestEmail: item.guestEmail,
+        checkInDate: item.checkInDate,
+        checkOutDate: item.checkOutDate,
         status: item.status,
         createdAt,
       })

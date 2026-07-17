@@ -26,6 +26,13 @@ export {
   type RoomStatus,
 } from "./repositories/room-repository.js";
 export {
+  createBookingRepository,
+  type BookingRepository,
+  type BookingStatus,
+  type CreateBookingInput,
+  type PersistedBooking,
+} from "./repositories/booking-repository.js";
+export {
   DEMO_TENANT_ID,
   DEMO_HOTEL_TLV_ID,
   DEMO_HOTEL_EILAT_ID,
