@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button, TextField } from "@hotelos/ui";
 import {
+  fetchAiGatewayStatus,
   fetchCioDigest,
+  invokeAiGateway,
   listOrgCommsChannels,
   listOrgCommsMessages,
   listTrustedSources,
   postOrgCommsMessage,
+  type AiGatewayInvokeResultDto,
   type CioDigestDto,
   type CioRole,
   type OrgCommsChannelDto,
@@ -33,6 +36,13 @@ export function CioDigestPage() {
   const [messages, setMessages] = useState<readonly OrgCommsMessageDto[]>([]);
   const [draft, setDraft] = useState("");
   const [sources, setSources] = useState<readonly TrustedSourceDto[]>([]);
+  const [ask, setAsk] = useState("מה דורש תשומת לב ברשת היום?");
+  const [askLoading, setAskLoading] = useState(false);
+  const [askError, setAskError] = useState<string | undefined>();
+  const [askResult, setAskResult] = useState<AiGatewayInvokeResultDto | null>(
+    null,
+  );
+  const [gatewayProvider, setGatewayProvider] = useState<string>("…");
 
   useEffect(() => {
     let cancelled = false;
@@ -60,13 +70,15 @@ export function CioDigestPage() {
     let cancelled = false;
     async function load() {
       try {
-        const [channelList, sourceList] = await Promise.all([
+        const [channelList, sourceList, gatewayStatus] = await Promise.all([
           listOrgCommsChannels(),
           listTrustedSources(),
+          fetchAiGatewayStatus(),
         ]);
         if (cancelled) return;
         setChannels(channelList);
         setSources(sourceList);
+        setGatewayProvider(gatewayStatus.primaryProvider);
         const firstChannel = channelList[0];
         if (firstChannel) setSelectedChannelId(firstChannel.id);
       } catch {
@@ -109,15 +121,79 @@ export function CioDigestPage() {
     setMessages(await listOrgCommsMessages(selectedChannelId));
   }
 
+  async function onAskGateway() {
+    if (ask.trim().length === 0) return;
+    setAskLoading(true);
+    setAskError(undefined);
+    try {
+      const contextPack = digest
+        ? [digest.headlineHe, ...digest.sections.flatMap((s) => s.bulletsHe)].join(
+            "\n",
+          )
+        : undefined;
+      const result = await invokeAiGateway({
+        agentId: "agent.cio",
+        message: ask.trim(),
+        locale: "he",
+        ...(contextPack !== undefined ? { contextPack } : {}),
+      });
+      setAskResult(result);
+      setGatewayProvider(result.provider);
+    } catch (invokeError) {
+      setAskError(
+        invokeError instanceof Error ? invokeError.message : "שגיאת Gateway",
+      );
+    } finally {
+      setAskLoading(false);
+    }
+  }
+
   return (
     <div className="cio-page">
       <header>
-        <p className="eyebrow">ADR 0007 · CIO Orchestrator</p>
+        <p className="eyebrow">ADR 0007 · ADR 0008 · AI Gateway</p>
         <h1>יועץ־על (CIO)</h1>
         <p className="sub">
-          תדריך יומי לפי תפקיד, בנוי דטרמיניסטית מנתוני הרשת החיים — ללא קריאה למודל שפה חיצוני.
+          תדריך יומי לפי תפקיד + שאלות דרך AI Gateway (ספק: {gatewayProvider}).
+          בלי מפתח — מצב דטרמיניסטי; עם AI_GATEWAY_API_KEY — LLM תואם OpenAI.
         </p>
       </header>
+
+      <section className="card">
+        <h2>שאל את ה־Gateway</h2>
+        <div className="compose">
+          <TextField
+            label="שאלה ליועץ־על"
+            name="gatewayAsk"
+            value={ask}
+            onChange={(event) => setAsk(event.target.value)}
+          />
+          <Button
+            type="button"
+            onClick={() => void onAskGateway()}
+            disabled={askLoading}
+          >
+            {askLoading ? "שולח…" : "שלח ל־Gateway"}
+          </Button>
+        </div>
+        {askError ? (
+          <p className="state state--error" role="alert">
+            {askError}
+          </p>
+        ) : null}
+        {askResult ? (
+          <div className="gateway-answer">
+            <p>{askResult.answerHe}</p>
+            <p className="hint">
+              {askResult.provider} · {askResult.confidence} · {askResult.latencyMs}
+              ms
+              {askResult.requiresHumanApproval
+                ? ` · דורש אישור אדם${askResult.approvalReasonHe ? `: ${askResult.approvalReasonHe}` : ""}`
+                : ""}
+            </p>
+          </div>
+        ) : null}
+      </section>
 
       <section className="card">
         <div className="role-row">
@@ -273,6 +349,7 @@ export function CioDigestPage() {
         .sources { list-style:none; margin:0; padding:0; display:grid; gap:.4rem; }
         .sources li { display:flex; justify-content:space-between; gap:var(--space-2); padding:.5rem .7rem; border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
         .category { font-size:var(--text-small); color:var(--color-ink-soft); }
+        .gateway-answer { padding:var(--space-3); border-radius:var(--radius-sm); background:var(--color-paper-elevated); display:grid; gap:var(--space-2); white-space:pre-wrap; }
         @media (max-width:768px){ .comms{ grid-template-columns:1fr; } }
       `}</style>
     </div>

@@ -53,6 +53,11 @@ import {
   createKashrutRoutes,
   type KashrutRouteDeps,
 } from "./kashrut-routes.js";
+import {
+  createAiGatewayRoutes,
+  type AiGatewayRouteDeps,
+} from "./ai-gateway-routes.js";
+import { isOriginAllowed } from "@hotelos/config";
 import { createRateLimitMiddleware } from "./rate-limit.js";
 import { securityHeaders } from "./security-headers.js";
 
@@ -73,6 +78,7 @@ export type ApiDependencies = {
   readonly orgComms: OrgCommsRouteDeps;
   readonly knowledge: KnowledgeRouteDeps;
   readonly kashrut: KashrutRouteDeps;
+  readonly aiGateway: AiGatewayRouteDeps;
 };
 
 export function createApp(deps: ApiDependencies): Hono {
@@ -83,7 +89,11 @@ export function createApp(deps: ApiDependencies): Hono {
   app.use(
     "*",
     cors({
-      origin: [...deps.corsOrigins],
+      origin: (origin) => {
+        // Non-browser clients (no Origin) — allow.
+        if (!origin) return deps.corsOrigins[0] ?? "*";
+        return isOriginAllowed(origin, deps.corsOrigins) ? origin : "";
+      },
       allowHeaders: [
         "Content-Type",
         "Authorization",
@@ -179,6 +189,7 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/org-comms", createOrgCommsRoutes(deps.orgComms));
   app.route("/v1/knowledge", createKnowledgeRoutes(deps.knowledge));
   app.route("/v1/kashrut", createKashrutRoutes(deps.kashrut));
+  app.route("/v1/ai/gateway", createAiGatewayRoutes(deps.aiGateway));
 
   return app;
 }

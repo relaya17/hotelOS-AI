@@ -3,6 +3,7 @@ import { staffGoogleLogin, staffWebAuthnLogin } from "@hotelos/features";
 import { Button, TextField } from "@hotelos/ui";
 import {
   APP_URLS,
+  describeRemoteApiMisconfig,
   login,
   saveSession,
   type StoredUser,
@@ -52,7 +53,10 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
       persistLogin(result);
     } catch (submitError) {
       setError(
-        submitError instanceof Error ? submitError.message : "שגיאה לא צפויה",
+        describeRemoteApiMisconfig(submitError) ??
+          (submitError instanceof Error
+            ? submitError.message
+            : "שגיאה לא צפויה"),
       );
     } finally {
       setLoading(false);

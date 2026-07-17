@@ -11,6 +11,7 @@ ADRs document material architecture decisions per [Engineering Standard Vol. 2 Â
 | [0005](0005-trust-compliance-attendance.md) | Trust stack: legal, payments, biometrics, Google staff auth, attendance | Accepted | 2026-07-17 | Versioned legal docs, `/v1/trust/*` (payments, signatures, WebAuthn, voice, attendance), Google OAuth for staff, security headers |
 | [0006](0006-libsql-turso-hosted-db.md) | libSQL/Turso as the hosted database driver | Accepted | 2026-07-17 | Replace `better-sqlite3` with `@libsql/client` for Vercel-compatible hosted DB; `DATABASE_URL`/`DATABASE_AUTH_TOKEN` |
 | [0007](0007-cio-orchestrator-kashrut-org-comms.md) | CIO orchestrator, Trusted knowledge, Kashrut supervisor, org comms | Accepted | 2026-07-18 | `agent.cio` front-door orchestrator, Trusted-knowledge-only external facts, `agent.kashrut` always-on advisory seat, Org Comms graph |
+| [0008](0008-ai-gateway.md) | AI Gateway as sole LLM entrypoint | Accepted | 2026-07-18 | `@hotelos/ai-gateway`, `/v1/ai/gateway/*`, deterministic + OpenAI-compatible providers, audit + human-approval flags |
 
 ## Adding a new ADR
 

@@ -14,7 +14,95 @@ const viteEnv: Record<string, string | undefined> =
   (import.meta as unknown as { env?: Record<string, string | undefined> })
     .env ?? {};
 
-const API_BASE = viteEnv["VITE_API_BASE"] ?? "http://localhost:3001";
+const API_STORAGE_KEY = "hotelos.apiBase";
+
+/** Map hotel-os-ai-admin-eight.vercel.app → hotel-os-ai-api-eight.vercel.app */
+function mapVercelAppRole(
+  host: string,
+  role: "api" | "admin" | "executive" | "guest",
+): string {
+  return host
+    .replace(/-(admin|executive|guest|api)-/i, `-${role}-`)
+    .replace(/-(admin|executive|guest|api)\.vercel\./i, `-${role}.vercel.`);
+}
+
+function isLocalUrl(url: string): boolean {
+  return url.includes("localhost") || url.includes("127.0.0.1");
+}
+
+/**
+ * Resolve API base for the four-deploy model (3 apps + separate API).
+ *
+ * On Vercel: **same-origin** (`window.location.origin`) so the browser never
+ * hits localhost / cross-origin. Edge `middleware.ts` proxies `/v1` + `/health`
+ * to the separate API project — that is the root CORS fix.
+ *
+ * Locally: `VITE_API_BASE` or http://localhost:3001.
+ * Optional override: `?api=https://…` → localStorage.
+ */
+export function getApiBase(): string {
+  if (typeof window !== "undefined") {
+    const fromQuery = new URLSearchParams(window.location.search).get("api");
+    if (fromQuery && /^https?:\/\//i.test(fromQuery)) {
+      const cleaned = fromQuery.replace(/\/$/, "");
+      window.localStorage.setItem(API_STORAGE_KEY, cleaned);
+      return cleaned;
+    }
+    const stored = window.localStorage.getItem(API_STORAGE_KEY);
+    if (stored && /^https?:\/\//i.test(stored)) {
+      return stored.replace(/\/$/, "");
+    }
+  }
+
+  const onVercel =
+    typeof window !== "undefined" &&
+    (window.location.hostname.endsWith(".vercel.app") ||
+      window.location.hostname.endsWith(".vercel.dev"));
+
+  // Root fix: never call localhost from a Vercel-hosted UI.
+  if (onVercel) {
+    return window.location.origin;
+  }
+
+  const fromEnv = viteEnv["VITE_API_BASE"]?.replace(/\/$/, "");
+  if (fromEnv && fromEnv.length > 0) {
+    return fromEnv;
+  }
+
+  return "http://localhost:3001";
+}
+
+export function describeRemoteApiMisconfig(cause?: unknown): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const onVercel =
+    window.location.hostname.endsWith(".vercel.app") ||
+    window.location.hostname.endsWith(".vercel.dev");
+  if (!onVercel) return undefined;
+  const msg = cause instanceof Error ? cause.message : String(cause ?? "");
+  if (!/failed to fetch|networkerror|load failed|fetch/i.test(msg)) {
+    return undefined;
+  }
+  return (
+    `אין גישה ל־API. צרו פרויקט Vercel נפרד: ` +
+    `${mapVercelAppRole(window.location.hostname, "api")} ` +
+    `(Root: apps/api, Turso + JWT). הדפדפן קורא לאותו דומיין; middleware מעביר ל־API.`
+  );
+}
+
+function resolveAppUrl(
+  role: "executive" | "admin" | "guest",
+  envKey: string,
+  localDefault: string,
+): string {
+  const fromEnv = viteEnv[envKey]?.replace(/\/$/, "");
+  const onVercel =
+    typeof window !== "undefined" &&
+    window.location.hostname.endsWith(".vercel.app");
+  if (onVercel && (!fromEnv || isLocalUrl(fromEnv))) {
+    return `https://${mapVercelAppRole(window.location.hostname, role)}`;
+  }
+  return fromEnv ?? localDefault;
+}
 
 export type LoginResponse = {
   readonly accessToken: string;
@@ -193,7 +281,7 @@ async function tryRefreshSession(): Promise<boolean> {
     const refreshToken = readRefreshToken();
     if (!refreshToken) return false;
     try {
-      const response = await fetch(`${API_BASE}/v1/auth/refresh`, {
+      const response = await fetch(`${getApiBase()}/v1/auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
@@ -233,7 +321,7 @@ async function authedFetch(
   }
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${token}`);
-  let response = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  let response = await fetch(`${getApiBase()}${path}`, { ...init, headers });
   let payload = await parseJson(response);
 
   if (response.status === 401) {
@@ -248,7 +336,7 @@ async function authedFetch(
       throw new Error("Session expired");
     }
     headers.set("Authorization", `Bearer ${nextToken}`);
-    response = await fetch(`${API_BASE}${path}`, { ...init, headers });
+    response = await fetch(`${getApiBase()}${path}`, { ...init, headers });
     payload = await parseJson(response);
     if (response.status === 401) {
       clearSession();
@@ -272,7 +360,7 @@ export async function login(input: {
   email: string;
   password: string;
 }): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE}/v1/auth/login`, {
+  const response = await fetch(`${getApiBase()}/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -288,7 +376,7 @@ export async function logout(): Promise<void> {
   const refreshToken = readRefreshToken();
   try {
     if (refreshToken) {
-      await fetch(`${API_BASE}/v1/auth/logout`, {
+      await fetch(`${getApiBase()}/v1/auth/logout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
@@ -436,7 +524,7 @@ export async function updateBookingTransition(
 }
 
 export async function lookupGuestStay(email: string): Promise<readonly GuestStayDto[]> {
-  const response = await fetch(`${API_BASE}/v1/public/stays/lookup`, {
+  const response = await fetch(`${getApiBase()}/v1/public/stays/lookup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -456,7 +544,7 @@ export async function checkInGuestStay(input: {
   readonly email: string;
   readonly bookingId: string;
 }): Promise<GuestStayDto> {
-  const response = await fetch(`${API_BASE}/v1/public/stays/check-in`, {
+  const response = await fetch(`${getApiBase()}/v1/public/stays/check-in`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -575,7 +663,7 @@ export async function completeBriefingRecording(
     form.append("durationSeconds", String(durationSeconds));
   }
   const response = await fetch(
-    `${API_BASE}/v1/briefing-rooms/${roomId}/recordings/${recordingId}/complete`,
+    `${getApiBase()}/v1/briefing-rooms/${roomId}/recordings/${recordingId}/complete`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
@@ -597,7 +685,7 @@ export function briefingRecordingMediaUrl(
   roomId: string,
   recordingId: string,
 ): string {
-  return `${API_BASE}/v1/briefing-rooms/${roomId}/recordings/${recordingId}/media`;
+  return `${getApiBase()}/v1/briefing-rooms/${roomId}/recordings/${recordingId}/media`;
 }
 
 export type EmployeeDto = {
@@ -784,14 +872,14 @@ export type AttendanceEventDto = {
 };
 
 export async function fetchLegalIndex(): Promise<readonly LegalDocSummary[]> {
-  const response = await fetch(`${API_BASE}/v1/public/legal`);
+  const response = await fetch(`${getApiBase()}/v1/public/legal`);
   const payload = (await parseJson(response)) as { data: LegalDocSummary[] };
   if (!response.ok) throw new Error("Failed to load legal index");
   return payload.data;
 }
 
 export async function fetchLegalDocument(id: string): Promise<LegalDocDetail> {
-  const response = await fetch(`${API_BASE}/v1/public/legal/${id}`);
+  const response = await fetch(`${getApiBase()}/v1/public/legal/${id}`);
   const payload = (await parseJson(response)) as { data: LegalDocDetail };
   if (!response.ok) throw new Error("Failed to load legal document");
   return payload.data;
@@ -803,7 +891,7 @@ export async function saveCookieConsent(input: {
   functional: boolean;
   tenantId?: string;
 }): Promise<void> {
-  const response = await fetch(`${API_BASE}/v1/trust/cookies/consent`, {
+  const response = await fetch(`${getApiBase()}/v1/trust/cookies/consent`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -815,7 +903,7 @@ export async function loginWithGoogleDemo(input: {
   tenantId: string;
   email: string;
 }): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE}/v1/trust/oauth/google/demo`, {
+  const response = await fetch(`${getApiBase()}/v1/trust/oauth/google/demo`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -832,7 +920,7 @@ export async function startGoogleOAuth(tenantId: string): Promise<
   | { readonly mode: "oauth"; readonly url: string }
 > {
   const response = await fetch(
-    `${API_BASE}/v1/trust/oauth/google/start?tenantId=${encodeURIComponent(tenantId)}`,
+    `${getApiBase()}/v1/trust/oauth/google/start?tenantId=${encodeURIComponent(tenantId)}`,
   );
   const payload = (await parseJson(response)) as {
     data?: {
@@ -877,7 +965,7 @@ export async function createWebAuthnLoginChallenge(input: {
   readonly allowCredentials: readonly string[];
   readonly rpId: string;
 }> {
-  const response = await fetch(`${API_BASE}/v1/trust/webauthn/login-challenge`, {
+  const response = await fetch(`${getApiBase()}/v1/trust/webauthn/login-challenge`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -901,7 +989,7 @@ export async function assertWebAuthnLogin(input: {
   challenge: string;
   clientDataJSON: string;
 }): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE}/v1/trust/webauthn/assert`, {
+  const response = await fetch(`${getApiBase()}/v1/trust/webauthn/assert`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -1494,7 +1582,7 @@ export async function submitGuestFeedback(input: {
   categories: readonly string[];
   comment?: string;
 }): Promise<GuestFeedbackDto> {
-  const response = await fetch(`${API_BASE}/v1/public/feedback`, {
+  const response = await fetch(`${getApiBase()}/v1/public/feedback`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -1767,12 +1855,62 @@ export async function createKashrutAnnotation(
   return payload.data;
 }
 
-const guestAppUrl = viteEnv["VITE_APP_URL_GUEST"] ?? "http://localhost:5175";
+export type AiGatewayStatusDto = {
+  readonly primaryProvider: "deterministic" | "openai_compatible";
+  readonly entrypoint: string;
+};
+
+export type AiGatewayInvokeResultDto = {
+  readonly agentId: string;
+  readonly provider: "deterministic" | "openai_compatible";
+  readonly answerHe: string;
+  readonly confidence: "high" | "medium" | "low";
+  readonly citations: readonly {
+    readonly title: string;
+    readonly url?: string;
+    readonly source: "internal" | "trusted" | "company";
+  }[];
+  readonly requiresHumanApproval: boolean;
+  readonly approvalReasonHe?: string;
+  readonly latencyMs: number;
+  readonly model?: string;
+};
+
+export async function fetchAiGatewayStatus(): Promise<AiGatewayStatusDto> {
+  const payload = (await authGet("/v1/ai/gateway/status")) as {
+    data: AiGatewayStatusDto;
+  };
+  return payload.data;
+}
+
+export async function invokeAiGateway(input: {
+  readonly agentId: string;
+  readonly message: string;
+  readonly hotelId?: string;
+  readonly locale?: "he" | "en";
+  readonly contextPack?: string;
+}): Promise<AiGatewayInvokeResultDto> {
+  const payload = (await authPost("/v1/ai/gateway/invoke", input)) as {
+    data: AiGatewayInvokeResultDto;
+  };
+  return payload.data;
+}
 
 export const APP_URLS = {
-  executive: viteEnv["VITE_APP_URL_EXECUTIVE"] ?? "http://localhost:5173",
-  admin: viteEnv["VITE_APP_URL_ADMIN"] ?? "http://localhost:5174",
-  guest: guestAppUrl,
-  legal: (doc: "terms" | "cookies" | "security" | "privacy") =>
-    `${guestAppUrl}/?doc=${doc}`,
-} as const;
+  get executive(): string {
+    return resolveAppUrl(
+      "executive",
+      "VITE_APP_URL_EXECUTIVE",
+      "http://localhost:5173",
+    );
+  },
+  get admin(): string {
+    return resolveAppUrl("admin", "VITE_APP_URL_ADMIN", "http://localhost:5174");
+  },
+  get guest(): string {
+    return resolveAppUrl("guest", "VITE_APP_URL_GUEST", "http://localhost:5175");
+  },
+  legal(doc: "terms" | "cookies" | "security" | "privacy"): string {
+    return `${APP_URLS.guest}/?doc=${doc}`;
+  },
+};

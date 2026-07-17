@@ -24,17 +24,27 @@ Keep both values — they become `DATABASE_URL` and `DATABASE_AUTH_TOKEN` on
 the API project below. Local dev is untouched: `.env` still uses
 `DATABASE_URL=file:.data/hotelos.sqlite` with no token.
 
-## 1. Import the repo four times
+## 0b. Root architecture (read first)
 
-In Vercel: **Add New → Project**, import the same Git repo four times. For
-each one, set:
+See **[four-projects.md](./four-projects.md)**. Frontends use **same-origin**
+`/v1/*` + Edge `middleware.ts` → separate API. Browser never calls `localhost`.
 
-| Vercel project | Root Directory | Include files outside root directory |
+## 1. Import the repo **four** times (recommended)
+
+Three separate frontends **plus a separate API** is the correct production
+shape (ADR 0003): Guest / Admin (hotel) / Executive (management) / API.
+
+In Vercel: **Add New → Project**, import the same Git repo four times. Name
+them with a shared prefix so sibling URLs auto-resolve, e.g.:
+
+| Vercel project name (example) | Root Directory | Role |
 |---|---|---|
-| hotelos-api | `apps/api` | **On** |
-| hotelos-executive | `apps/executive` | **On** |
-| hotelos-admin | `apps/admin` | **On** |
-| hotelos-guest | `apps/guest` | **On** |
+| `hotel-os-ai-api-eight` | `apps/api` | API server |
+| `hotel-os-ai-executive-eight` | `apps/executive` | הנהלת רשת |
+| `hotel-os-ai-admin-eight` | `apps/admin` | תפעול מלון |
+| `hotel-os-ai-guest-eight` | `apps/guest` | אורחים |
+
+For each project: **Include files outside the root directory = On**.
 
 "Include files outside the root directory" is required — it's what lets each
 project's install/build commands `cd ../..` and build the shared
@@ -49,7 +59,7 @@ each `vercel.json` already assume this.
 | `DATABASE_URL` | `libsql://hotelos-prod-xxx.turso.io` (from step 0) |
 | `DATABASE_AUTH_TOKEN` | token from step 0 |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | new random 32+ char secrets — **do not reuse the `.env` dev values** |
-| `CORS_ORIGINS` | the three frontend URLs, comma-separated (fill in after step 3, then redeploy) |
+| `CORS_ORIGINS` | `https://*.vercel.app` (or the three exact frontend URLs). Production also auto-appends the Vercel wildcard if missing. |
 | `NODEJS_HELPERS` | `0` (required — see `apps/api/api/index.ts`) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | only if Google sign-in is enabled in prod |
 | `WEBAUTHN_RP_ID` | your API's domain (WebAuthn ties credentials to a specific RP ID) |
@@ -64,14 +74,18 @@ two apps (for cross-app deep links, e.g. Admin → Executive):
 
 | Variable | Value |
 |---|---|
-| `VITE_API_BASE` | `https://hotelos-api.vercel.app` |
-| `VITE_APP_URL_EXECUTIVE` | `https://hotelos-executive.vercel.app` |
-| `VITE_APP_URL_ADMIN` | `https://hotelos-admin.vercel.app` |
-| `VITE_APP_URL_GUEST` | `https://hotelos-guest.vercel.app` |
+| `VITE_API_BASE` | `https://hotel-os-ai-api-eight.vercel.app` (your API project URL) |
+| `VITE_APP_URL_EXECUTIVE` | executive URL (optional if names follow `…-executive-…` convention) |
+| `VITE_APP_URL_ADMIN` | admin URL (optional with `…-admin-…` naming) |
+| `VITE_APP_URL_GUEST` | guest URL (optional with `…-guest-…` naming) |
 
-Set the same three `VITE_APP_URL_*` values on all three frontend projects.
-Deploy all three, then go back to the API project and fill in `CORS_ORIGINS`
-with the three resulting URLs and redeploy it.
+**Naming convention:** if frontends are `…-admin-…` / `…-executive-…` / `…-guest-…`
+and API is `…-api-…` on the same suffix, the client **infers** the API URL
+even when `VITE_API_BASE` was baked as localhost — still set `VITE_API_BASE`
+explicitly and redeploy for production clarity.
+
+Emergency override without rebuild: open  
+`https://hotel-os-ai-admin-eight.vercel.app/?api=https://hotel-os-ai-api-eight.vercel.app`
 
 ## Known limitation: meeting recordings
 
@@ -86,3 +100,29 @@ disappear. This wasn't part of the DB migration; treat it as a follow-up
 Nothing above changes `pnpm dev`. `.env` still points at the local sqlite
 file, ports are unchanged, and `pnpm typecheck` / `pnpm build` run the same
 way.
+
+## Troubleshooting: CORS / `localhost:3001` from Vercel
+
+If the browser console shows something like:
+
+```text
+Access to fetch at 'http://localhost:3001/v1/auth/login' from origin
+'https://hotel-os-ai-admin-eight.vercel.app' has been blocked by CORS
+```
+
+the Admin (or Executive/Guest) build still has the **dev default** API URL.
+A Vercel site cannot use your laptop’s `localhost:3001`.
+
+**Fix (required):**
+
+1. Find the API project URL (e.g. `https://hotel-os-ai-api-….vercel.app`).
+2. On **each** frontend Vercel project (`admin` / `executive` / `guest`):
+   - Settings → Environment Variables
+   - `VITE_API_BASE` = `https://<your-api>.vercel.app` (no trailing slash)
+   - Redeploy (Vite bakes env at **build** time — changing env without redeploy does nothing)
+3. On the **API** Vercel project:
+   - `CORS_ORIGINS` =
+     `https://hotel-os-ai-admin-eight.vercel.app,https://<executive>.vercel.app,https://<guest>.vercel.app`
+   - Redeploy API
+
+Until step 2 is done, login will keep targeting `localhost` and look like a CORS error.

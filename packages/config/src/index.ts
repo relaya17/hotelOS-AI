@@ -34,16 +34,25 @@ const envSchema = z.object({
     .default("http://localhost:5173/"),
   WEBAUTHN_RP_ID: z.string().optional().default("localhost"),
   WEBAUTHN_RP_NAME: z.string().optional().default("HotelOS AI"),
+  /**
+   * AI Gateway — OpenAI-compatible Chat Completions.
+   * When empty, Gateway uses the built-in deterministic provider (always on).
+   */
+  AI_GATEWAY_API_KEY: z.string().optional().default(""),
+  AI_GATEWAY_BASE_URL: z
+    .string()
+    .optional()
+    .default("https://api.openai.com/v1"),
+  AI_GATEWAY_MODEL: z.string().optional().default("gpt-4o-mini"),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
 
-export function parseCorsOrigins(value: string): readonly string[] {
-  return value
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0);
-}
+export {
+  isOriginAllowed,
+  parseCorsOrigins,
+  withVercelCorsFallback,
+} from "./cors.js";
 
 export function loadEnv(
   source: Record<string, string | undefined> = process.env,

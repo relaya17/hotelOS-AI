@@ -12,9 +12,11 @@
 | **Executive** | רשת / אזור | לוח בקרה Multi-Hotel, Turbo OS, בריפינגים | http://localhost:5173 |
 | **Admin** | מלון בודד | חדרים, הזמנות, כשרות, נוכחות מהטלפון | http://localhost:5174 |
 | **Guest** | אורח | חיפוש שהייה + מסמכי Legal | http://localhost:5175 |
-| **API** | שרת | Auth, תפעול, Turbo, Trust, סוכנים | http://localhost:3001 |
+| **API** | שרת נפרד | Auth, תפעול, Turbo, Trust, סוכנים | http://localhost:3001 |
 
-הרשת יכולה לכלול כמה בתי מלון. ה־Executive נשאר ברמת הרשת; ה־Admin עובד על מלון אחד (כולל דיפ־לינק `?hotelId=` מה־Executive).
+ארכיטקטורה נכונה בפרודקשן: **4 כתובות** — אורח · מלון · הנהלה · **API נפרד**.  
+ב־Vercel הדפדפן קורא לאותו דומיין; `middleware.ts` מעביר ל־API (בלי CORS/localhost).  
+מדריך: [`docs/deployment/four-projects.md`](docs/deployment/four-projects.md).
 
 ## Turbo OS (ב־Executive)
 
@@ -45,7 +47,8 @@
 
 | שכבה | תפקיד |
 |------|--------|
-| **CIO Orchestrator** (`agent.cio`) | יועץ־על בחזית: כספים, אסטרטגיה, התראות חריגה/גניבה, תדריך יומי לכל דרג, מודיעין Trusted — מתזמר מומחים (לא מחליף אותם) |
+| **AI Gateway** | נקודת כניסה יחידה (`/v1/ai/gateway`) — דטרמיניסטי בלי מפתח; LLM עם `AI_GATEWAY_API_KEY` ([ADR 0008](docs/adr/0008-ai-gateway.md)) |
+| **CIO Orchestrator** (`agent.cio`) | יועץ־על בחזית דרך Gateway: תדריך יומי + שאלות; מתזמר מומחים |
 | **מומחים** | CEO, CFO, Revenue, Housekeeping, Reception, HR, Marketing, Guest, Concierge, Analytics, Sales, Legal, … |
 | **משגיח כשרות** (`agent.kashrut`) | מושב תמידי במלונות כשרים — הערה / אזהרה / חסימה על F&B, רכש מזון ואירועים; מחובר ל־F&B + הנהלה |
 | **Org Comms** | ערוצים ישירים: בעלים ↔ מנכ״ל · מנכ״ל ↔ יח״צ / HR / F&B / חדרים+משק / קבלה / … · נתיב כשרות נפרד |
@@ -181,6 +184,7 @@ packages/
 | `POST /v1/public/stays/lookup` | חיפוש שהייה לאורח |
 | `GET /v1/ops/cio-digest` | תדריך יועץ־על לפי תפקיד |
 | `/v1/org-comms/*` · `/v1/knowledge/*` · `/v1/kashrut/*` | Org Comms, Trusted sources, כשרות |
+| `GET/POST /v1/ai/gateway/*` | AI Gateway — נקודת כניסה יחידה לסוכנים (דטרמיניסטי או LLM) |
 
 CORS: מקורות ב־`CORS_ORIGINS` (ברירת מחדל — שלוש האפליקציות המקומיות).
 

@@ -13,6 +13,7 @@
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@hotelos/ai-gateway": "workspace:*",
     "@hotelos/auth": "workspace:*",
     "@hotelos/config": "workspace:*",
     "@hotelos/database": "workspace:*",
