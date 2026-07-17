@@ -20,11 +20,10 @@
   },
   "dependencies": {
     "@hotelos/shared": "workspace:*",
-    "better-sqlite3": "^11.10.0",
+    "@libsql/client": "^0.17.4",
     "drizzle-orm": "^0.44.2"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.15.32",
     "rimraf": "^6.0.1",
     "tsx": "^4.20.3",

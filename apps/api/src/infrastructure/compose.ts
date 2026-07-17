@@ -99,7 +99,7 @@ export async function composeApp() {
     },
   });
 
-  logger.info("database ready", { path: dbPath });
+  logger.info("database ready", { url: dbUrl });
   logger.info("recordings storage ready", { path: recordings.root });
   return { app, env, logger };
 }
