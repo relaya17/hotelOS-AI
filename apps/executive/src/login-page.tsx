@@ -57,19 +57,20 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
   return (
     <main className="shell">
       <section className="hero">
-        <p className="eyebrow">Admin · תפעול מלון</p>
+        <p className="eyebrow">Executive · רשת</p>
         <h1>HotelOS AI</h1>
         <p className="lede">
-          אפליקציה נפרדת לתפעול יומיומי: חדרים, הזמנות וצוות — לפי מלון נבחר.
+          לוח בקרה ברמת הרשת — כל בתי המלון, תפוסה והזמנות פעילות במבט אחד.
         </p>
         <p className="apps">
-          <a href={APP_URLS.executive}>לוח בקרה לרשת</a> ·{" "}
+          אפליקציות נפרדות:{" "}
+          <a href={APP_URLS.admin}>תפעול מלון</a> ·{" "}
           <a href={APP_URLS.guest}>אורחים</a>
         </p>
       </section>
       <section className="panel">
         <form className="form" onSubmit={onSubmit} noValidate>
-          <h2>כניסת מנהל/תפעול</h2>
+          <h2>כניסת הנהלת רשת</h2>
           <TextField
             label="אימייל"
             name="email"
@@ -95,8 +96,8 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
       <style>{`
         .shell { min-height:100vh; display:grid; grid-template-columns:1.1fr .9fr; gap:var(--space-6); padding:clamp(1.5rem,4vw,4rem); align-items:center; }
         .eyebrow { margin:0 0 var(--space-3); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
-        h1 { font-size:var(--text-display); margin:0; }
-        .lede { margin:var(--space-4) 0 0; max-width:34ch; color:var(--color-ink-soft); font-size:1.15rem; }
+        h1 { font-size:var(--text-display); margin:0; max-width:10ch; }
+        .lede { margin:var(--space-4) 0 0; max-width:36ch; color:var(--color-ink-soft); font-size:1.15rem; }
         .apps { margin-top:var(--space-4); font-size:var(--text-small); }
         .panel { background:rgb(255 250 242 / 88%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .15rem); box-shadow:var(--shadow-soft); padding:clamp(1.4rem,3vw,2.2rem); }
         .form { display:grid; gap:var(--space-4); }

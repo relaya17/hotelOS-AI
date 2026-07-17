@@ -7,9 +7,11 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --filter=@hotelos/api --filter=@hotelos/admin",
+    "dev": "turbo run dev --filter=@hotelos/api --filter=@hotelos/executive --filter=@hotelos/admin --filter=@hotelos/guest",
     "dev:api": "turbo run dev --filter=@hotelos/api",
+    "dev:executive": "turbo run dev --filter=@hotelos/executive",
     "dev:admin": "turbo run dev --filter=@hotelos/admin",
+    "dev:guest": "turbo run dev --filter=@hotelos/guest",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "test": "turbo run test",

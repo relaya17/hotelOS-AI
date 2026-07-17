@@ -12,13 +12,23 @@ import {
   createHotelRoutes,
   type HotelRouteDeps,
 } from "./hotel-routes.js";
+import {
+  createOverviewRoutes,
+  type OverviewRouteDeps,
+} from "./overview-routes.js";
+import {
+  createPublicRoutes,
+  type PublicRouteDeps,
+} from "./public-routes.js";
 
 export type ApiDependencies = {
   readonly getHealth: GetHealth;
   readonly logger: Logger;
-  readonly corsOrigin: string;
+  readonly corsOrigins: readonly string[];
   readonly auth: AuthRouteDeps;
   readonly hotels: HotelRouteDeps;
+  readonly overview: OverviewRouteDeps;
+  readonly publicRoutes: PublicRouteDeps;
 };
 
 export function createApp(deps: ApiDependencies): Hono {
@@ -27,7 +37,7 @@ export function createApp(deps: ApiDependencies): Hono {
   app.use(
     "*",
     cors({
-      origin: deps.corsOrigin,
+      origin: [...deps.corsOrigins],
       allowHeaders: ["Content-Type", "Authorization", "X-Correlation-Id"],
       exposeHeaders: ["X-Correlation-Id"],
     }),
@@ -46,6 +56,32 @@ export function createApp(deps: ApiDependencies): Hono {
 
   app.get("/health", (c) => c.json(deps.getHealth()));
 
+  app.get("/v1/meta/apps", (c) =>
+    c.json({
+      apps: [
+        {
+          id: "executive",
+          name: "Executive — לוח בקרה לרשת",
+          url: "http://localhost:5173",
+          level: "chain",
+        },
+        {
+          id: "admin",
+          name: "Admin — תפעול מלון",
+          url: "http://localhost:5174",
+          level: "hotel",
+        },
+        {
+          id: "guest",
+          name: "Guest — אפליקציית אורחים",
+          url: "http://localhost:5175",
+          level: "guest",
+        },
+      ],
+      positioning: "AI Intelligence Layer for Hotels",
+    }),
+  );
+
   app.get("/v1/meta/tenancy-model", (c) =>
     c.json({
       hierarchy: [
@@ -62,6 +98,8 @@ export function createApp(deps: ApiDependencies): Hono {
 
   app.route("/v1/auth", createAuthRoutes(deps.auth));
   app.route("/v1/hotels", createHotelRoutes(deps.hotels));
+  app.route("/v1/overview", createOverviewRoutes(deps.overview));
+  app.route("/v1/public", createPublicRoutes(deps.publicRoutes));
 
   return app;
 }

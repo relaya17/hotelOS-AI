@@ -6,7 +6,7 @@ import {
   readStoredUser,
   type StoredUser,
 } from "@hotelos/web-client";
-import { DashboardPage } from "./dashboard-page.js";
+import { ChainDashboard } from "./chain-dashboard.js";
 import { LoginPage } from "./login-page.js";
 
 export function App() {
@@ -50,12 +50,12 @@ export function App() {
   }, []);
 
   if (booting) {
-    return <main className="boot">HotelOS AI · Admin</main>;
+    return <main className="boot">HotelOS AI · Executive</main>;
   }
 
   if (user) {
     return (
-      <DashboardPage
+      <ChainDashboard
         user={user}
         onLogout={() => {
           setUser(null);

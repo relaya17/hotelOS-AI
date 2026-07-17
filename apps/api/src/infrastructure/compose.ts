@@ -1,13 +1,15 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadEnv } from "@hotelos/config";
+import { loadEnv, parseCorsOrigins } from "@hotelos/config";
 import { createLogger } from "@hotelos/logger";
 import { createJwtTokenService, hashPassword } from "@hotelos/auth";
 import {
   createAuditRepository,
   createBookingRepository,
   createDb,
+  createGuestStayRepository,
   createHotelRepository,
+  createOverviewRepository,
   createRefreshSessionRepository,
   createRoomRepository,
   createUserRepository,
@@ -16,7 +18,7 @@ import {
 import { createGetHealth } from "../application/get-health.js";
 import { createApp } from "../presentation/http/create-app.js";
 
-const API_VERSION = "0.4.0";
+const API_VERSION = "0.5.0";
 
 function resolveRepoPath(relativePath: string): string {
   const here = fileURLToPath(new URL(".", import.meta.url));
@@ -37,6 +39,8 @@ export async function composeApp() {
   const hotels = createHotelRepository(db);
   const rooms = createRoomRepository(db);
   const bookings = createBookingRepository(db);
+  const overview = createOverviewRepository(db);
+  const guestStays = createGuestStayRepository(db);
   const tokens = createJwtTokenService({
     accessSecret: env.JWT_ACCESS_SECRET,
     refreshSecret: env.JWT_REFRESH_SECRET,
@@ -48,9 +52,11 @@ export async function composeApp() {
   const app = createApp({
     getHealth,
     logger,
-    corsOrigin: env.CORS_ORIGIN,
+    corsOrigins: parseCorsOrigins(env.CORS_ORIGINS),
     auth: { users, sessions, audit, tokens },
     hotels: { hotels, rooms, bookings, audit, tokens },
+    overview: { overview, tokens },
+    publicRoutes: { guestStays },
   });
 
   logger.info("database ready", { path: dbPath });

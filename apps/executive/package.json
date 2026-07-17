@@ -1,6 +1,6 @@
 {
-  "name": "@hotelos/admin",
-  "version": "0.2.0",
+  "name": "@hotelos/executive",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {

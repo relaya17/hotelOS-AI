@@ -9,10 +9,23 @@ const envSchema = z.object({
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   JWT_REFRESH_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 14),
   DATABASE_PATH: z.string().min(1).default(".data/hotelos.sqlite"),
-  CORS_ORIGIN: z.string().min(1).default("http://localhost:5173"),
+  /** Comma-separated origins for the three separate apps */
+  CORS_ORIGINS: z
+    .string()
+    .min(1)
+    .default(
+      "http://localhost:5173,http://localhost:5174,http://localhost:5175",
+    ),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
+
+export function parseCorsOrigins(value: string): readonly string[] {
+  return value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+}
 
 export function loadEnv(
   source: Record<string, string | undefined> = process.env,
