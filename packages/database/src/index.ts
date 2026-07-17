@@ -20,6 +20,12 @@ export {
   type PersistedHotel,
 } from "./repositories/hotel-repository.js";
 export {
+  createRoomRepository,
+  type PersistedRoom,
+  type RoomRepository,
+  type RoomStatus,
+} from "./repositories/room-repository.js";
+export {
   DEMO_TENANT_ID,
   DEMO_HOTEL_TLV_ID,
   DEMO_HOTEL_EILAT_ID,

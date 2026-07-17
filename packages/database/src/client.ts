@@ -67,6 +67,20 @@ function migrate(sqlite: Database.Database): void {
     CREATE INDEX IF NOT EXISTS departments_hotel_idx ON departments(hotel_id);
     CREATE INDEX IF NOT EXISTS departments_tenant_idx ON departments(tenant_id);
 
+    CREATE TABLE IF NOT EXISTS rooms (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      number TEXT NOT NULL,
+      floor TEXT NOT NULL,
+      room_type TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS rooms_hotel_idx ON rooms(hotel_id);
+    CREATE INDEX IF NOT EXISTS rooms_tenant_idx ON rooms(tenant_id);
+    CREATE INDEX IF NOT EXISTS rooms_hotel_status_idx ON rooms(hotel_id, status);
+
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL REFERENCES tenants(id),

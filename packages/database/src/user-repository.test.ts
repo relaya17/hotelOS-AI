@@ -31,5 +31,17 @@ test("seeded demo user can be loaded by tenant email", async () => {
   const hotels = createHotelRepository(db);
   const list = await hotels.listByTenant(Ids.tenant(DEMO_TENANT_ID));
   assert.equal(list.length, 2);
+
+  const { createRoomRepository } = await import(
+    "./repositories/room-repository.js"
+  );
+  const rooms = createRoomRepository(db);
+  const firstHotel = list[0];
+  assert.ok(firstHotel);
+  const roomList = await rooms.listByHotel(
+    Ids.tenant(DEMO_TENANT_ID),
+    firstHotel.id,
+  );
+  assert.ok(roomList.length >= 3);
   close();
 });

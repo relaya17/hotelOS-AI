@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { Button } from "@hotelos/ui";
-import { listHotels, type HotelDto } from "./api-client.js";
+import {
+  listHotels,
+  listRooms,
+  type HotelDto,
+  type RoomDto,
+} from "./api-client.js";
 import { clearSession, type StoredUser } from "./session.js";
 
 export type DashboardPageProps = {
@@ -8,10 +13,21 @@ export type DashboardPageProps = {
   readonly onLogout: () => void;
 };
 
+const statusLabel: Record<RoomDto["status"], string> = {
+  vacant: "פנוי",
+  occupied: "תפוס",
+  dirty: "ממתין לניקיון",
+  maintenance: "תחזוקה",
+};
+
 export function DashboardPage({ user, onLogout }: DashboardPageProps) {
   const [hotels, setHotels] = useState<readonly HotelDto[]>([]);
+  const [selectedHotelId, setSelectedHotelId] = useState<string | undefined>();
+  const [rooms, setRooms] = useState<readonly RoomDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [roomsLoading, setRoomsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [roomsError, setRoomsError] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -22,6 +38,10 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
         const data = await listHotels();
         if (!cancelled) {
           setHotels(data);
+          const first = data[0];
+          if (first) {
+            setSelectedHotelId(first.id);
+          }
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -41,10 +61,45 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedHotelId === undefined) {
+      setRooms([]);
+      return;
+    }
+    const hotelId = selectedHotelId;
+    let cancelled = false;
+    async function loadRooms() {
+      setRoomsLoading(true);
+      setRoomsError(undefined);
+      try {
+        const data = await listRooms(hotelId);
+        if (!cancelled) {
+          setRooms(data);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setRoomsError(
+            loadError instanceof Error ? loadError.message : "שגיאה בטעינת חדרים",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setRoomsLoading(false);
+        }
+      }
+    }
+    void loadRooms();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedHotelId]);
+
   function logout() {
     clearSession();
     onLogout();
   }
+
+  const selectedHotel = hotels.find((hotel) => hotel.id === selectedHotelId);
 
   return (
     <div className="dash">
@@ -63,7 +118,7 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
 
       <section className="card" aria-labelledby="hotels-title">
         <h2 id="hotels-title">מלונות ברשת</h2>
-        <p className="hint">Multi-Hotel — כל הנכסים תחת אותו Tenant</p>
+        <p className="hint">בחרו מלון כדי לראות את החדרים</p>
 
         {loading ? <p className="state">טוען מלונות…</p> : null}
         {error !== undefined ? (
@@ -74,19 +129,57 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
 
         {!loading && error === undefined ? (
           <ul className="hotel-list">
-            {hotels.map((hotel, index) => (
-              <li
-                key={hotel.id}
-                className="hotel-item"
-                style={{ animationDelay: `${index * 80}ms` }}
-              >
+            {hotels.map((hotel, index) => {
+              const selected = hotel.id === selectedHotelId;
+              return (
+                <li key={hotel.id}>
+                  <button
+                    type="button"
+                    className={`hotel-item${selected ? " hotel-item--selected" : ""}`}
+                    style={{ animationDelay: `${index * 80}ms` }}
+                    onClick={() => {
+                      setSelectedHotelId(hotel.id);
+                    }}
+                    aria-pressed={selected}
+                  >
+                    <div>
+                      <h3>{hotel.name}</h3>
+                      <p>
+                        {hotel.timezone} · {hotel.currency}
+                      </p>
+                    </div>
+                    <span className="badge">{selected ? "נבחר" : "פעיל"}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+      </section>
+
+      <section className="card" aria-labelledby="rooms-title">
+        <h2 id="rooms-title">
+          חדרים{selectedHotel ? ` · ${selectedHotel.name}` : ""}
+        </h2>
+        {roomsLoading ? <p className="state">טוען חדרים…</p> : null}
+        {roomsError !== undefined ? (
+          <p className="state state--error" role="alert">
+            {roomsError}
+          </p>
+        ) : null}
+        {!roomsLoading && roomsError === undefined ? (
+          <ul className="room-list">
+            {rooms.map((room) => (
+              <li key={room.id} className="room-item">
                 <div>
-                  <h3>{hotel.name}</h3>
+                  <h3>חדר {room.number}</h3>
                   <p>
-                    {hotel.timezone} · {hotel.currency}
+                    קומה {room.floor} · {room.roomType}
                   </p>
                 </div>
-                <span className="badge">פעיל</span>
+                <span className={`status status--${room.status}`}>
+                  {statusLabel[room.status]}
+                </span>
               </li>
             ))}
           </ul>
@@ -139,42 +232,58 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
           margin: var(--space-2) 0 var(--space-4);
           color: var(--color-ink-soft);
         }
-        .hotel-list {
+        .hotel-list, .room-list {
           list-style: none;
           margin: 0;
           padding: 0;
           display: grid;
           gap: var(--space-3);
         }
-        .hotel-item {
+        .hotel-item, .room-item {
           display: flex;
           justify-content: space-between;
           gap: var(--space-3);
           align-items: center;
+          width: 100%;
+          text-align: start;
           padding: var(--space-4);
           border: 1px solid rgb(16 36 31 / 10%);
           border-radius: var(--radius-sm);
           background: var(--color-paper-elevated);
+          color: inherit;
+          font: inherit;
+          cursor: pointer;
           animation: rise 420ms ease both;
         }
-        .hotel-item h3 {
+        .hotel-item--selected {
+          border-color: rgb(15 106 92 / 45%);
+          box-shadow: inset 0 0 0 1px rgb(15 106 92 / 25%);
+        }
+        .hotel-item h3, .room-item h3 {
           margin: 0;
           font-family: var(--font-display);
           font-size: 1.25rem;
         }
-        .hotel-item p {
+        .hotel-item p, .room-item p {
           margin: var(--space-1) 0 0;
           color: var(--color-ink-soft);
           font-size: var(--text-small);
         }
-        .badge {
+        .badge, .status {
           font-size: var(--text-small);
           font-weight: 700;
-          color: var(--color-sea-deep);
-          background: rgb(15 106 92 / 12%);
           padding: 0.35rem 0.7rem;
           border-radius: 999px;
+          white-space: nowrap;
         }
+        .badge {
+          color: var(--color-sea-deep);
+          background: rgb(15 106 92 / 12%);
+        }
+        .status--vacant { color: #0f6a5c; background: rgb(15 106 92 / 12%); }
+        .status--occupied { color: #1f4b7a; background: rgb(31 75 122 / 12%); }
+        .status--dirty { color: #8a5a12; background: rgb(138 90 18 / 12%); }
+        .status--maintenance { color: #9b2c2c; background: rgb(155 44 44 / 12%); }
         .state { margin: 0; color: var(--color-ink-soft); }
         .state--error { color: var(--color-danger); }
         @keyframes rise {

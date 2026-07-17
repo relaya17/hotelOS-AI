@@ -61,6 +61,29 @@ export const departments = sqliteTable(
   ],
 );
 
+export const rooms = sqliteTable(
+  "rooms",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    number: text("number").notNull(),
+    floor: text("floor").notNull(),
+    roomType: text("room_type").notNull(),
+    status: text("status").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("rooms_hotel_idx").on(table.hotelId),
+    index("rooms_tenant_idx").on(table.tenantId),
+    index("rooms_hotel_status_idx").on(table.hotelId, table.status),
+  ],
+);
+
 export const users = sqliteTable(
   "users",
   {

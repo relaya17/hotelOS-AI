@@ -4,6 +4,7 @@ import {
   departments,
   hotelChains,
   hotels,
+  rooms,
   tenants,
   users,
 } from "./schema/tenancy.js";
@@ -74,6 +75,19 @@ export async function seedDemoTenant(
     currency: "ILS",
     createdAt: now,
   });
+
+  ensureDemoRooms(db, DEMO_HOTEL_TLV_ID, now, [
+    { id: "70000000-0000-4000-8000-000000000101", number: "101", floor: "1", roomType: "standard", status: "vacant" },
+    { id: "70000000-0000-4000-8000-000000000102", number: "102", floor: "1", roomType: "standard", status: "dirty" },
+    { id: "70000000-0000-4000-8000-000000000201", number: "201", floor: "2", roomType: "suite", status: "occupied" },
+    { id: "70000000-0000-4000-8000-000000000301", number: "301", floor: "3", roomType: "deluxe", status: "maintenance" },
+  ]);
+
+  ensureDemoRooms(db, DEMO_HOTEL_EILAT_ID, now, [
+    { id: "70000000-0000-4000-8000-000000000401", number: "401", floor: "4", roomType: "standard", status: "vacant" },
+    { id: "70000000-0000-4000-8000-000000000402", number: "402", floor: "4", roomType: "sea_view", status: "occupied" },
+    { id: "70000000-0000-4000-8000-000000000501", number: "501", floor: "5", roomType: "suite", status: "dirty" },
+  ]);
 
   const existingDepartment = db
     .select()
@@ -149,4 +163,40 @@ function ensureHotel(
       createdAt: input.createdAt,
     })
     .run();
+}
+
+function ensureDemoRooms(
+  db: HotelOsDb,
+  hotelId: string,
+  createdAt: string,
+  items: readonly {
+    id: string;
+    number: string;
+    floor: string;
+    roomType: string;
+    status: string;
+  }[],
+): void {
+  for (const item of items) {
+    const existing = db
+      .select()
+      .from(rooms)
+      .where(eq(rooms.id, item.id))
+      .get();
+    if (existing) {
+      continue;
+    }
+    db.insert(rooms)
+      .values({
+        id: item.id,
+        tenantId: DEMO_TENANT_ID,
+        hotelId,
+        number: item.number,
+        floor: item.floor,
+        roomType: item.roomType,
+        status: item.status,
+        createdAt,
+      })
+      .run();
+  }
 }

@@ -25,6 +25,14 @@ export type HotelDto = {
   readonly chainId: string;
 };
 
+export type RoomDto = {
+  readonly id: string;
+  readonly number: string;
+  readonly floor: string;
+  readonly roomType: string;
+  readonly status: "vacant" | "occupied" | "dirty" | "maintenance";
+};
+
 type ApiError = {
   readonly error: {
     readonly code: string;
@@ -117,4 +125,32 @@ export async function listHotels(): Promise<readonly HotelDto[]> {
     throw new Error("Invalid hotels response");
   }
   return body.data as HotelDto[];
+}
+
+export async function listRooms(hotelId: string): Promise<readonly RoomDto[]> {
+  const token = readAccessToken();
+  if (!token) {
+    throw new Error("Missing session");
+  }
+
+  const response = await fetch(`${API_BASE}/v1/hotels/${hotelId}/rooms`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await parseJson(response);
+  if (response.status === 401) {
+    clearSession();
+    throw new Error("Session expired");
+  }
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Failed to load rooms"));
+  }
+
+  const body = payload as { data?: unknown };
+  if (!Array.isArray(body.data)) {
+    throw new Error("Invalid rooms response");
+  }
+  return body.data as RoomDto[];
 }

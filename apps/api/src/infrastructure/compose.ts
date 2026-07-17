@@ -8,13 +8,14 @@ import {
   createDb,
   createHotelRepository,
   createRefreshSessionRepository,
+  createRoomRepository,
   createUserRepository,
   seedDemoTenant,
 } from "@hotelos/database";
 import { createGetHealth } from "../application/get-health.js";
 import { createApp } from "../presentation/http/create-app.js";
 
-const API_VERSION = "0.2.0";
+const API_VERSION = "0.3.0";
 
 function resolveRepoPath(relativePath: string): string {
   const here = fileURLToPath(new URL(".", import.meta.url));
@@ -33,6 +34,7 @@ export async function composeApp() {
   const sessions = createRefreshSessionRepository(db);
   const audit = createAuditRepository(db);
   const hotels = createHotelRepository(db);
+  const rooms = createRoomRepository(db);
   const tokens = createJwtTokenService({
     accessSecret: env.JWT_ACCESS_SECRET,
     refreshSecret: env.JWT_REFRESH_SECRET,
@@ -46,7 +48,7 @@ export async function composeApp() {
     logger,
     corsOrigin: env.CORS_ORIGIN,
     auth: { users, sessions, audit, tokens },
-    hotels: { hotels, tokens },
+    hotels: { hotels, rooms, tokens },
   });
 
   logger.info("database ready", { path: dbPath });
