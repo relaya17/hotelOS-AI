@@ -5,14 +5,15 @@ import {
   tUi,
   type LocaleCode,
 } from "@hotelos/i18n";
+import { AttendancePage, LegalFooter } from "@hotelos/features";
 import { Button, CookieBanner } from "@hotelos/ui";
 import {
   APP_URLS,
   clearSession,
+  getConsentSubjectKey,
   saveCookieConsent,
   type StoredUser,
 } from "@hotelos/web-client";
-import { AttendancePage } from "./attendance-page.js";
 import { BriefingMeetPage } from "./briefing-meet-page.js";
 import { BriefingRoomsPage } from "./briefing-rooms-page.js";
 import { ChainDashboard } from "./chain-dashboard.js";
@@ -74,8 +75,8 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
               ["chat", tUi(locale, "nav.chat")],
               ["automations", tUi(locale, "nav.automations")],
               ["voice", tUi(locale, "nav.voice")],
-              ["attendance", "נוכחות"],
-              ["trust", "Trust"],
+              ["attendance", tUi(locale, "nav.attendance")],
+              ["trust", tUi(locale, "nav.trust")],
             ] as const
           ).map(([kind, label]) => (
             <button
@@ -148,18 +149,13 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         {view.kind === "trust" ? <TrustPaymentsPage /> : null}
       </main>
 
-      <footer className="legal-bar">
-        <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
-        <a href={APP_URLS.legal("cookies")}>עוגיות</a>
-        <a href={APP_URLS.legal("security")}>אבטחה</a>
-        <a href={APP_URLS.legal("privacy")}>פרטיות</a>
-      </footer>
+      <LegalFooter legalUrl={APP_URLS.legal} />
 
       <CookieBanner
         legalCookiesUrl={APP_URLS.legal("cookies")}
         onConsent={(consent) => {
           void saveCookieConsent({
-            subjectKey: `exec:${user.id}`,
+            subjectKey: getConsentSubjectKey("exec", user.id),
             necessary: consent.necessary,
             functional: consent.functional,
             tenantId: user.tenantId,
@@ -183,8 +179,6 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         .locale select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.45rem .6rem; background:var(--color-paper-elevated); }
         .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
         .shell__main { padding:clamp(1rem,3vw,2.5rem); }
-        .legal-bar{display:flex;flex-wrap:wrap;gap:var(--space-3);padding:var(--space-3) clamp(1rem,3vw,2rem);border-top:1px solid rgb(16 36 31 / 10%);font-size:var(--text-small)}
-        .legal-bar a{color:var(--color-sea-deep);font-weight:600}
         @media (max-width:768px){
           .nav{ padding:var(--space-2) var(--space-3); }
           .shell__main{ padding:var(--space-3); }

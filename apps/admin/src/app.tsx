@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
+import { AttendancePage, LegalFooter } from "@hotelos/features";
 import { Button, CookieBanner } from "@hotelos/ui";
 import {
   APP_URLS,
   clearSession,
   fetchMe,
+  getConsentSubjectKey,
   readAccessToken,
   readStoredUser,
   saveCookieConsent,
   type StoredUser,
 } from "@hotelos/web-client";
-import { AttendancePage } from "./attendance-page.js";
 import { DashboardPage } from "./dashboard-page.js";
 import { LoginPage } from "./login-page.js";
 
@@ -106,17 +107,12 @@ export function App() {
             <AttendancePage />
           </main>
         )}
-        <footer className="legal-bar">
-          <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
-          <a href={APP_URLS.legal("cookies")}>עוגיות</a>
-          <a href={APP_URLS.legal("security")}>אבטחה</a>
-          <a href={APP_URLS.legal("privacy")}>פרטיות</a>
-        </footer>
+        <LegalFooter legalUrl={APP_URLS.legal} />
         <CookieBanner
           legalCookiesUrl={APP_URLS.legal("cookies")}
           onConsent={(consent) => {
             void saveCookieConsent({
-              subjectKey: `admin:${user.id}`,
+              subjectKey: getConsentSubjectKey("admin", user.id),
               necessary: consent.necessary,
               functional: consent.functional,
               tenantId: user.tenantId,
@@ -129,8 +125,6 @@ export function App() {
           .tab--on{background:var(--color-sea-deep);color:#fff;border-color:transparent}
           .link{margin-inline-start:auto;color:var(--color-sea-deep);font-weight:600}
           .attendance-wrap{padding:clamp(1rem,3vw,2rem)}
-          .legal-bar{display:flex;flex-wrap:wrap;gap:var(--space-3);padding:var(--space-3) clamp(1rem,3vw,2rem);border-top:1px solid rgb(16 36 31 / 10%);font-size:var(--text-small)}
-          .legal-bar a{color:var(--color-sea-deep);font-weight:600}
         `}</style>
       </div>
     );

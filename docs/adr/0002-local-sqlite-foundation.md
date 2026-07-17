@@ -1,6 +1,6 @@
 # ADR 0002 — SQLite for local Foundation
 
-**Status:** Accepted  
+**Status:** Superseded by [ADR 0006](0006-libsql-turso-hosted-db.md)  
 **Date:** 2026-07-17
 
 ## Context

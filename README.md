@@ -120,11 +120,14 @@ apps/
 packages/
   i18n/          # שפות + תרגום צ׳אט מאומת
   legal/         # תנאי שימוש, עוגיות, אבטחה, פרטיות
+  features/      # מסכים משותפים (נוכחות, LegalFooter)
   web-client/    # לקוח API משותף
   ui/            # עיצוב / קומפוננטות (+ CookieBanner, SignaturePad)
-  database/      # SQLite + Drizzle + seed
+  database/      # libSQL/Turso (file: מקומי) + Drizzle + seed
   auth/          # JWT + סיסמאות
   shared/ config/ validation/ logger/
+
+פריסה: `docs/deployment/vercel.md` · ADR מסד נתונים: `docs/adr/0006-libsql-turso-hosted-db.md`
 ```
 
 מסד נתונים מקומי: `.data/hotelos.sqlite` (ב־gitignore).
@@ -155,6 +158,15 @@ CORS: מקורות ב־`CORS_ORIGINS` (ברירת מחדל — שלוש האפל
 פרטים ב-[`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md).
 פיתוח מקומי (`pnpm dev`) לא השתנה.
 
+## SEO ושיווק
+
+| אפליקציה | מדיניות |
+|---|---|
+| **Guest** | ציבורית ומקודמת: title/description עשירים, Open Graph + Twitter card, תמונת שיתוף ממותגת (`og-image.png`), JSON-LD (`WebApplication`), `robots.txt` + `sitemap.xml` שמאשרים אינדקס. עמוד הבית נכתב כדף נחיתה קצר (הבטחת ערך, 3 יתרונות מרכזיים) ולא רק כטופס חיפוש. |
+| **Executive / Admin** | כלי פנימי מאחורי כניסה — `<meta name="robots" content="noindex, nofollow">` + `robots.txt` שחוסם הכל. אין טעם, ויש סיכון פרטיות, לדרג כלי ניהול פנימי בגוגל. |
+
+לפני פריסה לפרודקשן: לעדכן את כתובות ה-`canonical`/`og:url`/`sitemap.xml` בתוך `apps/guest/index.html` ו-`apps/guest/public/` מהדומיין הזמני (`guest.hotelos.ai`) לדומיין האמיתי שנרכש.
+
 ## תיעוד
 
 | מסמך | תוכן |
@@ -164,6 +176,8 @@ CORS: מקורות ב־`CORS_ORIGINS` (ברירת מחדל — שלוש האפל
 | [`docs/adr/0003-three-separate-apps.md`](docs/adr/0003-three-separate-apps.md) | שלוש אפליקציות נפרדות |
 | [`docs/adr/0004-turbo-os-i18n-automations.md`](docs/adr/0004-turbo-os-i18n-automations.md) | Turbo OS, i18n, אוטומציות |
 | [`docs/adr/0005-trust-compliance-attendance.md`](docs/adr/0005-trust-compliance-attendance.md) | Trust, Google, נוכחות |
+| [`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md) | libSQL/Turso לפריסה |
+| [`docs/deployment/vercel.md`](docs/deployment/vercel.md) | פריסת 4 פרויקטי Vercel |
 | [`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md) | מעבר ל-libSQL/Turso לפריסה |
 | [`docs/deployment/vercel.md`](docs/deployment/vercel.md) | מדריך פריסה ל-Vercel |
 | [`docs/planning/employee-hr-module.md`](docs/planning/employee-hr-module.md) | תכנון: הרשמה עצמית לעובדים, מבחני יכולת, תעודת יושר |

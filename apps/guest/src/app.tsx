@@ -3,16 +3,47 @@ import { Button, CookieBanner, TextField } from "@hotelos/ui";
 import {
   APP_URLS,
   fetchLegalDocument,
+  getConsentSubjectKey,
   lookupGuestStay,
   saveCookieConsent,
   type GuestStayDto,
   type LegalDocDetail,
 } from "@hotelos/web-client";
 
+function GuestCookieBanner() {
+  return (
+    <CookieBanner
+      legalCookiesUrl={APP_URLS.legal("cookies")}
+      onConsent={(consent) => {
+        void saveCookieConsent({
+          subjectKey: getConsentSubjectKey("guest"),
+          necessary: consent.necessary,
+          functional: consent.functional,
+        });
+      }}
+    />
+  );
+}
+
 const stayStatusLabel: Record<string, string> = {
   confirmed: "מאושרת",
   checked_in: "במלון",
 };
+
+const highlights: readonly { readonly title: string; readonly body: string }[] = [
+  {
+    title: "איתור שהייה מיידי",
+    body: "מייל אחד — וכל פרטי ההזמנה, החדר ותאריכי הצ׳ק-אין/אאוט מולכם.",
+  },
+  {
+    title: "שכבת AI חכמה",
+    body: "אותה תשתית שמפעילה את הצוות וההנהלה של הרשת, מותאמת לשירות האורח.",
+  },
+  {
+    title: "פרטיות ואבטחה תחילה",
+    body: "עמידה בתנאי שימוש, מדיניות עוגיות ופרטיות ברורים — לא רק תג משפטי.",
+  },
+];
 
 function readLegalDoc(): string | null {
   return new URLSearchParams(window.location.search).get("doc");
@@ -92,6 +123,7 @@ export function App() {
         >
           חזרה לאפליקציית אורחים
         </Button>
+        <GuestCookieBanner />
         <style>{`
           .legal{max-width:48rem;margin:0 auto;padding:clamp(1.5rem,4vw,3rem);display:grid;gap:var(--space-4)}
           .eyebrow{margin:0;letter-spacing:.08em;text-transform:uppercase;font-size:var(--text-small);color:var(--color-sea-deep);font-weight:700}
@@ -107,11 +139,23 @@ export function App() {
   return (
     <main className="shell">
       <section className="hero">
-        <p className="eyebrow">Guest · אורחים</p>
-        <h1>HotelOS AI</h1>
+        <p className="eyebrow">Guest App · HotelOS AI</p>
+        <h1>השהייה שלכם, חכמה יותר</h1>
         <p className="lede">
-          אפליקציה נפרדת לאורחים — צפו בשהייה, חדר ושירותים בלי לגשת לקבלה.
+          <strong>HotelOS AI</strong> היא שכבת האינטליגנציה של הרשת שלכם —
+          צפו בשהייה, בחדר ובשירותי המלון בזמן אמת, בלי לעמוד בתור בקבלה
+          ובלי אפליקציה נפרדת להתקין.
         </p>
+
+        <ul className="highlights">
+          {highlights.map((item) => (
+            <li key={item.title}>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </li>
+          ))}
+        </ul>
+
         <p className="apps">
           צוות: <a href={APP_URLS.admin}>Admin</a> · הנהלה:{" "}
           <a href={APP_URLS.executive}>Executive</a>
@@ -164,22 +208,17 @@ export function App() {
         ) : null}
       </section>
 
-      <CookieBanner
-        legalCookiesUrl={APP_URLS.legal("cookies")}
-        onConsent={(consent) => {
-          void saveCookieConsent({
-            subjectKey: `guest:${crypto.randomUUID()}`,
-            necessary: consent.necessary,
-            functional: consent.functional,
-          });
-        }}
-      />
+      <GuestCookieBanner />
 
       <style>{`
         .shell { min-height:100vh; display:grid; grid-template-columns:1.05fr .95fr; gap:var(--space-6); padding:clamp(1.5rem,4vw,4rem); align-items:center; }
         .eyebrow { margin:0 0 var(--space-3); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
         h1 { font-size:var(--text-display); margin:0; }
-        .lede { margin:var(--space-4) 0 0; max-width:34ch; color:var(--color-ink-soft); font-size:1.15rem; }
+        .lede { margin:var(--space-4) 0 0; max-width:40ch; color:var(--color-ink-soft); font-size:1.15rem; line-height:1.6; }
+        .highlights { list-style:none; margin:var(--space-5) 0 0; padding:0; display:grid; gap:var(--space-3); max-width:40ch; }
+        .highlights li { display:grid; gap:.2rem; }
+        .highlights h3 { margin:0; font-size:1rem; font-family:var(--font-display); color:var(--color-sea-deep); }
+        .highlights p { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); line-height:1.6; }
         .apps { margin-top:var(--space-4); font-size:var(--text-small); }
         .panel { background:rgb(255 250 242 / 88%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .15rem); box-shadow:var(--shadow-soft); padding:clamp(1.4rem,3vw,2.2rem); display:grid; gap:var(--space-5); }
         .form { display:grid; gap:var(--space-4); }

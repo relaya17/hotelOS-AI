@@ -794,5 +794,6 @@ export const APP_URLS = {
   executive: viteEnv["VITE_APP_URL_EXECUTIVE"] ?? "http://localhost:5173",
   admin: viteEnv["VITE_APP_URL_ADMIN"] ?? "http://localhost:5174",
   guest: guestAppUrl,
-  legal: (doc: string) => `${guestAppUrl}/?doc=${doc}`,
+  legal: (doc: "terms" | "cookies" | "security" | "privacy") =>
+    `${guestAppUrl}/?doc=${doc}`,
 } as const;

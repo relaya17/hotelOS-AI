@@ -9,6 +9,8 @@ export type UiMessageKey =
   | "nav.chat"
   | "nav.automations"
   | "nav.voice"
+  | "nav.attendance"
+  | "nav.trust"
   | "action.logout"
   | "action.openHotelOps"
   | "chat.title"
@@ -39,6 +41,8 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.chat": "צ׳אט עובדים",
     "nav.automations": "אוטומציות",
     "nav.voice": "סוכן קולי",
+    "nav.attendance": "נוכחות",
+    "nav.trust": "Trust · תשלומים",
     "action.logout": "התנתקות",
     "action.openHotelOps": "תפעול מלון",
     "chat.title": "צ׳אט פנימי לעובדים",
@@ -62,6 +66,8 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.chat": "Staff chat",
     "nav.automations": "Automations",
     "nav.voice": "Voice agent",
+    "nav.attendance": "Attendance",
+    "nav.trust": "Trust · Payments",
     "action.logout": "Sign out",
     "action.openHotelOps": "Hotel operations",
     "chat.title": "Internal staff chat",
@@ -85,6 +91,8 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.chat": "دردشة الموظفين",
     "nav.automations": "الأتمتة",
     "nav.voice": "الوكيل الصوتي",
+    "nav.attendance": "الحضور",
+    "nav.trust": "الثقة · المدفوعات",
     "action.logout": "تسجيل الخروج",
     "action.openHotelOps": "تشغيل الفندق",
     "chat.title": "دردشة الموظفين الداخلية",
@@ -108,6 +116,8 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.chat": "Чат сотрудников",
     "nav.automations": "Автоматизации",
     "nav.voice": "Голосовой агент",
+    "nav.attendance": "Посещаемость",
+    "nav.trust": "Trust · Платежи",
     "action.logout": "Выйти",
     "action.openHotelOps": "Операции отеля",
     "chat.title": "Внутренний чат сотрудников",
@@ -131,6 +141,8 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.chat": "Chat del personal",
     "nav.automations": "Automatizaciones",
     "nav.voice": "Agente de voz",
+    "nav.attendance": "Asistencia",
+    "nav.trust": "Trust · Pagos",
     "action.logout": "Cerrar sesión",
     "action.openHotelOps": "Operaciones del hotel",
     "chat.title": "Chat interno del personal",
@@ -154,6 +166,8 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.chat": "แชทพนักงาน",
     "nav.automations": "ระบบอัตโนมัติ",
     "nav.voice": "เอเจนต์เสียง",
+    "nav.attendance": "การลงเวลา",
+    "nav.trust": "Trust · การชำระเงิน",
     "action.logout": "ออกจากระบบ",
     "action.openHotelOps": "ปฏิบัติการโรงแรม",
     "chat.title": "แชทภายในพนักงาน",
@@ -177,6 +191,8 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.chat": "员工聊天",
     "nav.automations": "自动化",
     "nav.voice": "语音智能体",
+    "nav.attendance": "考勤",
+    "nav.trust": "Trust · 支付",
     "action.logout": "退出登录",
     "action.openHotelOps": "酒店运营",
     "chat.title": "内部员工聊天",
@@ -200,6 +216,8 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.chat": "स्टाफ चैट",
     "nav.automations": "ऑटोमेशन",
     "nav.voice": "वॉइस एजेंट",
+    "nav.attendance": "उपस्थिति",
+    "nav.trust": "Trust · भुगतान",
     "action.logout": "साइन आउट",
     "action.openHotelOps": "होटल संचालन",
     "chat.title": "आंतरिक स्टाफ चैट",
@@ -223,6 +241,8 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.chat": "Personel sohbeti",
     "nav.automations": "Otomasyonlar",
     "nav.voice": "Sesli ajan",
+    "nav.attendance": "Yoklama",
+    "nav.trust": "Trust · Ödemeler",
     "action.logout": "Çıkış yap",
     "action.openHotelOps": "Otel operasyonları",
     "chat.title": "Dahili personel sohbeti",
@@ -246,6 +266,8 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.chat": "Συνομιλία προσωπικού",
     "nav.automations": "Αυτοματισμοί",
     "nav.voice": "Φωνητικός πράκτορας",
+    "nav.attendance": "Παρουσία",
+    "nav.trust": "Trust · Πληρωμές",
     "action.logout": "Αποσύνδεση",
     "action.openHotelOps": "Λειτουργίες ξενοδοχείου",
     "chat.title": "Εσωτερική συνομιλία προσωπικού",

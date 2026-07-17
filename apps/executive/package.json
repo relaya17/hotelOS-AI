@@ -13,6 +13,7 @@
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@hotelos/features": "workspace:*",
     "@hotelos/i18n": "workspace:*",
     "@hotelos/ui": "workspace:*",
     "@hotelos/web-client": "workspace:*",

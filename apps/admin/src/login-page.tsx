@@ -3,6 +3,7 @@ import { Button, CookieBanner, TextField } from "@hotelos/ui";
 import {
   APP_URLS,
   login,
+  getConsentSubjectKey,
   loginWithGoogleDemo,
   saveCookieConsent,
   saveSession,
@@ -130,6 +131,8 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
             <a href={APP_URLS.legal("cookies")}>עוגיות</a>
             {" · "}
             <a href={APP_URLS.legal("security")}>אבטחה</a>
+            {" · "}
+            <a href={APP_URLS.legal("privacy")}>פרטיות</a>
           </p>
         </form>
       </section>
@@ -137,7 +140,7 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
         legalCookiesUrl={APP_URLS.legal("cookies")}
         onConsent={(consent) => {
           void saveCookieConsent({
-            subjectKey: `anon:${crypto.randomUUID()}`,
+            subjectKey: getConsentSubjectKey("anon"),
             necessary: consent.necessary,
             functional: consent.functional,
             tenantId: DEMO_TENANT_ID,
