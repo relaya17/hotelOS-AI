@@ -31,6 +31,18 @@ export function readAccessToken(): string | null {
   return sessionStorage.getItem(ACCESS_KEY);
 }
 
+export function readRefreshToken(): string | null {
+  return sessionStorage.getItem(REFRESH_KEY);
+}
+
+export function updateTokens(input: {
+  accessToken: string;
+  refreshToken: string;
+}): void {
+  sessionStorage.setItem(ACCESS_KEY, input.accessToken);
+  sessionStorage.setItem(REFRESH_KEY, input.refreshToken);
+}
+
 export function readStoredUser(): StoredUser | null {
   const raw = sessionStorage.getItem(USER_KEY);
   if (!raw) {

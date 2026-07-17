@@ -171,5 +171,29 @@ export function createAuthRoutes(deps: AuthRouteDeps): Hono {
     }
   });
 
+  routes.post("/logout", async (c) => {
+    try {
+      const body = refreshSchema.parse(await c.req.json());
+      const tokenHash = deps.tokens.hashRefreshToken(body.refreshToken);
+      const session = await deps.sessions.findActiveByTokenHash(tokenHash);
+      if (session) {
+        await deps.sessions.revoke(session.id, new Date().toISOString());
+        await deps.audit.append({
+          id: randomUUID(),
+          tenantId: session.tenantId,
+          actorUserId: session.userId,
+          action: "auth.logout",
+          resourceType: "refresh_session",
+          resourceId: session.id,
+          metadata: {},
+          createdAt: new Date().toISOString(),
+        });
+      }
+      return c.json({ data: { ok: true } });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
   return routes;
 }

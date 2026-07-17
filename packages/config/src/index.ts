@@ -27,6 +27,11 @@ const envSchema = z.object({
     .string()
     .optional()
     .default("http://localhost:3001/v1/trust/oauth/google/callback"),
+  /** Where the browser lands after a successful Google OAuth callback */
+  GOOGLE_POST_LOGIN_REDIRECT: z
+    .string()
+    .optional()
+    .default("http://localhost:5173/"),
   WEBAUTHN_RP_ID: z.string().optional().default("localhost"),
   WEBAUTHN_RP_NAME: z.string().optional().default("HotelOS AI"),
 });

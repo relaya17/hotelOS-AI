@@ -4,8 +4,10 @@ import { Button, CookieBanner } from "@hotelos/ui";
 import {
   APP_URLS,
   clearSession,
+  consumeOAuthRedirectHash,
   fetchMe,
   getConsentSubjectKey,
+  logout,
   readAccessToken,
   readStoredUser,
   saveCookieConsent,
@@ -24,6 +26,15 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
     async function restore() {
+      const fromOAuth = consumeOAuthRedirectHash();
+      if (fromOAuth) {
+        if (!cancelled) {
+          setUser(fromOAuth);
+          setBooting(false);
+        }
+        return;
+      }
+
       const token = readAccessToken();
       const stored = readStoredUser();
       if (!token || !stored) {
@@ -86,9 +97,10 @@ export function App() {
             type="button"
             variant="ghost"
             onClick={() => {
-              clearSession();
-              setUser(null);
-              setView("ops");
+              void logout().then(() => {
+                setUser(null);
+                setView("ops");
+              });
             }}
           >
             התנתקות

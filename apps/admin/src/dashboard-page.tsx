@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button, TextField } from "@hotelos/ui";
 import {
   APP_URLS,
-  clearSession,
+  logout,
   createBooking,
   listBookings,
   listHotels,
@@ -185,8 +185,7 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
             variant="ghost"
             type="button"
             onClick={() => {
-              clearSession();
-              onLogout();
+              void logout().then(onLogout);
             }}
           >
             התנתקות

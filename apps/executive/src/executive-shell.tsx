@@ -9,8 +9,8 @@ import { AttendancePage, LegalFooter } from "@hotelos/features";
 import { Button, CookieBanner } from "@hotelos/ui";
 import {
   APP_URLS,
-  clearSession,
   getConsentSubjectKey,
+  logout,
   saveCookieConsent,
   type StoredUser,
 } from "@hotelos/web-client";
@@ -113,8 +113,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
             variant="ghost"
             type="button"
             onClick={() => {
-              clearSession();
-              onLogout();
+              void logout().then(onLogout);
             }}
           >
             {tUi(locale, "action.logout")}

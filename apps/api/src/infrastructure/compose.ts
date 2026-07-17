@@ -96,6 +96,7 @@ export async function composeApp() {
       googleClientId: env.GOOGLE_CLIENT_ID,
       googleClientSecret: env.GOOGLE_CLIENT_SECRET,
       googleRedirectUri: env.GOOGLE_REDIRECT_URI,
+      googlePostLoginRedirect: env.GOOGLE_POST_LOGIN_REDIRECT,
       webauthnRpId: env.WEBAUTHN_RP_ID,
       webauthnRpName: env.WEBAUTHN_RP_NAME,
     },

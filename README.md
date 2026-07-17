@@ -81,7 +81,9 @@ pnpm dev
 | Password | `HotelOS-Demo-ChangeMe1!` |
 | Tenant ID | `11111111-1111-4111-8111-111111111111` |
 
-כפתור **המשך עם Google (צוות)** — דמו ללא `GOOGLE_CLIENT_ID` (מקשר זהות ומנפיק סשן למשתמש קיים). עם מפתחות אמיתיים: `GET /v1/trust/oauth/google/start`.
+כפתור **המשך עם Google (צוות)** — בלי מפתחות: דמו מקומי; עם `GOOGLE_CLIENT_ID`/`SECRET`: OAuth מלא (`/start` → `/callback` → חזרה ל־Executive).  
+**התחברות באצבע/פנים** — אחרי רישום ביומטרי במסך Trust.  
+סשן: רענון JWT אוטומטי ב־401 · `POST /v1/auth/logout` מבטל refresh בשרת.
 
 ### אורח (Guest)
 
@@ -200,9 +202,8 @@ CORS: מקורות ב־`CORS_ORIGINS` (ברירת מחדל — שלוש האפל
 | [`docs/adr/0005-trust-compliance-attendance.md`](docs/adr/0005-trust-compliance-attendance.md) | Trust, Google, נוכחות |
 | [`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md) | libSQL/Turso לפריסה |
 | [`docs/deployment/vercel.md`](docs/deployment/vercel.md) | פריסת 4 פרויקטי Vercel |
-| [`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md) | מעבר ל-libSQL/Turso לפריסה |
-| [`docs/deployment/vercel.md`](docs/deployment/vercel.md) | מדריך פריסה ל-Vercel |
 | [`docs/planning/employee-hr-module.md`](docs/planning/employee-hr-module.md) | תכנון: הרשמה עצמית לעובדים, מבחני יכולת, תעודת יושר |
+| [`docs/planning/facilities-ops-module.md`](docs/planning/facilities-ops-module.md) | תכנון: תפעול ורכש, קבלנים, מלאי, פידבק אורחים, דשבורד הנהלה |
 
 ## רישיון / סטטוס
 

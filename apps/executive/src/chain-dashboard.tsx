@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@hotelos/ui";
 import {
   APP_URLS,
-  clearSession,
+  logout,
   fetchChainOverview,
   type ChainOverviewDto,
   type StoredUser,
@@ -87,8 +87,7 @@ export function ChainDashboard({
               variant="ghost"
               type="button"
               onClick={() => {
-                clearSession();
-                onLogout();
+                void logout().then(onLogout);
               }}
             >
               התנתקות

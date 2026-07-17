@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from "react";
+import { staffGoogleLogin, staffWebAuthnLogin } from "@hotelos/features";
 import { Button, CookieBanner, TextField } from "@hotelos/ui";
 import {
   APP_URLS,
   login,
   getConsentSubjectKey,
-  loginWithGoogleDemo,
   saveCookieConsent,
   saveSession,
   type StoredUser,
@@ -61,18 +61,39 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
     }
   }
 
-  async function onGoogleDemo() {
+  async function onGoogle() {
     setLoading(true);
     setError(undefined);
     try {
-      const result = await loginWithGoogleDemo({
+      const result = await staffGoogleLogin({
+        tenantId: DEMO_TENANT_ID,
+        email,
+      });
+      if (result === "redirecting") return;
+      persistLogin(result);
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error ? submitError.message : "Google login failed",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onWebAuthn() {
+    setLoading(true);
+    setError(undefined);
+    try {
+      const result = await staffWebAuthnLogin({
         tenantId: DEMO_TENANT_ID,
         email,
       });
       persistLogin(result);
     } catch (submitError) {
       setError(
-        submitError instanceof Error ? submitError.message : "Google login failed",
+        submitError instanceof Error
+          ? submitError.message
+          : "Biometric login failed",
       );
     } finally {
       setLoading(false);
@@ -120,10 +141,20 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
             variant="ghost"
             disabled={loading}
             onClick={() => {
-              void onGoogleDemo();
+              void onGoogle();
             }}
           >
             המשך עם Google (צוות)
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={loading}
+            onClick={() => {
+              void onWebAuthn();
+            }}
+          >
+            התחברות באצבע / פנים
           </Button>
           <p className="legal">
             <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>

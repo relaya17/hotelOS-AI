@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   clearSession,
+  consumeOAuthRedirectHash,
   fetchMe,
   readAccessToken,
   readStoredUser,
@@ -16,6 +17,15 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
     async function restore() {
+      const fromOAuth = consumeOAuthRedirectHash();
+      if (fromOAuth) {
+        if (!cancelled) {
+          setUser(fromOAuth);
+          setBooting(false);
+        }
+        return;
+      }
+
       const token = readAccessToken();
       const stored = readStoredUser();
       if (!token || !stored) {

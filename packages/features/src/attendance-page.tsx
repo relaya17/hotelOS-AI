@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, SignaturePad } from "@hotelos/ui";
 import {
+  assertWebAuthnForSession,
   clockAttendance,
   createDigitalSignature,
   enrollVoiceSample,
@@ -125,6 +126,8 @@ export function AttendancePage() {
         // geo optional on desktop
       }
 
+      const webauthn = await assertWebAuthnForSession();
+
       const result = await clockAttendance({
         employeeId,
         hotelId,
@@ -137,10 +140,16 @@ export function AttendancePage() {
         ...(latitude !== undefined ? { latitude } : {}),
         ...(longitude !== undefined ? { longitude } : {}),
         ...(accuracyMeters !== undefined ? { accuracyMeters } : {}),
+        ...(webauthn
+          ? {
+              webauthnCredentialId: webauthn.credentialId,
+              webauthnChallenge: webauthn.challenge,
+            }
+          : {}),
       });
 
       setLastMessage(
-        `${eventType === "clock_in" ? "כניסה" : "יציאה"} נרשמה · voice=${String(result.voiceVerified)} · geo=${result.latitude !== null ? "yes" : "no"}`,
+        `${eventType === "clock_in" ? "כניסה" : "יציאה"} נרשמה · voice=${String(result.voiceVerified)} · biometric=${String(result.webauthnVerified)} · geo=${result.latitude !== null ? "yes" : "no"}`,
       );
       await reload();
     } catch (clockError) {

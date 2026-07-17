@@ -1,4 +1,11 @@
-import { clearSession, readAccessToken } from "./session.js";
+import {
+  clearSession,
+  readAccessToken,
+  readRefreshToken,
+  saveSession,
+  updateTokens,
+  type StoredUser,
+} from "./session.js";
 
 // import.meta.env is only populated inside Vite builds (all three frontend
 // apps). Falls back to the local dev API port when unset, so this keeps
@@ -177,22 +184,85 @@ function toErrorMessage(payload: unknown, fallback: string): string {
   return fallback;
 }
 
-async function authGet(path: string): Promise<unknown> {
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function tryRefreshSession(): Promise<boolean> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    const refreshToken = readRefreshToken();
+    if (!refreshToken) return false;
+    try {
+      const response = await fetch(`${API_BASE}/v1/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+      const payload = (await parseJson(response)) as {
+        accessToken?: string;
+        refreshToken?: string;
+      };
+      if (
+        !response.ok ||
+        typeof payload.accessToken !== "string" ||
+        typeof payload.refreshToken !== "string"
+      ) {
+        return false;
+      }
+      updateTokens({
+        accessToken: payload.accessToken,
+        refreshToken: payload.refreshToken,
+      });
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+async function authedFetch(
+  path: string,
+  init: RequestInit = {},
+): Promise<{ response: Response; payload: unknown }> {
   const token = readAccessToken();
   if (!token) {
     throw new Error("Missing session");
   }
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const payload = await parseJson(response);
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+  let response = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  let payload = await parseJson(response);
+
   if (response.status === 401) {
-    clearSession();
-    throw new Error("Session expired");
+    const refreshed = await tryRefreshSession();
+    if (!refreshed) {
+      clearSession();
+      throw new Error("Session expired");
+    }
+    const nextToken = readAccessToken();
+    if (!nextToken) {
+      clearSession();
+      throw new Error("Session expired");
+    }
+    headers.set("Authorization", `Bearer ${nextToken}`);
+    response = await fetch(`${API_BASE}${path}`, { ...init, headers });
+    payload = await parseJson(response);
+    if (response.status === 401) {
+      clearSession();
+      throw new Error("Session expired");
+    }
   }
+
   if (!response.ok) {
     throw new Error(toErrorMessage(payload, "Request failed"));
   }
+  return { response, payload };
+}
+
+async function authGet(path: string): Promise<unknown> {
+  const { payload } = await authedFetch(path);
   return payload;
 }
 
@@ -213,8 +283,62 @@ export async function login(input: {
   return payload as LoginResponse;
 }
 
+export async function logout(): Promise<void> {
+  const refreshToken = readRefreshToken();
+  try {
+    if (refreshToken) {
+      await fetch(`${API_BASE}/v1/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+    }
+  } finally {
+    clearSession();
+  }
+}
+
 export async function fetchMe(): Promise<LoginResponse["user"]> {
   return (await authGet("/v1/auth/me")) as LoginResponse["user"];
+}
+
+/** Consume Google OAuth redirect hash (`#hotelos_oauth=...`) written by the API callback. */
+export function consumeOAuthRedirectHash(): StoredUser | null {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (!hash.startsWith("hotelos_oauth=")) return null;
+  try {
+    const encoded = hash.slice("hotelos_oauth=".length);
+    const padded = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
+    const json = atob(padded + pad);
+    const payload = JSON.parse(json) as LoginResponse;
+    if (
+      typeof payload.accessToken !== "string" ||
+      typeof payload.refreshToken !== "string" ||
+      !payload.user
+    ) {
+      return null;
+    }
+    const user: StoredUser = {
+      id: payload.user.id,
+      email: payload.user.email,
+      displayName: payload.user.displayName,
+      roles: payload.user.roles,
+      tenantId: payload.user.scope.tenantId,
+      ...(payload.user.scope.hotelId !== undefined
+        ? { hotelId: payload.user.scope.hotelId }
+        : {}),
+    };
+    saveSession({
+      accessToken: payload.accessToken,
+      refreshToken: payload.refreshToken,
+      user,
+    });
+    window.history.replaceState({}, "", window.location.pathname);
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchChainOverview(): Promise<ChainOverviewDto> {
@@ -256,26 +380,11 @@ export async function createBooking(
     status?: "confirmed" | "checked_in";
   },
 ): Promise<BookingDto> {
-  const token = readAccessToken();
-  if (!token) {
-    throw new Error("Missing session");
-  }
-  const response = await fetch(`${API_BASE}/v1/hotels/${hotelId}/bookings`, {
+  const { payload } = await authedFetch(`/v1/hotels/${hotelId}/bookings`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  const payload = await parseJson(response);
-  if (response.status === 401) {
-    clearSession();
-    throw new Error("Session expired");
-  }
-  if (!response.ok) {
-    throw new Error(toErrorMessage(payload, "Failed to create booking"));
-  }
   const body = payload as { data?: BookingDto };
   if (!body.data) {
     throw new Error("Invalid create booking response");
@@ -301,29 +410,14 @@ export async function lookupGuestStay(email: string): Promise<readonly GuestStay
 }
 
 async function authPost(path: string, body?: unknown): Promise<unknown> {
-  const token = readAccessToken();
-  if (!token) {
-    throw new Error("Missing session");
-  }
   const init: RequestInit = {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
   };
   if (body !== undefined) {
     init.body = JSON.stringify(body);
   }
-  const response = await fetch(`${API_BASE}${path}`, init);
-  const payload = await parseJson(response);
-  if (response.status === 401) {
-    clearSession();
-    throw new Error("Session expired");
-  }
-  if (!response.ok) {
-    throw new Error(toErrorMessage(payload, "Request failed"));
-  }
+  const { payload } = await authedFetch(path, init);
   return payload;
 }
 
@@ -670,6 +764,149 @@ export async function loginWithGoogleDemo(input: {
   return payload as LoginResponse;
 }
 
+export async function startGoogleOAuth(tenantId: string): Promise<
+  | { readonly mode: "demo"; readonly demoEndpoint: string }
+  | { readonly mode: "oauth"; readonly url: string }
+> {
+  const response = await fetch(
+    `${API_BASE}/v1/trust/oauth/google/start?tenantId=${encodeURIComponent(tenantId)}`,
+  );
+  const payload = (await parseJson(response)) as {
+    data?: {
+      mode?: string;
+      url?: string;
+      demoEndpoint?: string;
+    };
+  };
+  if (!response.ok || !payload.data) {
+    throw new Error("Failed to start Google OAuth");
+  }
+  if (payload.data.mode === "oauth" && typeof payload.data.url === "string") {
+    return { mode: "oauth", url: payload.data.url };
+  }
+  return {
+    mode: "demo",
+    demoEndpoint: payload.data.demoEndpoint ?? "/v1/trust/oauth/google/demo",
+  };
+}
+
+function bufferToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlToBuffer(value: string): Uint8Array<ArrayBuffer> {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
+  const binary = atob(padded + pad);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+export async function createWebAuthnLoginChallenge(input: {
+  tenantId: string;
+  email: string;
+}): Promise<{
+  readonly challenge: string;
+  readonly allowCredentials: readonly string[];
+  readonly rpId: string;
+}> {
+  const response = await fetch(`${API_BASE}/v1/trust/webauthn/login-challenge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const payload = (await parseJson(response)) as {
+    data?: {
+      challenge: string;
+      allowCredentials: string[];
+      rpId: string;
+    };
+  };
+  if (!response.ok || !payload.data) {
+    throw new Error(toErrorMessage(payload, "WebAuthn login challenge failed"));
+  }
+  return payload.data;
+}
+
+export async function assertWebAuthnLogin(input: {
+  tenantId: string;
+  credentialId: string;
+  challenge: string;
+  clientDataJSON: string;
+}): Promise<LoginResponse> {
+  const response = await fetch(`${API_BASE}/v1/trust/webauthn/assert`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "WebAuthn login failed"));
+  }
+  return payload as LoginResponse;
+}
+
+export async function loginWithWebAuthn(input: {
+  tenantId: string;
+  email: string;
+}): Promise<LoginResponse> {
+  if (!window.PublicKeyCredential) {
+    throw new Error("המכשיר לא תומך ב־WebAuthn");
+  }
+  const challenge = await createWebAuthnLoginChallenge(input);
+  const credential = (await navigator.credentials.get({
+    publicKey: {
+      challenge: base64UrlToBuffer(challenge.challenge),
+      rpId: challenge.rpId,
+      allowCredentials: challenge.allowCredentials.map((id) => ({
+        type: "public-key" as const,
+        id: base64UrlToBuffer(id),
+      })),
+      userVerification: "required",
+      timeout: 60_000,
+    },
+  })) as PublicKeyCredential | null;
+  if (!credential) {
+    throw new Error("בוטלה התחברות ביומטרית");
+  }
+  const response = credential.response as AuthenticatorAssertionResponse;
+  return assertWebAuthnLogin({
+    tenantId: input.tenantId,
+    credentialId: bufferToBase64Url(credential.rawId),
+    challenge: challenge.challenge,
+    clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+  });
+}
+
+export async function assertWebAuthnForSession(): Promise<{
+  readonly credentialId: string;
+  readonly challenge: string;
+} | null> {
+  if (!window.PublicKeyCredential) return null;
+  try {
+    const challenge = await createWebAuthnChallenge("assert");
+    const credential = (await navigator.credentials.get({
+      publicKey: {
+        challenge: base64UrlToBuffer(challenge.challenge),
+        rpId: challenge.rp.id,
+        userVerification: "required",
+        timeout: 60_000,
+      },
+    })) as PublicKeyCredential | null;
+    if (!credential) return null;
+    return {
+      credentialId: bufferToBase64Url(credential.rawId),
+      challenge: challenge.challenge,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function createPaymentIntent(input: {
   amountMinor: number;
   currency?: string;
@@ -777,6 +1014,8 @@ export async function clockAttendance(input: {
   deviceLabel?: string;
   signatureId?: string;
   voiceSampleBase64?: string;
+  webauthnCredentialId?: string;
+  webauthnChallenge?: string;
   note?: string;
 }): Promise<AttendanceEventDto & { voiceVerified: boolean; webauthnVerified: boolean }> {
   const payload = (await authPost("/v1/trust/attendance/clock", input)) as {
