@@ -41,10 +41,19 @@
 
 ### סוכנים חכמים
 
-קטלוג מתוך Engineering Standard (Vol. 11), כולל: CEO, CFO, Revenue, Housekeeping, Reception, HR, Marketing, Guest, Concierge, Analytics, Sales ועוד.  
-ניתן לשתף סוכן לתוך חדר בריפינג (למשל ועדת כספים + סוכן CFO).
+קטלוג מתוך Engineering Standard ([Vol. 11](docs/engineering-standard/11-ai-agents/README.md)) + [ADR 0007](docs/adr/0007-cio-orchestrator-kashrut-org-comms.md):
 
-דמו מוכן: **ועדת כספים — רבעון נוכחי**.
+| שכבה | תפקיד |
+|------|--------|
+| **CIO Orchestrator** (`agent.cio`) | יועץ־על בחזית: כספים, אסטרטגיה, התראות חריגה/גניבה, תדריך יומי לכל דרג, מודיעין Trusted — מתזמר מומחים (לא מחליף אותם) |
+| **מומחים** | CEO, CFO, Revenue, Housekeeping, Reception, HR, Marketing, Guest, Concierge, Analytics, Sales, Legal, … |
+| **משגיח כשרות** (`agent.kashrut`) | מושב תמידי במלונות כשרים — הערה / אזהרה / חסימה על F&B, רכש מזון ואירועים; מחובר ל־F&B + הנהלה |
+| **Org Comms** | ערוצים ישירים: בעלים ↔ מנכ״ל · מנכ״ל ↔ יח״צ / HR / F&B / חדרים+משק / קבלה / … · נתיב כשרות נפרד |
+
+ניתן לשתף סוכן לתוך חדר בריפינג (למשל ועדת כספים + CFO, או בריפינג בוקר + CIO + משגיח כשרות).
+
+דמו מוכן: **ועדת כספים — רבעון נוכחי**.  
+מימוש מלא של CIO / Kashrut / Org Comms — לפי Roadmap P6+; המפרט כבר בריפו.
 
 ### הקלטות פגישות (HotelOS Meet)
 

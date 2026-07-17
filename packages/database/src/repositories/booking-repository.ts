@@ -56,6 +56,17 @@ export type BookingRepository = {
     hotelId: HotelId,
   ) => Promise<readonly PersistedBooking[]>;
   create: (input: CreateBookingInput) => Promise<PersistedBooking>;
+  findByIdInHotel: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    bookingId: BookingId,
+  ) => Promise<PersistedBooking | null>;
+  updateStatus: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    bookingId: BookingId,
+    status: BookingStatus,
+  ) => Promise<PersistedBooking | null>;
   findRoomInHotel: (
     tenantId: TenantId,
     hotelId: HotelId,
@@ -133,6 +144,77 @@ export function createBookingRepository(db: HotelOsDb): BookingRepository {
         .all();
 
       return rows.map((row) => mapBooking(row.booking, row.roomNumber));
+    },
+
+    async findByIdInHotel(tenantId, hotelId, bookingId) {
+      const row = await db
+        .select({
+          booking: bookings,
+          roomNumber: rooms.number,
+        })
+        .from(bookings)
+        .innerJoin(rooms, eq(bookings.roomId, rooms.id))
+        .where(
+          and(
+            eq(bookings.id, bookingId),
+            eq(bookings.hotelId, hotelId),
+            eq(bookings.tenantId, tenantId),
+          ),
+        )
+        .get();
+      if (!row) {
+        return null;
+      }
+      return mapBooking(row.booking, row.roomNumber);
+    },
+
+    async updateStatus(tenantId, hotelId, bookingId, status) {
+      const existing = await db
+        .select({
+          booking: bookings,
+          roomNumber: rooms.number,
+        })
+        .from(bookings)
+        .innerJoin(rooms, eq(bookings.roomId, rooms.id))
+        .where(
+          and(
+            eq(bookings.id, bookingId),
+            eq(bookings.hotelId, hotelId),
+            eq(bookings.tenantId, tenantId),
+          ),
+        )
+        .get();
+      if (!existing) {
+        return null;
+      }
+
+      await db
+        .update(bookings)
+        .set({ status })
+        .where(
+          and(
+            eq(bookings.id, bookingId),
+            eq(bookings.hotelId, hotelId),
+            eq(bookings.tenantId, tenantId),
+          ),
+        )
+        .run();
+
+      if (status === "checked_in") {
+        await db
+          .update(rooms)
+          .set({ status: "occupied" })
+          .where(eq(rooms.id, existing.booking.roomId))
+          .run();
+      } else if (status === "checked_out") {
+        await db
+          .update(rooms)
+          .set({ status: "dirty" })
+          .where(eq(rooms.id, existing.booking.roomId))
+          .run();
+      }
+
+      return mapBooking({ ...existing.booking, status }, existing.roomNumber);
     },
 
     async create(input) {

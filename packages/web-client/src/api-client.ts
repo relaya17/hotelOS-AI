@@ -392,6 +392,38 @@ export async function createBooking(
   return body.data;
 }
 
+export async function updateRoomStatus(
+  hotelId: string,
+  roomId: string,
+  status: RoomDto["status"],
+): Promise<RoomDto> {
+  const payload = (await authPatch(
+    `/v1/hotels/${hotelId}/rooms/${roomId}/status`,
+    { status },
+  )) as { data: RoomDto };
+  return payload.data;
+}
+
+export async function updateBookingTransition(
+  hotelId: string,
+  bookingId: string,
+  transition: "check_in" | "check_out",
+): Promise<BookingDto> {
+  const { payload } = await authedFetch(
+    `/v1/hotels/${hotelId}/bookings/${bookingId}/status`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transition }),
+    },
+  );
+  const body = payload as { data?: BookingDto };
+  if (!body.data) {
+    throw new Error("Invalid booking status response");
+  }
+  return body.data;
+}
+
 export async function lookupGuestStay(email: string): Promise<readonly GuestStayDto[]> {
   const response = await fetch(`${API_BASE}/v1/public/stays/lookup`, {
     method: "POST",
@@ -405,6 +437,26 @@ export async function lookupGuestStay(email: string): Promise<readonly GuestStay
   const body = payload as { data?: GuestStayDto[] };
   if (!Array.isArray(body.data)) {
     throw new Error("Invalid lookup response");
+  }
+  return body.data;
+}
+
+export async function checkInGuestStay(input: {
+  readonly email: string;
+  readonly bookingId: string;
+}): Promise<GuestStayDto> {
+  const response = await fetch(`${API_BASE}/v1/public/stays/check-in`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Check-in failed"));
+  }
+  const body = payload as { data?: GuestStayDto };
+  if (!body.data) {
+    throw new Error("Invalid check-in response");
   }
   return body.data;
 }

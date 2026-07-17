@@ -9,7 +9,7 @@ import {
   type GuestStayDto,
   type LegalDocDetail,
 } from "@hotelos/web-client";
-import { FeedbackForm } from "./feedback-form.js";
+import { StayHub } from "./stay-hub.js";
 
 function GuestCookieBanner() {
   return (
@@ -25,11 +25,6 @@ function GuestCookieBanner() {
     />
   );
 }
-
-const stayStatusLabel: Record<string, string> = {
-  confirmed: "מאושרת",
-  checked_in: "במלון",
-};
 
 const highlights: readonly { readonly title: string; readonly body: string }[] = [
   {
@@ -50,6 +45,33 @@ function readLegalDoc(): string | null {
   return new URLSearchParams(window.location.search).get("doc");
 }
 
+function SiteFooter() {
+  return (
+    <footer className="site-footer">
+      <p className="site-footer__legal">
+        <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
+        {" · "}
+        <a href={APP_URLS.legal("cookies")}>עוגיות</a>
+        {" · "}
+        <a href={APP_URLS.legal("security")}>אבטחה</a>
+        {" · "}
+        <a href={APP_URLS.legal("privacy")}>פרטיות</a>
+      </p>
+      <p className="site-footer__staff">
+        <a href={APP_URLS.admin}>צוות</a>
+        {" · "}
+        <a href={APP_URLS.executive}>הנהלה</a>
+      </p>
+      <style>{`
+        .site-footer { margin-top:auto; padding-top:var(--space-6); display:grid; gap:var(--space-2); font-size:var(--text-small); color:var(--color-ink-soft); }
+        .site-footer p { margin:0; }
+        .site-footer__staff { opacity:.55; font-size:.8rem; }
+        .site-footer a { color:inherit; }
+      `}</style>
+    </footer>
+  );
+}
+
 export function App() {
   const [legalId, setLegalId] = useState<string | null>(readLegalDoc);
   const [legalDoc, setLegalDoc] = useState<LegalDocDetail | null>(null);
@@ -57,7 +79,7 @@ export function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [stays, setStays] = useState<readonly GuestStayDto[] | null>(null);
-  const [feedbackBookingId, setFeedbackBookingId] = useState<string | null>(null);
+  const [selectedStayIndex, setSelectedStayIndex] = useState(0);
 
   useEffect(() => {
     if (!legalId) {
@@ -88,6 +110,7 @@ export function App() {
     try {
       const data = await lookupGuestStay(email);
       setStays(data);
+      setSelectedStayIndex(0);
       if (data.length === 0) {
         setError("לא נמצאה שהייה פעילה לאימייל זה");
       }
@@ -100,6 +123,23 @@ export function App() {
       setLoading(false);
     }
   }
+
+  function handleStayUpdated(updated: GuestStayDto) {
+    setStays((current) => {
+      if (!current) return current;
+      return current.map((item) =>
+        item.bookingId === updated.bookingId ? updated : item,
+      );
+    });
+  }
+
+  function handleSearchAgain() {
+    setStays(null);
+    setError(undefined);
+    setSelectedStayIndex(0);
+  }
+
+  const hasStay = stays !== null && stays.length > 0;
 
   if (legalDoc) {
     return (
@@ -139,95 +179,74 @@ export function App() {
   }
 
   return (
-    <main className="shell">
-      <section className="hero">
-        <p className="eyebrow">Guest App · HotelOS AI</p>
-        <h1>השהייה שלכם, חכמה יותר</h1>
-        <p className="lede">
-          <strong>HotelOS AI</strong> היא שכבת האינטליגנציה של הרשת שלכם —
-          צפו בשהייה, בחדר ובשירותי המלון בזמן אמת, בלי לעמוד בתור בקבלה
-          ובלי אפליקציה נפרדת להתקין.
-        </p>
+    <main className={`shell${hasStay ? " shell--stay" : ""}`}>
+      {!hasStay ? (
+        <section className="hero">
+          <p className="eyebrow">Guest App · HotelOS AI</p>
+          <h1>השהייה שלכם, חכמה יותר</h1>
+          <p className="lede">
+            <strong>HotelOS AI</strong> היא שכבת האינטליגנציה של הרשת שלכם —
+            צפו בשהייה, בחדר ובשירותי המלון בזמן אמת, בלי לעמוד בתור בקבלה
+            ובלי אפליקציה נפרדת להתקין.
+          </p>
 
-        <ul className="highlights">
-          {highlights.map((item) => (
-            <li key={item.title}>
-              <h3>{item.title}</h3>
-              <p>{item.body}</p>
-            </li>
-          ))}
-        </ul>
-
-        <p className="apps">
-          צוות: <a href={APP_URLS.admin}>Admin</a> · הנהלה:{" "}
-          <a href={APP_URLS.executive}>Executive</a>
-        </p>
-        <p className="apps">
-          <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
-          {" · "}
-          <a href={APP_URLS.legal("cookies")}>עוגיות</a>
-          {" · "}
-          <a href={APP_URLS.legal("security")}>אבטחה</a>
-          {" · "}
-          <a href={APP_URLS.legal("privacy")}>פרטיות</a>
-        </p>
-      </section>
-
-      <section className="panel">
-        <form className="form" onSubmit={onSubmit} noValidate>
-          <h2>השהייה שלי</h2>
-          <TextField
-            label="אימייל בהזמנה"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-            {...(error !== undefined ? { error } : {})}
-          />
-          <Button type="submit" disabled={loading}>
-            {loading ? "מחפש…" : "מצא שהייה"}
-          </Button>
-        </form>
-
-        {stays && stays.length > 0 ? (
-          <ul className="stays">
-            {stays.map((stay) => (
-              <li key={stay.bookingId} className="stay">
-                <h3>{stay.hotelName}</h3>
-                <p>
-                  שלום {stay.guestName} · חדר {stay.roomNumber}
-                </p>
-                <p>
-                  {stay.checkInDate} → {stay.checkOutDate}
-                </p>
-                <span className="badge">
-                  {stayStatusLabel[stay.status] ?? stay.status}
-                </span>
-                {feedbackBookingId === stay.bookingId ? (
-                  <FeedbackForm
-                    bookingId={stay.bookingId}
-                    onDone={() => setFeedbackBookingId(null)}
-                  />
-                ) : (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setFeedbackBookingId(stay.bookingId)}
-                  >
-                    השאירו משוב על השהייה
-                  </Button>
-                )}
+          <ul className="highlights">
+            {highlights.map((item) => (
+              <li key={item.title}>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
               </li>
             ))}
           </ul>
-        ) : null}
+        </section>
+      ) : null}
+
+      <section className="panel">
+        {hasStay ? (
+          <StayHub
+            email={email}
+            stays={stays}
+            selectedIndex={selectedStayIndex}
+            onSelectStay={setSelectedStayIndex}
+            onStayUpdated={handleStayUpdated}
+            onSearchAgain={handleSearchAgain}
+          />
+        ) : (
+          <form className="form" onSubmit={onSubmit} noValidate>
+            <h2>השהייה שלי</h2>
+            <p className="form-lede">
+              הזינו את האימייל שבו נעשה ההזמנה — ונציג את פרטי השהייה.
+            </p>
+            <TextField
+              label="אימייל בהזמנה"
+              name="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              {...(error !== undefined ? { error } : {})}
+            />
+            <Button type="submit" disabled={loading}>
+              {loading ? "מחפש…" : "מצא שהייה"}
+            </Button>
+          </form>
+        )}
       </section>
 
+      <SiteFooter />
       <GuestCookieBanner />
 
       <style>{`
-        .shell { min-height:100vh; display:grid; grid-template-columns:1.05fr .95fr; gap:var(--space-6); padding:clamp(1.5rem,4vw,4rem); align-items:center; }
+        .shell {
+          min-height:100vh;
+          display:grid;
+          grid-template-columns:1.05fr .95fr;
+          gap:var(--space-6);
+          padding:clamp(1.5rem,4vw,4rem);
+          padding-bottom:clamp(5rem,12vw,7rem);
+          align-items:start;
+        }
+        .shell--stay { grid-template-columns:1fr; max-width:42rem; margin-inline:auto; width:100%; }
         .eyebrow { margin:0 0 var(--space-3); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
         h1 { font-size:var(--text-display); margin:0; }
         .lede { margin:var(--space-4) 0 0; max-width:40ch; color:var(--color-ink-soft); font-size:1.15rem; line-height:1.6; }
@@ -235,15 +254,10 @@ export function App() {
         .highlights li { display:grid; gap:.2rem; }
         .highlights h3 { margin:0; font-size:1rem; font-family:var(--font-display); color:var(--color-sea-deep); }
         .highlights p { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); line-height:1.6; }
-        .apps { margin-top:var(--space-4); font-size:var(--text-small); }
         .panel { background:rgb(255 250 242 / 88%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .15rem); box-shadow:var(--shadow-soft); padding:clamp(1.4rem,3vw,2.2rem); display:grid; gap:var(--space-5); }
         .form { display:grid; gap:var(--space-4); }
         .form h2 { margin:0; font-size:var(--text-title); }
-        .stays { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
-        .stay { padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); display:grid; gap:var(--space-2); }
-        .stay h3 { margin:0; font-family:var(--font-display); }
-        .stay p { margin:0; color:var(--color-ink-soft); }
-        .badge { justify-self:start; font-size:var(--text-small); font-weight:700; color:var(--color-sea-deep); background:rgb(15 106 92 / 12%); padding:.35rem .7rem; border-radius:999px; }
+        .form-lede { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); line-height:1.6; }
         @media (max-width:900px){ .shell{ grid-template-columns:1fr; } }
       `}</style>
     </main>

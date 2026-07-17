@@ -1,11 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { staffGoogleLogin, staffWebAuthnLogin } from "@hotelos/features";
-import { Button, CookieBanner, TextField } from "@hotelos/ui";
+import { Button, TextField } from "@hotelos/ui";
 import {
   APP_URLS,
   login,
-  getConsentSubjectKey,
-  saveCookieConsent,
   saveSession,
   type StoredUser,
 } from "@hotelos/web-client";
@@ -167,17 +165,6 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
           </p>
         </form>
       </section>
-      <CookieBanner
-        legalCookiesUrl={APP_URLS.legal("cookies")}
-        onConsent={(consent) => {
-          void saveCookieConsent({
-            subjectKey: getConsentSubjectKey("anon"),
-            necessary: consent.necessary,
-            functional: consent.functional,
-            tenantId: DEMO_TENANT_ID,
-          });
-        }}
-      />
       <style>{`
         .shell { min-height:100vh; display:grid; grid-template-columns:1.1fr .9fr; gap:var(--space-6); padding:clamp(1.5rem,4vw,4rem); align-items:center; }
         .eyebrow { margin:0 0 var(--space-3); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }

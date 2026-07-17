@@ -21,6 +21,11 @@ const feedbackSchema = z.object({
   comment: z.string().trim().max(2000).optional(),
 });
 
+const checkInSchema = z.object({
+  email: z.string().email().max(200),
+  bookingId: z.string().uuid(),
+});
+
 export function createPublicRoutes(deps: PublicRouteDeps): Hono {
   const routes = new Hono();
 
@@ -39,6 +44,51 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
           checkOutDate: stay.checkOutDate,
           status: stay.status,
         })),
+      });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/stays/check-in", async (c) => {
+    try {
+      const body = checkInSchema.parse(await c.req.json());
+      const result = await deps.guestStays.checkInByEmail(
+        body.email,
+        body.bookingId,
+      );
+
+      if (!result.ok) {
+        if (result.reason === "BOOKING_NOT_FOUND") {
+          return sendError(c, 404, "BOOKING_NOT_FOUND", "Booking not found");
+        }
+        if (result.reason === "EMAIL_MISMATCH") {
+          return sendError(
+            c,
+            403,
+            "EMAIL_MISMATCH",
+            "Booking does not belong to this email",
+          );
+        }
+        return sendError(
+          c,
+          409,
+          "NOT_CONFIRMED",
+          "Only confirmed bookings can be checked in",
+        );
+      }
+
+      return c.json({
+        data: {
+          bookingId: result.stay.bookingId,
+          hotelId: result.stay.hotelId,
+          hotelName: result.stay.hotelName,
+          roomNumber: result.stay.roomNumber,
+          guestName: result.stay.guestName,
+          checkInDate: result.stay.checkInDate,
+          checkOutDate: result.stay.checkOutDate,
+          status: result.stay.status,
+        },
       });
     } catch (error) {
       return mapUnknownError(c, error);

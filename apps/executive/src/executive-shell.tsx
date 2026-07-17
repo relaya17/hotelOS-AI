@@ -124,9 +124,18 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         </div>
       </nav>
 
-      <main className="shell__main">
+      <main
+        className={
+          view.kind === "portfolio" ? "shell__main shell__main--portfolio" : "shell__main"
+        }
+      >
         {view.kind === "portfolio" ? (
-          <ChainDashboard user={user} onLogout={onLogout} embedded />
+          <ChainDashboard
+            user={user}
+            onLogout={onLogout}
+            embedded
+            locale={locale}
+          />
         ) : null}
         {view.kind === "ops" ? <OpsDashboardPage /> : null}
         {view.kind === "briefings" ? (
@@ -182,9 +191,20 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         .locale select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.45rem .6rem; background:var(--color-paper-elevated); }
         .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
         .shell__main { padding:clamp(1rem,3vw,2.5rem); }
+        .shell__main--portfolio { padding-top:var(--space-3); }
         @media (max-width:768px){
-          .nav{ padding:var(--space-2) var(--space-3); }
+          .nav{
+            display:grid;
+            grid-template-columns:1fr auto;
+            grid-template-rows:auto auto;
+            gap:var(--space-2);
+            padding:var(--space-2) var(--space-3);
+          }
+          .brand{ grid-column:1; grid-row:1; }
+          .nav__actions{ grid-column:2; grid-row:1; justify-self:end; }
+          .tabs{ grid-column:1 / -1; grid-row:2; flex-wrap:nowrap; width:100%; }
           .shell__main{ padding:var(--space-3); }
+          .shell__main--portfolio{ padding:var(--space-2) var(--space-3) var(--space-3); }
         }
       `}</style>
     </div>

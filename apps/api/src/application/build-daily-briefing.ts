@@ -62,7 +62,7 @@ export async function buildDailyBriefing(
 
   const sections = await Promise.all(
     scopedHotels.map(async (hotel): Promise<DailyBriefingHotelSection> => {
-      const hotelId = hotel.id as HotelId;
+      const hotelId = hotel.id;
       const [departments, requests, inventory, orders, avgRating] =
         await Promise.all([
           deps.ops.listDepartments(tenantId, hotelId),

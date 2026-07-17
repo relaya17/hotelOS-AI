@@ -17,6 +17,8 @@ import { DashboardPage } from "./dashboard-page.js";
 import { FacilitiesPage } from "./facilities-page.js";
 import { LoginPage } from "./login-page.js";
 
+const DEMO_TENANT_ID = "11111111-1111-4111-8111-111111111111";
+
 type View = "ops" | "facilities" | "attendance";
 
 export function App() {
@@ -73,95 +75,90 @@ export function App() {
     return <main className="boot">HotelOS AI · Admin</main>;
   }
 
-  if (user) {
-    return (
-      <div className="admin-root">
-        <nav className="admin-nav" aria-label="Admin">
-          <button
-            type="button"
-            className={view === "ops" ? "tab tab--on" : "tab"}
-            onClick={() => setView("ops")}
-          >
-            חדרים והזמנות
-          </button>
-          <button
-            type="button"
-            className={view === "facilities" ? "tab tab--on" : "tab"}
-            onClick={() => setView("facilities")}
-          >
-            מחלקות ותפעול
-          </button>
-          <button
-            type="button"
-            className={view === "attendance" ? "tab tab--on" : "tab"}
-            onClick={() => setView("attendance")}
-          >
-            נוכחות מהטלפון
-          </button>
-          <a className="link" href={APP_URLS.executive}>
-            Executive
-          </a>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              void logout().then(() => {
-                setUser(null);
-                setView("ops");
-              });
-            }}
-          >
-            התנתקות
-          </Button>
-        </nav>
-        {view === "ops" ? (
-          <DashboardPage
-            user={user}
-            onLogout={() => {
-              setUser(null);
-              setView("ops");
-            }}
-          />
-        ) : null}
-        {view === "facilities" ? (
-          <main className="facilities-wrap">
-            <FacilitiesPage />
-          </main>
-        ) : null}
-        {view === "attendance" ? (
-          <main className="attendance-wrap">
-            <AttendancePage />
-          </main>
-        ) : null}
-        <LegalFooter legalUrl={APP_URLS.legal} />
-        <CookieBanner
-          legalCookiesUrl={APP_URLS.legal("cookies")}
-          onConsent={(consent) => {
-            void saveCookieConsent({
-              subjectKey: getConsentSubjectKey("admin", user.id),
-              necessary: consent.necessary,
-              functional: consent.functional,
-              tenantId: user.tenantId,
-            });
+  return (
+    <div className="admin-root">
+      {user ? (
+        <>
+          <nav className="admin-nav" aria-label="Admin">
+            <button
+              type="button"
+              className={view === "ops" ? "tab tab--on" : "tab"}
+              onClick={() => setView("ops")}
+            >
+              חדרים והזמנות
+            </button>
+            <button
+              type="button"
+              className={view === "facilities" ? "tab tab--on" : "tab"}
+              onClick={() => setView("facilities")}
+            >
+              מחלקות ותפעול
+            </button>
+            <button
+              type="button"
+              className={view === "attendance" ? "tab tab--on" : "tab"}
+              onClick={() => setView("attendance")}
+            >
+              נוכחות מהטלפון
+            </button>
+            <a className="link" href={APP_URLS.executive}>
+              Executive
+            </a>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                void logout().then(() => {
+                  setUser(null);
+                  setView("ops");
+                });
+              }}
+            >
+              התנתקות
+            </Button>
+          </nav>
+          {view === "ops" ? <DashboardPage user={user} /> : null}
+          {view === "facilities" ? (
+            <main className="facilities-wrap">
+              <FacilitiesPage />
+            </main>
+          ) : null}
+          {view === "attendance" ? (
+            <main className="attendance-wrap">
+              <AttendancePage />
+            </main>
+          ) : null}
+          <LegalFooter legalUrl={APP_URLS.legal} />
+        </>
+      ) : (
+        <LoginPage
+          onLoggedIn={(next) => {
+            setUser(next);
           }}
         />
-        <style>{`
-          .admin-nav{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;padding:var(--space-3) clamp(1rem,3vw,2rem);border-bottom:1px solid rgb(16 36 31 / 10%);background:rgb(255 250 242 / 80%)}
-          .tab{border:1px solid rgb(16 36 31 / 14%);background:transparent;border-radius:var(--radius-sm);padding:.55rem .9rem;font:inherit;cursor:pointer;font-weight:600}
-          .tab--on{background:var(--color-sea-deep);color:#fff;border-color:transparent}
-          .link{margin-inline-start:auto;color:var(--color-sea-deep);font-weight:600}
-          .attendance-wrap{padding:clamp(1rem,3vw,2rem)}
-          .facilities-wrap{padding:clamp(1rem,3vw,2rem)}
-        `}</style>
-      </div>
-    );
-  }
-
-  return (
-    <LoginPage
-      onLoggedIn={(next) => {
-        setUser(next);
-      }}
-    />
+      )}
+      <CookieBanner
+        legalCookiesUrl={APP_URLS.legal("cookies")}
+        onConsent={(consent) => {
+          void saveCookieConsent({
+            subjectKey: getConsentSubjectKey(
+              user ? "admin" : "anon",
+              user?.id,
+            ),
+            necessary: consent.necessary,
+            functional: consent.functional,
+            tenantId: user?.tenantId ?? DEMO_TENANT_ID,
+          });
+        }}
+      />
+      <style>{`
+        .admin-nav{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;padding:var(--space-3) clamp(1rem,3vw,2rem);border-bottom:1px solid rgb(16 36 31 / 10%);background:rgb(255 250 242 / 80%)}
+        .tab{border:1px solid rgb(16 36 31 / 14%);background:transparent;border-radius:var(--radius-sm);padding:.55rem .9rem;font:inherit;cursor:pointer;font-weight:600}
+        .tab--on{background:var(--color-sea-deep);color:#fff;border-color:transparent}
+        .link{margin-inline-start:auto;color:var(--color-sea-deep);font-weight:600}
+        .attendance-wrap{padding:clamp(1rem,3vw,2rem)}
+        .facilities-wrap{padding:clamp(1rem,3vw,2rem)}
+      `}</style>
+    </div>
   );
 }
