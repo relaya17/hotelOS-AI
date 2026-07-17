@@ -13,13 +13,20 @@
     "dev:admin": "turbo run dev --filter=@hotelos/admin",
     "dev:guest": "turbo run dev --filter=@hotelos/guest",
     "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
+    "lint": "eslint .",
     "test": "turbo run test",
+    "qa": "pnpm install --frozen-lockfile && pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "clean": "turbo run clean && rimraf node_modules"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.7.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.3",
+    "globals": "17.7.0",
     "rimraf": "^6.0.1",
     "turbo": "^2.5.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "8.64.0"
   }
 }

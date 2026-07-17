@@ -88,6 +88,28 @@ pnpm dev
 אימייל דמו: `noa@example.com`  
 מסמכי חוק: `http://localhost:5175/?doc=terms|cookies|security|privacy`
 
+## QA — בדיקה מלאה בפקודה אחת
+
+```bash
+pnpm qa
+```
+
+פקודה אחת שמריצה על כל 4 האפליקציות ועל כל החבילות המשותפות, בסדר הזה, ועוצרת בכל שלב שנכשל:
+
+1. **Install** — `pnpm install --frozen-lockfile` (מוודא שה־lockfile תואם ל־package.json בכל המונורפו).
+2. **Typecheck** — `tsc --noEmit` בכל חבילה/אפליקציה (TypeScript strict מלא: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` ועוד).
+3. **Lint** — ESLint (flat config, `eslint.config.mjs`) עם `typescript-eslint` בטעינה מודעת-טיפוסים (type-aware: תופס `no-floating-promises`, `no-misused-promises` וכו') + `eslint-plugin-react-hooks`/`react-refresh` על שלוש אפליקציות ה־React.
+4. **Test** — `node --test` בכל חבילה שיש לה בדיקות (`turbo run test`).
+5. **Build** — בנייה מלאה של כל 4 האפליקציות + כל החבילות (`turbo run build`).
+
+Turborepo מקצר ריצות חוזרות (cache לפי hash של קבצי הקלט), כך שריצה שנייה ללא שינויים תסתיים תוך שניות. להרצה מהירה יותר בפיתוח שוטף (בלי install/build מלאים):
+
+```bash
+pnpm typecheck && pnpm lint && pnpm test
+```
+
+ה־CI ב־GitHub Actions (`.github/workflows/ci.yml`) מריץ את אותם השלבים בכל push/PR.
+
 ## Trust · ציות · נוכחות
 
 | יכולת | איפה | API |
