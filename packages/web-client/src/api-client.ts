@@ -1497,6 +1497,38 @@ export async function fetchOpsDashboard(): Promise<{
   return payload.data;
 }
 
+export type DailyBriefingHotelDto = {
+  readonly hotelId: string;
+  readonly hotelName: string;
+  readonly occupancyPercent: number;
+  readonly activeBookings: number;
+  readonly roomsNeedingCleaning: number;
+  readonly departmentCount: number;
+  readonly openMaintenanceRequests: number;
+  readonly urgentMaintenanceRequests: number;
+  readonly lowStockItems: number;
+  readonly openPurchaseOrders: number;
+  readonly averageFeedbackRating: number | null;
+  readonly highlights: readonly string[];
+  readonly warnings: readonly string[];
+  readonly suggestedActions: readonly string[];
+  readonly summaryHe: string;
+};
+
+export type DailyBriefingDto = {
+  readonly generatedAt: string;
+  readonly tenantName: string;
+  readonly hotels: readonly DailyBriefingHotelDto[];
+  readonly chainSummaryHe: string | null;
+};
+
+export async function fetchDailyBriefing(): Promise<DailyBriefingDto> {
+  const payload = (await authGet("/v1/ops/daily-briefing")) as {
+    data: DailyBriefingDto;
+  };
+  return payload.data;
+}
+
 const guestAppUrl = viteEnv["VITE_APP_URL_GUEST"] ?? "http://localhost:5175";
 
 export const APP_URLS = {

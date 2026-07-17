@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { listHotels, type HotelDto } from "@hotelos/web-client";
+import { DailyBriefingPanel } from "./facilities/daily-briefing-panel.js";
 import { DepartmentsPanel } from "./facilities/departments-panel.js";
 import { FeedbackPanel } from "./facilities/feedback-panel.js";
 import { MaintenancePanel } from "./facilities/maintenance-panel.js";
@@ -7,6 +8,7 @@ import { ProcurementPanel } from "./facilities/procurement-panel.js";
 import { RecruitingPanel } from "./facilities/recruiting-panel.js";
 
 type SubView =
+  | "briefing"
   | "departments"
   | "maintenance"
   | "procurement"
@@ -14,6 +16,7 @@ type SubView =
   | "recruiting";
 
 const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
+  { key: "briefing", label: "תדריך יומי" },
   { key: "departments", label: "מחלקות ומשימות" },
   { key: "maintenance", label: "תחזוקה, תיקונים ושיפוצים" },
   { key: "procurement", label: "רכש ומלאי" },
@@ -33,7 +36,7 @@ export function FacilitiesPage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
-  const [view, setView] = useState<SubView>("departments");
+  const [view, setView] = useState<SubView>("briefing");
 
   useEffect(() => {
     let cancelled = false;
@@ -115,6 +118,9 @@ export function FacilitiesPage() {
 
       {selectedHotelId ? (
         <div className="facilities__content">
+          {view === "briefing" ? (
+            <DailyBriefingPanel hotelId={selectedHotelId} />
+          ) : null}
           {view === "departments" ? (
             <DepartmentsPanel hotelId={selectedHotelId} />
           ) : null}

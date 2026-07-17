@@ -1,10 +1,23 @@
 import { useEffect, useState } from "react";
-import { APP_URLS, fetchOpsDashboard, type OpsDashboardHotelDto } from "@hotelos/web-client";
+import {
+  APP_URLS,
+  fetchDailyBriefing,
+  fetchOpsDashboard,
+  type DailyBriefingHotelDto,
+  type OpsDashboardHotelDto,
+} from "@hotelos/web-client";
 
 export function OpsDashboardPage() {
   const [hotels, setHotels] = useState<readonly OpsDashboardHotelDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+
+  const [briefingHotels, setBriefingHotels] = useState<
+    readonly DailyBriefingHotelDto[]
+  >([]);
+  const [chainSummaryHe, setChainSummaryHe] = useState<string | undefined>();
+  const [briefingLoading, setBriefingLoading] = useState(true);
+  const [briefingError, setBriefingError] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +38,32 @@ export function OpsDashboardPage() {
       }
     }
     void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBriefing() {
+      setBriefingLoading(true);
+      setBriefingError(undefined);
+      try {
+        const data = await fetchDailyBriefing();
+        if (cancelled) return;
+        setBriefingHotels(data.hotels);
+        setChainSummaryHe(data.chainSummaryHe ?? undefined);
+      } catch (loadError) {
+        if (!cancelled) {
+          setBriefingError(
+            loadError instanceof Error ? loadError.message : "שגיאה בטעינת התדריך",
+          );
+        }
+      } finally {
+        if (!cancelled) setBriefingLoading(false);
+      }
+    }
+    void loadBriefing();
     return () => {
       cancelled = true;
     };
@@ -64,6 +103,38 @@ export function OpsDashboardPage() {
           </p>
         </div>
       </header>
+
+      <section className="card briefing-card">
+        <h2>תדריך יומי לרשת</h2>
+        {briefingLoading ? <p className="state">מכין תדריך…</p> : null}
+        {briefingError !== undefined ? (
+          <p className="state state--error" role="alert">
+            {briefingError}
+          </p>
+        ) : null}
+        {!briefingLoading && !briefingError && chainSummaryHe ? (
+          <p className="chain-summary">{chainSummaryHe}</p>
+        ) : null}
+        {!briefingLoading && !briefingError && briefingHotels.length === 0 ? (
+          <p className="hint">אין עדיין נתונים מספיקים לתדריך.</p>
+        ) : null}
+        {!briefingLoading && briefingHotels.length > 0 ? (
+          <ul className="briefing-list">
+            {briefingHotels.map((hotel) => (
+              <li key={hotel.hotelId}>
+                <strong>{hotel.hotelName}:</strong> {hotel.summaryHe}
+                {hotel.warnings.length > 0 ? (
+                  <ul className="briefing-warnings">
+                    {hotel.warnings.map((warning) => (
+                      <li key={warning}>{warning}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
 
       {loading ? <p className="state">טוען…</p> : null}
       {error !== undefined ? (
@@ -159,6 +230,10 @@ export function OpsDashboardPage() {
         .card { background:rgb(255 250 242 / 90%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); }
         .card h2 { margin:0 0 var(--space-3); font-size:var(--text-title); }
         .hint { margin:0; color:var(--color-ink-soft); }
+        .briefing-card { border-color:rgb(16 36 31 / 14%); }
+        .chain-summary { margin:0 0 var(--space-3); font-weight:600; }
+        .briefing-list { margin:0; padding-inline-start:1.2rem; display:grid; gap:var(--space-2); }
+        .briefing-warnings { margin:.3rem 0 0; padding-inline-start:1.1rem; display:grid; gap:.2rem; font-size:var(--text-small); color:#b3541e; }
         .hotel-grid { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:var(--space-4); }
         .hotel-card { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
         .hotel-card h3 { margin:0; font-family:var(--font-display); }

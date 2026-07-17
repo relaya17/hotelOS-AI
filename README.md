@@ -204,6 +204,7 @@ CORS: מקורות ב־`CORS_ORIGINS` (ברירת מחדל — שלוש האפל
 | [`docs/deployment/vercel.md`](docs/deployment/vercel.md) | פריסת 4 פרויקטי Vercel |
 | [`docs/planning/employee-hr-module.md`](docs/planning/employee-hr-module.md) | תכנון: הרשמה עצמית לעובדים, מבחני יכולת, תעודת יושר |
 | [`docs/planning/facilities-ops-module.md`](docs/planning/facilities-ops-module.md) | תכנון: תפעול לכל מחלקות המלון, רכש, קבלנים, מלאי, פידבק אורחים, דשבורד הנהלה |
+| [`docs/planning/smart-integrations-and-hardening.md`](docs/planning/smart-integrations-and-hardening.md) | סקר: מצלמות AI, כרטיסים חכמים, ניטור שגיאות, נגישות, אבטחה, סוכן פנימי לפתרון בעיות |
 
 ## רישיון / סטטוס
 

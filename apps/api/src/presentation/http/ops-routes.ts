@@ -5,6 +5,7 @@ import type {
   HotelRepository,
   MaintenanceRepository,
   OpsRepository,
+  OverviewRepository,
   ProcurementRepository,
   RecruitingRepository,
 } from "@hotelos/database";
@@ -12,6 +13,7 @@ import { canAccessHotel, type JwtTokenService } from "@hotelos/auth";
 import type { HotelId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
+import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -27,6 +29,7 @@ export type OpsRouteDeps = {
   readonly feedback: FeedbackRepository;
   readonly recruiting: RecruitingRepository;
   readonly hotels: HotelRepository;
+  readonly overview: OverviewRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -597,6 +600,38 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
       const postingId = c.req.param("id");
       const list = await deps.recruiting.listCandidates(postingId);
       return c.json({ data: list });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  // ---- Daily briefing (in-system digest for managers/executives) ----
+
+  routes.get("/daily-briefing", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const tenantHotels = await deps.hotels.listByTenant(principal.scope.tenantId);
+      const scopedHotelIds = (
+        principal.scope.hotelId
+          ? tenantHotels.filter((hotel) => hotel.id === principal.scope.hotelId)
+          : tenantHotels
+      ).map((hotel) => hotel.id);
+
+      const briefing = await buildDailyBriefing(
+        {
+          overview: deps.overview,
+          ops: deps.ops,
+          maintenance: deps.maintenance,
+          procurement: deps.procurement,
+          feedback: deps.feedback,
+        },
+        principal.scope.tenantId,
+        scopedHotelIds,
+      );
+      if (!briefing) {
+        return sendError(c, 404, "NO_DATA", "No overview data available yet");
+      }
+      return c.json({ data: briefing });
     } catch (error) {
       return mapUnknownError(c, error);
     }

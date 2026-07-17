@@ -117,6 +117,7 @@ export async function composeApp() {
       feedback,
       recruiting,
       hotels,
+      overview,
       tokens,
     },
   });
