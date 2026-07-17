@@ -1,0 +1,23 @@
+{
+  "name": "hotelos",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --filter=@hotelos/api --filter=@hotelos/admin",
+    "dev:api": "turbo run dev --filter=@hotelos/api",
+    "dev:admin": "turbo run dev --filter=@hotelos/admin",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rimraf node_modules"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "turbo": "^2.5.4",
+    "typescript": "^5.8.3"
+  }
+}

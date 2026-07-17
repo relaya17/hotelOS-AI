@@ -1,0 +1,28 @@
+import { z } from "zod";
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  API_PORT: z.coerce.number().int().positive().default(3001),
+  LOG_LEVEL: z.enum(["debug", "info", "warn", "error", "critical"]).default("info"),
+  JWT_ACCESS_SECRET: z.string().min(16),
+  JWT_REFRESH_SECRET: z.string().min(16),
+  JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
+  JWT_REFRESH_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 14),
+  DATABASE_PATH: z.string().min(1).default(".data/hotelos.sqlite"),
+  CORS_ORIGIN: z.string().min(1).default("http://localhost:5173"),
+});
+
+export type AppEnv = z.infer<typeof envSchema>;
+
+export function loadEnv(
+  source: Record<string, string | undefined> = process.env,
+): AppEnv {
+  const parsed = envSchema.safeParse(source);
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+      .join("; ");
+    throw new Error(`Invalid environment configuration: ${details}`);
+  }
+  return parsed.data;
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@hotelos/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "clean": "rimraf dist",
+    "test": "node --import tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@hotelos/auth": "workspace:*",
+    "@hotelos/config": "workspace:*",
+    "@hotelos/database": "workspace:*",
+    "@hotelos/logger": "workspace:*",
+    "@hotelos/shared": "workspace:*",
+    "@hotelos/validation": "workspace:*",
+    "@hono/node-server": "^1.14.4",
+    "dotenv": "^16.5.0",
+    "hono": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.32",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}

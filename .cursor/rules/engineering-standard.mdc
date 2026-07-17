@@ -1,0 +1,30 @@
+---
+description: HotelOS AI Engineering Standard — approved; 100% compliance required
+alwaysApply: true
+---
+
+# HotelOS AI — Engineering Standard Gate
+
+## Status
+
+The binding specification lives in `docs/engineering-standard/00-INDEX.md`.
+
+**Version 1.0 is Approved (2026-07-17).** Application code may be written.
+
+## Golden Rule
+
+Every line of code must meet **100%** of the Engineering Standard. Non-compliant code must not be merged.
+
+## When implementing
+
+Follow volumes 0–13 (+ 5A), especially:
+
+- Positioning: AI Intelligence Layer first (connectors before rip-and-replace)
+- TypeScript strict — no `any`
+- Clean Architecture / Repository / DI
+- AI only via AI Gateway; Memory types separated; Human Approval for autonomous acts
+- Tenancy: Platform → Tenant → Chain → Hotel → Department → User
+- WCAG 2.2 AA for UI
+- PR gate: typecheck, lint, tests, security, secrets, a11y, perf budget
+
+Prefer reading the relevant volume before making changes in that domain.

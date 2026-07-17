@@ -1,0 +1,86 @@
+@import url("https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Heebo:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&display=swap");
+
+:root {
+  color-scheme: light;
+
+  --font-display: "Fraunces", "Frank Ruhl Libre", Georgia, serif;
+  --font-body: "Figtree", "Heebo", sans-serif;
+
+  --color-ink: #10241f;
+  --color-ink-soft: #2a4039;
+  --color-paper: #f3efe6;
+  --color-paper-elevated: #fffaf2;
+  --color-sea: #0f6a5c;
+  --color-sea-deep: #0a453c;
+  --color-sand: #d8c3a5;
+  --color-danger: #9b2c2c;
+  --color-focus: #1d7a6c;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+
+  --radius-sm: 0.4rem;
+  --radius-md: 0.75rem;
+
+  --shadow-soft: 0 18px 50px rgb(16 36 31 / 12%);
+
+  --text-display: clamp(2.4rem, 4vw, 3.6rem);
+  --text-title: clamp(1.4rem, 2vw, 1.8rem);
+  --text-body: 1rem;
+  --text-small: 0.875rem;
+
+  --motion-fast: 160ms ease;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-body);
+  background:
+    radial-gradient(circle at top left, rgb(15 106 92 / 14%), transparent 34%),
+    linear-gradient(160deg, #efe8da 0%, var(--color-paper) 45%, #e7f0ec 100%);
+  color: var(--color-ink);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  line-height: 1.55;
+  font-size: var(--text-body);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0;
+}
+
+a {
+  color: var(--color-sea-deep);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
