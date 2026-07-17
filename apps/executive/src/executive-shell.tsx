@@ -5,15 +5,18 @@ import {
   tUi,
   type LocaleCode,
 } from "@hotelos/i18n";
-import { Button } from "@hotelos/ui";
+import { Button, CookieBanner } from "@hotelos/ui";
 import {
   APP_URLS,
   clearSession,
+  saveCookieConsent,
   type StoredUser,
 } from "@hotelos/web-client";
+import { AttendancePage } from "./attendance-page.js";
 import { BriefingMeetPage } from "./briefing-meet-page.js";
 import { BriefingRoomsPage } from "./briefing-rooms-page.js";
 import { ChainDashboard } from "./chain-dashboard.js";
+import { TrustPaymentsPage } from "./trust-payments-page.js";
 import { TurboAccountingPage } from "./turbo-accounting-page.js";
 import { TurboAutomationsPage } from "./turbo-automations-page.js";
 import { TurboChatPage } from "./turbo-chat-page.js";
@@ -31,7 +34,9 @@ type View =
   | { readonly kind: "accounting" }
   | { readonly kind: "chat" }
   | { readonly kind: "automations" }
-  | { readonly kind: "voice" };
+  | { readonly kind: "voice" }
+  | { readonly kind: "attendance" }
+  | { readonly kind: "trust" };
 
 const LOCALE_KEY = "hotelos.locale";
 
@@ -63,14 +68,16 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         <div className="tabs hotelos-nav-scroll">
           {(
             [
-              ["portfolio", "nav.portfolio"],
-              ["briefings", "nav.briefings"],
-              ["accounting", "nav.accounting"],
-              ["chat", "nav.chat"],
-              ["automations", "nav.automations"],
-              ["voice", "nav.voice"],
+              ["portfolio", tUi(locale, "nav.portfolio")],
+              ["briefings", tUi(locale, "nav.briefings")],
+              ["accounting", tUi(locale, "nav.accounting")],
+              ["chat", tUi(locale, "nav.chat")],
+              ["automations", tUi(locale, "nav.automations")],
+              ["voice", tUi(locale, "nav.voice")],
+              ["attendance", "נוכחות"],
+              ["trust", "Trust"],
             ] as const
-          ).map(([kind, key]) => (
+          ).map(([kind, label]) => (
             <button
               key={kind}
               type="button"
@@ -82,7 +89,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
               }
               onClick={() => setView({ kind })}
             >
-              {tUi(locale, key)}
+              {label}
             </button>
           ))}
         </div>
@@ -137,7 +144,28 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
           <TurboAutomationsPage locale={locale} />
         ) : null}
         {view.kind === "voice" ? <TurboVoicePage locale={locale} /> : null}
+        {view.kind === "attendance" ? <AttendancePage /> : null}
+        {view.kind === "trust" ? <TrustPaymentsPage /> : null}
       </main>
+
+      <footer className="legal-bar">
+        <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
+        <a href={APP_URLS.legal("cookies")}>עוגיות</a>
+        <a href={APP_URLS.legal("security")}>אבטחה</a>
+        <a href={APP_URLS.legal("privacy")}>פרטיות</a>
+      </footer>
+
+      <CookieBanner
+        legalCookiesUrl={APP_URLS.legal("cookies")}
+        onConsent={(consent) => {
+          void saveCookieConsent({
+            subjectKey: `exec:${user.id}`,
+            necessary: consent.necessary,
+            functional: consent.functional,
+            tenantId: user.tenantId,
+          });
+        }}
+      />
 
       <p className="hotelos-mobile-hint">{tUi(locale, "mobile.installHint")}</p>
 
@@ -155,6 +183,8 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         .locale select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.45rem .6rem; background:var(--color-paper-elevated); }
         .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
         .shell__main { padding:clamp(1rem,3vw,2.5rem); }
+        .legal-bar{display:flex;flex-wrap:wrap;gap:var(--space-3);padding:var(--space-3) clamp(1rem,3vw,2rem);border-top:1px solid rgb(16 36 31 / 10%);font-size:var(--text-small)}
+        .legal-bar a{color:var(--color-sea-deep);font-weight:600}
         @media (max-width:768px){
           .nav{ padding:var(--space-2) var(--space-3); }
           .shell__main{ padding:var(--space-3); }

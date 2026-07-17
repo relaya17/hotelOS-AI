@@ -593,8 +593,197 @@ export async function listEmployees(): Promise<readonly EmployeeDto[]> {
   return payload.data;
 }
 
+export type LegalDocSummary = {
+  readonly id: string;
+  readonly titleHe: string;
+  readonly titleEn: string;
+  readonly version: string;
+  readonly updatedAt: string;
+};
+
+export type LegalDocDetail = LegalDocSummary & {
+  readonly sections: readonly { readonly heading: string; readonly body: string }[];
+};
+
+export type AttendanceEventDto = {
+  readonly id: string;
+  readonly employeeId: string;
+  readonly hotelId: string;
+  readonly eventType: string;
+  readonly occurredAt: string;
+  readonly latitude: number | null;
+  readonly longitude: number | null;
+  readonly deviceLabel: string;
+  readonly voiceVerified: boolean;
+  readonly webauthnVerified: boolean;
+  readonly note: string | null;
+};
+
+export async function fetchLegalIndex(): Promise<readonly LegalDocSummary[]> {
+  const response = await fetch(`${API_BASE}/v1/public/legal`);
+  const payload = (await parseJson(response)) as { data: LegalDocSummary[] };
+  if (!response.ok) throw new Error("Failed to load legal index");
+  return payload.data;
+}
+
+export async function fetchLegalDocument(id: string): Promise<LegalDocDetail> {
+  const response = await fetch(`${API_BASE}/v1/public/legal/${id}`);
+  const payload = (await parseJson(response)) as { data: LegalDocDetail };
+  if (!response.ok) throw new Error("Failed to load legal document");
+  return payload.data;
+}
+
+export async function saveCookieConsent(input: {
+  subjectKey: string;
+  necessary: boolean;
+  functional: boolean;
+  tenantId?: string;
+}): Promise<void> {
+  const response = await fetch(`${API_BASE}/v1/trust/cookies/consent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) throw new Error("Failed to save cookie consent");
+}
+
+export async function loginWithGoogleDemo(input: {
+  tenantId: string;
+  email: string;
+}): Promise<LoginResponse> {
+  const response = await fetch(`${API_BASE}/v1/trust/oauth/google/demo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Google demo login failed"));
+  }
+  return payload as LoginResponse;
+}
+
+export async function createPaymentIntent(input: {
+  amountMinor: number;
+  currency?: string;
+  description: string;
+  hotelId?: string;
+}): Promise<{ readonly id: string; readonly status: string }> {
+  const payload = (await authPost("/v1/trust/payments/intents", input)) as {
+    data: { id: string; status: string };
+  };
+  return payload.data;
+}
+
+export async function confirmPaymentIntent(
+  id: string,
+): Promise<{ readonly id: string; readonly status: string }> {
+  const payload = (await authPost(
+    `/v1/trust/payments/intents/${id}/confirm`,
+  )) as { data: { id: string; status: string } };
+  return payload.data;
+}
+
+export async function listPayments(): Promise<
+  readonly {
+    readonly id: string;
+    readonly amountMinor: number;
+    readonly currency: string;
+    readonly status: string;
+    readonly description: string;
+    readonly createdAt: string;
+  }[]
+> {
+  const payload = (await authGet("/v1/trust/payments/intents")) as {
+    data: {
+      id: string;
+      amountMinor: number;
+      currency: string;
+      status: string;
+      description: string;
+      createdAt: string;
+    }[];
+  };
+  return payload.data;
+}
+
+export async function createDigitalSignature(input: {
+  subjectType: "attendance" | "booking" | "payment" | "document";
+  subjectId: string;
+  signerName: string;
+  purpose: string;
+  imageDataUrl: string;
+}): Promise<{ readonly id: string; readonly contentHash: string }> {
+  const payload = (await authPost("/v1/trust/signatures", input)) as {
+    data: { id: string; contentHash: string };
+  };
+  return payload.data;
+}
+
+export async function createWebAuthnChallenge(
+  purpose: "register" | "assert" = "register",
+): Promise<{
+  readonly challenge: string;
+  readonly rp: { readonly id: string; readonly name: string };
+}> {
+  const payload = (await authPost(
+    `/v1/trust/webauthn/challenge?purpose=${purpose}`,
+  )) as {
+    data: {
+      challenge: string;
+      rp: { id: string; name: string };
+    };
+  };
+  return payload.data;
+}
+
+export async function registerWebAuthnCredential(input: {
+  credentialId: string;
+  publicKeyJwkJson: string;
+  challenge: string;
+  deviceLabel?: string;
+}): Promise<void> {
+  await authPost("/v1/trust/webauthn/register", input);
+}
+
+export async function enrollVoiceSample(input: {
+  sampleBase64: string;
+  phrase?: string;
+}): Promise<void> {
+  await authPost("/v1/trust/voice/enroll", input);
+}
+
+export async function listAttendance(): Promise<readonly AttendanceEventDto[]> {
+  const payload = (await authGet("/v1/trust/attendance")) as {
+    data: AttendanceEventDto[];
+  };
+  return payload.data;
+}
+
+export async function clockAttendance(input: {
+  employeeId: string;
+  hotelId: string;
+  eventType: "clock_in" | "clock_out";
+  latitude?: number;
+  longitude?: number;
+  accuracyMeters?: number;
+  deviceLabel?: string;
+  signatureId?: string;
+  voiceSampleBase64?: string;
+  note?: string;
+}): Promise<AttendanceEventDto & { voiceVerified: boolean; webauthnVerified: boolean }> {
+  const payload = (await authPost("/v1/trust/attendance/clock", input)) as {
+    data: AttendanceEventDto & {
+      voiceVerified: boolean;
+      webauthnVerified: boolean;
+    };
+  };
+  return payload.data;
+}
+
 export const APP_URLS = {
   executive: "http://localhost:5173",
   admin: "http://localhost:5174",
   guest: "http://localhost:5175",
+  legal: (doc: string) => `http://localhost:5175/?doc=${doc}`,
 } as const;

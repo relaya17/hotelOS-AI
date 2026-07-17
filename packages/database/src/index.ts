@@ -81,3 +81,9 @@ export {
 export * from "./schema/tenancy.js";
 export * from "./schema/briefing.js";
 export * from "./schema/turbo.js";
+export * from "./schema/trust.js";
+export {
+  createTrustRepository,
+  hashVoiceSample,
+  type TrustRepository,
+} from "./repositories/trust-repository.js";

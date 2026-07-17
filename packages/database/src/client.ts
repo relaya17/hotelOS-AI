@@ -1,38 +1,66 @@
-import Database from "better-sqlite3";
-import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { createClient, type Client } from "@libsql/client";
+import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import * as briefingSchema from "./schema/briefing.js";
 import * as tenancySchema from "./schema/tenancy.js";
+import * as trustSchema from "./schema/trust.js";
 import * as turboSchema from "./schema/turbo.js";
 
-const schema = { ...tenancySchema, ...briefingSchema, ...turboSchema };
+const schema = {
+  ...tenancySchema,
+  ...briefingSchema,
+  ...turboSchema,
+  ...trustSchema,
+};
 
 export type HotelOsSchema = typeof schema;
-export type HotelOsDb = BetterSQLite3Database<HotelOsSchema>;
+export type HotelOsDb = LibSQLDatabase<HotelOsSchema>;
 
 export type DbHandle = {
   readonly db: HotelOsDb;
   readonly close: () => void;
 };
 
-export function createDb(sqlitePath: string): DbHandle {
-  mkdirSync(dirname(sqlitePath), { recursive: true });
-  const sqlite = new Database(sqlitePath);
-  sqlite.pragma("journal_mode = WAL");
-  sqlite.pragma("foreign_keys = ON");
-  const db = drizzle(sqlite, { schema });
-  migrate(sqlite);
+export type DbConfig = {
+  /**
+   * Either a local file URL (`file:.data/hotelos.sqlite` — works with no
+   * server, same as the old better-sqlite3 setup) or a hosted libSQL/Turso
+   * URL (`libsql://<db>.turso.io`).
+   */
+  readonly url: string;
+  /** Required when `url` points at a hosted Turso database. */
+  readonly authToken?: string;
+};
+
+/**
+ * Accepts either a bare sqlite file path (legacy call style, kept for the
+ * test suite) or a full DbConfig so production code can point at a hosted
+ * libSQL/Turso database instead of a local file.
+ */
+export async function createDb(config: DbConfig | string): Promise<DbHandle> {
+  const { url, authToken } =
+    typeof config === "string" ? { url: `file:${config}`, authToken: undefined } : config;
+
+  if (url.startsWith("file:")) {
+    mkdirSync(dirname(url.slice("file:".length)), { recursive: true });
+  }
+
+  const client = createClient({ url, authToken });
+  await migrate(client);
+  const db = drizzle(client, { schema });
   return {
     db,
     close: () => {
-      sqlite.close();
+      client.close();
     },
   };
 }
 
-function migrate(sqlite: Database.Database): void {
-  sqlite.exec(`
+/** Runs the base schema + pragmas. Safe to call on every boot (IF NOT EXISTS). */
+export async function migrate(client: Client): Promise<void> {
+  await client.execute("PRAGMA foreign_keys = ON");
+  await client.executeMultiple(`
     CREATE TABLE IF NOT EXISTS tenants (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -295,5 +323,117 @@ function migrate(sqlite: Database.Database): void {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS automation_runs_tenant_idx ON automation_runs(tenant_id);
+
+    CREATE TABLE IF NOT EXISTS cookie_consents (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT REFERENCES tenants(id),
+      subject_key TEXT NOT NULL,
+      necessary TEXT NOT NULL,
+      functional TEXT NOT NULL,
+      policy_version TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS cookie_consents_subject_idx ON cookie_consents(subject_key);
+
+    CREATE TABLE IF NOT EXISTS payment_intents (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT REFERENCES hotels(id),
+      amount_minor TEXT NOT NULL,
+      currency TEXT NOT NULL,
+      status TEXT NOT NULL,
+      description TEXT NOT NULL,
+      payer_email TEXT,
+      provider TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      confirmed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS payment_intents_tenant_idx ON payment_intents(tenant_id);
+    CREATE INDEX IF NOT EXISTS payment_intents_hotel_idx ON payment_intents(hotel_id);
+
+    CREATE TABLE IF NOT EXISTS digital_signatures (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      subject_type TEXT NOT NULL,
+      subject_id TEXT NOT NULL,
+      signer_name TEXT NOT NULL,
+      signer_user_id TEXT REFERENCES users(id),
+      purpose TEXT NOT NULL,
+      image_data_url TEXT NOT NULL,
+      content_hash TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS digital_signatures_tenant_idx ON digital_signatures(tenant_id);
+    CREATE INDEX IF NOT EXISTS digital_signatures_subject_idx
+      ON digital_signatures(subject_type, subject_id);
+
+    CREATE TABLE IF NOT EXISTS webauthn_credentials (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      credential_id TEXT NOT NULL,
+      public_key_jwk_json TEXT NOT NULL,
+      device_label TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS webauthn_credentials_user_idx ON webauthn_credentials(user_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS webauthn_credentials_cred_uidx
+      ON webauthn_credentials(credential_id);
+
+    CREATE TABLE IF NOT EXISTS auth_challenges (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      user_id TEXT REFERENCES users(id),
+      purpose TEXT NOT NULL,
+      challenge TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      consumed_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS auth_challenges_challenge_idx ON auth_challenges(challenge);
+
+    CREATE TABLE IF NOT EXISTS oauth_identities (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      provider TEXT NOT NULL,
+      provider_subject TEXT NOT NULL,
+      email TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS oauth_identities_provider_subject_uidx
+      ON oauth_identities(provider, provider_subject);
+
+    CREATE TABLE IF NOT EXISTS voice_enrollments (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      phrase TEXT NOT NULL,
+      sample_hash TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS voice_enrollments_user_idx ON voice_enrollments(user_id);
+
+    CREATE TABLE IF NOT EXISTS attendance_events (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      employee_id TEXT NOT NULL REFERENCES employee_profiles(id),
+      user_id TEXT REFERENCES users(id),
+      event_type TEXT NOT NULL,
+      occurred_at TEXT NOT NULL,
+      latitude TEXT,
+      longitude TEXT,
+      accuracy_meters TEXT,
+      device_label TEXT NOT NULL,
+      signature_id TEXT,
+      voice_verified TEXT NOT NULL,
+      webauthn_verified TEXT NOT NULL,
+      note TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS attendance_events_tenant_idx ON attendance_events(tenant_id);
+    CREATE INDEX IF NOT EXISTS attendance_events_employee_idx ON attendance_events(employee_id);
+    CREATE INDEX IF NOT EXISTS attendance_events_hotel_idx ON attendance_events(hotel_id);
   `);
 }

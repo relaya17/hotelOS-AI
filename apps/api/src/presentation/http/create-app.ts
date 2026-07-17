@@ -32,11 +32,18 @@ import {
   createTurboRoutes,
   type TurboRouteDeps,
 } from "./turbo-routes.js";
+import { createLegalRoutes } from "./legal-routes.js";
+import {
+  createTrustRoutes,
+  type TrustRouteDeps,
+} from "./trust-routes.js";
+import { securityHeaders } from "./security-headers.js";
 
 export type ApiDependencies = {
   readonly getHealth: GetHealth;
   readonly logger: Logger;
   readonly corsOrigins: readonly string[];
+  readonly isProduction: boolean;
   readonly auth: AuthRouteDeps;
   readonly hotels: HotelRouteDeps;
   readonly overview: OverviewRouteDeps;
@@ -44,10 +51,13 @@ export type ApiDependencies = {
   readonly agents: AgentRouteDeps;
   readonly briefing: BriefingRouteDeps;
   readonly turbo: TurboRouteDeps;
+  readonly trust: TrustRouteDeps;
 };
 
 export function createApp(deps: ApiDependencies): Hono {
   const app = new Hono();
+
+  app.use("*", securityHeaders(deps.isProduction));
 
   app.use(
     "*",
@@ -94,6 +104,17 @@ export function createApp(deps: ApiDependencies): Hono {
         },
       ],
       positioning: "AI Intelligence Layer for Hotels",
+      trust: [
+        "terms",
+        "cookies",
+        "security",
+        "payments",
+        "digital_signature",
+        "webauthn",
+        "voice",
+        "google_oauth",
+        "attendance",
+      ],
     }),
   );
 
@@ -115,9 +136,11 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/hotels", createHotelRoutes(deps.hotels));
   app.route("/v1/overview", createOverviewRoutes(deps.overview));
   app.route("/v1/public", createPublicRoutes(deps.publicRoutes));
+  app.route("/v1/public/legal", createLegalRoutes());
   app.route("/v1/agents", createAgentRoutes(deps.agents));
   app.route("/v1/briefing-rooms", createBriefingRoutes(deps.briefing));
   app.route("/v1/turbo", createTurboRoutes(deps.turbo));
+  app.route("/v1/trust", createTrustRoutes(deps.trust));
 
   return app;
 }

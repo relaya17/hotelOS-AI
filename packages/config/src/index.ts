@@ -18,6 +18,14 @@ const envSchema = z.object({
     .default(
       "http://localhost:5173,http://localhost:5174,http://localhost:5175",
     ),
+  GOOGLE_CLIENT_ID: z.string().optional().default(""),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(""),
+  GOOGLE_REDIRECT_URI: z
+    .string()
+    .optional()
+    .default("http://localhost:3001/v1/trust/oauth/google/callback"),
+  WEBAUTHN_RP_ID: z.string().optional().default("localhost"),
+  WEBAUTHN_RP_NAME: z.string().optional().default("HotelOS AI"),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

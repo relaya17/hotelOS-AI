@@ -17,6 +17,7 @@
     "@hotelos/config": "workspace:*",
     "@hotelos/database": "workspace:*",
     "@hotelos/i18n": "workspace:*",
+    "@hotelos/legal": "workspace:*",
     "@hotelos/logger": "workspace:*",
     "@hotelos/shared": "workspace:*",
     "@hotelos/validation": "workspace:*",

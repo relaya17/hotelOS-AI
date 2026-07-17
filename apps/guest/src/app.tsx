@@ -1,9 +1,12 @@
-import { useState, type FormEvent } from "react";
-import { Button, TextField } from "@hotelos/ui";
+import { useEffect, useState, type FormEvent } from "react";
+import { Button, CookieBanner, TextField } from "@hotelos/ui";
 import {
   APP_URLS,
+  fetchLegalDocument,
   lookupGuestStay,
+  saveCookieConsent,
   type GuestStayDto,
+  type LegalDocDetail,
 } from "@hotelos/web-client";
 
 const stayStatusLabel: Record<string, string> = {
@@ -11,11 +14,39 @@ const stayStatusLabel: Record<string, string> = {
   checked_in: "במלון",
 };
 
+function readLegalDoc(): string | null {
+  return new URLSearchParams(window.location.search).get("doc");
+}
+
 export function App() {
+  const [legalId, setLegalId] = useState<string | null>(readLegalDoc);
+  const [legalDoc, setLegalDoc] = useState<LegalDocDetail | null>(null);
   const [email, setEmail] = useState("noa@example.com");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [stays, setStays] = useState<readonly GuestStayDto[] | null>(null);
+
+  useEffect(() => {
+    if (!legalId) {
+      setLegalDoc(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchLegalDocument(legalId)
+      .then((doc) => {
+        if (!cancelled) setLegalDoc(doc);
+      })
+      .catch((loadError: unknown) => {
+        if (!cancelled) {
+          setError(
+            loadError instanceof Error ? loadError.message : "Legal load failed",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [legalId]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,6 +68,42 @@ export function App() {
     }
   }
 
+  if (legalDoc) {
+    return (
+      <main className="legal">
+        <p className="eyebrow">HotelOS AI · Legal</p>
+        <h1>{legalDoc.titleHe}</h1>
+        <p className="meta">
+          v{legalDoc.version} · עודכן {legalDoc.updatedAt}
+        </p>
+        {legalDoc.sections.map((section) => (
+          <section key={section.heading}>
+            <h2>{section.heading}</h2>
+            <p>{section.body}</p>
+          </section>
+        ))}
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => {
+            window.history.replaceState({}, "", "/");
+            setLegalId(null);
+          }}
+        >
+          חזרה לאפליקציית אורחים
+        </Button>
+        <style>{`
+          .legal{max-width:48rem;margin:0 auto;padding:clamp(1.5rem,4vw,3rem);display:grid;gap:var(--space-4)}
+          .eyebrow{margin:0;letter-spacing:.08em;text-transform:uppercase;font-size:var(--text-small);color:var(--color-sea-deep);font-weight:700}
+          h1{margin:0;font-size:var(--text-display)}
+          .meta{margin:0;color:var(--color-ink-soft)}
+          section h2{margin:0 0 var(--space-2);font-size:1.2rem}
+          section p{margin:0;color:var(--color-ink-soft);line-height:1.7}
+        `}</style>
+      </main>
+    );
+  }
+
   return (
     <main className="shell">
       <section className="hero">
@@ -48,6 +115,15 @@ export function App() {
         <p className="apps">
           צוות: <a href={APP_URLS.admin}>Admin</a> · הנהלה:{" "}
           <a href={APP_URLS.executive}>Executive</a>
+        </p>
+        <p className="apps">
+          <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
+          {" · "}
+          <a href={APP_URLS.legal("cookies")}>עוגיות</a>
+          {" · "}
+          <a href={APP_URLS.legal("security")}>אבטחה</a>
+          {" · "}
+          <a href={APP_URLS.legal("privacy")}>פרטיות</a>
         </p>
       </section>
 
@@ -61,11 +137,7 @@ export function App() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
-            {...(error !== undefined && stays?.length === 0
-              ? { error }
-              : error !== undefined && stays === null
-                ? { error }
-                : {})}
+            {...(error !== undefined ? { error } : {})}
           />
           <Button type="submit" disabled={loading}>
             {loading ? "מחפש…" : "מצא שהייה"}
@@ -91,6 +163,17 @@ export function App() {
           </ul>
         ) : null}
       </section>
+
+      <CookieBanner
+        legalCookiesUrl={APP_URLS.legal("cookies")}
+        onConsent={(consent) => {
+          void saveCookieConsent({
+            subjectKey: `guest:${crypto.randomUUID()}`,
+            necessary: consent.necessary,
+            functional: consent.functional,
+          });
+        }}
+      />
 
       <style>{`
         .shell { min-height:100vh; display:grid; grid-template-columns:1.05fr .95fr; gap:var(--space-6); padding:clamp(1.5rem,4vw,4rem); align-items:center; }

@@ -10,9 +10,9 @@
 | אפליקציה | רמה | תפקיד | כתובת מקומית |
 |-----------|------|--------|----------------|
 | **Executive** | רשת / אזור | לוח בקרה Multi-Hotel, Turbo OS, בריפינגים | http://localhost:5173 |
-| **Admin** | מלון בודד | חדרים, הזמנות, תפעול יומי | http://localhost:5174 |
-| **Guest** | אורח | חיפוש שהייה לפי אימייל | http://localhost:5175 |
-| **API** | שרת | Auth, תפעול, Turbo, סוכנים | http://localhost:3001 |
+| **Admin** | מלון בודד | חדרים, הזמנות, נוכחות מהטלפון | http://localhost:5174 |
+| **Guest** | אורח | חיפוש שהייה + מסמכי Legal | http://localhost:5175 |
+| **API** | שרת | Auth, תפעול, Turbo, Trust, סוכנים | http://localhost:3001 |
 
 הרשת יכולה לכלול כמה בתי מלון. ה־Executive נשאר ברמת הרשת; ה־Admin עובד על מלון אחד (כולל דיפ־לינק `?hotelId=` מה־Executive).
 
@@ -81,9 +81,26 @@ pnpm dev
 | Password | `HotelOS-Demo-ChangeMe1!` |
 | Tenant ID | `11111111-1111-4111-8111-111111111111` |
 
+כפתור **המשך עם Google (צוות)** — דמו ללא `GOOGLE_CLIENT_ID` (מקשר זהות ומנפיק סשן למשתמש קיים). עם מפתחות אמיתיים: `GET /v1/trust/oauth/google/start`.
+
 ### אורח (Guest)
 
-אימייל דמו: `noa@example.com`
+אימייל דמו: `noa@example.com`  
+מסמכי חוק: `http://localhost:5175/?doc=terms|cookies|security|privacy`
+
+## Trust · ציות · נוכחות
+
+| יכולת | איפה | API |
+|--------|------|-----|
+| תנאי שימוש / עוגיות / אבטחה / פרטיות | Guest + קישורים בכל האפליקציות | `GET /v1/public/legal` |
+| באנר הסכמת עוגיות | כל האפליקציות | `POST /v1/trust/cookies/consent` |
+| תשלומים פנימיים + חתימה דיגיטלית | Executive → Trust | `/v1/trust/payments/*` · `/v1/trust/signatures` |
+| WebAuthn (אצבע / פנים) | Executive → Trust | `/v1/trust/webauthn/*` |
+| זיהוי קול (enrollment + verify) | נוכחות / Trust | `/v1/trust/voice/*` |
+| Google לצוות | Login Executive/Admin | `/v1/trust/oauth/google/*` |
+| שעון כניסה/יציאה מהטלפון + מעקב לעובד | Executive + Admin | `/v1/trust/attendance/*` |
+
+נוכחות: לכל אירוע `clock_in` / `clock_out` נשמרים tenant, עובד, מלון, מכשיר, אופציונלית GPS, חתימה, דגלים ל־voice/WebAuthn — עם audit.
 
 ### נתוני דמו
 
@@ -102,8 +119,9 @@ apps/
 
 packages/
   i18n/          # שפות + תרגום צ׳אט מאומת
+  legal/         # תנאי שימוש, עוגיות, אבטחה, פרטיות
   web-client/    # לקוח API משותף
-  ui/            # עיצוב / קומפוננטות
+  ui/            # עיצוב / קומפוננטות (+ CookieBanner, SignaturePad)
   database/      # SQLite + Drizzle + seed
   auth/          # JWT + סיסמאות
   shared/ config/ validation/ logger/
@@ -122,6 +140,8 @@ packages/
 | `GET/POST /v1/briefing-rooms` | חדרי בריפינג + שיתוף סוכן |
 | `POST .../recordings/start` · `complete` · `media` | הקלטת פגישה + שמירה מופרדת |
 | `GET/POST /v1/turbo/*` | חשבונאות, צ׳אט, אוטומציות, קול |
+| `GET /v1/public/legal` | מסמכי ציות |
+| `POST /v1/trust/*` | עוגיות, תשלומים, חתימה, WebAuthn, קול, Google, נוכחות |
 | `POST /v1/public/stays/lookup` | חיפוש שהייה לאורח |
 
 CORS: מקורות ב־`CORS_ORIGINS` (ברירת מחדל — שלוש האפליקציות המקומיות).
@@ -134,6 +154,7 @@ CORS: מקורות ב־`CORS_ORIGINS` (ברירת מחדל — שלוש האפל
 | [`docs/engineering-standard/11-ai-agents/`](docs/engineering-standard/11-ai-agents/) | קטלוג סוכנים |
 | [`docs/adr/0003-three-separate-apps.md`](docs/adr/0003-three-separate-apps.md) | שלוש אפליקציות נפרדות |
 | [`docs/adr/0004-turbo-os-i18n-automations.md`](docs/adr/0004-turbo-os-i18n-automations.md) | Turbo OS, i18n, אוטומציות |
+| [`docs/adr/0005-trust-compliance-attendance.md`](docs/adr/0005-trust-compliance-attendance.md) | Trust, Google, נוכחות |
 
 ## רישיון / סטטוס
 
