@@ -13,8 +13,15 @@ export type GuestStay = {
   readonly status: string;
 };
 
+export type BookingScope = {
+  readonly bookingId: string;
+  readonly tenantId: string;
+  readonly hotelId: string;
+};
+
 export type GuestStayRepository = {
   lookupByEmail: (email: string) => Promise<readonly GuestStay[]>;
+  findBookingScope: (bookingId: string) => Promise<BookingScope | null>;
 };
 
 export function createGuestStayRepository(db: HotelOsDb): GuestStayRepository {
@@ -53,6 +60,22 @@ export function createGuestStayRepository(db: HotelOsDb): GuestStayRepository {
         checkOutDate: row.checkOutDate,
         status: row.status,
       }));
+    },
+
+    async findBookingScope(bookingId) {
+      const row = await db
+        .select({
+          bookingId: bookings.id,
+          tenantId: bookings.tenantId,
+          hotelId: bookings.hotelId,
+        })
+        .from(bookings)
+        .where(eq(bookings.id, bookingId))
+        .get();
+      if (!row) {
+        return null;
+      }
+      return row;
     },
   };
 }

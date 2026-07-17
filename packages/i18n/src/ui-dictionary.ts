@@ -11,6 +11,7 @@ export type UiMessageKey =
   | "nav.voice"
   | "nav.attendance"
   | "nav.trust"
+  | "nav.ops"
   | "action.logout"
   | "action.openHotelOps"
   | "chat.title"
@@ -43,6 +44,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.voice": "סוכן קולי",
     "nav.attendance": "נוכחות",
     "nav.trust": "Trust · תשלומים",
+    "nav.ops": "לוח תפעולי מאוחד",
     "action.logout": "התנתקות",
     "action.openHotelOps": "תפעול מלון",
     "chat.title": "צ׳אט פנימי לעובדים",
@@ -68,6 +70,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.voice": "Voice agent",
     "nav.attendance": "Attendance",
     "nav.trust": "Trust · Payments",
+    "nav.ops": "Unified ops dashboard",
     "action.logout": "Sign out",
     "action.openHotelOps": "Hotel operations",
     "chat.title": "Internal staff chat",
@@ -93,6 +96,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.voice": "الوكيل الصوتي",
     "nav.attendance": "الحضور",
     "nav.trust": "الثقة · المدفوعات",
+    "nav.ops": "لوحة التشغيل الموحدة",
     "action.logout": "تسجيل الخروج",
     "action.openHotelOps": "تشغيل الفندق",
     "chat.title": "دردشة الموظفين الداخلية",
@@ -118,6 +122,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.voice": "Голосовой агент",
     "nav.attendance": "Посещаемость",
     "nav.trust": "Trust · Платежи",
+    "nav.ops": "Единая панель операций",
     "action.logout": "Выйти",
     "action.openHotelOps": "Операции отеля",
     "chat.title": "Внутренний чат сотрудников",
@@ -143,6 +148,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.voice": "Agente de voz",
     "nav.attendance": "Asistencia",
     "nav.trust": "Trust · Pagos",
+    "nav.ops": "Panel operativo unificado",
     "action.logout": "Cerrar sesión",
     "action.openHotelOps": "Operaciones del hotel",
     "chat.title": "Chat interno del personal",
@@ -168,6 +174,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.voice": "เอเจนต์เสียง",
     "nav.attendance": "การลงเวลา",
     "nav.trust": "Trust · การชำระเงิน",
+    "nav.ops": "แดชบอร์ดปฏิบัติการรวม",
     "action.logout": "ออกจากระบบ",
     "action.openHotelOps": "ปฏิบัติการโรงแรม",
     "chat.title": "แชทภายในพนักงาน",
@@ -193,6 +200,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.voice": "语音智能体",
     "nav.attendance": "考勤",
     "nav.trust": "Trust · 支付",
+    "nav.ops": "统一运营看板",
     "action.logout": "退出登录",
     "action.openHotelOps": "酒店运营",
     "chat.title": "内部员工聊天",
@@ -218,6 +226,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.voice": "वॉइस एजेंट",
     "nav.attendance": "उपस्थिति",
     "nav.trust": "Trust · भुगतान",
+    "nav.ops": "एकीकृत संचालन डैशबोर्ड",
     "action.logout": "साइन आउट",
     "action.openHotelOps": "होटल संचालन",
     "chat.title": "आंतरिक स्टाफ चैट",
@@ -243,6 +252,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.voice": "Sesli ajan",
     "nav.attendance": "Yoklama",
     "nav.trust": "Trust · Ödemeler",
+    "nav.ops": "Birleşik operasyon paneli",
     "action.logout": "Çıkış yap",
     "action.openHotelOps": "Otel operasyonları",
     "chat.title": "Dahili personel sohbeti",
@@ -268,6 +278,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.voice": "Φωνητικός πράκτορας",
     "nav.attendance": "Παρουσία",
     "nav.trust": "Trust · Πληρωμές",
+    "nav.ops": "Ενοποιημένος πίνακας λειτουργιών",
     "action.logout": "Αποσύνδεση",
     "action.openHotelOps": "Λειτουργίες ξενοδοχείου",
     "chat.title": "Εσωτερική συνομιλία προσωπικού",

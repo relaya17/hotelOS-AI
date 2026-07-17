@@ -82,8 +82,61 @@ export * from "./schema/tenancy.js";
 export * from "./schema/briefing.js";
 export * from "./schema/turbo.js";
 export * from "./schema/trust.js";
+export * from "./schema/ops.js";
 export {
   createTrustRepository,
   hashVoiceSample,
   type TrustRepository,
 } from "./repositories/trust-repository.js";
+export {
+  createOpsRepository,
+  STANDARD_DEPARTMENTS,
+  type CreateDepartmentTaskInput,
+  type OpsRepository,
+  type PersistedDepartment,
+  type PersistedDepartmentTask,
+  type TaskPriority,
+  type TaskStatus,
+} from "./repositories/ops-repository.js";
+export {
+  createMaintenanceRepository,
+  type CreateMaintenanceRequestInput,
+  type CreateVendorInput,
+  type CreateVendorQuoteInput,
+  type MaintenanceCategory,
+  type MaintenancePriority,
+  type MaintenanceRepository,
+  type MaintenanceStatus,
+  type PersistedMaintenanceRequest,
+  type PersistedVendor,
+  type PersistedVendorQuote,
+  type QuoteStatus,
+  type VendorCategory,
+} from "./repositories/maintenance-repository.js";
+export {
+  createProcurementRepository,
+  type CreateInventoryItemInput,
+  type CreatePurchaseOrderInput,
+  type InventoryCategory,
+  type PersistedInventoryItem,
+  type PersistedPurchaseOrder,
+  type ProcurementRepository,
+  type PurchaseOrderStatus,
+} from "./repositories/procurement-repository.js";
+export {
+  createFeedbackRepository,
+  type FeedbackRepository,
+  type FeedbackSource,
+  type PersistedGuestFeedback,
+  type SubmitGuestFeedbackInput,
+} from "./repositories/feedback-repository.js";
+export {
+  createRecruitingRepository,
+  type AddCandidateInput,
+  type CandidateStage,
+  type CreateJobPostingInput,
+  type JobPostingStatus,
+  type PersistedJobCandidate,
+  type PersistedJobPosting,
+  type RecruitingRepository,
+} from "./repositories/recruiting-repository.js";

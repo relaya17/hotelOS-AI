@@ -1,14 +1,24 @@
 import { Hono } from "hono";
-import type { GuestStayRepository } from "@hotelos/database";
+import { randomUUID } from "node:crypto";
+import type { FeedbackRepository, GuestStayRepository } from "@hotelos/database";
+import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
-import { mapUnknownError } from "./errors.js";
+import { mapUnknownError, sendError } from "./errors.js";
 
 export type PublicRouteDeps = {
   readonly guestStays: GuestStayRepository;
+  readonly feedback: FeedbackRepository;
 };
 
 const lookupSchema = z.object({
   email: z.string().email().max(200),
+});
+
+const feedbackSchema = z.object({
+  bookingId: z.string().uuid(),
+  rating: z.number().int().min(1).max(5),
+  categories: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
+  comment: z.string().trim().max(2000).optional(),
 });
 
 export function createPublicRoutes(deps: PublicRouteDeps): Hono {
@@ -30,6 +40,32 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
           status: stay.status,
         })),
       });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/feedback", async (c) => {
+    try {
+      const body = feedbackSchema.parse(await c.req.json());
+      const scope = await deps.guestStays.findBookingScope(body.bookingId);
+      if (!scope) {
+        return sendError(c, 404, "BOOKING_NOT_FOUND", "Booking not found");
+      }
+
+      const created = await deps.feedback.submit({
+        id: randomUUID(),
+        tenantId: Ids.tenant(scope.tenantId),
+        hotelId: Ids.hotel(scope.hotelId),
+        bookingId: scope.bookingId,
+        rating: body.rating,
+        categories: body.categories,
+        ...(body.comment ? { comment: body.comment } : {}),
+        source: "guest_app_survey",
+        submittedAt: new Date().toISOString(),
+      });
+
+      return c.json({ data: created }, 201);
     } catch (error) {
       return mapUnknownError(c, error);
     }

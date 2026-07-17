@@ -9,9 +9,14 @@ import {
   createBookingRepository,
   createBriefingRepository,
   createDb,
+  createFeedbackRepository,
   createGuestStayRepository,
   createHotelRepository,
+  createMaintenanceRepository,
+  createOpsRepository,
   createOverviewRepository,
+  createProcurementRepository,
+  createRecruitingRepository,
   createRefreshSessionRepository,
   createRoomRepository,
   createTrustRepository,
@@ -23,7 +28,7 @@ import { createGetHealth } from "../application/get-health.js";
 import { createApp } from "../presentation/http/create-app.js";
 import { createRecordingStorage } from "./recording-storage.js";
 
-const API_VERSION = "0.7.0";
+const API_VERSION = "0.8.0";
 
 function resolveRepoPath(relativePath: string): string {
   const here = fileURLToPath(new URL(".", import.meta.url));
@@ -57,6 +62,11 @@ export async function composeApp() {
   const briefing = createBriefingRepository(db);
   const turbo = createTurboRepository(db);
   const trust = createTrustRepository(db);
+  const ops = createOpsRepository(db);
+  const maintenance = createMaintenanceRepository(db);
+  const procurement = createProcurementRepository(db);
+  const feedback = createFeedbackRepository(db);
+  const recruiting = createRecruitingRepository(db);
   const recordings = createRecordingStorage(
     resolveRepoPath(env.RECORDINGS_PATH),
   );
@@ -76,7 +86,7 @@ export async function composeApp() {
     auth: { users, sessions, audit, tokens },
     hotels: { hotels, rooms, bookings, audit, tokens },
     overview: { overview, tokens },
-    publicRoutes: { guestStays },
+    publicRoutes: { guestStays, feedback },
     agents: { agents, tokens },
     briefing: {
       briefing,
@@ -99,6 +109,15 @@ export async function composeApp() {
       googlePostLoginRedirect: env.GOOGLE_POST_LOGIN_REDIRECT,
       webauthnRpId: env.WEBAUTHN_RP_ID,
       webauthnRpName: env.WEBAUTHN_RP_NAME,
+    },
+    ops: {
+      ops,
+      maintenance,
+      procurement,
+      feedback,
+      recruiting,
+      hotels,
+      tokens,
     },
   });
 

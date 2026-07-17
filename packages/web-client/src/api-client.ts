@@ -1027,6 +1027,476 @@ export async function clockAttendance(input: {
   return payload.data;
 }
 
+// ---- Ops module: departments, maintenance, procurement, feedback, recruiting ----
+
+async function authPatch(path: string, body: unknown): Promise<unknown> {
+  const { payload } = await authedFetch(path, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return payload;
+}
+
+export type TaskPriority = "low" | "medium" | "high" | "urgent";
+export type TaskStatus = "open" | "in_progress" | "blocked" | "done" | "cancelled";
+
+export type DepartmentSummaryDto = {
+  readonly id: string;
+  readonly hotelId: string;
+  readonly code: string;
+  readonly name: string;
+};
+
+export type DepartmentDto = DepartmentSummaryDto & { readonly staffCount: number };
+
+export type DepartmentTaskDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly hotelId: string;
+  readonly departmentId: string;
+  readonly taskType: string;
+  readonly title: string;
+  readonly description: string;
+  readonly priority: TaskPriority;
+  readonly status: TaskStatus;
+  readonly assignedToUserId: string | null;
+  readonly dueAt: string | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+};
+
+export type MaintenanceCategory =
+  | "repair"
+  | "renovation"
+  | "pool"
+  | "linen"
+  | "general";
+export type MaintenanceStatus =
+  | "open"
+  | "quote_requested"
+  | "approved"
+  | "in_progress"
+  | "done"
+  | "cancelled";
+
+export type MaintenanceRequestDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly hotelId: string;
+  readonly category: MaintenanceCategory;
+  readonly title: string;
+  readonly description: string;
+  readonly priority: TaskPriority;
+  readonly status: MaintenanceStatus;
+  readonly vendorId: string | null;
+  readonly dueAt: string | null;
+  readonly estimatedCost: number | null;
+  readonly actualCost: number | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+};
+
+export type VendorCategory = "contractor" | "supplier" | "both";
+export type VendorDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly hotelId: string | null;
+  readonly name: string;
+  readonly category: VendorCategory;
+  readonly contactName: string | null;
+  readonly phone: string | null;
+  readonly email: string | null;
+  readonly rating: number | null;
+};
+
+export type QuoteStatus = "pending" | "accepted" | "rejected" | "expired";
+export type VendorQuoteDto = {
+  readonly id: string;
+  readonly maintenanceRequestId: string | null;
+  readonly vendorId: string;
+  readonly amount: number;
+  readonly currency: string;
+  readonly status: QuoteStatus;
+  readonly submittedAt: string;
+};
+
+export type InventoryCategory =
+  | "towels"
+  | "linens"
+  | "pool_chemicals"
+  | "cleaning"
+  | "amenities"
+  | "other";
+export type InventoryItemDto = {
+  readonly id: string;
+  readonly hotelId: string;
+  readonly category: InventoryCategory;
+  readonly name: string;
+  readonly unit: string;
+  readonly currentStock: number;
+  readonly reorderThreshold: number;
+  readonly belowThreshold: boolean;
+};
+
+export type PurchaseOrderStatus =
+  | "draft"
+  | "sent"
+  | "confirmed"
+  | "received"
+  | "paid"
+  | "cancelled";
+export type PurchaseOrderDto = {
+  readonly id: string;
+  readonly hotelId: string;
+  readonly vendorId: string;
+  readonly status: PurchaseOrderStatus;
+  readonly totalAmount: number;
+  readonly currency: string;
+  readonly createdAt: string;
+};
+
+export type GuestFeedbackDto = {
+  readonly id: string;
+  readonly hotelId: string;
+  readonly bookingId: string | null;
+  readonly rating: number;
+  readonly categories: readonly string[];
+  readonly comment: string | null;
+  readonly source: string;
+  readonly submittedAt: string;
+};
+
+export type JobPostingStatus = "open" | "closed";
+export type JobPostingDto = {
+  readonly id: string;
+  readonly hotelId: string;
+  readonly title: string;
+  readonly boardName: string;
+  readonly externalUrl: string | null;
+  readonly status: JobPostingStatus;
+  readonly createdAt: string;
+};
+
+export type CandidateStage =
+  | "applied"
+  | "screening"
+  | "interview"
+  | "offer"
+  | "hired"
+  | "rejected";
+export type JobCandidateDto = {
+  readonly id: string;
+  readonly jobPostingId: string;
+  readonly fullName: string;
+  readonly phone: string | null;
+  readonly email: string | null;
+  readonly source: string;
+  readonly stage: CandidateStage;
+};
+
+export type OpsDashboardHotelDto = {
+  readonly hotelId: string;
+  readonly hotelName: string;
+  readonly departmentCount: number;
+  readonly openMaintenanceRequests: number;
+  readonly pendingQuoteRequests: number;
+  readonly lowStockItems: number;
+  readonly openPurchaseOrders: number;
+  readonly averageFeedbackRating: number | null;
+};
+
+function hotelQuery(hotelId: string): string {
+  return `hotelId=${encodeURIComponent(hotelId)}`;
+}
+
+export async function listDepartments(
+  hotelId: string,
+): Promise<readonly DepartmentDto[]> {
+  const payload = (await authGet(
+    `/v1/ops/departments?${hotelQuery(hotelId)}`,
+  )) as { data: DepartmentDto[] };
+  return payload.data;
+}
+
+export async function fetchDepartmentTasks(
+  hotelId: string,
+  code: string,
+): Promise<{
+  readonly department: DepartmentSummaryDto;
+  readonly tasks: readonly DepartmentTaskDto[];
+}> {
+  const payload = (await authGet(
+    `/v1/ops/departments/${encodeURIComponent(code)}/tasks?${hotelQuery(hotelId)}`,
+  )) as { data: { department: DepartmentSummaryDto; tasks: DepartmentTaskDto[] } };
+  return payload.data;
+}
+
+export async function createDepartmentTask(
+  hotelId: string,
+  code: string,
+  input: {
+    taskType: string;
+    title: string;
+    description: string;
+    priority?: TaskPriority;
+    dueAt?: string;
+  },
+): Promise<DepartmentTaskDto> {
+  const payload = (await authPost(
+    `/v1/ops/departments/${encodeURIComponent(code)}/tasks?${hotelQuery(hotelId)}`,
+    input,
+  )) as { data: DepartmentTaskDto };
+  return payload.data;
+}
+
+export async function updateDepartmentTaskStatus(
+  taskId: string,
+  status: TaskStatus,
+): Promise<DepartmentTaskDto> {
+  const payload = (await authPatch(`/v1/ops/tasks/${taskId}`, { status })) as {
+    data: DepartmentTaskDto;
+  };
+  return payload.data;
+}
+
+export async function listMaintenanceRequests(
+  hotelId: string,
+): Promise<readonly MaintenanceRequestDto[]> {
+  const payload = (await authGet(
+    `/v1/ops/maintenance-requests?${hotelQuery(hotelId)}`,
+  )) as { data: MaintenanceRequestDto[] };
+  return payload.data;
+}
+
+export async function createMaintenanceRequest(
+  hotelId: string,
+  input: {
+    category: MaintenanceCategory;
+    title: string;
+    description: string;
+    priority?: TaskPriority;
+    dueAt?: string;
+  },
+): Promise<MaintenanceRequestDto> {
+  const payload = (await authPost(
+    `/v1/ops/maintenance-requests?${hotelQuery(hotelId)}`,
+    input,
+  )) as { data: MaintenanceRequestDto };
+  return payload.data;
+}
+
+export async function updateMaintenanceRequestStatus(
+  requestId: string,
+  status: MaintenanceStatus,
+): Promise<MaintenanceRequestDto> {
+  const payload = (await authPatch(
+    `/v1/ops/maintenance-requests/${requestId}`,
+    { status },
+  )) as { data: MaintenanceRequestDto };
+  return payload.data;
+}
+
+export async function listVendors(): Promise<readonly VendorDto[]> {
+  const payload = (await authGet("/v1/ops/vendors")) as { data: VendorDto[] };
+  return payload.data;
+}
+
+export async function createVendor(input: {
+  name: string;
+  category: VendorCategory;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+}): Promise<VendorDto> {
+  const payload = (await authPost("/v1/ops/vendors", input)) as {
+    data: VendorDto;
+  };
+  return payload.data;
+}
+
+export async function createVendorQuote(
+  requestId: string,
+  input: {
+    vendorId: string;
+    amount: number;
+    currency?: string;
+    validUntil?: string;
+  },
+): Promise<VendorQuoteDto> {
+  const payload = (await authPost(
+    `/v1/ops/maintenance-requests/${requestId}/quotes`,
+    input,
+  )) as { data: VendorQuoteDto };
+  return payload.data;
+}
+
+export async function listQuotesForRequest(
+  requestId: string,
+): Promise<readonly VendorQuoteDto[]> {
+  const payload = (await authGet(
+    `/v1/ops/maintenance-requests/${requestId}/quotes`,
+  )) as { data: VendorQuoteDto[] };
+  return payload.data;
+}
+
+export async function decideQuote(
+  quoteId: string,
+  status: "accepted" | "rejected",
+): Promise<VendorQuoteDto> {
+  const payload = (await authPost(`/v1/ops/quotes/${quoteId}/decision`, {
+    status,
+  })) as { data: VendorQuoteDto };
+  return payload.data;
+}
+
+export async function listInventory(
+  hotelId: string,
+): Promise<readonly InventoryItemDto[]> {
+  const payload = (await authGet(`/v1/ops/inventory?${hotelQuery(hotelId)}`)) as {
+    data: InventoryItemDto[];
+  };
+  return payload.data;
+}
+
+export async function createInventoryItem(
+  hotelId: string,
+  input: {
+    category: InventoryCategory;
+    name: string;
+    unit: string;
+    currentStock: number;
+    reorderThreshold: number;
+  },
+): Promise<InventoryItemDto> {
+  const payload = (await authPost(
+    `/v1/ops/inventory?${hotelQuery(hotelId)}`,
+    input,
+  )) as { data: InventoryItemDto };
+  return payload.data;
+}
+
+export async function listPurchaseOrders(
+  hotelId: string,
+): Promise<readonly PurchaseOrderDto[]> {
+  const payload = (await authGet(
+    `/v1/ops/purchase-orders?${hotelQuery(hotelId)}`,
+  )) as { data: PurchaseOrderDto[] };
+  return payload.data;
+}
+
+export async function createPurchaseOrder(
+  hotelId: string,
+  input: {
+    vendorId: string;
+    currency?: string;
+    notes?: string;
+    items: readonly {
+      inventoryItemId?: string;
+      description: string;
+      quantity: number;
+      unitPrice: number;
+    }[];
+  },
+): Promise<PurchaseOrderDto> {
+  const payload = (await authPost(
+    `/v1/ops/purchase-orders?${hotelQuery(hotelId)}`,
+    input,
+  )) as { data: PurchaseOrderDto };
+  return payload.data;
+}
+
+export async function receivePurchaseOrder(
+  orderId: string,
+): Promise<PurchaseOrderDto> {
+  const payload = (await authPost(
+    `/v1/ops/purchase-orders/${orderId}/receive`,
+  )) as { data: PurchaseOrderDto };
+  return payload.data;
+}
+
+export async function fetchOpsFeedback(hotelId: string): Promise<{
+  readonly average: number | null;
+  readonly items: readonly GuestFeedbackDto[];
+}> {
+  const payload = (await authGet(`/v1/ops/feedback?${hotelQuery(hotelId)}`)) as {
+    data: { average: number | null; items: GuestFeedbackDto[] };
+  };
+  return payload.data;
+}
+
+export async function submitGuestFeedback(input: {
+  bookingId: string;
+  rating: number;
+  categories: readonly string[];
+  comment?: string;
+}): Promise<GuestFeedbackDto> {
+  const response = await fetch(`${API_BASE}/v1/public/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Feedback submission failed"));
+  }
+  return (payload as { data: GuestFeedbackDto }).data;
+}
+
+export async function listJobPostings(
+  hotelId: string,
+): Promise<readonly JobPostingDto[]> {
+  const payload = (await authGet(
+    `/v1/ops/recruiting/postings?${hotelQuery(hotelId)}`,
+  )) as { data: JobPostingDto[] };
+  return payload.data;
+}
+
+export async function createJobPosting(
+  hotelId: string,
+  input: {
+    title: string;
+    boardName: string;
+    externalUrl?: string;
+    notes?: string;
+  },
+): Promise<JobPostingDto> {
+  const payload = (await authPost(
+    `/v1/ops/recruiting/postings?${hotelQuery(hotelId)}`,
+    input,
+  )) as { data: JobPostingDto };
+  return payload.data;
+}
+
+export async function listJobCandidates(
+  postingId: string,
+): Promise<readonly JobCandidateDto[]> {
+  const payload = (await authGet(
+    `/v1/ops/recruiting/postings/${postingId}/candidates`,
+  )) as { data: JobCandidateDto[] };
+  return payload.data;
+}
+
+export async function addJobCandidate(
+  postingId: string,
+  input: { fullName: string; phone?: string; email?: string; source: string },
+): Promise<JobCandidateDto> {
+  const payload = (await authPost(
+    `/v1/ops/recruiting/postings/${postingId}/candidates`,
+    input,
+  )) as { data: JobCandidateDto };
+  return payload.data;
+}
+
+export async function fetchOpsDashboard(): Promise<{
+  readonly hotels: readonly OpsDashboardHotelDto[];
+}> {
+  const payload = (await authGet("/v1/ops/dashboard")) as {
+    data: { hotels: OpsDashboardHotelDto[] };
+  };
+  return payload.data;
+}
+
 const guestAppUrl = viteEnv["VITE_APP_URL_GUEST"] ?? "http://localhost:5175";
 
 export const APP_URLS = {

@@ -17,6 +17,7 @@ import {
 import { BriefingMeetPage } from "./briefing-meet-page.js";
 import { BriefingRoomsPage } from "./briefing-rooms-page.js";
 import { ChainDashboard } from "./chain-dashboard.js";
+import { OpsDashboardPage } from "./ops-dashboard-page.js";
 import { TrustPaymentsPage } from "./trust-payments-page.js";
 import { TurboAccountingPage } from "./turbo-accounting-page.js";
 import { TurboAutomationsPage } from "./turbo-automations-page.js";
@@ -37,7 +38,8 @@ type View =
   | { readonly kind: "automations" }
   | { readonly kind: "voice" }
   | { readonly kind: "attendance" }
-  | { readonly kind: "trust" };
+  | { readonly kind: "trust" }
+  | { readonly kind: "ops" };
 
 const LOCALE_KEY = "hotelos.locale";
 
@@ -70,6 +72,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
           {(
             [
               ["portfolio", tUi(locale, "nav.portfolio")],
+              ["ops", tUi(locale, "nav.ops")],
               ["briefings", tUi(locale, "nav.briefings")],
               ["accounting", tUi(locale, "nav.accounting")],
               ["chat", tUi(locale, "nav.chat")],
@@ -125,6 +128,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         {view.kind === "portfolio" ? (
           <ChainDashboard user={user} onLogout={onLogout} embedded />
         ) : null}
+        {view.kind === "ops" ? <OpsDashboardPage /> : null}
         {view.kind === "briefings" ? (
           <BriefingRoomsPage
             onOpenRoom={(roomId) => setView({ kind: "meet", roomId })}

@@ -37,6 +37,10 @@ import {
   createTrustRoutes,
   type TrustRouteDeps,
 } from "./trust-routes.js";
+import {
+  createOpsRoutes,
+  type OpsRouteDeps,
+} from "./ops-routes.js";
 import { securityHeaders } from "./security-headers.js";
 
 export type ApiDependencies = {
@@ -52,6 +56,7 @@ export type ApiDependencies = {
   readonly briefing: BriefingRouteDeps;
   readonly turbo: TurboRouteDeps;
   readonly trust: TrustRouteDeps;
+  readonly ops: OpsRouteDeps;
 };
 
 export function createApp(deps: ApiDependencies): Hono {
@@ -141,6 +146,7 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/briefing-rooms", createBriefingRoutes(deps.briefing));
   app.route("/v1/turbo", createTurboRoutes(deps.turbo));
   app.route("/v1/trust", createTrustRoutes(deps.trust));
+  app.route("/v1/ops", createOpsRoutes(deps.ops));
 
   return app;
 }

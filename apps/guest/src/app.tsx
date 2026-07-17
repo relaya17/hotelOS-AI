@@ -9,6 +9,7 @@ import {
   type GuestStayDto,
   type LegalDocDetail,
 } from "@hotelos/web-client";
+import { FeedbackForm } from "./feedback-form.js";
 
 function GuestCookieBanner() {
   return (
@@ -56,6 +57,7 @@ export function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [stays, setStays] = useState<readonly GuestStayDto[] | null>(null);
+  const [feedbackBookingId, setFeedbackBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!legalId) {
@@ -202,6 +204,20 @@ export function App() {
                 <span className="badge">
                   {stayStatusLabel[stay.status] ?? stay.status}
                 </span>
+                {feedbackBookingId === stay.bookingId ? (
+                  <FeedbackForm
+                    bookingId={stay.bookingId}
+                    onDone={() => setFeedbackBookingId(null)}
+                  />
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setFeedbackBookingId(stay.bookingId)}
+                  >
+                    השאירו משוב על השהייה
+                  </Button>
+                )}
               </li>
             ))}
           </ul>

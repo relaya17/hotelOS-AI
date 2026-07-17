@@ -3,6 +3,9 @@ import { Ids } from "@hotelos/shared";
 import type { HotelOsDb } from "./client.js";
 import { createAgentRepository } from "./repositories/agent-repository.js";
 import { createBriefingRepository } from "./repositories/briefing-repository.js";
+import { createFeedbackRepository } from "./repositories/feedback-repository.js";
+import { createMaintenanceRepository } from "./repositories/maintenance-repository.js";
+import { createOpsRepository } from "./repositories/ops-repository.js";
 import { createTurboRepository } from "./repositories/turbo-repository.js";
 import {
   bookings,
@@ -187,6 +190,8 @@ export async function seedDemoTenant(
     hotelTlvId: DEMO_HOTEL_TLV_ID,
     hotelEilatId: DEMO_HOTEL_EILAT_ID,
   });
+
+  await ensureOpsDemoData(db, now, userId);
 }
 
 async function ensureHotel(
@@ -295,4 +300,105 @@ async function ensureDemoBookings(
       })
       .run();
   }
+}
+
+async function ensureOpsDemoData(
+  db: HotelOsDb,
+  now: string,
+  userId: string,
+): Promise<void> {
+  const tenantId = Ids.tenant(DEMO_TENANT_ID);
+  const hotelTlv = Ids.hotel(DEMO_HOTEL_TLV_ID);
+  const hotelEilat = Ids.hotel(DEMO_HOTEL_EILAT_ID);
+
+  const ops = createOpsRepository(db);
+  await ops.ensureStandardDepartments(tenantId, hotelTlv, now);
+  await ops.ensureStandardDepartments(tenantId, hotelEilat, now);
+
+  const maintenanceDept = await ops.findDepartmentByCode(
+    tenantId,
+    hotelTlv,
+    "maintenance",
+  );
+  const housekeepingDept = await ops.findDepartmentByCode(
+    tenantId,
+    hotelTlv,
+    "housekeeping",
+  );
+
+  if (housekeepingDept) {
+    const existingTasks = await ops.listTasksByDepartment(
+      tenantId,
+      hotelTlv,
+      housekeepingDept.id,
+    );
+    if (existingTasks.length === 0) {
+      await ops.createTask({
+        id: "90000000-0000-4000-8000-000000000001",
+        tenantId,
+        hotelId: hotelTlv,
+        departmentId: housekeepingDept.id,
+        taskType: "linen_shortage",
+        title: "מחסור במגבות בקומה 2",
+        description: "יש להשלים מלאי מגבות בחדרי הקומה השנייה.",
+        priority: "medium",
+        createdByUserId: userId,
+        createdAt: now,
+      });
+    }
+  }
+
+  const maintenance = createMaintenanceRepository(db);
+  const existingRequests = await maintenance.listByHotel(tenantId, hotelTlv);
+  if (existingRequests.length === 0) {
+    await maintenance.createRequest({
+      id: "90000000-0000-4000-8000-000000000002",
+      tenantId,
+      hotelId: hotelTlv,
+      category: "pool",
+      title: "בעיית סינון בבריכה",
+      description: "משאבת הסינון בבריכה משמיעה רעש חריג, דורש בדיקת קבלן.",
+      priority: "high",
+      createdByUserId: userId,
+      createdAt: now,
+    });
+
+    const vendor = await maintenance.createVendor({
+      id: "90000000-0000-4000-8000-000000000003",
+      tenantId,
+      hotelId: hotelTlv,
+      name: "פתרונות בריכה בע\"מ",
+      category: "contractor",
+      contactName: "יוסי מזרחי",
+      phone: "050-1234567",
+      createdAt: now,
+    });
+
+    await maintenance.addQuote({
+      id: "90000000-0000-4000-8000-000000000004",
+      tenantId,
+      maintenanceRequestId: "90000000-0000-4000-8000-000000000002",
+      vendorId: vendor.id,
+      amount: 2400,
+      currency: "ILS",
+      submittedAt: now,
+    });
+  }
+
+  const feedback = createFeedbackRepository(db);
+  const existingFeedback = await feedback.listByHotel(tenantId, hotelTlv);
+  if (existingFeedback.length === 0) {
+    await feedback.submit({
+      id: "90000000-0000-4000-8000-000000000005",
+      tenantId,
+      hotelId: hotelTlv,
+      rating: 4,
+      categories: ["pool", "service"],
+      comment: "השהייה הייתה נהדרת, רק הבריכה הייתה קצת רועשת.",
+      source: "guest_app_survey",
+      submittedAt: now,
+    });
+  }
+
+  void maintenanceDept;
 }

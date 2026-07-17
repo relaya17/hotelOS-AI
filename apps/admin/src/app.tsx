@@ -14,9 +14,10 @@ import {
   type StoredUser,
 } from "@hotelos/web-client";
 import { DashboardPage } from "./dashboard-page.js";
+import { FacilitiesPage } from "./facilities-page.js";
 import { LoginPage } from "./login-page.js";
 
-type View = "ops" | "attendance";
+type View = "ops" | "facilities" | "attendance";
 
 export function App() {
   const [user, setUser] = useState<StoredUser | null>(null);
@@ -81,7 +82,14 @@ export function App() {
             className={view === "ops" ? "tab tab--on" : "tab"}
             onClick={() => setView("ops")}
           >
-            תפעול
+            חדרים והזמנות
+          </button>
+          <button
+            type="button"
+            className={view === "facilities" ? "tab tab--on" : "tab"}
+            onClick={() => setView("facilities")}
+          >
+            מחלקות ותפעול
           </button>
           <button
             type="button"
@@ -114,11 +122,17 @@ export function App() {
               setView("ops");
             }}
           />
-        ) : (
+        ) : null}
+        {view === "facilities" ? (
+          <main className="facilities-wrap">
+            <FacilitiesPage />
+          </main>
+        ) : null}
+        {view === "attendance" ? (
           <main className="attendance-wrap">
             <AttendancePage />
           </main>
-        )}
+        ) : null}
         <LegalFooter legalUrl={APP_URLS.legal} />
         <CookieBanner
           legalCookiesUrl={APP_URLS.legal("cookies")}
@@ -137,6 +151,7 @@ export function App() {
           .tab--on{background:var(--color-sea-deep);color:#fff;border-color:transparent}
           .link{margin-inline-start:auto;color:var(--color-sea-deep);font-weight:600}
           .attendance-wrap{padding:clamp(1rem,3vw,2rem)}
+          .facilities-wrap{padding:clamp(1rem,3vw,2rem)}
         `}</style>
       </div>
     );

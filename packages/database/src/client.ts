@@ -3,6 +3,7 @@ import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import * as briefingSchema from "./schema/briefing.js";
+import * as opsSchema from "./schema/ops.js";
 import * as tenancySchema from "./schema/tenancy.js";
 import * as trustSchema from "./schema/trust.js";
 import * as turboSchema from "./schema/turbo.js";
@@ -12,6 +13,7 @@ const schema = {
   ...briefingSchema,
   ...turboSchema,
   ...trustSchema,
+  ...opsSchema,
 };
 
 export type HotelOsSchema = typeof schema;
@@ -426,5 +428,198 @@ export async function migrate(client: Client): Promise<void> {
     CREATE INDEX IF NOT EXISTS attendance_events_tenant_idx ON attendance_events(tenant_id);
     CREATE INDEX IF NOT EXISTS attendance_events_employee_idx ON attendance_events(employee_id);
     CREATE INDEX IF NOT EXISTS attendance_events_hotel_idx ON attendance_events(hotel_id);
+
+    CREATE TABLE IF NOT EXISTS department_tasks (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      department_id TEXT NOT NULL REFERENCES departments(id),
+      task_type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      priority TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_by_user_id TEXT REFERENCES users(id),
+      assigned_to_user_id TEXT REFERENCES users(id),
+      due_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      closed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS department_tasks_tenant_idx ON department_tasks(tenant_id);
+    CREATE INDEX IF NOT EXISTS department_tasks_hotel_idx ON department_tasks(hotel_id);
+    CREATE INDEX IF NOT EXISTS department_tasks_department_idx ON department_tasks(department_id);
+    CREATE INDEX IF NOT EXISTS department_tasks_hotel_status_idx ON department_tasks(hotel_id, status);
+
+    CREATE TABLE IF NOT EXISTS vendors (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT REFERENCES hotels(id),
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      contact_name TEXT,
+      phone TEXT,
+      email TEXT,
+      rating INTEGER,
+      notes TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS vendors_tenant_idx ON vendors(tenant_id);
+    CREATE INDEX IF NOT EXISTS vendors_hotel_idx ON vendors(hotel_id);
+
+    CREATE TABLE IF NOT EXISTS maintenance_requests (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      department_id TEXT REFERENCES departments(id),
+      category TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      priority TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_by_user_id TEXT REFERENCES users(id),
+      assigned_to_user_id TEXT REFERENCES users(id),
+      vendor_id TEXT REFERENCES vendors(id),
+      due_at TEXT,
+      sla_hours INTEGER,
+      estimated_cost INTEGER,
+      actual_cost INTEGER,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      closed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS maintenance_requests_tenant_idx ON maintenance_requests(tenant_id);
+    CREATE INDEX IF NOT EXISTS maintenance_requests_hotel_idx ON maintenance_requests(hotel_id);
+    CREATE INDEX IF NOT EXISTS maintenance_requests_hotel_status_idx ON maintenance_requests(hotel_id, status);
+    CREATE INDEX IF NOT EXISTS maintenance_requests_category_idx ON maintenance_requests(category);
+
+    CREATE TABLE IF NOT EXISTS maintenance_request_photos (
+      id TEXT PRIMARY KEY,
+      maintenance_request_id TEXT NOT NULL REFERENCES maintenance_requests(id),
+      phase TEXT NOT NULL,
+      storage_key TEXT NOT NULL,
+      uploaded_by_user_id TEXT REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS maintenance_request_photos_request_idx ON maintenance_request_photos(maintenance_request_id);
+
+    CREATE TABLE IF NOT EXISTS vendor_quotes (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      maintenance_request_id TEXT REFERENCES maintenance_requests(id),
+      vendor_id TEXT NOT NULL REFERENCES vendors(id),
+      amount INTEGER NOT NULL,
+      currency TEXT NOT NULL,
+      valid_until TEXT,
+      status TEXT NOT NULL,
+      document_storage_key TEXT,
+      submitted_at TEXT NOT NULL,
+      decided_by_user_id TEXT REFERENCES users(id),
+      decided_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS vendor_quotes_tenant_idx ON vendor_quotes(tenant_id);
+    CREATE INDEX IF NOT EXISTS vendor_quotes_request_idx ON vendor_quotes(maintenance_request_id);
+    CREATE INDEX IF NOT EXISTS vendor_quotes_vendor_idx ON vendor_quotes(vendor_id);
+
+    CREATE TABLE IF NOT EXISTS inventory_items (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      category TEXT NOT NULL,
+      name TEXT NOT NULL,
+      unit TEXT NOT NULL,
+      current_stock INTEGER NOT NULL,
+      reorder_threshold INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS inventory_items_tenant_idx ON inventory_items(tenant_id);
+    CREATE INDEX IF NOT EXISTS inventory_items_hotel_idx ON inventory_items(hotel_id);
+    CREATE INDEX IF NOT EXISTS inventory_items_hotel_category_idx ON inventory_items(hotel_id, category);
+
+    CREATE TABLE IF NOT EXISTS inventory_transactions (
+      id TEXT PRIMARY KEY,
+      inventory_item_id TEXT NOT NULL REFERENCES inventory_items(id),
+      delta INTEGER NOT NULL,
+      reason TEXT NOT NULL,
+      related_purchase_order_id TEXT,
+      created_by_user_id TEXT REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS inventory_transactions_item_idx ON inventory_transactions(inventory_item_id);
+
+    CREATE TABLE IF NOT EXISTS purchase_orders (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      vendor_id TEXT NOT NULL REFERENCES vendors(id),
+      status TEXT NOT NULL,
+      total_amount INTEGER NOT NULL,
+      currency TEXT NOT NULL,
+      expected_delivery_at TEXT,
+      received_at TEXT,
+      created_by_user_id TEXT REFERENCES users(id),
+      notes TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS purchase_orders_tenant_idx ON purchase_orders(tenant_id);
+    CREATE INDEX IF NOT EXISTS purchase_orders_hotel_idx ON purchase_orders(hotel_id);
+    CREATE INDEX IF NOT EXISTS purchase_orders_hotel_status_idx ON purchase_orders(hotel_id, status);
+
+    CREATE TABLE IF NOT EXISTS purchase_order_items (
+      id TEXT PRIMARY KEY,
+      purchase_order_id TEXT NOT NULL REFERENCES purchase_orders(id),
+      inventory_item_id TEXT REFERENCES inventory_items(id),
+      description TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      unit_price INTEGER NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS purchase_order_items_order_idx ON purchase_order_items(purchase_order_id);
+
+    CREATE TABLE IF NOT EXISTS guest_feedback (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      booking_id TEXT REFERENCES bookings(id),
+      rating INTEGER NOT NULL,
+      categories_json TEXT NOT NULL,
+      comment TEXT,
+      source TEXT NOT NULL,
+      submitted_at TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS guest_feedback_tenant_idx ON guest_feedback(tenant_id);
+    CREATE INDEX IF NOT EXISTS guest_feedback_hotel_idx ON guest_feedback(hotel_id);
+
+    CREATE TABLE IF NOT EXISTS job_postings (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      title TEXT NOT NULL,
+      board_name TEXT NOT NULL,
+      external_url TEXT,
+      status TEXT NOT NULL,
+      notes TEXT,
+      created_by_user_id TEXT REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      closed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS job_postings_tenant_idx ON job_postings(tenant_id);
+    CREATE INDEX IF NOT EXISTS job_postings_hotel_idx ON job_postings(hotel_id);
+
+    CREATE TABLE IF NOT EXISTS job_candidates (
+      id TEXT PRIMARY KEY,
+      job_posting_id TEXT NOT NULL REFERENCES job_postings(id),
+      full_name TEXT NOT NULL,
+      phone TEXT,
+      email TEXT,
+      source TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      notes TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS job_candidates_posting_idx ON job_candidates(job_posting_id);
   `);
 }
