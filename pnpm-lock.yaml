@@ -230,13 +230,16 @@ importers:
       '@hotelos/shared':
         specifier: workspace:*
         version: link:../shared
-      '@libsql/client':
-        specifier: ^0.17.4
-        version: 0.17.4
+      better-sqlite3:
+        specifier: ^11.10.0
+        version: 11.10.0
       drizzle-orm:
         specifier: ^0.44.2
         version: 0.44.7(@libsql/client@0.17.4)(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)
     devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
       '@types/node':
         specifier: ^22.15.32
         version: 22.20.1
@@ -1834,10 +1837,12 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    optional: true
 
   '@libsql/core@0.17.4':
     dependencies:
       js-base64: 3.9.1
+    optional: true
 
   '@libsql/darwin-arm64@0.5.29':
     optional: true
@@ -1852,6 +1857,7 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    optional: true
 
   '@libsql/isomorphic-ws@0.1.5':
     dependencies:
@@ -1860,6 +1866,7 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    optional: true
 
   '@libsql/linux-arm-gnueabihf@0.5.29':
     optional: true
@@ -1882,7 +1889,8 @@ snapshots:
   '@libsql/win32-x64-msvc@0.5.29':
     optional: true
 
-  '@neon-rs/load@0.0.4': {}
+  '@neon-rs/load@0.0.4':
+    optional: true
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 
@@ -2003,7 +2011,6 @@ snapshots:
   '@types/better-sqlite3@7.6.13':
     dependencies:
       '@types/node': 22.20.1
-    optional: true
 
   '@types/estree@1.0.9': {}
 
@@ -2022,6 +2029,7 @@ snapshots:
   '@types/ws@8.18.1':
     dependencies:
       '@types/node': 22.20.1
+    optional: true
 
   '@vitejs/plugin-react@4.7.0(vite@6.4.3(@types/node@22.20.1)(tsx@4.23.1))':
     dependencies:
@@ -2037,8 +2045,7 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  base64-js@1.5.1:
-    optional: true
+  base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.10.43: {}
 
@@ -2046,19 +2053,16 @@ snapshots:
     dependencies:
       bindings: 1.5.0
       prebuild-install: 7.1.3
-    optional: true
 
   bindings@1.5.0:
     dependencies:
       file-uri-to-path: 1.0.0
-    optional: true
 
   bl@4.1.0:
     dependencies:
       buffer: 5.7.1
       inherits: 2.0.4
       readable-stream: 3.6.2
-    optional: true
 
   brace-expansion@5.0.7:
     dependencies:
@@ -2076,12 +2080,10 @@ snapshots:
     dependencies:
       base64-js: 1.5.1
       ieee754: 1.2.1
-    optional: true
 
   caniuse-lite@1.0.30001806: {}
 
-  chownr@1.1.4:
-    optional: true
+  chownr@1.1.4: {}
 
   convert-source-map@2.0.0: {}
 
@@ -2094,15 +2096,13 @@ snapshots:
   decompress-response@6.0.0:
     dependencies:
       mimic-response: 3.1.0
+
+  deep-extend@0.6.0: {}
+
+  detect-libc@2.0.2:
     optional: true
 
-  deep-extend@0.6.0:
-    optional: true
-
-  detect-libc@2.0.2: {}
-
-  detect-libc@2.1.2:
-    optional: true
+  detect-libc@2.1.2: {}
 
   dotenv@16.6.1: {}
 
@@ -2117,7 +2117,6 @@ snapshots:
   end-of-stream@1.4.5:
     dependencies:
       once: 1.4.0
-    optional: true
 
   esbuild@0.25.12:
     optionalDependencies:
@@ -2179,26 +2178,22 @@ snapshots:
 
   escalade@3.2.0: {}
 
-  expand-template@2.0.3:
-    optional: true
+  expand-template@2.0.3: {}
 
   fdir@6.5.0(picomatch@4.0.5):
     optionalDependencies:
       picomatch: 4.0.5
 
-  file-uri-to-path@1.0.0:
-    optional: true
+  file-uri-to-path@1.0.0: {}
 
-  fs-constants@1.0.0:
-    optional: true
+  fs-constants@1.0.0: {}
 
   fsevents@2.3.3:
     optional: true
 
   gensync@1.0.0-beta.2: {}
 
-  github-from-package@0.0.0:
-    optional: true
+  github-from-package@0.0.0: {}
 
   glob@13.0.6:
     dependencies:
@@ -2208,18 +2203,16 @@ snapshots:
 
   hono@4.12.30: {}
 
-  ieee754@1.2.1:
-    optional: true
+  ieee754@1.2.1: {}
 
-  inherits@2.0.4:
-    optional: true
+  inherits@2.0.4: {}
 
-  ini@1.3.8:
-    optional: true
+  ini@1.3.8: {}
 
   jose@6.2.3: {}
 
-  js-base64@3.9.1: {}
+  js-base64@3.9.1:
+    optional: true
 
   js-tokens@4.0.0: {}
 
@@ -2241,6 +2234,7 @@ snapshots:
       '@libsql/linux-x64-gnu': 0.5.29
       '@libsql/linux-x64-musl': 0.5.29
       '@libsql/win32-x64-msvc': 0.5.29
+    optional: true
 
   lru-cache@11.5.2: {}
 
@@ -2248,39 +2242,33 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  mimic-response@3.1.0:
-    optional: true
+  mimic-response@3.1.0: {}
 
   minimatch@10.2.5:
     dependencies:
       brace-expansion: 5.0.7
 
-  minimist@1.2.8:
-    optional: true
+  minimist@1.2.8: {}
 
   minipass@7.1.3: {}
 
-  mkdirp-classic@0.5.3:
-    optional: true
+  mkdirp-classic@0.5.3: {}
 
   ms@2.1.3: {}
 
   nanoid@3.3.16: {}
 
-  napi-build-utils@2.0.0:
-    optional: true
+  napi-build-utils@2.0.0: {}
 
   node-abi@3.94.0:
     dependencies:
       semver: 7.8.5
-    optional: true
 
   node-releases@2.0.51: {}
 
   once@1.4.0:
     dependencies:
       wrappy: 1.0.2
-    optional: true
 
   package-json-from-dist@1.0.1: {}
 
@@ -2313,15 +2301,14 @@ snapshots:
       simple-get: 4.0.1
       tar-fs: 2.1.5
       tunnel-agent: 0.6.0
-    optional: true
 
-  promise-limit@2.7.0: {}
+  promise-limit@2.7.0:
+    optional: true
 
   pump@3.0.4:
     dependencies:
       end-of-stream: 1.4.5
       once: 1.4.0
-    optional: true
 
   rc@1.2.8:
     dependencies:
@@ -2329,7 +2316,6 @@ snapshots:
       ini: 1.3.8
       minimist: 1.2.8
       strip-json-comments: 2.0.1
-    optional: true
 
   react-dom@19.2.7(react@19.2.7):
     dependencies:
@@ -2345,7 +2331,6 @@ snapshots:
       inherits: 2.0.4
       string_decoder: 1.3.0
       util-deprecate: 1.0.2
-    optional: true
 
   rimraf@6.1.3:
     dependencies:
@@ -2383,35 +2368,29 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.62.2
       fsevents: 2.3.3
 
-  safe-buffer@5.2.1:
-    optional: true
+  safe-buffer@5.2.1: {}
 
   scheduler@0.27.0: {}
 
   semver@6.3.1: {}
 
-  semver@7.8.5:
-    optional: true
+  semver@7.8.5: {}
 
-  simple-concat@1.0.1:
-    optional: true
+  simple-concat@1.0.1: {}
 
   simple-get@4.0.1:
     dependencies:
       decompress-response: 6.0.0
       once: 1.4.0
       simple-concat: 1.0.1
-    optional: true
 
   source-map-js@1.2.1: {}
 
   string_decoder@1.3.0:
     dependencies:
       safe-buffer: 5.2.1
-    optional: true
 
-  strip-json-comments@2.0.1:
-    optional: true
+  strip-json-comments@2.0.1: {}
 
   tar-fs@2.1.5:
     dependencies:
@@ -2419,7 +2398,6 @@ snapshots:
       mkdirp-classic: 0.5.3
       pump: 3.0.4
       tar-stream: 2.2.0
-    optional: true
 
   tar-stream@2.2.0:
     dependencies:
@@ -2428,7 +2406,6 @@ snapshots:
       fs-constants: 1.0.0
       inherits: 2.0.4
       readable-stream: 3.6.2
-    optional: true
 
   tinyglobby@0.2.17:
     dependencies:
@@ -2444,7 +2421,6 @@ snapshots:
   tunnel-agent@0.6.0:
     dependencies:
       safe-buffer: 5.2.1
-    optional: true
 
   turbo@2.10.5:
     optionalDependencies:
@@ -2465,8 +2441,7 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
-  util-deprecate@1.0.2:
-    optional: true
+  util-deprecate@1.0.2: {}
 
   vite@6.4.3(@types/node@22.20.1)(tsx@4.23.1):
     dependencies:
@@ -2481,10 +2456,10 @@ snapshots:
       fsevents: 2.3.3
       tsx: 4.23.1
 
-  wrappy@1.0.2:
-    optional: true
+  wrappy@1.0.2: {}
 
-  ws@8.21.1: {}
+  ws@8.21.1:
+    optional: true
 
   yallist@3.1.1: {}
 

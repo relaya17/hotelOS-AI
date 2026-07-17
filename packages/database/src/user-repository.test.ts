@@ -15,7 +15,7 @@ import {
 
 test("seeded demo user can be loaded by tenant email", async () => {
   const dir = mkdtempSync(join(tmpdir(), "hotelos-db-"));
-  const { db, close } = await createDb(join(dir, "test.sqlite"));
+  const { db, close } = createDb(join(dir, "test.sqlite"));
   await seedDemoTenant(db, async () => "scrypt$testsalt$00");
 
   const users = createUserRepository(db);

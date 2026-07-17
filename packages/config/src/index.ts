@@ -8,10 +8,7 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(16),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   JWT_REFRESH_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 14),
-  /** `file:.data/hotelos.sqlite` locally, or a hosted `libsql://...` (Turso) URL in production */
-  DATABASE_URL: z.string().min(1).default("file:.data/hotelos.sqlite"),
-  /** Required only when DATABASE_URL points at a hosted Turso database */
-  DATABASE_AUTH_TOKEN: z.string().optional().default(""),
+  DATABASE_PATH: z.string().min(1).default(".data/hotelos.sqlite"),
   /** Separated by tenant/chain/room under this root */
   RECORDINGS_PATH: z.string().min(1).default(".data/recordings"),
   /** Comma-separated origins for the three separate apps */

@@ -34,13 +34,8 @@ function resolveRepoPath(relativePath: string): string {
 export async function composeApp() {
   const env = loadEnv();
   const logger = createLogger({ service: "api" }, env.LOG_LEVEL);
-  const dbUrl = env.DATABASE_URL.startsWith("file:")
-    ? `file:${resolveRepoPath(env.DATABASE_URL.slice("file:".length))}`
-    : env.DATABASE_URL;
-  const { db } = await createDb({
-    url: dbUrl,
-    authToken: env.DATABASE_AUTH_TOKEN || undefined,
-  });
+  const dbPath = resolveRepoPath(env.DATABASE_PATH);
+  const { db } = createDb(dbPath);
   await seedDemoTenant(db, hashPassword);
 
   const users = createUserRepository(db);
@@ -99,7 +94,7 @@ export async function composeApp() {
     },
   });
 
-  logger.info("database ready", { url: dbUrl });
+  logger.info("database ready", { path: dbPath });
   logger.info("recordings storage ready", { path: recordings.root });
   return { app, env, logger };
 }

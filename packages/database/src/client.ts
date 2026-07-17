@@ -1,5 +1,5 @@
-import { createClient, type Client } from "@libsql/client";
-import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
+import Database from "better-sqlite3";
+import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import * as briefingSchema from "./schema/briefing.js";
@@ -15,52 +15,30 @@ const schema = {
 };
 
 export type HotelOsSchema = typeof schema;
-export type HotelOsDb = LibSQLDatabase<HotelOsSchema>;
+export type HotelOsDb = BetterSQLite3Database<HotelOsSchema>;
 
 export type DbHandle = {
   readonly db: HotelOsDb;
   readonly close: () => void;
 };
 
-export type DbConfig = {
-  /**
-   * Either a local file URL (`file:.data/hotelos.sqlite` — works with no
-   * server, same as the old better-sqlite3 setup) or a hosted libSQL/Turso
-   * URL (`libsql://<db>.turso.io`).
-   */
-  readonly url: string;
-  /** Required when `url` points at a hosted Turso database. */
-  readonly authToken?: string;
-};
-
-/**
- * Accepts either a bare sqlite file path (legacy call style, kept for the
- * test suite) or a full DbConfig so production code can point at a hosted
- * libSQL/Turso database instead of a local file.
- */
-export async function createDb(config: DbConfig | string): Promise<DbHandle> {
-  const { url, authToken } =
-    typeof config === "string" ? { url: `file:${config}`, authToken: undefined } : config;
-
-  if (url.startsWith("file:")) {
-    mkdirSync(dirname(url.slice("file:".length)), { recursive: true });
-  }
-
-  const client = createClient({ url, authToken });
-  await migrate(client);
-  const db = drizzle(client, { schema });
+export function createDb(sqlitePath: string): DbHandle {
+  mkdirSync(dirname(sqlitePath), { recursive: true });
+  const sqlite = new Database(sqlitePath);
+  sqlite.pragma("journal_mode = WAL");
+  sqlite.pragma("foreign_keys = ON");
+  const db = drizzle(sqlite, { schema });
+  migrate(sqlite);
   return {
     db,
     close: () => {
-      client.close();
+      sqlite.close();
     },
   };
 }
 
-/** Runs the base schema + pragmas. Safe to call on every boot (IF NOT EXISTS). */
-export async function migrate(client: Client): Promise<void> {
-  await client.execute("PRAGMA foreign_keys = ON");
-  await client.executeMultiple(`
+function migrate(sqlite: Database.Database): void {
+  sqlite.exec(`
     CREATE TABLE IF NOT EXISTS tenants (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
