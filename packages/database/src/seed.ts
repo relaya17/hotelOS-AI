@@ -31,14 +31,14 @@ export async function seedDemoTenant(
   const departmentId = "44444444-4444-4444-8444-444444444444";
   const userId = "55555555-5555-4555-8555-555555555555";
 
-  const existingTenant = db
+  const existingTenant = await db
     .select()
     .from(tenants)
     .where(eq(tenants.id, DEMO_TENANT_ID))
     .get();
 
   if (!existingTenant) {
-    db.insert(tenants)
+    await db.insert(tenants)
       .values({
         id: DEMO_TENANT_ID,
         name: "Demo Hospitality Group",
@@ -48,14 +48,14 @@ export async function seedDemoTenant(
       .run();
   }
 
-  const existingChain = db
+  const existingChain = await db
     .select()
     .from(hotelChains)
     .where(eq(hotelChains.id, DEMO_CHAIN_ID))
     .get();
 
   if (!existingChain) {
-    db.insert(hotelChains)
+    await db.insert(hotelChains)
       .values({
         id: DEMO_CHAIN_ID,
         tenantId: DEMO_TENANT_ID,
@@ -65,7 +65,7 @@ export async function seedDemoTenant(
       .run();
   }
 
-  ensureHotel(db, {
+  await ensureHotel(db, {
     id: DEMO_HOTEL_TLV_ID,
     name: "Demo Hotel Tel Aviv",
     timezone: "Asia/Jerusalem",
@@ -73,7 +73,7 @@ export async function seedDemoTenant(
     createdAt: now,
   });
 
-  ensureHotel(db, {
+  await ensureHotel(db, {
     id: DEMO_HOTEL_EILAT_ID,
     name: "Demo Hotel Eilat",
     timezone: "Asia/Jerusalem",
@@ -81,20 +81,20 @@ export async function seedDemoTenant(
     createdAt: now,
   });
 
-  ensureDemoRooms(db, DEMO_HOTEL_TLV_ID, now, [
+  await ensureDemoRooms(db, DEMO_HOTEL_TLV_ID, now, [
     { id: "70000000-0000-4000-8000-000000000101", number: "101", floor: "1", roomType: "standard", status: "vacant" },
     { id: "70000000-0000-4000-8000-000000000102", number: "102", floor: "1", roomType: "standard", status: "dirty" },
     { id: "70000000-0000-4000-8000-000000000201", number: "201", floor: "2", roomType: "suite", status: "occupied" },
     { id: "70000000-0000-4000-8000-000000000301", number: "301", floor: "3", roomType: "deluxe", status: "maintenance" },
   ]);
 
-  ensureDemoRooms(db, DEMO_HOTEL_EILAT_ID, now, [
+  await ensureDemoRooms(db, DEMO_HOTEL_EILAT_ID, now, [
     { id: "70000000-0000-4000-8000-000000000401", number: "401", floor: "4", roomType: "standard", status: "vacant" },
     { id: "70000000-0000-4000-8000-000000000402", number: "402", floor: "4", roomType: "sea_view", status: "occupied" },
     { id: "70000000-0000-4000-8000-000000000501", number: "501", floor: "5", roomType: "suite", status: "dirty" },
   ]);
 
-  ensureDemoBookings(db, now, [
+  await ensureDemoBookings(db, now, [
     {
       id: "80000000-0000-4000-8000-000000000001",
       hotelId: DEMO_HOTEL_TLV_ID,
@@ -127,14 +127,14 @@ export async function seedDemoTenant(
     },
   ]);
 
-  const existingDepartment = db
+  const existingDepartment = await db
     .select()
     .from(departments)
     .where(eq(departments.id, departmentId))
     .get();
 
   if (!existingDepartment) {
-    db.insert(departments)
+    await db.insert(departments)
       .values({
         id: departmentId,
         tenantId: DEMO_TENANT_ID,
@@ -146,7 +146,7 @@ export async function seedDemoTenant(
       .run();
   }
 
-  const existingUser = db
+  const existingUser = await db
     .select()
     .from(users)
     .where(eq(users.id, userId))
@@ -154,7 +154,7 @@ export async function seedDemoTenant(
 
   if (!existingUser) {
     const passwordHash = await hashPassword(DEMO_USER_PASSWORD);
-    db.insert(users)
+    await db.insert(users)
       .values({
         id: userId,
         tenantId: DEMO_TENANT_ID,
@@ -189,7 +189,7 @@ export async function seedDemoTenant(
   });
 }
 
-function ensureHotel(
+async function ensureHotel(
   db: HotelOsDb,
   input: {
     id: string;
@@ -198,8 +198,8 @@ function ensureHotel(
     currency: string;
     createdAt: string;
   },
-): void {
-  const existing = db
+): Promise<void> {
+  const existing = await db
     .select()
     .from(hotels)
     .where(eq(hotels.id, input.id))
@@ -208,7 +208,7 @@ function ensureHotel(
     return;
   }
 
-  db.insert(hotels)
+  await db.insert(hotels)
     .values({
       id: input.id,
       tenantId: DEMO_TENANT_ID,
@@ -221,7 +221,7 @@ function ensureHotel(
     .run();
 }
 
-function ensureDemoRooms(
+async function ensureDemoRooms(
   db: HotelOsDb,
   hotelId: string,
   createdAt: string,
@@ -232,9 +232,9 @@ function ensureDemoRooms(
     roomType: string;
     status: string;
   }[],
-): void {
+): Promise<void> {
   for (const item of items) {
-    const existing = db
+    const existing = await db
       .select()
       .from(rooms)
       .where(eq(rooms.id, item.id))
@@ -242,7 +242,7 @@ function ensureDemoRooms(
     if (existing) {
       continue;
     }
-    db.insert(rooms)
+    await db.insert(rooms)
       .values({
         id: item.id,
         tenantId: DEMO_TENANT_ID,
@@ -257,7 +257,7 @@ function ensureDemoRooms(
   }
 }
 
-function ensureDemoBookings(
+async function ensureDemoBookings(
   db: HotelOsDb,
   createdAt: string,
   items: readonly {
@@ -270,9 +270,9 @@ function ensureDemoBookings(
     checkOutDate: string;
     status: string;
   }[],
-): void {
+): Promise<void> {
   for (const item of items) {
-    const existing = db
+    const existing = await db
       .select()
       .from(bookings)
       .where(eq(bookings.id, item.id))
@@ -280,7 +280,7 @@ function ensureDemoBookings(
     if (existing) {
       continue;
     }
-    db.insert(bookings)
+    await db.insert(bookings)
       .values({
         id: item.id,
         tenantId: DEMO_TENANT_ID,

@@ -184,7 +184,7 @@ function hashSignature(imageDataUrl: string): string {
 export function createTrustRepository(db: HotelOsDb): TrustRepository {
   return {
     async saveCookieConsent(input) {
-      db.insert(cookieConsents)
+      await db.insert(cookieConsents)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -198,7 +198,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async createPaymentIntent(input) {
-      db.insert(paymentIntents)
+      await db.insert(paymentIntents)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -224,7 +224,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async confirmPaymentIntent(tenantId, paymentId) {
-      const row = db
+      const row = await db
         .select()
         .from(paymentIntents)
         .where(
@@ -244,7 +244,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
           : null;
       }
       const confirmedAt = new Date().toISOString();
-      db.update(paymentIntents)
+      await db.update(paymentIntents)
         .set({ status: "succeeded", confirmedAt })
         .where(eq(paymentIntents.id, paymentId))
         .run();
@@ -252,27 +252,27 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async listPayments(tenantId) {
-      return db
+      const rows = await db
         .select()
         .from(paymentIntents)
         .where(eq(paymentIntents.tenantId, tenantId))
         .orderBy(desc(paymentIntents.createdAt))
-        .all()
-        .map((row) => ({
-          id: row.id,
-          amountMinor: Number(row.amountMinor),
-          currency: row.currency,
-          status: row.status,
-          description: row.description,
-          provider: row.provider,
-          createdAt: row.createdAt,
-          confirmedAt: row.confirmedAt,
-        }));
+        .all();
+      return rows.map((row) => ({
+        id: row.id,
+        amountMinor: Number(row.amountMinor),
+        currency: row.currency,
+        status: row.status,
+        description: row.description,
+        provider: row.provider,
+        createdAt: row.createdAt,
+        confirmedAt: row.confirmedAt,
+      }));
     },
 
     async createSignature(input) {
       const contentHash = hashSignature(input.imageDataUrl);
-      db.insert(digitalSignatures)
+      await db.insert(digitalSignatures)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -300,7 +300,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
         Date.now() + input.ttlSeconds * 1000,
       ).toISOString();
       const createdAt = new Date().toISOString();
-      db.insert(authChallenges)
+      await db.insert(authChallenges)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -316,7 +316,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async consumeChallenge(tenantId, challenge, purpose) {
-      const row = db
+      const row = await db
         .select()
         .from(authChallenges)
         .where(
@@ -329,7 +329,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
         .get();
       if (!row || row.consumedAt !== null) return null;
       if (new Date(row.expiresAt).getTime() < Date.now()) return null;
-      db.update(authChallenges)
+      await db.update(authChallenges)
         .set({ consumedAt: new Date().toISOString() })
         .where(eq(authChallenges.id, row.id))
         .run();
@@ -337,7 +337,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async saveWebAuthnCredential(input) {
-      db.insert(webauthnCredentials)
+      await db.insert(webauthnCredentials)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -351,7 +351,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async listWebAuthnCredentials(tenantId, userId) {
-      return db
+      const rows = await db
         .select()
         .from(webauthnCredentials)
         .where(
@@ -360,15 +360,15 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
             eq(webauthnCredentials.userId, userId),
           ),
         )
-        .all()
-        .map((row) => ({
-          credentialId: row.credentialId,
-          deviceLabel: row.deviceLabel,
-        }));
+        .all();
+      return rows.map((row) => ({
+        credentialId: row.credentialId,
+        deviceLabel: row.deviceLabel,
+      }));
     },
 
     async findWebAuthnCredential(credentialId) {
-      const row = db
+      const row = await db
         .select()
         .from(webauthnCredentials)
         .where(eq(webauthnCredentials.credentialId, credentialId))
@@ -382,7 +382,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async linkOAuthIdentity(input) {
-      const existing = db
+      const existing = await db
         .select()
         .from(oauthIdentities)
         .where(
@@ -393,7 +393,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
         )
         .get();
       if (existing) return;
-      db.insert(oauthIdentities)
+      await db.insert(oauthIdentities)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -407,7 +407,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async findOAuthIdentity(provider, providerSubject) {
-      const row = db
+      const row = await db
         .select()
         .from(oauthIdentities)
         .where(
@@ -426,7 +426,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async enrollVoice(input) {
-      db.insert(voiceEnrollments)
+      await db.insert(voiceEnrollments)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -439,7 +439,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async verifyVoice(tenantId, userId, sampleHash) {
-      const row = db
+      const row = await db
         .select()
         .from(voiceEnrollments)
         .where(
@@ -454,7 +454,7 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async recordAttendance(input) {
-      db.insert(attendanceEvents)
+      await db.insert(attendanceEvents)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -489,25 +489,25 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async listAttendance(tenantId) {
-      return db
+      const rows = await db
         .select()
         .from(attendanceEvents)
         .where(eq(attendanceEvents.tenantId, tenantId))
         .orderBy(desc(attendanceEvents.occurredAt))
-        .all()
-        .map((row) => ({
-          id: row.id,
-          employeeId: row.employeeId,
-          hotelId: row.hotelId,
-          eventType: row.eventType,
-          occurredAt: row.occurredAt,
-          latitude: row.latitude === null ? null : Number(row.latitude),
-          longitude: row.longitude === null ? null : Number(row.longitude),
-          deviceLabel: row.deviceLabel,
-          voiceVerified: row.voiceVerified === "1",
-          webauthnVerified: row.webauthnVerified === "1",
-          note: row.note,
-        }));
+        .all();
+      return rows.map((row) => ({
+        id: row.id,
+        employeeId: row.employeeId,
+        hotelId: row.hotelId,
+        eventType: row.eventType,
+        occurredAt: row.occurredAt,
+        latitude: row.latitude === null ? null : Number(row.latitude),
+        longitude: row.longitude === null ? null : Number(row.longitude),
+        deviceLabel: row.deviceLabel,
+        voiceVerified: row.voiceVerified === "1",
+        webauthnVerified: row.webauthnVerified === "1",
+        note: row.note,
+      }));
     },
   };
 }

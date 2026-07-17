@@ -1,6 +1,13 @@
 import { clearSession, readAccessToken } from "./session.js";
 
-const API_BASE = "http://localhost:3001";
+// import.meta.env is only populated inside Vite builds (all three frontend
+// apps). Falls back to the local dev API port when unset, so this keeps
+// working unchanged in tests / non-Vite consumers.
+const viteEnv: Record<string, string | undefined> =
+  (import.meta as unknown as { env?: Record<string, string | undefined> })
+    .env ?? {};
+
+const API_BASE = viteEnv["VITE_API_BASE"] ?? "http://localhost:3001";
 
 export type LoginResponse = {
   readonly accessToken: string;
@@ -781,9 +788,11 @@ export async function clockAttendance(input: {
   return payload.data;
 }
 
+const guestAppUrl = viteEnv["VITE_APP_URL_GUEST"] ?? "http://localhost:5175";
+
 export const APP_URLS = {
-  executive: "http://localhost:5173",
-  admin: "http://localhost:5174",
-  guest: "http://localhost:5175",
-  legal: (doc: string) => `http://localhost:5175/?doc=${doc}`,
+  executive: viteEnv["VITE_APP_URL_EXECUTIVE"] ?? "http://localhost:5173",
+  admin: viteEnv["VITE_APP_URL_ADMIN"] ?? "http://localhost:5174",
+  guest: guestAppUrl,
+  legal: (doc: string) => `${guestAppUrl}/?doc=${doc}`,
 } as const;

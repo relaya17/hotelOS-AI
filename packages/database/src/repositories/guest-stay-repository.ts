@@ -21,7 +21,7 @@ export function createGuestStayRepository(db: HotelOsDb): GuestStayRepository {
   return {
     async lookupByEmail(email) {
       const normalized = email.trim().toLowerCase();
-      const rows = db
+      const rows = await db
         .select({
           bookingId: bookings.id,
           hotelId: bookings.hotelId,

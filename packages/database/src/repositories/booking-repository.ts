@@ -88,7 +88,7 @@ function mapBooking(
 export function createBookingRepository(db: HotelOsDb): BookingRepository {
   return {
     async hotelBelongsToTenant(tenantId, hotelId) {
-      const row = db
+      const row = await db
         .select()
         .from(hotels)
         .where(and(eq(hotels.id, hotelId), eq(hotels.tenantId, tenantId)))
@@ -97,7 +97,7 @@ export function createBookingRepository(db: HotelOsDb): BookingRepository {
     },
 
     async findRoomInHotel(tenantId, hotelId, roomId) {
-      const row = db
+      const row = await db
         .select()
         .from(rooms)
         .where(
@@ -119,7 +119,7 @@ export function createBookingRepository(db: HotelOsDb): BookingRepository {
     },
 
     async listByHotel(tenantId, hotelId) {
-      const rows = db
+      const rows = await db
         .select({
           booking: bookings,
           roomNumber: rooms.number,
@@ -136,7 +136,7 @@ export function createBookingRepository(db: HotelOsDb): BookingRepository {
     },
 
     async create(input) {
-      db.insert(bookings)
+      await db.insert(bookings)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -152,13 +152,13 @@ export function createBookingRepository(db: HotelOsDb): BookingRepository {
         .run();
 
       if (input.status === "checked_in") {
-        db.update(rooms)
+        await db.update(rooms)
           .set({ status: "occupied" })
           .where(eq(rooms.id, input.roomId))
           .run();
       }
 
-      const room = db
+      const room = await db
         .select()
         .from(rooms)
         .where(eq(rooms.id, input.roomId))

@@ -1,5 +1,5 @@
-import Database from "better-sqlite3";
-import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { createClient, type Client } from "@libsql/client";
+import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import * as briefingSchema from "./schema/briefing.js";
@@ -15,30 +15,43 @@ const schema = {
 };
 
 export type HotelOsSchema = typeof schema;
-export type HotelOsDb = BetterSQLite3Database<HotelOsSchema>;
+export type HotelOsDb = LibSQLDatabase<HotelOsSchema>;
 
 export type DbHandle = {
   readonly db: HotelOsDb;
   readonly close: () => void;
 };
 
-export function createDb(sqlitePath: string): DbHandle {
-  mkdirSync(dirname(sqlitePath), { recursive: true });
-  const sqlite = new Database(sqlitePath);
-  sqlite.pragma("journal_mode = WAL");
-  sqlite.pragma("foreign_keys = ON");
-  const db = drizzle(sqlite, { schema });
-  migrate(sqlite);
+export type DbConfig = {
+  readonly url: string;
+  readonly authToken?: string;
+};
+
+export async function createDb(config: DbConfig | string): Promise<DbHandle> {
+  const { url, authToken } =
+    typeof config === "string" ? { url: `file:${config}`, authToken: undefined } : config;
+
+  if (url.startsWith("file:")) {
+    mkdirSync(dirname(url.slice("file:".length)), { recursive: true });
+  }
+
+  const client = createClient({
+    url,
+    ...(authToken !== undefined ? { authToken } : {}),
+  });
+  await migrate(client);
+  const db = drizzle(client, { schema });
   return {
     db,
     close: () => {
-      sqlite.close();
+      client.close();
     },
   };
 }
 
-function migrate(sqlite: Database.Database): void {
-  sqlite.exec(`
+export async function migrate(client: Client): Promise<void> {
+  await client.execute("PRAGMA foreign_keys = ON");
+  await client.executeMultiple(`
     CREATE TABLE IF NOT EXISTS tenants (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,

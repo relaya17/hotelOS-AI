@@ -178,13 +178,13 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
       ] as const;
 
       for (const employee of employees) {
-        const existing = db
+        const existing = await db
           .select()
           .from(employeeProfiles)
           .where(eq(employeeProfiles.id, employee.id))
           .get();
         if (existing) continue;
-        db.insert(employeeProfiles)
+        await db.insert(employeeProfiles)
           .values({
             id: employee.id,
             tenantId: input.tenantId,
@@ -232,13 +232,13 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
       ] as const;
 
       for (const account of accounts) {
-        const existing = db
+        const existing = await db
           .select()
           .from(ledgerAccounts)
           .where(eq(ledgerAccounts.id, account.id))
           .get();
         if (existing) continue;
-        db.insert(ledgerAccounts)
+        await db.insert(ledgerAccounts)
           .values({
             id: account.id,
             tenantId: input.tenantId,
@@ -287,13 +287,13 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
       ] as const;
 
       for (const entry of journals) {
-        const existing = db
+        const existing = await db
           .select()
           .from(journalEntries)
           .where(eq(journalEntries.id, entry.id))
           .get();
         if (existing) continue;
-        db.insert(journalEntries)
+        await db.insert(journalEntries)
           .values({
             id: entry.id,
             tenantId: input.tenantId,
@@ -354,13 +354,13 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
       ] as const;
 
       for (const rule of rules) {
-        const existing = db
+        const existing = await db
           .select()
           .from(automations)
           .where(eq(automations.id, rule.id))
           .get();
         if (existing) continue;
-        db.insert(automations)
+        await db.insert(automations)
           .values({
             id: rule.id,
             tenantId: input.tenantId,
@@ -376,13 +376,13 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
       }
 
       const chatId = "c1000000-0000-4000-8000-000000000001";
-      const existingChat = db
+      const existingChat = await db
         .select()
         .from(staffChatMessages)
         .where(eq(staffChatMessages.id, chatId))
         .get();
       if (!existingChat) {
-        db.insert(staffChatMessages)
+        await db.insert(staffChatMessages)
           .values({
             id: chatId,
             tenantId: input.tenantId,
@@ -411,22 +411,22 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
     },
 
     async listEmployees(tenantId) {
-      return db
+      const rows = await db
         .select()
         .from(employeeProfiles)
         .where(eq(employeeProfiles.tenantId, tenantId))
-        .all()
-        .map((row) => ({
-          id: row.id,
-          displayName: row.displayName,
-          roleLabel: row.roleLabel,
-          preferredLocale: row.preferredLocale,
-          hotelId: row.hotelId,
-        }));
+        .all();
+      return rows.map((row) => ({
+        id: row.id,
+        displayName: row.displayName,
+        roleLabel: row.roleLabel,
+        preferredLocale: row.preferredLocale,
+        hotelId: row.hotelId,
+      }));
     },
 
     async listChatMessages(tenantId, channel) {
-      return db
+      const rows = await db
         .select()
         .from(staffChatMessages)
         .where(
@@ -436,21 +436,21 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
           ),
         )
         .orderBy(desc(staffChatMessages.createdAt))
-        .all()
-        .map((row) => ({
-          id: row.id,
-          channel: row.channel,
-          authorName: row.authorName,
-          sourceLocale: row.sourceLocale,
-          sourceBody: row.sourceBody,
-          translations: parseTranslations(row.translationsJson),
-          verification: row.verification,
-          createdAt: row.createdAt,
-        }));
+        .all();
+      return rows.map((row) => ({
+        id: row.id,
+        channel: row.channel,
+        authorName: row.authorName,
+        sourceLocale: row.sourceLocale,
+        sourceBody: row.sourceBody,
+        translations: parseTranslations(row.translationsJson),
+        verification: row.verification,
+        createdAt: row.createdAt,
+      }));
     },
 
     async postChatMessage(input) {
-      db.insert(staffChatMessages)
+      await db.insert(staffChatMessages)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -477,34 +477,36 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
     },
 
     async listAccounts(tenantId) {
-      const accounts = db
+      const accounts = await db
         .select()
         .from(ledgerAccounts)
         .where(eq(ledgerAccounts.tenantId, tenantId))
         .all();
-      return accounts.map((account) => {
-        const entries = db
-          .select()
-          .from(journalEntries)
-          .where(eq(journalEntries.accountId, account.id))
-          .all();
-        const balanceMinor = entries.reduce(
-          (sum, entry) => sum + entry.debit - entry.credit,
-          0,
-        );
-        return {
-          id: account.id,
-          code: account.code,
-          name: account.name,
-          accountType: account.accountType,
-          currency: account.currency,
-          balanceMinor,
-        };
-      });
+      return Promise.all(
+        accounts.map(async (account) => {
+          const entries = await db
+            .select()
+            .from(journalEntries)
+            .where(eq(journalEntries.accountId, account.id))
+            .all();
+          const balanceMinor = entries.reduce(
+            (sum, entry) => sum + entry.debit - entry.credit,
+            0,
+          );
+          return {
+            id: account.id,
+            code: account.code,
+            name: account.name,
+            accountType: account.accountType,
+            currency: account.currency,
+            balanceMinor,
+          };
+        }),
+      );
     },
 
     async listJournal(tenantId) {
-      const rows = db
+      const rows = await db
         .select({
           entry: journalEntries,
           account: ledgerAccounts,
@@ -530,24 +532,24 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
     },
 
     async listAutomations(tenantId) {
-      return db
+      const rows = await db
         .select()
         .from(automations)
         .where(eq(automations.tenantId, tenantId))
-        .all()
-        .map((row) => ({
-          id: row.id,
-          name: row.name,
-          domain: row.domain,
-          triggerKey: row.triggerKey,
-          actionKey: row.actionKey,
-          enabled: row.enabled === 1,
-          lastRunAt: row.lastRunAt,
-        }));
+        .all();
+      return rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        domain: row.domain,
+        triggerKey: row.triggerKey,
+        actionKey: row.actionKey,
+        enabled: row.enabled === 1,
+        lastRunAt: row.lastRunAt,
+      }));
     },
 
     async setAutomationEnabled(tenantId, automationId, enabled) {
-      const existing = db
+      const existing = await db
         .select()
         .from(automations)
         .where(
@@ -558,7 +560,7 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
         )
         .get();
       if (!existing) return null;
-      db.update(automations)
+      await db.update(automations)
         .set({ enabled: enabled ? 1 : 0 })
         .where(eq(automations.id, automationId))
         .run();
@@ -574,7 +576,7 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
     },
 
     async runAutomation(tenantId, automationId, detail) {
-      const existing = db
+      const existing = await db
         .select()
         .from(automations)
         .where(
@@ -587,11 +589,11 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
       if (!existing || existing.enabled !== 1) return null;
       const now = new Date().toISOString();
       const runId = randomUUID();
-      db.update(automations)
+      await db.update(automations)
         .set({ lastRunAt: now })
         .where(eq(automations.id, automationId))
         .run();
-      db.insert(automationRuns)
+      await db.insert(automationRuns)
         .values({
           id: runId,
           tenantId,
@@ -611,19 +613,19 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
     },
 
     async listAutomationRuns(tenantId) {
-      return db
+      const rows = await db
         .select()
         .from(automationRuns)
         .where(eq(automationRuns.tenantId, tenantId))
         .orderBy(desc(automationRuns.createdAt))
-        .all()
-        .map((row) => ({
-          id: row.id,
-          automationId: row.automationId,
-          status: row.status,
-          detail: row.detail,
-          createdAt: row.createdAt,
-        }));
+        .all();
+      return rows.map((row) => ({
+        id: row.id,
+        automationId: row.automationId,
+        status: row.status,
+        detail: row.detail,
+        createdAt: row.createdAt,
+      }));
     },
   };
 }

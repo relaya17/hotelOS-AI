@@ -38,7 +38,7 @@ export type OverviewRepository = {
 export function createOverviewRepository(db: HotelOsDb): OverviewRepository {
   return {
     async getChainOverview(tenantId) {
-      const tenant = db
+      const tenant = await db
         .select()
         .from(tenants)
         .where(eq(tenants.id, tenantId))
@@ -47,14 +47,15 @@ export function createOverviewRepository(db: HotelOsDb): OverviewRepository {
         return null;
       }
 
-      const hotelRows = db
+      const hotelRows = await db
         .select()
         .from(hotels)
         .where(eq(hotels.tenantId, tenantId))
         .all();
 
-      const overviews: HotelOverview[] = hotelRows.map((hotel) => {
-        const roomRows = db
+      const overviews: HotelOverview[] = [];
+      for (const hotel of hotelRows) {
+        const roomRows = await db
           .select()
           .from(rooms)
           .where(
@@ -71,7 +72,7 @@ export function createOverviewRepository(db: HotelOsDb): OverviewRepository {
             .length,
         };
 
-        const bookingRows = db
+        const bookingRows = await db
           .select()
           .from(bookings)
           .where(
@@ -90,7 +91,7 @@ export function createOverviewRepository(db: HotelOsDb): OverviewRepository {
           (row) => row.status === "checked_in",
         ).length;
 
-        return {
+        overviews.push({
           id: Ids.hotel(hotel.id),
           name: hotel.name,
           timezone: hotel.timezone,
@@ -102,8 +103,8 @@ export function createOverviewRepository(db: HotelOsDb): OverviewRepository {
             checkedIn,
             active: confirmed + checkedIn,
           },
-        };
-      });
+        });
+      }
 
       return {
         tenantId: Ids.tenant(tenant.id),

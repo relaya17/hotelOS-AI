@@ -50,7 +50,7 @@ export function createUserRepository(db: HotelOsDb): UserRepository {
   return {
     async findByTenantAndEmail(tenantId, email) {
       const normalized = email.trim().toLowerCase();
-      const row = db
+      const row = await db
         .select()
         .from(users)
         .where(and(eq(users.tenantId, tenantId), eq(users.email, normalized)))
@@ -58,7 +58,7 @@ export function createUserRepository(db: HotelOsDb): UserRepository {
       return row ? mapUser(row) : null;
     },
     async findById(userId) {
-      const row = db.select().from(users).where(eq(users.id, userId)).get();
+      const row = await db.select().from(users).where(eq(users.id, userId)).get();
       return row ? mapUser(row) : null;
     },
   };

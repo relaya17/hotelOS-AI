@@ -226,17 +226,17 @@ function mapRecording(
 export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
   return {
     async listByTenant(tenantId) {
-      return db
+      const rows = await db
         .select()
         .from(briefingRooms)
         .where(eq(briefingRooms.tenantId, tenantId))
         .orderBy(asc(briefingRooms.createdAt))
-        .all()
-        .map(mapRoom);
+        .all();
+      return rows.map(mapRoom);
     },
 
     async getDetail(tenantId, roomId) {
-      const roomRow = db
+      const roomRow = await db
         .select()
         .from(briefingRooms)
         .where(
@@ -250,19 +250,19 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         return null;
       }
 
-      const participants = db
+      const participantRows = await db
         .select()
         .from(briefingParticipants)
         .where(eq(briefingParticipants.roomId, roomId))
-        .all()
-        .map((row) => ({
-          id: row.id,
-          displayName: row.displayName,
-          roleLabel: row.roleLabel,
-          userId: row.userId,
-        }));
+        .all();
+      const participants = participantRows.map((row) => ({
+        id: row.id,
+        displayName: row.displayName,
+        roleLabel: row.roleLabel,
+        userId: row.userId,
+      }));
 
-      const sharedRows = db
+      const sharedRows = await db
         .select({
           share: briefingSharedAgents,
           agent: agents,
@@ -283,22 +283,22 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         sharedAt: row.share.sharedAt,
       }));
 
-      const messages = db
+      const messageRows = await db
         .select()
         .from(briefingMessages)
         .where(eq(briefingMessages.roomId, roomId))
         .orderBy(asc(briefingMessages.createdAt))
-        .all()
-        .map((row) => ({
-          id: row.id,
-          speakerKind: row.speakerKind as "human" | "agent",
-          speakerId: row.speakerId,
-          speakerName: row.speakerName,
-          body: row.body,
-          createdAt: row.createdAt,
-        }));
+        .all();
+      const messages = messageRows.map((row) => ({
+        id: row.id,
+        speakerKind: row.speakerKind as "human" | "agent",
+        speakerId: row.speakerId,
+        speakerName: row.speakerName,
+        body: row.body,
+        createdAt: row.createdAt,
+      }));
 
-      const recordings = db
+      const recordingRows = await db
         .select()
         .from(briefingRecordings)
         .where(
@@ -308,8 +308,8 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
           ),
         )
         .orderBy(desc(briefingRecordings.startedAt))
-        .all()
-        .map(mapRecording);
+        .all();
+      const recordings = recordingRows.map(mapRecording);
 
       return {
         room: mapRoom(roomRow),
@@ -321,7 +321,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
     },
 
     async create(input) {
-      db.insert(briefingRooms)
+      await db.insert(briefingRooms)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -335,7 +335,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         .run();
 
       for (const participant of input.participants) {
-        db.insert(briefingParticipants)
+        await db.insert(briefingParticipants)
           .values({
             id: participant.id,
             roomId: input.id,
@@ -360,7 +360,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
     },
 
     async setStatus(tenantId, roomId, status) {
-      const existing = db
+      const existing = await db
         .select()
         .from(briefingRooms)
         .where(
@@ -373,7 +373,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
       if (!existing) {
         return null;
       }
-      db.update(briefingRooms)
+      await db.update(briefingRooms)
         .set({ status })
         .where(eq(briefingRooms.id, roomId))
         .run();
@@ -381,7 +381,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
     },
 
     async shareAgent(input) {
-      const room = db
+      const room = await db
         .select()
         .from(briefingRooms)
         .where(
@@ -395,7 +395,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         return null;
       }
 
-      const agent = db
+      const agent = await db
         .select()
         .from(agents)
         .where(eq(agents.id, input.agentId))
@@ -404,7 +404,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         return null;
       }
 
-      const already = db
+      const already = await db
         .select()
         .from(briefingSharedAgents)
         .where(
@@ -427,7 +427,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         };
       }
 
-      db.insert(briefingSharedAgents)
+      await db.insert(briefingSharedAgents)
         .values({
           id: input.id,
           roomId: input.roomId,
@@ -450,7 +450,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
     },
 
     async unshareAgent(tenantId, roomId, agentId) {
-      const room = db
+      const room = await db
         .select()
         .from(briefingRooms)
         .where(
@@ -463,7 +463,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
       if (!room) {
         return false;
       }
-      db.delete(briefingSharedAgents)
+      await db.delete(briefingSharedAgents)
         .where(
           and(
             eq(briefingSharedAgents.roomId, roomId),
@@ -475,7 +475,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
     },
 
     async addMessage(input) {
-      const room = db
+      const room = await db
         .select()
         .from(briefingRooms)
         .where(
@@ -489,7 +489,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         return null;
       }
 
-      db.insert(briefingMessages)
+      await db.insert(briefingMessages)
         .values({
           id: input.id,
           roomId: input.roomId,
@@ -513,7 +513,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
 
     async ensureDemoFinanceRoom(input) {
       const roomId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaa0001";
-      const existing = db
+      const existing = await db
         .select()
         .from(briefingRooms)
         .where(eq(briefingRooms.id, roomId))
@@ -523,7 +523,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
       }
 
       const now = new Date().toISOString();
-      db.insert(briefingRooms)
+      await db.insert(briefingRooms)
         .values({
           id: roomId,
           tenantId: input.tenantId,
@@ -569,7 +569,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
       ];
 
       for (const participant of participants) {
-        db.insert(briefingParticipants)
+        await db.insert(briefingParticipants)
           .values({
             id: participant.id,
             roomId,
@@ -581,7 +581,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
           .run();
       }
 
-      db.insert(briefingSharedAgents)
+      await db.insert(briefingSharedAgents)
         .values({
           id: "cccccccc-cccc-4ccc-8ccc-cccccccc0001",
           roomId,
@@ -591,7 +591,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         })
         .run();
 
-      db.insert(briefingMessages)
+      await db.insert(briefingMessages)
         .values({
           id: "dddddddd-dddd-4ddd-8ddd-dddddddd0001",
           roomId,
@@ -605,7 +605,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
     },
 
     async startRecording(input) {
-      const room = db
+      const room = await db
         .select()
         .from(briefingRooms)
         .where(
@@ -619,7 +619,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         return null;
       }
 
-      const active = db
+      const active = await db
         .select()
         .from(briefingRecordings)
         .where(
@@ -634,7 +634,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         return mapRecording(active);
       }
 
-      db.insert(briefingRecordings)
+      await db.insert(briefingRecordings)
         .values({
           id: input.id,
           tenantId: input.tenantId,
@@ -672,7 +672,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
     },
 
     async completeRecording(input) {
-      const existing = db
+      const existing = await db
         .select()
         .from(briefingRecordings)
         .where(
@@ -687,7 +687,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
         return null;
       }
 
-      db.update(briefingRecordings)
+      await db.update(briefingRecordings)
         .set({
           status: "completed",
           endedAt: input.endedAt,
@@ -719,7 +719,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
     },
 
     async failRecording(tenantId, roomId, recordingId) {
-      const existing = db
+      const existing = await db
         .select()
         .from(briefingRecordings)
         .where(
@@ -733,7 +733,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
       if (!existing) {
         return false;
       }
-      db.update(briefingRecordings)
+      await db.update(briefingRecordings)
         .set({ status: "failed", endedAt: new Date().toISOString() })
         .where(eq(briefingRecordings.id, recordingId))
         .run();
@@ -741,7 +741,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
     },
 
     async getRecording(tenantId, roomId, recordingId) {
-      const row = db
+      const row = await db
         .select()
         .from(briefingRecordings)
         .where(
@@ -756,7 +756,7 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
     },
 
     async listRecordings(tenantId, roomId) {
-      return db
+      const rows = await db
         .select()
         .from(briefingRecordings)
         .where(
@@ -766,8 +766,8 @@ export function createBriefingRepository(db: HotelOsDb): BriefingRepository {
           ),
         )
         .orderBy(desc(briefingRecordings.startedAt))
-        .all()
-        .map(mapRecording);
+        .all();
+      return rows.map(mapRecording);
     },
   };
 }

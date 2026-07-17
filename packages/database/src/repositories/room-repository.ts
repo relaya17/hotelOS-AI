@@ -44,7 +44,7 @@ export type RoomRepository = {
 export function createRoomRepository(db: HotelOsDb): RoomRepository {
   return {
     async hotelBelongsToTenant(tenantId, hotelId) {
-      const row = db
+      const row = await db
         .select()
         .from(hotels)
         .where(and(eq(hotels.id, hotelId), eq(hotels.tenantId, tenantId)))
@@ -53,7 +53,7 @@ export function createRoomRepository(db: HotelOsDb): RoomRepository {
     },
 
     async listByHotel(tenantId, hotelId) {
-      const rows = db
+      const rows = await db
         .select()
         .from(rooms)
         .where(and(eq(rooms.tenantId, tenantId), eq(rooms.hotelId, hotelId)))

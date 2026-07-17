@@ -36,7 +36,7 @@ export function createAgentRepository(db: HotelOsDb): AgentRepository {
     async ensureCatalog() {
       const now = new Date().toISOString();
       for (const entry of AGENT_CATALOG) {
-        const existing = db
+        const existing = await db
           .select()
           .from(agents)
           .where(eq(agents.id, entry.id))
@@ -44,7 +44,7 @@ export function createAgentRepository(db: HotelOsDb): AgentRepository {
         if (existing) {
           continue;
         }
-        db.insert(agents)
+        await db.insert(agents)
           .values({
             id: entry.id,
             nameHe: entry.nameHe,
@@ -59,15 +59,15 @@ export function createAgentRepository(db: HotelOsDb): AgentRepository {
     },
 
     async listAll() {
-      return db
+      const rows = await db
         .select()
         .from(agents)
-        .all()
-        .map(mapAgent);
+        .all();
+      return rows.map(mapAgent);
     },
 
     async findById(agentId) {
-      const row = db
+      const row = await db
         .select()
         .from(agents)
         .where(eq(agents.id, agentId))

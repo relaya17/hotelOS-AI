@@ -146,6 +146,15 @@ packages/
 
 CORS: מקורות ב־`CORS_ORIGINS` (ברירת מחדל — שלוש האפליקציות המקומיות).
 
+## פריסה (Deployment)
+
+הפרויקט מוכן לפריסה ל-Vercel — **4 פרויקטים נפרדים** (executive/admin/guest/api), כל אחד בנפרד מאותו ה-repo, עם דומיין משלו.
+מדריך מלא: [`docs/deployment/vercel.md`](docs/deployment/vercel.md).
+
+מסד הנתונים בפרודקשן עבר מ-`better-sqlite3` המקומי ל-`libSQL`/`Turso` (Vercel לא תומך בדיסק קבוע) —
+פרטים ב-[`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md).
+פיתוח מקומי (`pnpm dev`) לא השתנה.
+
 ## תיעוד
 
 | מסמך | תוכן |
@@ -155,6 +164,9 @@ CORS: מקורות ב־`CORS_ORIGINS` (ברירת מחדל — שלוש האפל
 | [`docs/adr/0003-three-separate-apps.md`](docs/adr/0003-three-separate-apps.md) | שלוש אפליקציות נפרדות |
 | [`docs/adr/0004-turbo-os-i18n-automations.md`](docs/adr/0004-turbo-os-i18n-automations.md) | Turbo OS, i18n, אוטומציות |
 | [`docs/adr/0005-trust-compliance-attendance.md`](docs/adr/0005-trust-compliance-attendance.md) | Trust, Google, נוכחות |
+| [`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md) | מעבר ל-libSQL/Turso לפריסה |
+| [`docs/deployment/vercel.md`](docs/deployment/vercel.md) | מדריך פריסה ל-Vercel |
+| [`docs/planning/employee-hr-module.md`](docs/planning/employee-hr-module.md) | תכנון: הרשמה עצמית לעובדים, מבחני יכולת, תעודת יושר |
 
 ## רישיון / סטטוס
 

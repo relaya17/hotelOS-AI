@@ -31,7 +31,7 @@ export function createRefreshSessionRepository(
 ): RefreshSessionRepository {
   return {
     async create(input) {
-      db.insert(refreshSessions)
+      await db.insert(refreshSessions)
         .values({
           id: input.id,
           userId: input.userId,
@@ -44,7 +44,7 @@ export function createRefreshSessionRepository(
         .run();
     },
     async findActiveByTokenHash(tokenHash) {
-      const row = db
+      const row = await db
         .select()
         .from(refreshSessions)
         .where(
@@ -67,7 +67,7 @@ export function createRefreshSessionRepository(
       };
     },
     async revoke(id, revokedAt) {
-      db.update(refreshSessions)
+      await db.update(refreshSessions)
         .set({ revokedAt })
         .where(eq(refreshSessions.id, id))
         .run();

@@ -22,7 +22,7 @@ export type AuditRepository = {
 export function createAuditRepository(db: HotelOsDb): AuditRepository {
   return {
     async append(event) {
-      db.insert(auditEvents)
+      await db.insert(auditEvents)
         .values({
           id: event.id,
           tenantId: event.tenantId,
