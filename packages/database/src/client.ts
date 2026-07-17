@@ -3,6 +3,7 @@ import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import * as briefingSchema from "./schema/briefing.js";
+import * as cioSchema from "./schema/cio.js";
 import * as opsSchema from "./schema/ops.js";
 import * as tenancySchema from "./schema/tenancy.js";
 import * as trustSchema from "./schema/trust.js";
@@ -14,6 +15,7 @@ const schema = {
   ...turboSchema,
   ...trustSchema,
   ...opsSchema,
+  ...cioSchema,
 };
 
 export type HotelOsSchema = typeof schema;
@@ -76,6 +78,7 @@ export async function migrate(client: Client): Promise<void> {
       name TEXT NOT NULL,
       timezone TEXT NOT NULL,
       currency TEXT NOT NULL,
+      kashrut_enabled INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS hotels_tenant_idx ON hotels(tenant_id);
@@ -621,5 +624,82 @@ export async function migrate(client: Client): Promise<void> {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS job_candidates_posting_idx ON job_candidates(job_posting_id);
+
+    CREATE TABLE IF NOT EXISTS org_comms_channels (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      chain_id TEXT NOT NULL REFERENCES hotel_chains(id),
+      hotel_id TEXT REFERENCES hotels(id),
+      channel_key TEXT NOT NULL,
+      name_he TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS org_comms_channels_tenant_idx ON org_comms_channels(tenant_id);
+    CREATE INDEX IF NOT EXISTS org_comms_channels_chain_idx ON org_comms_channels(chain_id);
+    CREATE INDEX IF NOT EXISTS org_comms_channels_hotel_idx ON org_comms_channels(hotel_id);
+    CREATE INDEX IF NOT EXISTS org_comms_channels_key_idx ON org_comms_channels(channel_key);
+
+    CREATE TABLE IF NOT EXISTS org_comms_messages (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      channel_id TEXT NOT NULL REFERENCES org_comms_channels(id),
+      from_role TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_by_user_id TEXT REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS org_comms_messages_tenant_idx ON org_comms_messages(tenant_id);
+    CREATE INDEX IF NOT EXISTS org_comms_messages_channel_idx ON org_comms_messages(channel_id);
+
+    CREATE TABLE IF NOT EXISTS trusted_sources (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      title TEXT NOT NULL,
+      url TEXT NOT NULL,
+      category TEXT NOT NULL,
+      approved_at TEXT NOT NULL,
+      approved_by_user_id TEXT REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS trusted_sources_tenant_idx ON trusted_sources(tenant_id);
+    CREATE INDEX IF NOT EXISTS trusted_sources_category_idx ON trusted_sources(category);
+
+    CREATE TABLE IF NOT EXISTS kashrut_annotations (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      target_kind TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      message TEXT,
+      created_by_user_id TEXT REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS kashrut_annotations_tenant_idx ON kashrut_annotations(tenant_id);
+    CREATE INDEX IF NOT EXISTS kashrut_annotations_hotel_idx ON kashrut_annotations(hotel_id);
+    CREATE INDEX IF NOT EXISTS kashrut_annotations_target_idx ON kashrut_annotations(target_kind, target_id);
   `);
+
+  // Column added after initial release (ADR 0007) — existing on-disk DBs
+  // created before this change need an explicit ALTER, since `CREATE TABLE
+  // IF NOT EXISTS` above only applies to brand-new databases.
+  await ensureColumn(
+    client,
+    "hotels",
+    "kashrut_enabled",
+    "kashrut_enabled INTEGER NOT NULL DEFAULT 0",
+  );
+}
+
+async function ensureColumn(
+  client: Client,
+  table: string,
+  column: string,
+  addColumnDdl: string,
+): Promise<void> {
+  const result = await client.execute(`PRAGMA table_info(${table})`);
+  const hasColumn = result.rows.some((row) => row["name"] === column);
+  if (!hasColumn) {
+    await client.execute(`ALTER TABLE ${table} ADD COLUMN ${addColumnDdl}`);
+  }
 }

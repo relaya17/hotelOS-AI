@@ -1,6 +1,7 @@
 # כרך 0 — Golden Rules
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Mandatory:** כן — אין חריגות
 
 ---

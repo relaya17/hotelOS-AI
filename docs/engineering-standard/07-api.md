@@ -1,6 +1,7 @@
 # כרך 7 — API Standard
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Owner:** API Architect
 
 ---
@@ -112,6 +113,8 @@
 
 ## 7.13 קריטריוני אישור כרך 7
 
-- [ ] OpenAPI 3.1 כחוזה מחייב
-- [ ] Versioning + Error format מאושרים
-- [ ] Rate limit + Idempotency מאושרים
+- [x] OpenAPI 3.1 כחוזה מחייב
+- [x] Versioning + Error format מאושרים
+- [x] Rate limit + Idempotency מאושרים
+
+> אושר על ידי Product Owner ב־2026-07-18.

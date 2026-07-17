@@ -40,6 +40,10 @@ const updateRoomStatusSchema = z.object({
   status: z.enum(["vacant", "occupied", "dirty", "maintenance"]),
 });
 
+const updateKashrutSchema = z.object({
+  enabled: z.boolean(),
+});
+
 const bookingTransitionSchema = z.object({
   transition: z.enum(["check_in", "check_out"]),
 });
@@ -77,7 +81,36 @@ export function createHotelRoutes(deps: HotelRouteDeps): Hono<{
           timezone: hotel.timezone,
           currency: hotel.currency,
           chainId: hotel.chainId,
+          kashrutEnabled: hotel.kashrutEnabled,
         })),
+      });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.patch("/:hotelId/kashrut", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const hotelId = Ids.hotel(hotelIdParamSchema.parse(c.req.param("hotelId")));
+      const body = updateKashrutSchema.parse(await c.req.json());
+      const updated = await deps.hotels.setKashrutEnabled(
+        principal.scope.tenantId,
+        hotelId,
+        body.enabled,
+      );
+      if (!updated) {
+        return sendError(c, 404, "HOTEL_NOT_FOUND", "Hotel not found");
+      }
+      return c.json({
+        data: {
+          id: updated.id,
+          name: updated.name,
+          timezone: updated.timezone,
+          currency: updated.currency,
+          chainId: updated.chainId,
+          kashrutEnabled: updated.kashrutEnabled,
+        },
       });
     } catch (error) {
       return mapUnknownError(c, error);

@@ -1,4 +1,4 @@
-import { index, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const tenants = sqliteTable("tenants", {
   id: text("id").primaryKey(),
@@ -33,6 +33,8 @@ export const hotels = sqliteTable(
     name: text("name").notNull(),
     timezone: text("timezone").notNull(),
     currency: text("currency").notNull(),
+    /** ADR 0007 — enables the `agent.kashrut` seat + kashrut annotations for this hotel. */
+    kashrutEnabled: integer("kashrut_enabled").notNull().default(0),
     createdAt: text("created_at").notNull(),
   },
   (table) => [

@@ -1,0 +1,280 @@
+import { useEffect, useState } from "react";
+import { Button, TextField } from "@hotelos/ui";
+import {
+  fetchCioDigest,
+  listOrgCommsChannels,
+  listOrgCommsMessages,
+  listTrustedSources,
+  postOrgCommsMessage,
+  type CioDigestDto,
+  type CioRole,
+  type OrgCommsChannelDto,
+  type OrgCommsMessageDto,
+  type TrustedSourceDto,
+} from "@hotelos/web-client";
+
+const ROLE_OPTIONS: readonly { value: CioRole; labelHe: string }[] = [
+  { value: "owner", labelHe: "בעל מלון / רשת" },
+  { value: "ceo", labelHe: "מנכ״ל" },
+  { value: "cfo", labelHe: "כספים" },
+  { value: "reception", labelHe: "קבלה" },
+  { value: "housekeeping", labelHe: "חדרים / משק בית" },
+  { value: "fb", labelHe: "מזון ומשקאות (F&B)" },
+];
+
+export function CioDigestPage() {
+  const [role, setRole] = useState<CioRole>("ceo");
+  const [digest, setDigest] = useState<CioDigestDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | undefined>();
+
+  const [channels, setChannels] = useState<readonly OrgCommsChannelDto[]>([]);
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<readonly OrgCommsMessageDto[]>([]);
+  const [draft, setDraft] = useState("");
+  const [sources, setSources] = useState<readonly TrustedSourceDto[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(undefined);
+      try {
+        const data = await fetchCioDigest(role);
+        if (!cancelled) setDigest(data);
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : "שגיאה בטעינת התדריך");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [role]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const [channelList, sourceList] = await Promise.all([
+          listOrgCommsChannels(),
+          listTrustedSources(),
+        ]);
+        if (cancelled) return;
+        setChannels(channelList);
+        setSources(sourceList);
+        const firstChannel = channelList[0];
+        if (firstChannel) setSelectedChannelId(firstChannel.id);
+      } catch {
+        // Org comms / knowledge are secondary panels — digest above still works.
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!selectedChannelId) {
+        setMessages([]);
+        return;
+      }
+      try {
+        const list = await listOrgCommsMessages(selectedChannelId);
+        if (!cancelled) setMessages(list);
+      } catch {
+        if (!cancelled) setMessages([]);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedChannelId]);
+
+  async function onSend() {
+    if (!selectedChannelId || draft.trim().length === 0) return;
+    await postOrgCommsMessage(selectedChannelId, {
+      fromRole: role,
+      body: draft.trim(),
+    });
+    setDraft("");
+    setMessages(await listOrgCommsMessages(selectedChannelId));
+  }
+
+  return (
+    <div className="cio-page">
+      <header>
+        <p className="eyebrow">ADR 0007 · CIO Orchestrator</p>
+        <h1>יועץ־על (CIO)</h1>
+        <p className="sub">
+          תדריך יומי לפי תפקיד, בנוי דטרמיניסטית מנתוני הרשת החיים — ללא קריאה למודל שפה חיצוני.
+        </p>
+      </header>
+
+      <section className="card">
+        <div className="role-row">
+          <label htmlFor="cio-role">תפקיד</label>
+          <select
+            id="cio-role"
+            value={role}
+            onChange={(event) => setRole(event.target.value as CioRole)}
+          >
+            {ROLE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.labelHe}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {loading ? <p className="state">מכין תדריך…</p> : null}
+        {error !== undefined ? (
+          <p className="state state--error" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        {!loading && digest ? (
+          <>
+            <p className="headline">{digest.headlineHe}</p>
+            <ul className="sections">
+              {digest.sections.map((section) => (
+                <li key={section.hotelId} className="section">
+                  <h3>
+                    {section.hotelName}
+                    {section.kashrutEnabled ? (
+                      <span className="badge">משגיח כשרות פעיל</span>
+                    ) : null}
+                  </h3>
+                  <ul className="bullets">
+                    {section.bulletsHe.map((bullet) => (
+                      <li key={bullet}>{bullet}</li>
+                    ))}
+                  </ul>
+                  {section.kashrutNoteHe ? (
+                    <p className="kashrut-note">🕎 {section.kashrutNoteHe}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            {digest.sections.length === 0 ? (
+              <p className="hint">אין עדיין נתונים מספיקים לתדריך.</p>
+            ) : null}
+          </>
+        ) : null}
+      </section>
+
+      <section className="card">
+        <h2>Org Comms — ערוצים ישירים</h2>
+        <p className="hint">
+          תקשורת ישירה בין בעלים/מנכ״ל/מחלקות ומשגיח הכשרות (ADR 0007). ערוץ בעלים–מנכ״ל פרטי.
+        </p>
+        <div className="comms">
+          <ul className="channel-list">
+            {channels.map((channel) => (
+              <li key={channel.id}>
+                <button
+                  type="button"
+                  className={
+                    channel.id === selectedChannelId ? "channel channel--on" : "channel"
+                  }
+                  onClick={() => setSelectedChannelId(channel.id)}
+                >
+                  {channel.nameHe}
+                </button>
+              </li>
+            ))}
+            {channels.length === 0 ? <li className="hint">אין ערוצים עדיין.</li> : null}
+          </ul>
+          <div className="channel-body">
+            <ul className="messages">
+              {messages.map((message) => (
+                <li key={message.id}>
+                  <strong>{message.fromRole}:</strong> {message.body}
+                </li>
+              ))}
+              {messages.length === 0 ? (
+                <li className="hint">אין הודעות בערוץ זה עדיין.</li>
+              ) : null}
+            </ul>
+            <div className="compose">
+              <TextField
+                label="הודעה"
+                name="orgCommsDraft"
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+              />
+              <Button
+                type="button"
+                onClick={() => void onSend()}
+                disabled={!selectedChannelId || draft.trim().length === 0}
+              >
+                שלח
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>מקורות Trusted (מודיעין חיצוני מאושר)</h2>
+        <p className="hint">
+          רק מקורות מאושרים ברשימה זו יכולים לבסס המלצה חיצונית — חיפוש פתוח לגילוי בלבד.
+        </p>
+        <ul className="sources">
+          {sources.map((source) => (
+            <li key={source.id}>
+              <a href={source.url} target="_blank" rel="noreferrer">
+                {source.title}
+              </a>
+              <span className="category">{source.category}</span>
+            </li>
+          ))}
+          {sources.length === 0 ? <li className="hint">אין מקורות מאושרים עדיין.</li> : null}
+        </ul>
+      </section>
+
+      <style>{`
+        .cio-page { display:grid; gap:var(--space-5); align-content:start; }
+        .eyebrow { margin:0 0 var(--space-2); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
+        h1 { font-size:var(--text-display); margin:0; }
+        .sub { margin:var(--space-2) 0 0; color:var(--color-ink-soft); max-width:70ch; }
+        .card { background:rgb(255 250 242 / 90%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); display:grid; gap:var(--space-3); }
+        .card h2 { margin:0; font-size:var(--text-title); }
+        .role-row { display:flex; gap:var(--space-2); align-items:center; }
+        .role-row select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.45rem .6rem; background:var(--color-paper-elevated); }
+        .headline { margin:0; font-weight:700; }
+        .state { margin:0; color:var(--color-ink-soft); }
+        .state--error { color:var(--color-danger); }
+        .hint { margin:0; color:var(--color-ink-soft); }
+        .sections { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
+        .section { padding:var(--space-3); border-radius:var(--radius-sm); background:var(--color-paper-elevated); display:grid; gap:var(--space-2); }
+        .section h3 { margin:0; display:flex; gap:var(--space-2); align-items:center; }
+        .badge { font-size:var(--text-small); font-weight:600; color:var(--color-sea-deep); background:rgb(15 106 92 / 10%); border-radius:999px; padding:.15rem .6rem; }
+        .bullets { margin:0; padding-inline-start:1.2rem; display:grid; gap:.2rem; }
+        .kashrut-note { margin:0; font-weight:600; }
+        .comms { display:grid; grid-template-columns:220px 1fr; gap:var(--space-3); }
+        .channel-list { list-style:none; margin:0; padding:0; display:grid; gap:.3rem; }
+        .channel { width:100%; text-align:start; font:inherit; border:1px solid rgb(16 36 31 / 12%); background:var(--color-paper-elevated); border-radius:var(--radius-sm); padding:.5rem .7rem; cursor:pointer; }
+        .channel--on { border-color:var(--color-sea-deep); color:var(--color-sea-deep); font-weight:700; }
+        .channel-body { display:grid; gap:var(--space-3); align-content:start; }
+        .messages { list-style:none; margin:0; padding:0; display:grid; gap:.4rem; max-height:220px; overflow:auto; }
+        .messages li { padding:.5rem .7rem; border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .compose { display:flex; gap:var(--space-2); align-items:end; flex-wrap:wrap; }
+        .compose > :first-child { flex:1; min-width:200px; }
+        .sources { list-style:none; margin:0; padding:0; display:grid; gap:.4rem; }
+        .sources li { display:flex; justify-content:space-between; gap:var(--space-2); padding:.5rem .7rem; border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .category { font-size:var(--text-small); color:var(--color-ink-soft); }
+        @media (max-width:768px){ .comms{ grid-template-columns:1fr; } }
+      `}</style>
+    </div>
+  );
+}

@@ -10,6 +10,22 @@ export type AgentCatalogEntry = {
 /** Agents from Engineering Standard vol. 11 — available to share into briefing rooms. */
 export const AGENT_CATALOG: readonly AgentCatalogEntry[] = [
   {
+    id: "agent.cio",
+    nameHe: "יועץ־על (CIO)",
+    nameEn: "CIO Orchestrator",
+    domain: "intelligence",
+    summaryHe: "מתזמר סוכני דומיין, תדריכים לפי תפקיד ומודיעין מקורות מאושרים.",
+    autonomyMode: "suggest",
+  },
+  {
+    id: "agent.kashrut",
+    nameHe: "משגיח כשרות",
+    nameEn: "Kashrut Supervisor",
+    domain: "compliance",
+    summaryHe: "ליווי כשרות למטבח, F&B, אירועים ורכש — הערה / אזהרה / חסימה.",
+    autonomyMode: "approve",
+  },
+  {
     id: "agent.ceo",
     nameHe: "סוכן מנכ״ל",
     nameEn: "CEO Agent",

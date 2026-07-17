@@ -37,6 +37,7 @@ export type HotelDto = {
   readonly timezone: string;
   readonly currency: string;
   readonly chainId: string;
+  readonly kashrutEnabled: boolean;
 };
 
 export type RoomDto = {
@@ -350,6 +351,16 @@ export async function fetchChainOverview(): Promise<ChainOverviewDto> {
 
 export async function listHotels(): Promise<readonly HotelDto[]> {
   const payload = (await authGet("/v1/hotels")) as { data: HotelDto[] };
+  return payload.data;
+}
+
+export async function updateHotelKashrut(
+  hotelId: string,
+  enabled: boolean,
+): Promise<HotelDto> {
+  const payload = (await authPatch(`/v1/hotels/${hotelId}/kashrut`, {
+    enabled,
+  })) as { data: HotelDto };
   return payload.data;
 }
 
@@ -1578,6 +1589,181 @@ export async function fetchDailyBriefing(): Promise<DailyBriefingDto> {
   const payload = (await authGet("/v1/ops/daily-briefing")) as {
     data: DailyBriefingDto;
   };
+  return payload.data;
+}
+
+// ---- ADR 0007: CIO orchestrator, org comms, trusted knowledge, kashrut ----
+
+export type CioRole =
+  | "owner"
+  | "ceo"
+  | "cfo"
+  | "reception"
+  | "housekeeping"
+  | "fb";
+
+export type CioDigestSectionDto = {
+  readonly hotelId: string;
+  readonly hotelName: string;
+  readonly kashrutEnabled: boolean;
+  readonly bulletsHe: readonly string[];
+  readonly kashrutNoteHe: string | null;
+};
+
+export type CioDigestDto = {
+  readonly role: CioRole;
+  readonly roleLabelHe: string;
+  readonly generatedAt: string;
+  readonly tenantName: string;
+  readonly headlineHe: string;
+  readonly sections: readonly CioDigestSectionDto[];
+};
+
+export async function fetchCioDigest(role: CioRole): Promise<CioDigestDto> {
+  const payload = (await authGet(
+    `/v1/ops/cio-digest?role=${encodeURIComponent(role)}`,
+  )) as { data: CioDigestDto };
+  return payload.data;
+}
+
+export type OrgCommsChannelDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly chainId: string;
+  readonly hotelId: string | null;
+  readonly channelKey: string;
+  readonly nameHe: string;
+  readonly createdAt: string;
+};
+
+export type OrgCommsMessageDto = {
+  readonly id: string;
+  readonly channelId: string;
+  readonly fromRole: string;
+  readonly body: string;
+  readonly createdByUserId: string | null;
+  readonly createdAt: string;
+};
+
+export async function listOrgCommsChannels(): Promise<
+  readonly OrgCommsChannelDto[]
+> {
+  const payload = (await authGet("/v1/org-comms/channels")) as {
+    data: OrgCommsChannelDto[];
+  };
+  return payload.data;
+}
+
+export async function listOrgCommsMessages(
+  channelId: string,
+): Promise<readonly OrgCommsMessageDto[]> {
+  const payload = (await authGet(
+    `/v1/org-comms/channels/${channelId}/messages`,
+  )) as { data: OrgCommsMessageDto[] };
+  return payload.data;
+}
+
+export async function postOrgCommsMessage(
+  channelId: string,
+  input: { fromRole: string; body: string },
+): Promise<OrgCommsMessageDto> {
+  const payload = (await authPost(
+    `/v1/org-comms/channels/${channelId}/messages`,
+    input,
+  )) as { data: OrgCommsMessageDto };
+  return payload.data;
+}
+
+export type TrustedSourceCategory =
+  | "regulator"
+  | "university"
+  | "market_data"
+  | "accounting_standard"
+  | "kashrut_authority"
+  | "other";
+
+export type TrustedSourceDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly title: string;
+  readonly url: string;
+  readonly category: string;
+  readonly approvedAt: string;
+  readonly approvedByUserId: string | null;
+  readonly createdAt: string;
+};
+
+export async function listTrustedSources(): Promise<
+  readonly TrustedSourceDto[]
+> {
+  const payload = (await authGet("/v1/knowledge/trusted-sources")) as {
+    data: TrustedSourceDto[];
+  };
+  return payload.data;
+}
+
+export async function createTrustedSource(input: {
+  title: string;
+  url: string;
+  category: TrustedSourceCategory;
+}): Promise<TrustedSourceDto> {
+  const payload = (await authPost(
+    "/v1/knowledge/trusted-sources",
+    input,
+  )) as { data: TrustedSourceDto };
+  return payload.data;
+}
+
+export type KashrutTargetKind =
+  | "procurement"
+  | "menu"
+  | "briefing"
+  | "event"
+  | "other";
+export type KashrutStatus = "ok" | "note" | "warn" | "block";
+
+export type KashrutAnnotationDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly hotelId: string;
+  readonly targetKind: KashrutTargetKind;
+  readonly targetId: string;
+  readonly status: KashrutStatus;
+  readonly message: string | null;
+  readonly createdByUserId: string | null;
+  readonly createdAt: string;
+};
+
+export async function fetchKashrutAnnotations(
+  hotelId: string,
+  targetKind?: KashrutTargetKind,
+): Promise<{
+  readonly kashrutEnabled: boolean;
+  readonly annotations: readonly KashrutAnnotationDto[];
+}> {
+  const query = new URLSearchParams({ hotelId });
+  if (targetKind) query.set("targetKind", targetKind);
+  const payload = (await authGet(
+    `/v1/kashrut/annotations?${query.toString()}`,
+  )) as {
+    data: { kashrutEnabled: boolean; annotations: KashrutAnnotationDto[] };
+  };
+  return payload.data;
+}
+
+export async function createKashrutAnnotation(
+  hotelId: string,
+  input: {
+    targetKind: KashrutTargetKind;
+    targetId: string;
+    status: KashrutStatus;
+    message?: string;
+  },
+): Promise<KashrutAnnotationDto> {
+  const payload = (await authPost(
+    `/v1/kashrut/annotations?${hotelQuery(hotelId)}`,
+    input,
+  )) as { data: KashrutAnnotationDto };
   return payload.data;
 }
 

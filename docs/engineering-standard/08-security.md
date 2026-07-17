@@ -1,6 +1,7 @@
 # כרך 8 — Security Standard
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Owner:** Security Lead  
 **בסיס:** OWASP ASVS · OWASP Top 10
 
@@ -13,7 +14,7 @@
 
 ## 8.2 OWASP
 
-- יישור מול **OWASP ASVS** (רמת יעד תיקבע ב־ADR; מינימום רמה מתאימה ל־SaaS עם PII/תשלומים)
+- יישור מול **OWASP ASVS** — **יעד הוחלט (PO, 2026-07-18): ASVS Level 2** לכל משטח SaaS multi-tenant עם PII/תשלומים. **Level 3** הוא שכבה אופציונלית נוספת ל־Enterprise single-tenant לפי חוזה (לא חוסם ל־SaaS).
 - כיסוי מפורש ל־**OWASP Top 10** בבדיקות וב־Review
 
 ## 8.3 Authentication
@@ -91,7 +92,9 @@
 
 ## 8.12 קריטריוני אישור כרך 8
 
-- [ ] ASVS target level מאושר
-- [ ] MFA + Passkeys policy מאושרת
-- [ ] RBAC+ABAC מאושר
-- [ ] IR process מאושר
+- [x] ASVS target level מאושר (Level 2 SaaS; Level 3 אופציונלי Enterprise)
+- [x] MFA + Passkeys policy מאושרת
+- [x] RBAC+ABAC מאושר
+- [x] IR process מאושר
+
+> אושר על ידי Product Owner ב־2026-07-18.

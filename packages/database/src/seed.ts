@@ -4,8 +4,11 @@ import type { HotelOsDb } from "./client.js";
 import { createAgentRepository } from "./repositories/agent-repository.js";
 import { createBriefingRepository } from "./repositories/briefing-repository.js";
 import { createFeedbackRepository } from "./repositories/feedback-repository.js";
+import { createKashrutRepository } from "./repositories/kashrut-repository.js";
 import { createMaintenanceRepository } from "./repositories/maintenance-repository.js";
 import { createOpsRepository } from "./repositories/ops-repository.js";
+import { createOrgCommsRepository } from "./repositories/org-comms-repository.js";
+import { createTrustedSourcesRepository } from "./repositories/trusted-sources-repository.js";
 import { createTurboRepository } from "./repositories/turbo-repository.js";
 import {
   bookings,
@@ -73,6 +76,7 @@ export async function seedDemoTenant(
     name: "Demo Hotel Tel Aviv",
     timezone: "Asia/Jerusalem",
     currency: "ILS",
+    kashrutEnabled: true,
     createdAt: now,
   });
 
@@ -81,6 +85,7 @@ export async function seedDemoTenant(
     name: "Demo Hotel Eilat",
     timezone: "Asia/Jerusalem",
     currency: "ILS",
+    kashrutEnabled: false,
     createdAt: now,
   });
 
@@ -192,6 +197,7 @@ export async function seedDemoTenant(
   });
 
   await ensureOpsDemoData(db, now, userId);
+  await ensureCioDemoData(db, now, userId);
 }
 
 async function ensureHotel(
@@ -201,6 +207,7 @@ async function ensureHotel(
     name: string;
     timezone: string;
     currency: string;
+    kashrutEnabled: boolean;
     createdAt: string;
   },
 ): Promise<void> {
@@ -221,6 +228,7 @@ async function ensureHotel(
       name: input.name,
       timezone: input.timezone,
       currency: input.currency,
+      kashrutEnabled: input.kashrutEnabled ? 1 : 0,
       createdAt: input.createdAt,
     })
     .run();
@@ -401,4 +409,120 @@ async function ensureOpsDemoData(
   }
 
   void maintenanceDept;
+}
+
+/** ADR 0007 — org comms channels, trusted knowledge sources, sample kashrut note. */
+async function ensureCioDemoData(
+  db: HotelOsDb,
+  now: string,
+  userId: string,
+): Promise<void> {
+  const tenantId = Ids.tenant(DEMO_TENANT_ID);
+  const chainId = Ids.chain(DEMO_CHAIN_ID);
+  const hotelTlv = Ids.hotel(DEMO_HOTEL_TLV_ID);
+
+  const orgComms = createOrgCommsRepository(db);
+  const chainWideChannels: readonly { key: string; nameHe: string }[] = [
+    { key: "owner_ceo", nameHe: "בעלים ↔ מנכ״ל" },
+    { key: "ceo_pr", nameHe: "מנכ״ל ↔ יחסי ציבור" },
+    { key: "ceo_hr", nameHe: "מנכ״ל ↔ משאבי אנוש" },
+    { key: "ceo_fb", nameHe: "מנכ״ל ↔ מזון ומשקאות" },
+    { key: "ceo_rooms_hk", nameHe: "מנכ״ל ↔ חדרים ומשק בית" },
+    { key: "ceo_reception", nameHe: "מנכ״ל ↔ קבלה" },
+    { key: "ceo_maintenance", nameHe: "מנכ״ל ↔ תחזוקה" },
+    { key: "ceo_security", nameHe: "מנכ״ל ↔ אבטחה" },
+    { key: "ceo_finance", nameHe: "מנכ״ל ↔ כספים" },
+  ];
+  for (const [index, channel] of chainWideChannels.entries()) {
+    await orgComms.ensureChannel({
+      id: `92000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      tenantId,
+      chainId,
+      channelKey: channel.key,
+      nameHe: channel.nameHe,
+      createdAt: now,
+    });
+  }
+
+  const kashrutFbChannel = await orgComms.ensureChannel({
+    id: "92000000-0000-4000-8000-000000000010",
+    tenantId,
+    chainId,
+    hotelId: hotelTlv,
+    channelKey: "kashrut_fb",
+    nameHe: "משגיח כשרות ↔ מנהל F&B (ת״א)",
+    createdAt: now,
+  });
+
+  const existingKashrutMessages = await orgComms.listMessages(
+    tenantId,
+    kashrutFbChannel.id,
+  );
+  if (existingKashrutMessages.length === 0) {
+    await orgComms.addMessage({
+      id: "93000000-0000-4000-8000-000000000001",
+      tenantId,
+      channelId: kashrutFbChannel.id,
+      fromRole: "kashrut",
+      body: "בדקתי את תפריט השבת הקרוב — הכל תקין, אין חריגות.",
+      createdAt: now,
+    });
+  }
+
+  const trustedSources = createTrustedSourcesRepository(db);
+  const existingSources = await trustedSources.list(tenantId);
+  if (existingSources.length === 0) {
+    const seedSources: readonly {
+      id: string;
+      title: string;
+      url: string;
+      category: string;
+    }[] = [
+      {
+        id: "94000000-0000-4000-8000-000000000001",
+        title: "בנק ישראל — נתוני מקרו ומדיניות מוניטרית",
+        url: "https://www.boi.org.il",
+        category: "regulator",
+      },
+      {
+        id: "94000000-0000-4000-8000-000000000002",
+        title: "רשות המסים בישראל",
+        url: "https://www.gov.il/he/departments/israel_tax_authority",
+        category: "regulator",
+      },
+      {
+        id: "94000000-0000-4000-8000-000000000003",
+        title: "הטכניון — הפקולטה לניהול (מחקר תיירות ואירוח)",
+        url: "https://social-sciences.technion.ac.il",
+        category: "university",
+      },
+    ];
+    for (const source of seedSources) {
+      await trustedSources.create({
+        id: source.id,
+        tenantId,
+        title: source.title,
+        url: source.url,
+        category: source.category,
+        approvedByUserId: userId,
+        createdAt: now,
+      });
+    }
+  }
+
+  const kashrut = createKashrutRepository(db);
+  const existingAnnotations = await kashrut.listByHotel(tenantId, hotelTlv);
+  if (existingAnnotations.length === 0) {
+    await kashrut.create({
+      id: "95000000-0000-4000-8000-000000000001",
+      tenantId,
+      hotelId: hotelTlv,
+      targetKind: "menu",
+      targetId: "weekly-shabbat-menu",
+      status: "note",
+      message: "תפריט שבת אושר — יש להקפיד על הפרדת כלים לבשר/חלב במטבח האירועים.",
+      createdByUserId: userId,
+      createdAt: now,
+    });
+  }
 }

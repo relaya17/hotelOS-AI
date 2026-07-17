@@ -41,6 +41,19 @@ import {
   createOpsRoutes,
   type OpsRouteDeps,
 } from "./ops-routes.js";
+import {
+  createOrgCommsRoutes,
+  type OrgCommsRouteDeps,
+} from "./org-comms-routes.js";
+import {
+  createKnowledgeRoutes,
+  type KnowledgeRouteDeps,
+} from "./knowledge-routes.js";
+import {
+  createKashrutRoutes,
+  type KashrutRouteDeps,
+} from "./kashrut-routes.js";
+import { createRateLimitMiddleware } from "./rate-limit.js";
 import { securityHeaders } from "./security-headers.js";
 
 export type ApiDependencies = {
@@ -57,6 +70,9 @@ export type ApiDependencies = {
   readonly turbo: TurboRouteDeps;
   readonly trust: TrustRouteDeps;
   readonly ops: OpsRouteDeps;
+  readonly orgComms: OrgCommsRouteDeps;
+  readonly knowledge: KnowledgeRouteDeps;
+  readonly kashrut: KashrutRouteDeps;
 };
 
 export function createApp(deps: ApiDependencies): Hono {
@@ -68,7 +84,13 @@ export function createApp(deps: ApiDependencies): Hono {
     "*",
     cors({
       origin: [...deps.corsOrigins],
-      allowHeaders: ["Content-Type", "Authorization", "X-Correlation-Id"],
+      allowHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Correlation-Id",
+        "X-Tenant-Id",
+        "X-HotelOS-Tenant",
+      ],
       exposeHeaders: ["X-Correlation-Id"],
     }),
   );
@@ -83,6 +105,13 @@ export function createApp(deps: ApiDependencies): Hono {
     });
     await next();
   });
+
+  app.use(
+    "*",
+    createRateLimitMiddleware({
+      tokens: deps.auth.tokens,
+    }),
+  );
 
   app.get("/health", (c) => c.json(deps.getHealth()));
 
@@ -147,6 +176,9 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/turbo", createTurboRoutes(deps.turbo));
   app.route("/v1/trust", createTrustRoutes(deps.trust));
   app.route("/v1/ops", createOpsRoutes(deps.ops));
+  app.route("/v1/org-comms", createOrgCommsRoutes(deps.orgComms));
+  app.route("/v1/knowledge", createKnowledgeRoutes(deps.knowledge));
+  app.route("/v1/kashrut", createKashrutRoutes(deps.kashrut));
 
   return app;
 }

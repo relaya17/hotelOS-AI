@@ -12,13 +12,16 @@ import {
   createFeedbackRepository,
   createGuestStayRepository,
   createHotelRepository,
+  createKashrutRepository,
   createMaintenanceRepository,
   createOpsRepository,
+  createOrgCommsRepository,
   createOverviewRepository,
   createProcurementRepository,
   createRecruitingRepository,
   createRefreshSessionRepository,
   createRoomRepository,
+  createTrustedSourcesRepository,
   createTrustRepository,
   createTurboRepository,
   createUserRepository,
@@ -67,6 +70,9 @@ export async function composeApp() {
   const procurement = createProcurementRepository(db);
   const feedback = createFeedbackRepository(db);
   const recruiting = createRecruitingRepository(db);
+  const orgComms = createOrgCommsRepository(db);
+  const trustedSources = createTrustedSourcesRepository(db);
+  const kashrut = createKashrutRepository(db);
   const recordings = createRecordingStorage(
     resolveRepoPath(env.RECORDINGS_PATH),
   );
@@ -89,6 +95,7 @@ export async function composeApp() {
     publicRoutes: { guestStays, feedback },
     agents: { agents, tokens },
     briefing: {
+      audit,
       briefing,
       agents,
       overview,
@@ -96,7 +103,7 @@ export async function composeApp() {
       tokens,
       recordings,
     },
-    turbo: { turbo, users, tokens },
+    turbo: { audit, turbo, users, tokens },
     trust: {
       trust,
       users,
@@ -111,6 +118,7 @@ export async function composeApp() {
       webauthnRpName: env.WEBAUTHN_RP_NAME,
     },
     ops: {
+      audit,
       ops,
       maintenance,
       procurement,
@@ -118,8 +126,13 @@ export async function composeApp() {
       recruiting,
       hotels,
       overview,
+      kashrut,
+      turbo,
       tokens,
     },
+    orgComms: { orgComms, tokens },
+    knowledge: { trustedSources, tokens },
+    kashrut: { kashrut, hotels, tokens },
   });
 
   logger.info("database ready", { url: dbUrl });

@@ -2,7 +2,7 @@
 
 **Agent ID:** `agent.kashrut`  
 **Version:** 1.0  
-**Status:** Draft  
+**Status:** ✅ Approved  
 **ADR:** [0007](../../adr/0007-cio-orchestrator-kashrut-org-comms.md)
 
 ## מטרות

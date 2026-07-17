@@ -15,11 +15,12 @@ import {
 } from "@hotelos/web-client";
 import { DashboardPage } from "./dashboard-page.js";
 import { FacilitiesPage } from "./facilities-page.js";
+import { KashrutPage } from "./kashrut-page.js";
 import { LoginPage } from "./login-page.js";
 
 const DEMO_TENANT_ID = "11111111-1111-4111-8111-111111111111";
 
-type View = "ops" | "facilities" | "attendance";
+type View = "ops" | "facilities" | "kashrut" | "attendance";
 
 export function App() {
   const [user, setUser] = useState<StoredUser | null>(null);
@@ -96,6 +97,13 @@ export function App() {
             </button>
             <button
               type="button"
+              className={view === "kashrut" ? "tab tab--on" : "tab"}
+              onClick={() => setView("kashrut")}
+            >
+              כשרות
+            </button>
+            <button
+              type="button"
               className={view === "attendance" ? "tab tab--on" : "tab"}
               onClick={() => setView("attendance")}
             >
@@ -121,6 +129,11 @@ export function App() {
           {view === "facilities" ? (
             <main className="facilities-wrap">
               <FacilitiesPage />
+            </main>
+          ) : null}
+          {view === "kashrut" ? (
+            <main className="kashrut-wrap">
+              <KashrutPage />
             </main>
           ) : null}
           {view === "attendance" ? (
@@ -156,8 +169,7 @@ export function App() {
         .tab{border:1px solid rgb(16 36 31 / 14%);background:transparent;border-radius:var(--radius-sm);padding:.55rem .9rem;font:inherit;cursor:pointer;font-weight:600}
         .tab--on{background:var(--color-sea-deep);color:#fff;border-color:transparent}
         .link{margin-inline-start:auto;color:var(--color-sea-deep);font-weight:600}
-        .attendance-wrap{padding:clamp(1rem,3vw,2rem)}
-        .facilities-wrap{padding:clamp(1rem,3vw,2rem)}
+        .attendance-wrap,.facilities-wrap,.kashrut-wrap{padding:clamp(1rem,3vw,2rem)}
       `}</style>
     </div>
   );

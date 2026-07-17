@@ -140,3 +140,26 @@ export {
   type PersistedJobPosting,
   type RecruitingRepository,
 } from "./repositories/recruiting-repository.js";
+export * from "./schema/cio.js";
+export {
+  createOrgCommsRepository,
+  type AddOrgCommsMessageInput,
+  type CreateOrgCommsChannelInput,
+  type OrgCommsRepository,
+  type PersistedOrgCommsChannel,
+  type PersistedOrgCommsMessage,
+} from "./repositories/org-comms-repository.js";
+export {
+  createTrustedSourcesRepository,
+  type CreateTrustedSourceInput,
+  type PersistedTrustedSource,
+  type TrustedSourcesRepository,
+} from "./repositories/trusted-sources-repository.js";
+export {
+  createKashrutRepository,
+  type CreateKashrutAnnotationInput,
+  type KashrutRepository,
+  type KashrutStatus,
+  type KashrutTargetKind,
+  type PersistedKashrutAnnotation,
+} from "./repositories/kashrut-repository.js";

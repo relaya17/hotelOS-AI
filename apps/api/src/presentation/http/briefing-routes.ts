@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type {
   AgentRepository,
+  AuditRepository,
   BriefingRepository,
   OverviewRepository,
   UserRepository,
@@ -18,6 +19,7 @@ import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type BriefingRouteDeps = {
+  readonly audit: AuditRepository;
   readonly briefing: BriefingRepository;
   readonly agents: AgentRepository;
   readonly overview: OverviewRepository;
@@ -116,7 +118,19 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
           })),
         ],
       });
-
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "briefing.room.create",
+        resourceType: "briefing_room",
+        resourceId: room.id,
+        metadata: {
+          purpose: room.purpose,
+          participantCount: body.participants.length + 1,
+        },
+        createdAt: new Date().toISOString(),
+      });
       return c.json(
         {
           data: {
@@ -232,6 +246,20 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
         body: `${agent.nameHe} הצטרף לחדר הבריפינג וזמין לתדריך לוועדה.`,
         createdAt: new Date().toISOString(),
       });
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "briefing.agent.share",
+        resourceType: "briefing_shared_agent",
+        resourceId: shared.id,
+        metadata: {
+          roomId,
+          agentId: shared.agentId,
+          domain: shared.domain,
+        },
+        createdAt: new Date().toISOString(),
+      });
 
       return c.json(
         {
@@ -294,6 +322,20 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
       if (!message) {
         return sendError(c, 404, "ROOM_NOT_FOUND", "Briefing room not found");
       }
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "briefing.message.post",
+        resourceType: "briefing_message",
+        resourceId: message.id,
+        metadata: {
+          roomId,
+          speakerKind: message.speakerKind,
+          bodyLength: message.body.length,
+        },
+        createdAt: new Date().toISOString(),
+      });
       return c.json({ data: message }, 201);
     } catch (error) {
       return mapUnknownError(c, error);

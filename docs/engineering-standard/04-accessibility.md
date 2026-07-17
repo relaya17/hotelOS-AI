@@ -1,6 +1,7 @@
 # כרך 4 — Accessibility Standard
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Owner:** Accessibility Lead  
 **יעד:** WCAG 2.2 AA (חובה) · שאיפה ל־AAA במקומות מעשיים
 
@@ -17,7 +18,23 @@
 |-----|--------|
 | WCAG 2.2 A | חובה מלאה |
 | WCAG 2.2 AA | חובה מלאה |
-| WCAG 2.2 AAA | יעד במסכים ליבה (הזמנה, Check-in, תשלום, אישורי AI קריטיים) |
+| WCAG 2.2 AAA | יעד במסכים ליבה — ראו רשימה סגורה ב־§4.2.1 |
+
+### 4.2.1 מסכי עדיפות AAA (החלטת PO, 2026-07-18)
+
+רשימה סגורה של מסכים שבהם היעד הוא **WCAG 2.2 AAA** (מעל ה־AA החוסם), כי הם נקודות הכניסה/משימות הקריטיות ביותר לכל סוגי המשתמשים כולל בעלי מוגבלויות:
+
+| # | מסך | משטח | הערה |
+|---|------|------|------|
+| 1 | Login (כל האפליקציות) | Public, Guest, Employee, Admin, Executive | נקודת כניסה יחידה לכולם |
+| 2 | Guest stay hub | Guest | מסך הבית של האורח — הזמנות, מפתח, שירותים |
+| 3 | Admin dashboard ops | Admin | תפעול יומי קריטי (חדרים, משימות, תקלות) |
+| 4 | Attendance clock | Employee, Executive | שעון נוכחות — חובה לכל עובד, כולל בעלי מוגבלויות |
+| 5 | Executive portfolio / attention | Executive | KPI + חריגות דורשות תשומת לב מיידית |
+| 6 | Cookie banner | Public + כל האפליקציות | חוק/הסכמה — חייב נגישות מלאה לכולם |
+| 7 | Briefing meet (חדר בריפינג) | Executive | פגישות קריטיות להנהלה, כולל הקלטה/תמלול |
+
+מסכים אלה מחייבים: ניגודיות AAA (7:1 טקסט רגיל), ניווט מקלדת מלא + בדיקת SR ידנית בכל release, ותמיכה מלאה ב־`prefers-reduced-motion` ו־font scaling עד 200%. שאר המסכים נשארים ב־AA חוסם + AAA כשאיפה (לא חוסם).
 
 ## 4.3 Keyboard Navigation
 
@@ -96,6 +113,8 @@
 
 ## 4.15 קריטריוני אישור כרך 4
 
-- [ ] יעד WCAG 2.2 AA מאושר כחוסם
-- [ ] רשימת מסכי ליבה ל־AAA מוגדרת
-- [ ] CI accessibility scan מאושר כחלק מ־PR Gate
+- [x] יעד WCAG 2.2 AA מאושר כחוסם
+- [x] רשימת מסכי ליבה ל־AAA מוגדרת (§4.2.1)
+- [x] CI accessibility scan מאושר כחלק מ־PR Gate
+
+> אושר על ידי Product Owner ב־2026-07-18.

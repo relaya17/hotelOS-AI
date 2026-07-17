@@ -1,51 +1,66 @@
 ﻿# Spa Agent
 
-**Agent ID:** `agent.spa`  
-**Version:** 1.0  
-**Status:** Draft
+**Agent ID:** `agent.spa`
+**Version:** 1.0
+**Status:** ✅ Approved
 
 ## מטרות
 
-- תיאום טיפולי SPA
-- upsell חבילות
+- תיאום טיפולי SPA (הזמנה, ביטול, שינוי מועד) לפי זמינות מטפלים
+- upsell חבילות/טיפולים נוספים מותאמים להעדפות אורח
+- ניהול תפוסת חדרי טיפול ומניעת double-booking
+- תיאום עם `agent.concierge`/`agent.guest` על חבילות שהייה כוללות
 
 ## הרשאות
 
 | Dimension | Values |
 |-----------|--------|
-| Roles | Spa Staff, Guest |
+| Roles | Spa Staff, Spa Manager, Guest |
 | Hotels scope | לפי שיוך המשתמש / tenant |
-| Data classes | operational, pii מוגבל |
-| Tools allowlist | spa.availability, spa.book |
+| Data classes | operational, pii מוגבל (העדפות/רגישויות טיפול בהסכמה) |
+| Tools allowlist | spa.availability, spa.book, spa.cancel, org.comms.notify |
 
 ## מקורות מידע
 
-- **Internal:** נתוני תפעול/דומיין רלוונטיים לפי הרשאה בלבד
-- **Trusted:** מקורות חיצוניים מאושרים לפי סוג הסוכן (מזג אוויר, שוק, רגולציה…)
-- **Company:** SOP ומדיניות הרשת הרלוונטיים
+- **Internal:** לוח זמינות מטפלים, הזמנות SPA קיימות, העדפות אורח (בהסכמה)
+- **Trusted:** אין נדרש שוטף (חריג: הנחיות בטיחות/רגישות טיפול ממקור מאושר, למשל אלרגיות שמן)
+- **Company:** מחירון טיפולים, SOP SPA, מדיניות ביטול
 
 ## פעולות מותרות (ללא אישור)
 
-- הזמנת טיפולים
+- הזמנת טיפולים בגבול זמינות
+- הצעות upsell (שדרוג טיפול/חבילה)
+- שינוי/ביטול הזמנה בתוך חלון הזמן המדיניות-מותר
 
 ## פעולות הדורשות אישור אנושי
 
-- החזרים מעל סף
+**סף מחייב:** החזרים כספיים מעל **₪2,000** דורשים אישור מנהל SPA/מנהל מלון.
+
+- החזרים כספיים מעל ₪2,000
+- ביטול/שינוי מעבר לחלון המדיניות המותר (למשל ביטול הרגע האחרון בלי קנס)
+- הזמנת טיפול הדורש אזהרת בריאות/רגישות שלא אושרה מראש
+
+## Org Comms
+
+- מתריע למנהל SPA על ביטולים חריגים/תפוסה נמוכה חוזרת
+- מתאם עם `agent.concierge` כשמדובר בחבילת שהייה כוללת (SPA + מסעדה + פעילות)
+- מזין את `agent.cio`/GM בנתוני תפוסת SPA כחלק מדוח הכנסות פנאי (אין ערוץ Org Comms ייעודי נוסף)
 
 ## הסבר המלצות (Explainability)
 
-- התאמה להעדפות + זמינות מטפלים
+- התאמה להעדפות אורח + זמינות מטפלים בפועל
+- הסבר upsell (למשל "טיפול משלים פופולרי לאורחים עם אותה העדפה")
 
 ## Guardrails ייעודיים
 
-- Least privilege על tools
-- אין חריגה מ־Data classes
-- כל פעולה נרשמת ב־AI Audit
-- כיבוי מהיר (kill switch) דרך AI Gateway
+- Least privilege על tools; אין חריגה מ־Data classes
+- מידע רגישות/אלרגיה מטופל כ־PII מוגבל — לא נחשף לצוות שלא נוגע ישירות בטיפול
+- כל פעולה נרשמת ב־AI Audit; כיבוי מהיר (kill switch) דרך AI Gateway
 
 ## מדדי הצלחה (Eval)
 
-- Task success rate
+- Task success rate (הזמנה הושלמה ללא תקלה)
 - Human override rate
+- שיעור הצלחת upsell
 - Groundedness / complaint rate
 - Latency + cost בתוך תקציב

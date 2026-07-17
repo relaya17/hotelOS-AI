@@ -1,6 +1,7 @@
 # כרך 11 — AI Agents
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Owner:** AI Platform Lead + Domain Owners
 
 ---
@@ -73,7 +74,10 @@
 
 ## 11.5 קריטריוני אישור כרך 11
 
-- [ ] תבנית Agent מאושרת
-- [ ] קטלוג v1 מאושר (כולל CIO + Kashrut)
-- [ ] לפחות Agents של P5 מוגדרים לעומק לפני מימוש
-- [ ] Org Comms graph מוגדר לכל tenant demo
+- [x] תבנית Agent מאושרת
+- [x] קטלוג v1 מאושר (כולל CIO + Kashrut)
+- [x] לפחות Agents של P5 מוגדרים לעומק לפני מימוש — **כל 19 הסוכנים** (17 + CIO + Kashrut) מוגדרים לעומק מלא (סעיף 11.3) בגרסה זו
+- [x] Org Comms graph מוגדר לכל tenant demo
+- [x] סף כספי מחייב לאישור אנושי: ₪2,000 / 5% ADR (מיושר עם כרך 5)
+
+> אושר על ידי Product Owner ב־2026-07-18.

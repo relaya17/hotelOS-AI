@@ -1,6 +1,7 @@
 # כרך 3 — UI/UX Standard
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Owner:** Design System Lead
 
 ---
@@ -124,7 +125,9 @@ KPI בזמן אמת, שאלות בשפה טבעית, התראות Push AI — ל
 
 ## 3.14 קריטריוני אישור כרך 3
 
-- [ ] Design tokens מאושרים
-- [ ] רשימת קומפוננטות ליבה מאושרת
-- [ ] RTL + Dark Mode כחובה
-- [ ] מצבי Loading/Empty/Error מחייבים
+- [x] Design tokens מאושרים
+- [x] רשימת קומפוננטות ליבה מאושרת
+- [x] RTL + Dark Mode כחובה
+- [x] מצבי Loading/Empty/Error מחייבים
+
+> אושר על ידי Product Owner ב־2026-07-18.

@@ -1,6 +1,7 @@
 # כרך 5A — AI Architecture
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Owner:** AI Platform Lead + Chief Architect  
 **קשור:** [05-ai-platform.md](./05-ai-platform.md) · [11-ai-agents/](./11-ai-agents/README.md)
 
@@ -205,7 +206,9 @@ Legacy PMS / CRM / ERP ──connectors──► Digital Twin / Events
 
 ## 5A.14 קריטריוני אישור כרך 5A
 
-- [ ] תרשים Gateway → Agents → RAG → Vector → Knowledge/Memory מאושר
-- [ ] 4 סוגי Memory מאושרים
-- [ ] Digital Twin + Simulator + Autonomous (עם Approval) מאושרים כחלק מהארכיטקטורה
-- [ ] Tenancy hierarchy מחייבת בנתיב AI מאושרת
+- [x] תרשים Gateway → Agents → RAG → Vector → Knowledge/Memory מאושר
+- [x] 4 סוגי Memory מאושרים
+- [x] Digital Twin + Simulator + Autonomous (עם Approval) מאושרים כחלק מהארכיטקטורה
+- [x] Tenancy hierarchy מחייבת בנתיב AI מאושרת
+
+> אושר על ידי Product Owner ב־2026-07-18.

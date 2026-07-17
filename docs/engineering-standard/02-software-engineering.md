@@ -1,6 +1,7 @@
 # כרך 2 — Software Engineering Standard
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Owner:** Chief Architect  
 **זהו "החוק" של כל המפתחים.**
 
@@ -226,7 +227,9 @@ Lazy Loading · Code Splitting · Virtualization לרשימות גדולות · 
 
 ## 2.17 קריטריוני אישור כרך 2
 
-- [ ] TypeScript rules מאושרים
-- [ ] מבנה Monorepo מאושר
-- [ ] Clean Architecture + patterns מאושרים
-- [ ] PR Gate מאושר כחוסם
+- [x] TypeScript rules מאושרים
+- [x] מבנה Monorepo מאושר
+- [x] Clean Architecture + patterns מאושרים
+- [x] PR Gate מאושר כחוסם
+
+> אושר על ידי Product Owner ב־2026-07-18.

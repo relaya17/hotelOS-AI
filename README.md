@@ -10,7 +10,7 @@
 | אפליקציה | רמה | תפקיד | כתובת מקומית |
 |-----------|------|--------|----------------|
 | **Executive** | רשת / אזור | לוח בקרה Multi-Hotel, Turbo OS, בריפינגים | http://localhost:5173 |
-| **Admin** | מלון בודד | חדרים, הזמנות, נוכחות מהטלפון | http://localhost:5174 |
+| **Admin** | מלון בודד | חדרים, הזמנות, כשרות, נוכחות מהטלפון | http://localhost:5174 |
 | **Guest** | אורח | חיפוש שהייה + מסמכי Legal | http://localhost:5175 |
 | **API** | שרת | Auth, תפעול, Turbo, Trust, סוכנים | http://localhost:3001 |
 
@@ -179,8 +179,22 @@ packages/
 | `GET /v1/public/legal` | מסמכי ציות |
 | `POST /v1/trust/*` | עוגיות, תשלומים, חתימה, WebAuthn, קול, Google, נוכחות |
 | `POST /v1/public/stays/lookup` | חיפוש שהייה לאורח |
+| `GET /v1/ops/cio-digest` | תדריך יועץ־על לפי תפקיד |
+| `/v1/org-comms/*` · `/v1/knowledge/*` · `/v1/kashrut/*` | Org Comms, Trusted sources, כשרות |
 
 CORS: מקורות ב־`CORS_ORIGINS` (ברירת מחדל — שלוש האפליקציות המקומיות).
+
+## תיעוד
+
+| סוג | נתיב |
+|-----|------|
+| Engineering Standard | [`docs/engineering-standard/00-INDEX.md`](docs/engineering-standard/00-INDEX.md) |
+| ADRs | [`docs/adr/README.md`](docs/adr/README.md) |
+| PRD / SRS | [`docs/prd/`](docs/prd/) · [`docs/srs/`](docs/srs/) |
+| Architecture / ERD / Diagrams | [`docs/architecture/`](docs/architecture/) · [`docs/erd/`](docs/erd/) · [`docs/diagrams/`](docs/diagrams/) |
+| OpenAPI inventory | [`docs/openapi/README.md`](docs/openapi/README.md) |
+| Manuals / Runbooks / Security / Dev | [`docs/manuals/`](docs/manuals/) · [`docs/runbooks/`](docs/runbooks/) · [`docs/security/`](docs/security/) · [`docs/dev/`](docs/dev/) |
+| Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 
 ## פריסה (Deployment)
 

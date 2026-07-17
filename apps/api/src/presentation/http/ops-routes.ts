@@ -1,18 +1,22 @@
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import type {
+  AuditRepository,
   FeedbackRepository,
   HotelRepository,
+  KashrutRepository,
   MaintenanceRepository,
   OpsRepository,
   OverviewRepository,
   ProcurementRepository,
   RecruitingRepository,
+  TurboRepository,
 } from "@hotelos/database";
 import { canAccessHotel, type JwtTokenService } from "@hotelos/auth";
 import type { HotelId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
+import { buildCioDigest, CIO_ROLES } from "../../application/build-cio-digest.js";
 import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
@@ -23,6 +27,7 @@ type HotelIdResult =
   | { readonly ok: false; readonly response: Response };
 
 export type OpsRouteDeps = {
+  readonly audit: AuditRepository;
   readonly ops: OpsRepository;
   readonly maintenance: MaintenanceRepository;
   readonly procurement: ProcurementRepository;
@@ -30,6 +35,8 @@ export type OpsRouteDeps = {
   readonly recruiting: RecruitingRepository;
   readonly hotels: HotelRepository;
   readonly overview: OverviewRepository;
+  readonly kashrut: KashrutRepository;
+  readonly turbo: TurboRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -122,6 +129,8 @@ const createJobPostingSchema = z.object({
   externalUrl: z.string().url().optional(),
   notes: z.string().trim().max(1000).optional(),
 });
+
+const cioDigestRoleSchema = z.enum(CIO_ROLES);
 
 const addCandidateSchema = z.object({
   fullName: z.string().trim().min(2).max(160),
@@ -326,6 +335,21 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
       if (!updated) {
         return sendError(c, 404, "REQUEST_NOT_FOUND", "Maintenance request not found");
       }
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: Ids.hotel(updated.hotelId),
+        actorUserId: principal.userId,
+        action: "maintenance.status.update",
+        resourceType: "maintenance_request",
+        resourceId: updated.id,
+        metadata: {
+          status: updated.status,
+          category: updated.category,
+          priority: updated.priority,
+        },
+        createdAt: new Date().toISOString(),
+      });
       return c.json({ data: updated });
     } catch (error) {
       return mapUnknownError(c, error);
@@ -447,6 +471,21 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         reorderThreshold: body.reorderThreshold,
         createdAt: new Date().toISOString(),
       });
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: resolved.hotelId,
+        actorUserId: principal.userId,
+        action: "inventory.create",
+        resourceType: "inventory_item",
+        resourceId: created.id,
+        metadata: {
+          category: created.category,
+          currentStock: created.currentStock,
+          reorderThreshold: created.reorderThreshold,
+        },
+        createdAt: new Date().toISOString(),
+      });
       return c.json({ data: created }, 201);
     } catch (error) {
       return mapUnknownError(c, error);
@@ -491,6 +530,23 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
           unitPrice: item.unitPrice,
         })),
       });
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: resolved.hotelId,
+        actorUserId: principal.userId,
+        action: "purchase_order.create",
+        resourceType: "purchase_order",
+        resourceId: created.id,
+        metadata: {
+          vendorId: created.vendorId,
+          status: created.status,
+          totalAmount: created.totalAmount,
+          currency: created.currency,
+          itemCount: body.items.length,
+        },
+        createdAt: new Date().toISOString(),
+      });
       return c.json({ data: created }, 201);
     } catch (error) {
       return mapUnknownError(c, error);
@@ -509,6 +565,22 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
       if (!updated) {
         return sendError(c, 404, "ORDER_NOT_FOUND", "Purchase order not found");
       }
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: Ids.hotel(updated.hotelId),
+        actorUserId: principal.userId,
+        action: "purchase_order.receive",
+        resourceType: "purchase_order",
+        resourceId: updated.id,
+        metadata: {
+          status: updated.status,
+          vendorId: updated.vendorId,
+          totalAmount: updated.totalAmount,
+          currency: updated.currency,
+        },
+        createdAt: new Date().toISOString(),
+      });
       return c.json({ data: updated });
     } catch (error) {
       return mapUnknownError(c, error);
@@ -570,6 +642,21 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         createdByUserId: principal.userId,
         createdAt: new Date().toISOString(),
       });
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: resolved.hotelId,
+        actorUserId: principal.userId,
+        action: "recruiting.posting.create",
+        resourceType: "job_posting",
+        resourceId: created.id,
+        metadata: {
+          title: created.title,
+          boardName: created.boardName,
+          status: created.status,
+        },
+        createdAt: new Date().toISOString(),
+      });
       return c.json({ data: created }, 201);
     } catch (error) {
       return mapUnknownError(c, error);
@@ -578,6 +665,7 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
 
   routes.post("/recruiting/postings/:id/candidates", async (c) => {
     try {
+      const principal = c.get("principal");
       const postingId = c.req.param("id");
       const body = addCandidateSchema.parse(await c.req.json());
       const created = await deps.recruiting.addCandidate({
@@ -587,6 +675,20 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         ...(body.phone ? { phone: body.phone } : {}),
         ...(body.email ? { email: body.email } : {}),
         source: body.source,
+        createdAt: new Date().toISOString(),
+      });
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "recruiting.candidate.create",
+        resourceType: "job_candidate",
+        resourceId: created.id,
+        metadata: {
+          jobPostingId: created.jobPostingId,
+          source: created.source,
+          stage: created.stage,
+        },
         createdAt: new Date().toISOString(),
       });
       return c.json({ data: created }, 201);
@@ -632,6 +734,47 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         return sendError(c, 404, "NO_DATA", "No overview data available yet");
       }
       return c.json({ data: briefing });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  // ---- CIO digest ("יועץ־על") — role-based, deterministic (ADR 0007) ----
+
+  routes.get("/cio-digest", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const roleParsed = cioDigestRoleSchema.safeParse(c.req.query("role") ?? "ceo");
+      if (!roleParsed.success) {
+        return sendError(c, 400, "VALIDATION_ERROR", "Invalid role");
+      }
+
+      const tenantHotels = await deps.hotels.listByTenant(principal.scope.tenantId);
+      const scopedHotelIds = (
+        principal.scope.hotelId
+          ? tenantHotels.filter((hotel) => hotel.id === principal.scope.hotelId)
+          : tenantHotels
+      ).map((hotel) => hotel.id);
+
+      const digest = await buildCioDigest(
+        {
+          overview: deps.overview,
+          ops: deps.ops,
+          maintenance: deps.maintenance,
+          procurement: deps.procurement,
+          feedback: deps.feedback,
+          kashrut: deps.kashrut,
+          hotels: deps.hotels,
+          turbo: deps.turbo,
+        },
+        principal.scope.tenantId,
+        scopedHotelIds,
+        roleParsed.data,
+      );
+      if (!digest) {
+        return sendError(c, 404, "NO_DATA", "No overview data available yet");
+      }
+      return c.json({ data: digest });
     } catch (error) {
       return mapUnknownError(c, error);
     }

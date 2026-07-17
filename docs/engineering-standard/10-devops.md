@@ -1,6 +1,7 @@
 # כרך 10 — DevOps Standard
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Owner:** DevOps / Platform Lead
 
 ---
@@ -75,6 +76,8 @@ Deploy ל־prod רק מ־main/protected branch אחרי gates.
 
 ## 10.9 קריטריוני אישור כרך 10
 
-- [ ] PR Gate מלא מאושר
-- [ ] Feature flags + canary/blue-green מאושרים
-- [ ] Observability stack מאושר
+- [x] PR Gate מלא מאושר
+- [x] Feature flags + canary/blue-green מאושרים
+- [x] Observability stack מאושר
+
+> אושר על ידי Product Owner ב־2026-07-18.

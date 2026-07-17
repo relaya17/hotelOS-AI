@@ -1,6 +1,7 @@
 # כרך 5 — AI Platform Standard
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Owner:** AI Platform Lead  
 **חשיבות:** מסמך הליבה של היתרון התחרותי
 
@@ -156,8 +157,10 @@ Trusted Sources → Importer → Validation → Human Approval → Knowledge DB 
 
 פעולות שדורשות אישור אנושי כברירת מחדל (ניתן להחמיר per-tenant):
 
+**סף כספי מחייב (החלטת PO, 2026-07-18):** כל העברה / זיכוי / שינוי מחיר מעל **₪2,000** *או* שינוי ADR מעל **5%** — דורש אישור אנושי. מתחת לסף — לפי מדיניות tenant (יכולה עדיין לדרוש אישור).
+
 - שינוי מחירים גורף / פרסום תוצאות Simulator
-- זיכויים מעל סף
+- זיכויים מעל ₪2,000
 - גישה/שינוי PII רגיש
 - הודעות המוניות לאורחים
 - שינויי Knowledge משמעותיים
@@ -211,9 +214,11 @@ Trusted Sources → Importer → Validation → Human Approval → Knowledge DB 
 
 ## 5.19 קריטריוני אישור כרך 5
 
-- [ ] AI Gateway כנקודת כניסה יחידה מאושר
-- [ ] 4 סוגי Memory מאושרים
-- [ ] Knowledge pipeline עם Approval מאושר
-- [ ] Permissions + Audit + Guardrails מאושרים
-- [ ] Human Approval + Autonomous suggest/approve מאושר
-- [ ] כרך 5A מאושר יחד עם כרך זה
+- [x] AI Gateway כנקודת כניסה יחידה מאושר
+- [x] 4 סוגי Memory מאושרים
+- [x] Knowledge pipeline עם Approval מאושר
+- [x] Permissions + Audit + Guardrails מאושרים
+- [x] Human Approval + Autonomous suggest/approve מאושר (סף ₪2,000 / 5% ADR)
+- [x] כרך 5A מאושר יחד עם כרך זה
+
+> אושר על ידי Product Owner ב־2026-07-18.

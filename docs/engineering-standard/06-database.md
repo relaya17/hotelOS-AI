@@ -1,6 +1,7 @@
 # כרך 6 — Database Architecture
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0  
+**Status:** ✅ Approved (PO, 2026-07-18)  
 **Owner:** Data Architect
 
 ---
@@ -62,7 +63,7 @@ Platform
 
 ## 6.5 מפתחות ואינדקסים
 
-- PK: UUID v7 או ULID (ADR יקבע) — עקביות בכל המערכת
+- **PK strategy (הוחלט, PO 2026-07-18): UUID v4** — כבר בשימוש בכל המערכת (`packages/database`), ממשיכים איתו כברירת מחדל לכל טבלה חדשה. **UUID v7** נשאר אופציה עתידית (locality/sort-ability טובים יותר ל־DBs גדולים) — מעבר עתידי, אם יידרש, יתועד ב־ADR נפרד ולא חוסם קוד עכשווי.
 - FK מפורשים בתוך אותו DB לוגי
 - Cross-DB: אין FK פיזי — סינכרון באירועים / correlation ids
 - אינדקסים חובה לדוגמה:
@@ -79,11 +80,15 @@ Platform
 
 ## 6.7 Backup & Recovery
 
-| סביבה | RPO מקסימלי | RTO מקסימלי |
-|--------|-------------|-------------|
-| Production SaaS | ≤ 15 דקות (או לפי SLA חוזי) | ≤ 4 שעות |
-| Enterprise dedicated | לפי חוזה | לפי חוזה |
-| Audit DB | Backup נפרד + WORM אם נדרש | |
+**ברירת מחדל (הוחלט, PO 2026-07-18) — תקפה כשלא הוגדר SLA חוזי ספציפי:**
+
+| סביבה | RPO | RTO |
+|--------|-----|-----|
+| Production SaaS | ≤ 24 שעות | ≤ 4 שעות |
+| Enterprise dedicated | ≤ 1 שעה | ≤ 1 שעה |
+| Audit DB | Backup נפרד + WORM אם נדרש | כנ״ל לפי סביבה |
+
+חוזה Enterprise ספציפי יכול להחמיר (לא להקל) את הערכים לעיל.
 
 חובה:
 
@@ -105,7 +110,10 @@ Platform
 
 ## 6.10 קריטריוני אישור כרך 6
 
-- [ ] רשימת logical DBs מאושרת
-- [ ] מדיניות multi-tenant/RLS מאושרת
-- [ ] RPO/RTO מאושרים
-- [ ] עקרון no cross-DB FK מאושר
+- [x] רשימת logical DBs מאושרת
+- [x] מדיניות multi-tenant/RLS מאושרת
+- [x] RPO/RTO מאושרים (SaaS 24h/4h, Enterprise 1h/1h)
+- [x] עקרון no cross-DB FK מאושר
+- [x] PK strategy (UUID v4) מאושרת
+
+> אושר על ידי Product Owner ב־2026-07-18.

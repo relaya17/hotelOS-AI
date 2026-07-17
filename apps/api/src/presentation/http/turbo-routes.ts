@@ -1,5 +1,9 @@
 import { Hono } from "hono";
-import type { TurboRepository, UserRepository } from "@hotelos/database";
+import type {
+  AuditRepository,
+  TurboRepository,
+  UserRepository,
+} from "@hotelos/database";
 import type { JwtTokenService } from "@hotelos/auth";
 import {
   isLocaleCode,
@@ -13,6 +17,7 @@ import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type TurboRouteDeps = {
+  readonly audit: AuditRepository;
   readonly turbo: TurboRepository;
   readonly users: UserRepository;
   readonly tokens: JwtTokenService;
@@ -200,6 +205,20 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
       if (!rule) {
         return sendError(c, 404, "NOT_FOUND", "Automation not found");
       }
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "automation.toggle",
+        resourceType: "automation_rule",
+        resourceId: rule.id,
+        metadata: {
+          enabled: rule.enabled,
+          actionKey: rule.actionKey,
+          triggerKey: rule.triggerKey,
+        },
+        createdAt: new Date().toISOString(),
+      });
       return c.json({ data: rule });
     } catch (error) {
       return mapUnknownError(c, error);
@@ -222,6 +241,19 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
           "Automation missing or disabled",
         );
       }
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "automation.run.manual",
+        resourceType: "automation_run",
+        resourceId: run.id,
+        metadata: {
+          automationId: run.automationId,
+          status: run.status,
+        },
+        createdAt: new Date().toISOString(),
+      });
       return c.json({ data: run }, 201);
     } catch (error) {
       return mapUnknownError(c, error);
