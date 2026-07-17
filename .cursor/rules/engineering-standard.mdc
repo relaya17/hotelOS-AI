@@ -1,8 +1,7 @@
 ---
 description: HotelOS AI Engineering Standard — approved; 100% compliance required
-alwaysApply: true
+alwaysApply: false
 ---
-
 # HotelOS AI — Engineering Standard Gate
 
 ## Status

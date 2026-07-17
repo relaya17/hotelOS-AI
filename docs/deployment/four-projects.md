@@ -17,6 +17,15 @@
 
 בלי פרויקט `#1` שלושת האתרים נטענים אבל Login נכשל.
 
+### איפה שמים secrets (שרת)
+
+| מקום | קובץ | מטרה |
+|------|------|------|
+| מקומי / סקריפט פריסה | **`apps/api/.env`** | העתק מ־`apps/api/.env.example` — כאן מדביקים Turso + JWT |
+| Vercel (פרודקשן) | Project Settings → Environment Variables של פרויקט ה־API | הסקריפט `scripts/deploy-four-vercel.ps1` מעתיק מ־`apps/api/.env` |
+
+`apps/api/.env` ב־gitignore — לא נכנס לגיט.
+
 ### API — Environment Variables
 
 - `DATABASE_URL` / `DATABASE_AUTH_TOKEN` (Turso)

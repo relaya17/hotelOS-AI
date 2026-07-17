@@ -4,11 +4,11 @@ import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { composeApp } from "./infrastructure/compose.js";
 
-const repoRoot = resolve(
-  fileURLToPath(new URL(".", import.meta.url)),
-  "../../..",
-);
-loadDotenv({ path: resolve(repoRoot, ".env") });
+const apiRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "../..");
+const repoRoot = resolve(apiRoot, "../..");
+// Prefer apps/api/.env (server folder); fall back to monorepo root .env.
+loadDotenv({ path: resolve(apiRoot, ".env") });
+loadDotenv({ path: resolve(repoRoot, ".env"), override: false });
 
 const { app, env, logger } = await composeApp();
 
