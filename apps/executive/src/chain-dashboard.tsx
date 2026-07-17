@@ -11,9 +11,15 @@ import {
 export type ChainDashboardProps = {
   readonly user: StoredUser;
   readonly onLogout: () => void;
+  /** When true, top chrome is provided by ExecutiveShell. */
+  readonly embedded?: boolean;
 };
 
-export function ChainDashboard({ user, onLogout }: ChainDashboardProps) {
+export function ChainDashboard({
+  user,
+  onLogout,
+  embedded = false,
+}: ChainDashboardProps) {
   const [overview, setOverview] = useState<ChainOverviewDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
@@ -54,30 +60,42 @@ export function ChainDashboard({ user, onLogout }: ChainDashboardProps) {
 
   return (
     <div className="dash">
-      <header className="dash__header">
-        <div>
-          <p className="eyebrow">Executive · רמת רשת</p>
-          <h1>{overview?.tenantName ?? "לוח בקרה לרשת"}</h1>
-          <p className="sub">
-            {user.displayName} · {overview?.hotelCount ?? "—"} מלונות ברשת
-          </p>
-        </div>
-        <div className="actions">
-          <a className="link" href={APP_URLS.admin}>
-            תפעול מלון
-          </a>
-          <Button
-            variant="ghost"
-            type="button"
-            onClick={() => {
-              clearSession();
-              onLogout();
-            }}
-          >
-            התנתקות
-          </Button>
-        </div>
-      </header>
+      {embedded ? (
+        <header className="dash__header">
+          <div>
+            <p className="eyebrow">Control Tower · רמת רשת</p>
+            <h1>{overview?.tenantName ?? "לוח בקרה לרשת"}</h1>
+            <p className="sub">
+              {user.displayName} · {overview?.hotelCount ?? "—"} מלונות ברשת
+            </p>
+          </div>
+        </header>
+      ) : (
+        <header className="dash__header">
+          <div>
+            <p className="eyebrow">Executive · רמת רשת</p>
+            <h1>{overview?.tenantName ?? "לוח בקרה לרשת"}</h1>
+            <p className="sub">
+              {user.displayName} · {overview?.hotelCount ?? "—"} מלונות ברשת
+            </p>
+          </div>
+          <div className="actions">
+            <a className="link" href={APP_URLS.admin}>
+              תפעול מלון
+            </a>
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() => {
+                clearSession();
+                onLogout();
+              }}
+            >
+              התנתקות
+            </Button>
+          </div>
+        </header>
+      )}
 
       {totals ? (
         <section className="kpi-row" aria-label="סיכום רשת">

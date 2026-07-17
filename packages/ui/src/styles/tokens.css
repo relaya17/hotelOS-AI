@@ -84,3 +84,25 @@ a {
     transition: none !important;
   }
 }
+
+/* Mobile-first Turbo OS helpers */
+.hotelos-mobile-hint {
+  display: none;
+  font-size: var(--text-small);
+  color: var(--color-ink-soft);
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid rgb(16 36 31 / 10%);
+  background: rgb(255 250 242 / 80%);
+}
+
+@media (max-width: 768px) {
+  .hotelos-mobile-hint {
+    display: block;
+  }
+
+  .hotelos-nav-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+}

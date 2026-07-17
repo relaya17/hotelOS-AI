@@ -1,0 +1,9 @@
+{
+  "name": "HotelOS AI Admin",
+  "short_name": "HotelOS Admin",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3efe6",
+  "theme_color": "#0f6a5c",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

@@ -82,6 +82,71 @@ export type GuestStayDto = {
   readonly status: string;
 };
 
+export type AgentDto = {
+  readonly id: string;
+  readonly nameHe: string;
+  readonly nameEn: string;
+  readonly domain: string;
+  readonly summaryHe: string;
+  readonly autonomyMode: string;
+};
+
+export type BriefingRoomSummaryDto = {
+  readonly id: string;
+  readonly title: string;
+  readonly purpose: string;
+  readonly status: "scheduled" | "live" | "ended";
+  readonly hostUserId: string;
+  readonly chainId: string;
+  readonly createdAt: string;
+};
+
+export type BriefingRecordingDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly chainId: string;
+  readonly roomId: string;
+  readonly status: "recording" | "completed" | "failed";
+  readonly startedByUserId: string;
+  readonly startedAt: string;
+  readonly endedAt: string | null;
+  readonly storageKey: string | null;
+  readonly mimeType: string | null;
+  readonly byteSize: number | null;
+  readonly durationSeconds: number | null;
+  readonly hasTranscript: boolean;
+  readonly createdAt: string;
+};
+
+export type BriefingRoomDetailDto = {
+  readonly room: BriefingRoomSummaryDto;
+  readonly participants: readonly {
+    readonly id: string;
+    readonly displayName: string;
+    readonly roleLabel: string;
+    readonly userId: string | null;
+  }[];
+  readonly sharedAgents: readonly {
+    readonly id: string;
+    readonly agentId: string;
+    readonly nameHe: string;
+    readonly nameEn: string;
+    readonly domain: string;
+    readonly summaryHe: string;
+    readonly autonomyMode: string;
+    readonly sharedAt: string;
+  }[];
+  readonly messages: readonly {
+    readonly id: string;
+    readonly speakerKind: "human" | "agent";
+    readonly speakerId: string;
+    readonly speakerName: string;
+    readonly body: string;
+    readonly createdAt: string;
+  }[];
+  readonly recordings: readonly BriefingRecordingDto[];
+};
+
 type ApiError = {
   readonly error: {
     readonly code: string;
@@ -226,6 +291,306 @@ export async function lookupGuestStay(email: string): Promise<readonly GuestStay
     throw new Error("Invalid lookup response");
   }
   return body.data;
+}
+
+async function authPost(path: string, body?: unknown): Promise<unknown> {
+  const token = readAccessToken();
+  if (!token) {
+    throw new Error("Missing session");
+  }
+  const init: RequestInit = {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+  if (body !== undefined) {
+    init.body = JSON.stringify(body);
+  }
+  const response = await fetch(`${API_BASE}${path}`, init);
+  const payload = await parseJson(response);
+  if (response.status === 401) {
+    clearSession();
+    throw new Error("Session expired");
+  }
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Request failed"));
+  }
+  return payload;
+}
+
+export async function listAgents(): Promise<readonly AgentDto[]> {
+  const payload = (await authGet("/v1/agents")) as { data: AgentDto[] };
+  return payload.data;
+}
+
+export async function listBriefingRooms(): Promise<
+  readonly BriefingRoomSummaryDto[]
+> {
+  const payload = (await authGet("/v1/briefing-rooms")) as {
+    data: BriefingRoomSummaryDto[];
+  };
+  return payload.data;
+}
+
+export async function fetchBriefingRoom(
+  roomId: string,
+): Promise<BriefingRoomDetailDto> {
+  const payload = (await authGet(`/v1/briefing-rooms/${roomId}`)) as {
+    data: BriefingRoomDetailDto;
+  };
+  return payload.data;
+}
+
+export async function createBriefingRoom(input: {
+  title: string;
+  purpose: string;
+  participants?: readonly { displayName: string; roleLabel: string }[];
+}): Promise<BriefingRoomSummaryDto> {
+  const payload = (await authPost("/v1/briefing-rooms", input)) as {
+    data: BriefingRoomSummaryDto;
+  };
+  return payload.data;
+}
+
+export async function startBriefingRoom(roomId: string): Promise<void> {
+  await authPost(`/v1/briefing-rooms/${roomId}/start`);
+}
+
+export async function endBriefingRoom(roomId: string): Promise<void> {
+  await authPost(`/v1/briefing-rooms/${roomId}/end`);
+}
+
+export async function shareAgentToBriefingRoom(
+  roomId: string,
+  agentId: string,
+): Promise<void> {
+  await authPost(`/v1/briefing-rooms/${roomId}/agents`, { agentId });
+}
+
+export async function postBriefingMessage(
+  roomId: string,
+  body: string,
+): Promise<void> {
+  await authPost(`/v1/briefing-rooms/${roomId}/messages`, { body });
+}
+
+export async function consultBriefingAgent(
+  roomId: string,
+  agentId: string,
+  prompt?: string,
+): Promise<void> {
+  await authPost(`/v1/briefing-rooms/${roomId}/agents/${agentId}/consult`, {
+    ...(prompt !== undefined ? { prompt } : {}),
+  });
+}
+
+export async function startBriefingRecording(
+  roomId: string,
+): Promise<BriefingRecordingDto> {
+  const payload = (await authPost(
+    `/v1/briefing-rooms/${roomId}/recordings/start`,
+  )) as { data: BriefingRecordingDto };
+  return payload.data;
+}
+
+export async function completeBriefingRecording(
+  roomId: string,
+  recordingId: string,
+  blob: Blob,
+  durationSeconds: number | null,
+): Promise<BriefingRecordingDto> {
+  const token = readAccessToken();
+  if (!token) {
+    throw new Error("Missing session");
+  }
+  const form = new FormData();
+  form.append("file", blob, "meeting.webm");
+  if (durationSeconds !== null) {
+    form.append("durationSeconds", String(durationSeconds));
+  }
+  const response = await fetch(
+    `${API_BASE}/v1/briefing-rooms/${roomId}/recordings/${recordingId}/complete`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    },
+  );
+  const payload = await parseJson(response);
+  if (response.status === 401) {
+    clearSession();
+    throw new Error("Session expired");
+  }
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Failed to save recording"));
+  }
+  return (payload as { data: BriefingRecordingDto }).data;
+}
+
+export function briefingRecordingMediaUrl(
+  roomId: string,
+  recordingId: string,
+): string {
+  return `${API_BASE}/v1/briefing-rooms/${roomId}/recordings/${recordingId}/media`;
+}
+
+export type EmployeeDto = {
+  readonly id: string;
+  readonly displayName: string;
+  readonly roleLabel: string;
+  readonly preferredLocale: string;
+  readonly hotelId: string | null;
+};
+
+export type StaffChatDeliveryDto = {
+  readonly employeeId: string;
+  readonly displayName: string;
+  readonly preferredLocale: string;
+  readonly body: string;
+};
+
+export type StaffChatMessageDto = {
+  readonly id: string;
+  readonly channel: string;
+  readonly authorName: string;
+  readonly sourceLocale: string;
+  readonly sourceBody: string;
+  readonly translations: Record<string, string>;
+  readonly verification: string;
+  readonly createdAt: string;
+  readonly bodyForViewer: string;
+  readonly deliveries: readonly StaffChatDeliveryDto[];
+};
+
+export type AccountingDto = {
+  readonly mode: string;
+  readonly integration: {
+    readonly internalProgram: string;
+    readonly externalConnectors: readonly string[];
+    readonly note: string;
+  };
+  readonly accounts: readonly {
+    readonly id: string;
+    readonly code: string;
+    readonly name: string;
+    readonly accountType: string;
+    readonly currency: string;
+    readonly balanceMinor: number;
+  }[];
+  readonly journal: readonly {
+    readonly id: string;
+    readonly accountCode: string;
+    readonly accountName: string;
+    readonly memo: string;
+    readonly debit: number;
+    readonly credit: number;
+    readonly entryDate: string;
+    readonly sourceSystem: string;
+  }[];
+};
+
+export type AutomationBundleDto = {
+  readonly rules: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly domain: string;
+    readonly triggerKey: string;
+    readonly actionKey: string;
+    readonly enabled: boolean;
+    readonly lastRunAt: string | null;
+  }[];
+  readonly runs: readonly {
+    readonly id: string;
+    readonly automationId: string;
+    readonly status: string;
+    readonly detail: string;
+    readonly createdAt: string;
+  }[];
+};
+
+export type VoiceIntentDto = {
+  readonly intent: string;
+  readonly action: string;
+  readonly automationHint: string;
+  readonly replyHe: string;
+  readonly replyEn: string;
+  readonly automationId: string | null;
+  readonly runId: string | null;
+};
+
+export async function fetchStaffChat(
+  channel: string,
+  locale: string,
+): Promise<{
+  readonly channel: string;
+  readonly viewerLocale: string;
+  readonly messages: readonly StaffChatMessageDto[];
+}> {
+  const payload = (await authGet(
+    `/v1/turbo/chat/${channel}?locale=${encodeURIComponent(locale)}`,
+  )) as {
+    data: {
+      channel: string;
+      viewerLocale: string;
+      messages: StaffChatMessageDto[];
+    };
+  };
+  return payload.data;
+}
+
+export async function postStaffChatInstruction(input: {
+  channel?: string;
+  body: string;
+  sourceLocale?: string;
+}): Promise<void> {
+  await authPost("/v1/turbo/chat", {
+    channel: input.channel ?? "ops",
+    body: input.body,
+    sourceLocale: input.sourceLocale ?? "he",
+  });
+}
+
+export async function fetchAccounting(): Promise<AccountingDto> {
+  const payload = (await authGet("/v1/turbo/accounting")) as {
+    data: AccountingDto;
+  };
+  return payload.data;
+}
+
+export async function fetchAutomations(): Promise<AutomationBundleDto> {
+  const payload = (await authGet("/v1/turbo/automations")) as {
+    data: AutomationBundleDto;
+  };
+  return payload.data;
+}
+
+export async function toggleAutomation(
+  id: string,
+  enabled: boolean,
+): Promise<void> {
+  await authPost(`/v1/turbo/automations/${id}/toggle`, { enabled });
+}
+
+export async function runAutomation(id: string): Promise<void> {
+  await authPost(`/v1/turbo/automations/${id}/run`);
+}
+
+export async function submitVoiceIntent(
+  transcript: string,
+): Promise<VoiceIntentDto> {
+  const payload = (await authPost("/v1/turbo/voice/intent", { transcript })) as {
+    data: VoiceIntentDto;
+  };
+  return payload.data;
+}
+
+export async function listEmployees(): Promise<readonly EmployeeDto[]> {
+  const payload = (await authGet("/v1/turbo/employees")) as {
+    data: EmployeeDto[];
+  };
+  return payload.data;
 }
 
 export const APP_URLS = {

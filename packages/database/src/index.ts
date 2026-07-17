@@ -44,6 +44,33 @@ export {
   type GuestStayRepository,
 } from "./repositories/guest-stay-repository.js";
 export {
+  createAgentRepository,
+  type AgentRepository,
+  type PersistedAgent,
+} from "./repositories/agent-repository.js";
+export {
+  createBriefingRepository,
+  type BriefingRepository,
+  type BriefingRoomDetail,
+  type BriefingRoomStatus,
+  type PersistedBriefingMessage,
+  type PersistedBriefingRecording,
+  type PersistedBriefingRoom,
+  type PersistedSharedAgent,
+  type RecordingStatus,
+} from "./repositories/briefing-repository.js";
+export { AGENT_CATALOG } from "./catalog/agent-catalog.js";
+export {
+  createTurboRepository,
+  type AutomationRule,
+  type AutomationRun,
+  type EmployeeProfile,
+  type JournalEntry,
+  type LedgerAccount,
+  type StaffChatMessage,
+  type TurboRepository,
+} from "./repositories/turbo-repository.js";
+export {
   DEMO_TENANT_ID,
   DEMO_HOTEL_TLV_ID,
   DEMO_HOTEL_EILAT_ID,
@@ -52,3 +79,5 @@ export {
   seedDemoTenant,
 } from "./seed.js";
 export * from "./schema/tenancy.js";
+export * from "./schema/briefing.js";
+export * from "./schema/turbo.js";

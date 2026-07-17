@@ -1,0 +1,148 @@
+export type AgentCatalogEntry = {
+  readonly id: string;
+  readonly nameHe: string;
+  readonly nameEn: string;
+  readonly domain: string;
+  readonly summaryHe: string;
+  readonly autonomyMode: "suggest" | "approve" | "act";
+};
+
+/** Agents from Engineering Standard vol. 11 — available to share into briefing rooms. */
+export const AGENT_CATALOG: readonly AgentCatalogEntry[] = [
+  {
+    id: "agent.ceo",
+    nameHe: "סוכן מנכ״ל",
+    nameEn: "CEO Agent",
+    domain: "executive",
+    summaryHe: "סיכום רשת, סיכונים והחלטות אסטרטגיות לדרג הנהלה.",
+    autonomyMode: "suggest",
+  },
+  {
+    id: "agent.cfo",
+    nameHe: "סוכן כספים",
+    nameEn: "CFO Agent",
+    domain: "finance",
+    summaryHe: "תזרים, חריגות תקציב ותמיכה בוועדות כספים.",
+    autonomyMode: "suggest",
+  },
+  {
+    id: "agent.revenue",
+    nameHe: "סוכן הכנסות",
+    nameEn: "Revenue Agent",
+    domain: "revenue",
+    summaryHe: "תמחור, תפוסה ואופטימיזציית RevPAR ברמת רשת/מלון.",
+    autonomyMode: "approve",
+  },
+  {
+    id: "agent.housekeeping",
+    nameHe: "סוכן משק בית",
+    nameEn: "Housekeeping Agent",
+    domain: "operations",
+    summaryHe: "תעדוף ניקיון, חדרים dirty ותיאום צוותים.",
+    autonomyMode: "approve",
+  },
+  {
+    id: "agent.reception",
+    nameHe: "סוכן קבלה",
+    nameEn: "Reception Agent",
+    domain: "operations",
+    summaryHe: "הגעות, צ׳ק־אין ותיאום שירות אורחים.",
+    autonomyMode: "approve",
+  },
+  {
+    id: "agent.hr",
+    nameHe: "סוכן משאבי אנוש",
+    nameEn: "HR Agent",
+    domain: "people",
+    summaryHe: "כוח אדם, משמרות וחריגות תקינה.",
+    autonomyMode: "suggest",
+  },
+  {
+    id: "agent.procurement",
+    nameHe: "סוכן רכש",
+    nameEn: "Procurement Agent",
+    domain: "supply",
+    summaryHe: "מלאי, הזמנות ספקים וחסכונות רכש.",
+    autonomyMode: "approve",
+  },
+  {
+    id: "agent.marketing",
+    nameHe: "סוכן שיווק",
+    nameEn: "Marketing Agent",
+    domain: "growth",
+    summaryHe: "קמפיינים, המרות ישירות ומוניטין דיגיטלי.",
+    autonomyMode: "suggest",
+  },
+  {
+    id: "agent.guest",
+    nameHe: "סוכן אורח",
+    nameEn: "Guest Agent",
+    domain: "guest",
+    summaryHe: "מסע אורח, בקשות שירות וסיפוק.",
+    autonomyMode: "act",
+  },
+  {
+    id: "agent.concierge",
+    nameHe: "סוכן קונסיירז׳",
+    nameEn: "Concierge Agent",
+    domain: "guest",
+    summaryHe: "המלצות חוויה והזמנות שירותים.",
+    autonomyMode: "act",
+  },
+  {
+    id: "agent.restaurant",
+    nameHe: "סוכן מסעדה",
+    nameEn: "Restaurant Agent",
+    domain: "fb",
+    summaryHe: "תפוסת מסעדה, תפריטים ותיאום F&B.",
+    autonomyMode: "approve",
+  },
+  {
+    id: "agent.spa",
+    nameHe: "סוכן ספא",
+    nameEn: "Spa Agent",
+    domain: "wellness",
+    summaryHe: "תורים, מכירות טיפולים וניצולת ספא.",
+    autonomyMode: "approve",
+  },
+  {
+    id: "agent.security",
+    nameHe: "סוכן אבטחה",
+    nameEn: "Security Agent",
+    domain: "security",
+    summaryHe: "אירועי אבטחה, גישה והתראות קריטיות.",
+    autonomyMode: "suggest",
+  },
+  {
+    id: "agent.maintenance",
+    nameHe: "סוכן תחזוקה",
+    nameEn: "Maintenance Agent",
+    domain: "operations",
+    summaryHe: "קריאות שירות, ציוד ותעדוף תיקונים.",
+    autonomyMode: "approve",
+  },
+  {
+    id: "agent.legal",
+    nameHe: "סוכן משפטי",
+    nameEn: "Legal Agent",
+    domain: "compliance",
+    summaryHe: "חוזים, רגולציה וסיכונים משפטיים.",
+    autonomyMode: "suggest",
+  },
+  {
+    id: "agent.analytics",
+    nameHe: "סוכן אנליטיקה",
+    nameEn: "Analytics Agent",
+    domain: "intelligence",
+    summaryHe: "מדדים חוצי־מלונות ותובנות תפעוליות.",
+    autonomyMode: "suggest",
+  },
+  {
+    id: "agent.sales",
+    nameHe: "סוכן מכירות",
+    nameEn: "Sales Agent",
+    domain: "growth",
+    summaryHe: "קבוצות, חוזים עסקיים וצינור מכירות.",
+    autonomyMode: "approve",
+  },
+] as const;

@@ -20,6 +20,18 @@ import {
   createPublicRoutes,
   type PublicRouteDeps,
 } from "./public-routes.js";
+import {
+  createAgentRoutes,
+  type AgentRouteDeps,
+} from "./agent-routes.js";
+import {
+  createBriefingRoutes,
+  type BriefingRouteDeps,
+} from "./briefing-routes.js";
+import {
+  createTurboRoutes,
+  type TurboRouteDeps,
+} from "./turbo-routes.js";
 
 export type ApiDependencies = {
   readonly getHealth: GetHealth;
@@ -29,6 +41,9 @@ export type ApiDependencies = {
   readonly hotels: HotelRouteDeps;
   readonly overview: OverviewRouteDeps;
   readonly publicRoutes: PublicRouteDeps;
+  readonly agents: AgentRouteDeps;
+  readonly briefing: BriefingRouteDeps;
+  readonly turbo: TurboRouteDeps;
 };
 
 export function createApp(deps: ApiDependencies): Hono {
@@ -100,6 +115,9 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/hotels", createHotelRoutes(deps.hotels));
   app.route("/v1/overview", createOverviewRoutes(deps.overview));
   app.route("/v1/public", createPublicRoutes(deps.publicRoutes));
+  app.route("/v1/agents", createAgentRoutes(deps.agents));
+  app.route("/v1/briefing-rooms", createBriefingRoutes(deps.briefing));
+  app.route("/v1/turbo", createTurboRoutes(deps.turbo));
 
   return app;
 }

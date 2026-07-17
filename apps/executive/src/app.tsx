@@ -6,7 +6,7 @@ import {
   readStoredUser,
   type StoredUser,
 } from "@hotelos/web-client";
-import { ChainDashboard } from "./chain-dashboard.js";
+import { ExecutiveShell } from "./executive-shell.js";
 import { LoginPage } from "./login-page.js";
 
 export function App() {
@@ -55,7 +55,7 @@ export function App() {
 
   if (user) {
     return (
-      <ChainDashboard
+      <ExecutiveShell
         user={user}
         onLogout={() => {
           setUser(null);

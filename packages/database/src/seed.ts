@@ -1,5 +1,9 @@
 import { eq } from "drizzle-orm";
+import { Ids } from "@hotelos/shared";
 import type { HotelOsDb } from "./client.js";
+import { createAgentRepository } from "./repositories/agent-repository.js";
+import { createBriefingRepository } from "./repositories/briefing-repository.js";
+import { createTurboRepository } from "./repositories/turbo-repository.js";
 import {
   bookings,
   departments,
@@ -165,6 +169,24 @@ export async function seedDemoTenant(
       })
       .run();
   }
+
+  const agents = createAgentRepository(db);
+  await agents.ensureCatalog();
+
+  const briefing = createBriefingRepository(db);
+  await briefing.ensureDemoFinanceRoom({
+    tenantId: Ids.tenant(DEMO_TENANT_ID),
+    chainId: Ids.chain(DEMO_CHAIN_ID),
+    hostUserId: Ids.user(userId),
+  });
+
+  const turbo = createTurboRepository(db);
+  await turbo.ensureDemo({
+    tenantId: Ids.tenant(DEMO_TENANT_ID),
+    hostUserId: Ids.user(userId),
+    hotelTlvId: DEMO_HOTEL_TLV_ID,
+    hotelEilatId: DEMO_HOTEL_EILAT_ID,
+  });
 }
 
 function ensureHotel(

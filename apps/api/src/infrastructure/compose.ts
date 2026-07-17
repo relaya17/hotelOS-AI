@@ -4,21 +4,25 @@ import { loadEnv, parseCorsOrigins } from "@hotelos/config";
 import { createLogger } from "@hotelos/logger";
 import { createJwtTokenService, hashPassword } from "@hotelos/auth";
 import {
+  createAgentRepository,
   createAuditRepository,
   createBookingRepository,
+  createBriefingRepository,
   createDb,
   createGuestStayRepository,
   createHotelRepository,
   createOverviewRepository,
   createRefreshSessionRepository,
   createRoomRepository,
+  createTurboRepository,
   createUserRepository,
   seedDemoTenant,
 } from "@hotelos/database";
 import { createGetHealth } from "../application/get-health.js";
 import { createApp } from "../presentation/http/create-app.js";
+import { createRecordingStorage } from "./recording-storage.js";
 
-const API_VERSION = "0.5.0";
+const API_VERSION = "0.6.0";
 
 function resolveRepoPath(relativePath: string): string {
   const here = fileURLToPath(new URL(".", import.meta.url));
@@ -41,6 +45,12 @@ export async function composeApp() {
   const bookings = createBookingRepository(db);
   const overview = createOverviewRepository(db);
   const guestStays = createGuestStayRepository(db);
+  const agents = createAgentRepository(db);
+  const briefing = createBriefingRepository(db);
+  const turbo = createTurboRepository(db);
+  const recordings = createRecordingStorage(
+    resolveRepoPath(env.RECORDINGS_PATH),
+  );
   const tokens = createJwtTokenService({
     accessSecret: env.JWT_ACCESS_SECRET,
     refreshSecret: env.JWT_REFRESH_SECRET,
@@ -57,8 +67,19 @@ export async function composeApp() {
     hotels: { hotels, rooms, bookings, audit, tokens },
     overview: { overview, tokens },
     publicRoutes: { guestStays },
+    agents: { agents, tokens },
+    briefing: {
+      briefing,
+      agents,
+      overview,
+      users,
+      tokens,
+      recordings,
+    },
+    turbo: { turbo, users, tokens },
   });
 
   logger.info("database ready", { path: dbPath });
+  logger.info("recordings storage ready", { path: recordings.root });
   return { app, env, logger };
 }

@@ -22,5 +22,6 @@ Shared API remains one service (`apps/api`). CORS allows all three origins.
 ## Consequences
 
 - Executive dashboard stays high-level (KPIs per hotel, deep-link to Admin).
+- Executive also hosts **chain-level Briefing Rooms** (internal HotelOS Meet) where regional managers can invite teams, **share existing AI agents** into the room (e.g. finance committee + CFO agent), and **record meetings** with tenant/chain/room-separated storage.
 - Admin focuses on rooms/bookings for one selected hotel.
 - Guest never shares UI shell with staff apps.

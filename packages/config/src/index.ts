@@ -9,6 +9,8 @@ const envSchema = z.object({
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   JWT_REFRESH_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 14),
   DATABASE_PATH: z.string().min(1).default(".data/hotelos.sqlite"),
+  /** Separated by tenant/chain/room under this root */
+  RECORDINGS_PATH: z.string().min(1).default(".data/recordings"),
   /** Comma-separated origins for the three separate apps */
   CORS_ORIGINS: z
     .string()
