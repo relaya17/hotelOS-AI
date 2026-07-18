@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import {
-  createDemoPmsConnector,
+  createPmsConnector,
   mergeHotelTwin,
   type PmsConnector,
 } from "@hotelos/connectors";
@@ -23,7 +23,7 @@ export function createTwinRoutes(deps: TwinRouteDeps): Hono<{
 }> {
   const routes = new Hono<{ Variables: AuthVariables }>();
   routes.use("*", requireAuth(deps.tokens));
-  const pms = deps.pms ?? createDemoPmsConnector();
+  const pms = deps.pms ?? createPmsConnector("demo");
 
   routes.get("/hotels/:hotelId", async (c) => {
     try {

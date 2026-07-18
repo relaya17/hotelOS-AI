@@ -68,6 +68,7 @@ each `vercel.json` already assume this.
 | `CRON_SECRET` | optional — enables `GET/POST /v1/cron/cio-daily` (Vercel Cron sends `Authorization: Bearer …`) |
 | `SENTRY_DSN` | optional — Sentry/GlitchTip DSN for API server errors |
 | `SENTRY_ENVIRONMENT` | optional — defaults to `NODE_ENV` |
+| `PMS_PROVIDER` | optional — `demo` (default) or `mews_stub` for Digital Twin PMS merge |
 
 Deploy this project first; note its URL (e.g. `https://hotelos-api.vercel.app`).
 

@@ -58,6 +58,8 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().optional().default(""),
   /** Optional Sentry environment tag (defaults to NODE_ENV). */
   SENTRY_ENVIRONMENT: z.string().optional().default(""),
+  /** PMS connector for Digital Twin merge (stubs until real Opera/Mews). */
+  PMS_PROVIDER: z.enum(["demo", "mews_stub"]).default("demo"),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
