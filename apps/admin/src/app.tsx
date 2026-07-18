@@ -141,7 +141,7 @@ export function App() {
               <AttendancePage />
             </main>
           ) : null}
-          <LegalFooter legalUrl={APP_URLS.legal} />
+          <LegalFooter legalUrl={(doc) => APP_URLS.legal(doc)} />
         </>
       ) : (
         <LoginPage

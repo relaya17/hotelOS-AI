@@ -165,7 +165,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         {view.kind === "trust" ? <TrustPaymentsPage /> : null}
       </main>
 
-      <LegalFooter legalUrl={APP_URLS.legal} />
+      <LegalFooter legalUrl={(doc) => APP_URLS.legal(doc)} />
 
       <CookieBanner
         legalCookiesUrl={APP_URLS.legal("cookies")}

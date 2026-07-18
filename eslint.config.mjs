@@ -16,6 +16,9 @@ export default tseslint.config(
       "**/.data/**",
       "**/coverage/**",
       "**/*.config.{js,cjs,mjs,ts}",
+      // Edge middleware + Node scripts sit outside app tsconfig "include".
+      "**/middleware.ts",
+      "scripts/**/*.{js,mjs,cjs}",
     ],
   },
   js.configs.recommended,

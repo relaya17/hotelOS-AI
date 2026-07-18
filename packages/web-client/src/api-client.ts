@@ -78,7 +78,12 @@ export function describeRemoteApiMisconfig(cause?: unknown): string | undefined 
     window.location.hostname.endsWith(".vercel.app") ||
     window.location.hostname.endsWith(".vercel.dev");
   if (!onVercel) return undefined;
-  const msg = cause instanceof Error ? cause.message : String(cause ?? "");
+  const msg =
+    cause instanceof Error
+      ? cause.message
+      : typeof cause === "string"
+        ? cause
+        : "";
   if (!/failed to fetch|networkerror|load failed|fetch/i.test(msg)) {
     return undefined;
   }
