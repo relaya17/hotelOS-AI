@@ -77,6 +77,10 @@ import {
   createCronRoutes,
   type CronRouteDeps,
 } from "./cron-routes.js";
+import {
+  createSimulatorRoutes,
+  type SimulatorRouteDeps,
+} from "./simulator-routes.js";
 import { isOriginAllowed } from "@hotelos/config";
 import { captureException } from "../../infrastructure/observability.js";
 import { createRateLimitMiddleware } from "./rate-limit.js";
@@ -105,6 +109,7 @@ export type ApiDependencies = {
   readonly approvals: ApprovalRouteDeps;
   readonly twin: TwinRouteDeps;
   readonly cron: CronRouteDeps;
+  readonly simulator: SimulatorRouteDeps;
 };
 
 export function createApp(deps: ApiDependencies): Hono {
@@ -240,6 +245,7 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/correspondence", createCorrespondenceRoutes(deps.correspondence));
   app.route("/v1/twin", createTwinRoutes(deps.twin));
   app.route("/v1/cron", createCronRoutes(deps.cron));
+  app.route("/v1/simulator", createSimulatorRoutes(deps.simulator));
 
   return app;
 }

@@ -223,6 +223,13 @@ export async function composeApp() {
         orgComms,
       },
     },
+    simulator: {
+      overview,
+      approvals,
+      audit,
+      gateway,
+      tokens,
+    },
   });
 
   logger.info("database ready", { url: dbUrl });

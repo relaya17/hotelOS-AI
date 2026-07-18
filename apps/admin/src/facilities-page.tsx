@@ -9,6 +9,7 @@ import { KnowledgePanel } from "./facilities/knowledge-panel.js";
 import { MaintenancePanel } from "./facilities/maintenance-panel.js";
 import { ProcurementPanel } from "./facilities/procurement-panel.js";
 import { RecruitingPanel } from "./facilities/recruiting-panel.js";
+import { SimulatorPanel } from "./facilities/simulator-panel.js";
 import { TwinPanel } from "./facilities/twin-panel.js";
 
 type SubView =
@@ -21,7 +22,8 @@ type SubView =
   | "hr"
   | "approvals"
   | "knowledge"
-  | "twin";
+  | "twin"
+  | "simulator";
 
 const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "briefing", label: "תדריך יומי" },
@@ -34,6 +36,7 @@ const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "approvals", label: "אישורי AI" },
   { key: "knowledge", label: "ידע ארגוני" },
   { key: "twin", label: "Digital Twin" },
+  { key: "simulator", label: "סימולטור" },
 ];
 
 function readHotelIdFromUrl(): string | undefined {
@@ -150,6 +153,9 @@ export function FacilitiesPage() {
           {view === "approvals" ? <ApprovalsPanel /> : null}
           {view === "knowledge" ? <KnowledgePanel /> : null}
           {view === "twin" ? <TwinPanel hotelId={selectedHotelId} /> : null}
+          {view === "simulator" ? (
+            <SimulatorPanel hotelId={selectedHotelId} />
+          ) : null}
         </div>
       ) : null}
 
