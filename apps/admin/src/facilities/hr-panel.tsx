@@ -5,14 +5,18 @@ import {
   createHrInvite,
   createLetterDraft,
   fetchAssessmentDetail,
+  fetchHrEmployee,
   listAssessmentTemplates,
   listEmployeeAssessments,
   listHrEmployees,
   listHrInvites,
   listLetterDrafts,
+  registerHrDocumentFlag,
+  reviewHrDocument,
   submitAssessment,
   type AssessmentDetailDto,
   type AssessmentTemplateDto,
+  type HrDocumentDto,
   type HrEmployeeDto,
   type HrInviteDto,
   type LetterDraftDto,
@@ -47,6 +51,16 @@ export function HrPanel({ hotelId }: HrPanelProps) {
     useState<AssessmentDetailDto | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [lastScore, setLastScore] = useState<string | undefined>();
+  const [documents, setDocuments] = useState<readonly HrDocumentDto[]>([]);
+  const [docType, setDocType] = useState<
+    | "criminal_record_clearance"
+    | "id_card"
+    | "contract"
+    | "certification"
+    | "other"
+  >("criminal_record_clearance");
+  const [docHash, setDocHash] = useState("");
+  const [docAuthority, setDocAuthority] = useState("");
 
   async function reload() {
     setLoading(true);
@@ -82,20 +96,34 @@ export function HrPanel({ hotelId }: HrPanelProps) {
   useEffect(() => {
     if (!selectedEmployeeId) {
       setEmployeeAssessments([]);
+      setDocuments([]);
       return;
     }
     let cancelled = false;
-    void listEmployeeAssessments(selectedEmployeeId)
-      .then((rows) => {
-        if (!cancelled) setEmployeeAssessments(rows);
+    void Promise.all([
+      listEmployeeAssessments(selectedEmployeeId),
+      fetchHrEmployee(selectedEmployeeId),
+    ])
+      .then(([rows, detail]) => {
+        if (cancelled) return;
+        setEmployeeAssessments(rows);
+        setDocuments(detail.documents);
       })
       .catch(() => {
-        if (!cancelled) setEmployeeAssessments([]);
+        if (cancelled) return;
+        setEmployeeAssessments([]);
+        setDocuments([]);
       });
     return () => {
       cancelled = true;
     };
   }, [selectedEmployeeId]);
+
+  async function reloadDocuments() {
+    if (!selectedEmployeeId) return;
+    const detail = await fetchHrEmployee(selectedEmployeeId);
+    setDocuments(detail.documents);
+  }
 
   async function onInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -196,6 +224,122 @@ export function HrPanel({ hotelId }: HrPanelProps) {
           <li key={employee.id}>
             {employee.employeeCode ?? "—"} · {employee.displayName} ·{" "}
             {employee.roleLabel} · {employee.status}
+          </li>
+        ))}
+      </ul>
+
+      <form
+        className="stack"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!selectedEmployeeId) return;
+          void registerHrDocumentFlag(selectedEmployeeId, {
+            docType,
+            ...(docHash.trim() ? { contentHash: docHash.trim() } : {}),
+            ...(docAuthority.trim()
+              ? { issuingAuthority: docAuthority.trim() }
+              : {}),
+          })
+            .then(() => {
+              setDocHash("");
+              setDocAuthority("");
+              return reloadDocuments();
+            })
+            .catch((docError: unknown) => {
+              setError(
+                docError instanceof Error
+                  ? docError.message
+                  : "רישום מסמך נכשל",
+              );
+            });
+        }}
+      >
+        <h3>מסמכי עובד (hash בלבד)</h3>
+        <p className="hint">
+          לפי מדיניות PO — לא נשמר קובץ רגיש במערכת, רק דגל/hash לביקורת.
+        </p>
+        <label>
+          עובד
+          <select
+            value={selectedEmployeeId}
+            onChange={(e) => setSelectedEmployeeId(e.target.value)}
+          >
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {employee.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          סוג מסמך
+          <select
+            value={docType}
+            onChange={(e) =>
+              setDocType(e.target.value as typeof docType)
+            }
+          >
+            <option value="criminal_record_clearance">תעודת יושר</option>
+            <option value="id_card">תעודת זהות</option>
+            <option value="contract">חוזה</option>
+            <option value="certification">הסמכה</option>
+            <option value="other">אחר</option>
+          </select>
+        </label>
+        <TextField
+          label="Content hash (אופציונלי)"
+          value={docHash}
+          onChange={(e) => setDocHash(e.target.value)}
+        />
+        <TextField
+          label="רשות מנפיקה"
+          value={docAuthority}
+          onChange={(e) => setDocAuthority(e.target.value)}
+        />
+        <Button type="submit">רשום לבדיקה</Button>
+      </form>
+      <ul>
+        {documents.map((doc) => (
+          <li key={doc.id}>
+            {doc.docType} · {doc.status}
+            {doc.contentHash ? ` · hash ${doc.contentHash.slice(0, 12)}…` : ""}
+            {doc.status === "pending_review" ? (
+              <span className="doc-actions">
+                <Button
+                  type="button"
+                  onClick={() =>
+                    void reviewHrDocument(doc.id, { status: "approved" })
+                      .then(reloadDocuments)
+                      .catch((reviewError: unknown) => {
+                        setError(
+                          reviewError instanceof Error
+                            ? reviewError.message
+                            : "אישור נכשל",
+                        );
+                      })
+                  }
+                >
+                  אשר
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() =>
+                    void reviewHrDocument(doc.id, { status: "rejected" })
+                      .then(reloadDocuments)
+                      .catch((reviewError: unknown) => {
+                        setError(
+                          reviewError instanceof Error
+                            ? reviewError.message
+                            : "דחייה נכשלה",
+                        );
+                      })
+                  }
+                >
+                  דחה
+                </Button>
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -367,6 +511,7 @@ export function HrPanel({ hotelId }: HrPanelProps) {
         .hr-panel .error{color:#8b1e1e}
         .hr-panel .option{display:flex;gap:.5rem;align-items:center;margin-block:.25rem}
         .hr-panel fieldset{border:1px solid rgb(16 36 31 / 12%);border-radius:8px;padding:.75rem}
+        .hr-panel .doc-actions{display:inline-flex;gap:.35rem;margin-inline-start:.5rem}
       `}</style>
     </section>
   );

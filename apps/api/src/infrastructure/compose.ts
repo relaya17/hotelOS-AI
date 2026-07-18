@@ -94,6 +94,11 @@ export async function composeApp() {
   const approvals = createApprovalRepository(db);
   const recordings = createRecordingStorage(
     resolveRepoPath(env.RECORDINGS_PATH),
+    {
+      ...(env.BLOB_READ_WRITE_TOKEN.trim().length > 0
+        ? { blobToken: env.BLOB_READ_WRITE_TOKEN.trim() }
+        : {}),
+    },
   );
   const tokens = createJwtTokenService({
     accessSecret: env.JWT_ACCESS_SECRET,
@@ -199,7 +204,10 @@ export async function composeApp() {
   });
 
   logger.info("database ready", { url: dbUrl });
-  logger.info("recordings storage ready", { path: recordings.root });
+  logger.info("recordings storage ready", {
+    path: recordings.root,
+    backend: recordings.backend,
+  });
   logger.info("ai gateway ready", { provider: gateway.primaryProvider });
   logger.info("pms connector ready", { provider: "demo.pms" });
   return { app, env, logger };

@@ -14,6 +14,7 @@ import {
   saveCookieConsent,
   type StoredUser,
 } from "@hotelos/web-client";
+import { AiApprovalsPage } from "./ai-approvals-page.js";
 import { BriefingMeetPage } from "./briefing-meet-page.js";
 import { BriefingRoomsPage } from "./briefing-rooms-page.js";
 import { ChainDashboard } from "./chain-dashboard.js";
@@ -41,7 +42,8 @@ type View =
   | { readonly kind: "attendance" }
   | { readonly kind: "trust" }
   | { readonly kind: "ops" }
-  | { readonly kind: "cio" };
+  | { readonly kind: "cio" }
+  | { readonly kind: "approvals" };
 
 const LOCALE_KEY = "hotelos.locale";
 
@@ -76,6 +78,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
               ["portfolio", tUi(locale, "nav.portfolio")],
               ["ops", tUi(locale, "nav.ops")],
               ["cio", tUi(locale, "nav.cio")],
+              ["approvals", tUi(locale, "nav.approvals")],
               ["briefings", tUi(locale, "nav.briefings")],
               ["accounting", tUi(locale, "nav.accounting")],
               ["chat", tUi(locale, "nav.chat")],
@@ -142,6 +145,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         ) : null}
         {view.kind === "ops" ? <OpsDashboardPage /> : null}
         {view.kind === "cio" ? <CioDigestPage /> : null}
+        {view.kind === "approvals" ? <AiApprovalsPage /> : null}
         {view.kind === "briefings" ? (
           <BriefingRoomsPage
             onOpenRoom={(roomId) => setView({ kind: "meet", roomId })}

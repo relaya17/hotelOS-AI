@@ -21,6 +21,10 @@ export type CompanyKnowledgeRepository = {
     tenantId: TenantId,
     status?: string,
   ) => Promise<readonly PersistedCompanyKnowledgeDoc[]>;
+  search: (
+    tenantId: TenantId,
+    query: string,
+  ) => Promise<readonly PersistedCompanyKnowledgeDoc[]>;
   create: (input: {
     readonly id: string;
     readonly tenantId: TenantId;
@@ -79,6 +83,29 @@ export function createCompanyKnowledgeRepository(
             .orderBy(desc(companyKnowledgeDocs.createdAt))
             .all();
       return rows.map(mapRow);
+    },
+
+    async search(tenantId, query) {
+      const needle = query.trim().toLowerCase();
+      if (needle.length < 2) return [];
+      const rows = await db
+        .select()
+        .from(companyKnowledgeDocs)
+        .where(
+          and(
+            eq(companyKnowledgeDocs.tenantId, tenantId),
+            eq(companyKnowledgeDocs.status, "approved"),
+          ),
+        )
+        .orderBy(desc(companyKnowledgeDocs.createdAt))
+        .all();
+      return rows
+        .filter((row) => {
+          const hay = `${row.title}\n${row.body}\n${row.category}`.toLowerCase();
+          return hay.includes(needle);
+        })
+        .map(mapRow)
+        .slice(0, 20);
     },
 
     async create(input) {

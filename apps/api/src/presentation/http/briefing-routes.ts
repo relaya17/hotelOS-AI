@@ -484,7 +484,7 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
         recordingId: existing.id,
         extension: extensionFromMime(mimeType),
       });
-      deps.recordings.write(storageKey, bytes);
+      await deps.recordings.write(storageKey, bytes);
 
       const detail = await deps.briefing.getDetail(
         principal.scope.tenantId,
@@ -548,7 +548,7 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
       if (!recording || !recording.storageKey) {
         return sendError(c, 404, "NOT_FOUND", "Recording media not found");
       }
-      const bytes = deps.recordings.read(recording.storageKey);
+      const bytes = await deps.recordings.read(recording.storageKey);
       if (!bytes) {
         return sendError(c, 404, "NOT_FOUND", "Recording file missing");
       }

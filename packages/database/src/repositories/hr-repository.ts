@@ -107,10 +107,26 @@ export type HrRepository = {
       readonly id: string;
       readonly docType: string;
       readonly status: string;
+      readonly contentHash: string | null;
       readonly issuingAuthority: string | null;
       readonly expiresAt: string | null;
       readonly uploadedAt: string;
     }[]
+  >;
+  reviewDocument: (input: {
+    readonly tenantId: TenantId;
+    readonly documentId: string;
+    readonly status: "approved" | "rejected" | "expired";
+    readonly reviewedByUserId: UserId;
+    readonly reviewedAt: string;
+    readonly notes?: string;
+  }) => Promise<
+    | {
+        readonly ok: true;
+        readonly id: string;
+        readonly status: string;
+      }
+    | { readonly ok: false; readonly reason: "NOT_FOUND" }
   >;
 };
 
@@ -374,10 +390,36 @@ export function createHrRepository(db: HotelOsDb): HrRepository {
         id: row.id,
         docType: row.docType,
         status: row.status,
+        contentHash: row.contentHash ?? null,
         issuingAuthority: row.issuingAuthority ?? null,
         expiresAt: row.expiresAt ?? null,
         uploadedAt: row.uploadedAt,
       }));
+    },
+
+    async reviewDocument(input) {
+      const existing = await db
+        .select()
+        .from(employeeDocuments)
+        .where(
+          and(
+            eq(employeeDocuments.tenantId, input.tenantId),
+            eq(employeeDocuments.id, input.documentId),
+          ),
+        )
+        .get();
+      if (!existing) return { ok: false, reason: "NOT_FOUND" };
+      await db
+        .update(employeeDocuments)
+        .set({
+          status: input.status,
+          reviewedByUserId: input.reviewedByUserId,
+          reviewedAt: input.reviewedAt,
+          ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        })
+        .where(eq(employeeDocuments.id, input.documentId))
+        .run();
+      return { ok: true, id: input.documentId, status: input.status };
     },
   };
 }

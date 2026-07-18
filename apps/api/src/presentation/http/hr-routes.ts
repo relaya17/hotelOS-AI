@@ -129,6 +129,43 @@ export function createHrRoutes(deps: HrRouteDeps): Hono<{
     }
   });
 
+  routes.post("/documents/:documentId/review", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = z
+        .object({
+          status: z.enum(["approved", "rejected", "expired"]),
+          notes: z.string().trim().max(1000).optional(),
+        })
+        .parse(await c.req.json());
+      const now = new Date().toISOString();
+      const result = await deps.hr.reviewDocument({
+        tenantId: principal.scope.tenantId,
+        documentId: c.req.param("documentId"),
+        status: body.status,
+        reviewedByUserId: principal.userId,
+        reviewedAt: now,
+        ...(body.notes !== undefined ? { notes: body.notes } : {}),
+      });
+      if (!result.ok) {
+        return sendError(c, 404, "DOCUMENT_NOT_FOUND", "Document not found");
+      }
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: `hr.document.${body.status}`,
+        resourceType: "employee_document",
+        resourceId: result.id,
+        metadata: { status: body.status },
+        createdAt: now,
+      });
+      return c.json({ data: result });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
   routes.get("/invites", async (c) => {
     try {
       const principal = c.get("principal");

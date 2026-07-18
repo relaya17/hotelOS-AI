@@ -94,6 +94,28 @@ export function createKnowledgeRoutes(deps: KnowledgeRouteDeps): Hono<{
     }
   });
 
+  routes.get("/company-docs/search", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const q = c.req.query("q")?.trim() ?? "";
+      if (q.length < 2) {
+        return sendError(
+          c,
+          400,
+          "QUERY_TOO_SHORT",
+          "q must be at least 2 characters",
+        );
+      }
+      const list = await deps.companyKnowledge.search(
+        principal.scope.tenantId,
+        q,
+      );
+      return c.json({ data: list });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
   routes.post("/company-docs", async (c) => {
     try {
       const principal = c.get("principal");

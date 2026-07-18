@@ -4,6 +4,7 @@ import {
   approveCompanyKnowledgeDoc,
   createCompanyKnowledgeDoc,
   listCompanyKnowledgeDocs,
+  searchCompanyKnowledgeDocs,
   type CompanyKnowledgeDocDto,
 } from "@hotelos/web-client";
 
@@ -11,6 +12,8 @@ export function KnowledgePanel() {
   const [docs, setDocs] = useState<readonly CompanyKnowledgeDocDto[]>([]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState<readonly CompanyKnowledgeDocDto[]>([]);
   const [error, setError] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
 
@@ -46,15 +49,46 @@ export function KnowledgePanel() {
     }
   }
 
+  async function onSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(undefined);
+    try {
+      setHits(await searchCompanyKnowledgeDocs(query));
+    } catch (searchError) {
+      setError(searchError instanceof Error ? searchError.message : "שגיאה");
+    }
+  }
+
   if (loading) return <p>טוען ידע ארגוני…</p>;
 
   return (
     <section>
       <h2>Company Knowledge</h2>
       <p className="muted">
-        מסמכים פנימיים לאישור לפני שימוש כציטוט ע״י סוכנים (ללא RAG עדיין).
+        מסמכים פנימיים לאישור לפני שימוש כציטוט ע״י סוכנים (חיפוש מילות מפתח;
+        ללא RAG עדיין).
       </p>
       {error ? <p className="error">{error}</p> : null}
+
+      <form className="stack" onSubmit={(e) => void onSearch(e)}>
+        <TextField
+          label="חיפוש במאושרים"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          required
+        />
+        <Button type="submit">חפש</Button>
+      </form>
+      {hits.length > 0 ? (
+        <ul className="docs">
+          {hits.map((doc) => (
+            <li key={`hit-${doc.id}`}>
+              <strong>{doc.title}</strong> · מאושר
+              <pre>{doc.body}</pre>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <form className="stack" onSubmit={(e) => void onCreate(e)}>
         <TextField

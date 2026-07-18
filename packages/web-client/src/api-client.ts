@@ -1944,6 +1944,66 @@ export async function listHrInvites(
   return payload.data;
 }
 
+export type HrDocumentDto = {
+  readonly id: string;
+  readonly docType: string;
+  readonly status: string;
+  readonly contentHash: string | null;
+  readonly issuingAuthority: string | null;
+  readonly expiresAt: string | null;
+  readonly uploadedAt: string;
+};
+
+export type HrEmployeeDetailDto = HrEmployeeDto & {
+  readonly documents: readonly HrDocumentDto[];
+};
+
+export async function fetchHrEmployee(
+  employeeId: string,
+): Promise<HrEmployeeDetailDto> {
+  const payload = (await authGet(`/v1/hr/employees/${employeeId}`)) as {
+    data: HrEmployeeDetailDto;
+  };
+  return payload.data;
+}
+
+export async function registerHrDocumentFlag(
+  employeeId: string,
+  input: {
+    readonly docType:
+      | "criminal_record_clearance"
+      | "id_card"
+      | "contract"
+      | "certification"
+      | "other";
+    readonly contentHash?: string;
+    readonly issuingAuthority?: string;
+    readonly issuedAt?: string;
+    readonly expiresAt?: string;
+    readonly notes?: string;
+  },
+): Promise<{ readonly id: string; readonly status: string }> {
+  const payload = (await authPost(
+    `/v1/hr/employees/${employeeId}/documents`,
+    input,
+  )) as { data: { id: string; status: string } };
+  return payload.data;
+}
+
+export async function reviewHrDocument(
+  documentId: string,
+  input: {
+    readonly status: "approved" | "rejected" | "expired";
+    readonly notes?: string;
+  },
+): Promise<{ readonly id: string; readonly status: string }> {
+  const payload = (await authPost(
+    `/v1/hr/documents/${documentId}/review`,
+    input,
+  )) as { data: { id: string; status: string } };
+  return payload.data;
+}
+
 export async function createHrInvite(input: {
   readonly hotelId: string;
   readonly email: string;
@@ -2189,6 +2249,15 @@ export async function approveCompanyKnowledgeDoc(
     `/v1/knowledge/company-docs/${id}/approve`,
     {},
   )) as { data: CompanyKnowledgeDocDto };
+  return payload.data;
+}
+
+export async function searchCompanyKnowledgeDocs(
+  query: string,
+): Promise<readonly CompanyKnowledgeDocDto[]> {
+  const payload = (await authGet(
+    `/v1/knowledge/company-docs/search?q=${encodeURIComponent(query)}`,
+  )) as { data: CompanyKnowledgeDocDto[] };
   return payload.data;
 }
 

@@ -63,7 +63,8 @@ each `vercel.json` already assume this.
 | `NODEJS_HELPERS` | `0` (required — see `apps/api/api/index.ts`) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | only if Google sign-in is enabled in prod |
 | `WEBAUTHN_RP_ID` | your API's domain (WebAuthn ties credentials to a specific RP ID) |
-| `RECORDINGS_PATH` | see the limitation below — leave default, recordings just won't persist yet |
+| `RECORDINGS_PATH` | local/dev path only; on Vercel prefer Blob (below) |
+| `BLOB_READ_WRITE_TOKEN` | optional — Vercel Blob read/write token; when set, Meet recordings persist via Blob instead of ephemeral disk |
 
 Deploy this project first; note its URL (e.g. `https://hotelos-api.vercel.app`).
 
@@ -87,13 +88,12 @@ explicitly and redeploy for production clarity.
 Emergency override without rebuild: open  
 `https://hotel-os-ai-admin-eight.vercel.app/?api=https://hotel-os-ai-api-eight.vercel.app`
 
-## Known limitation: meeting recordings
+## Meeting recordings storage
 
-`RECORDINGS_PATH` (HotelOS Meet recordings) still writes to local disk. That
-works for `pnpm dev` / a traditional always-on server, but on Vercel it will
-not persist between invocations — recordings will appear to save and then
-disappear. This wasn't part of the DB migration; treat it as a follow-up
-(move to Vercel Blob or S3 before relying on recordings in production).
+- **Local / always-on server:** `RECORDINGS_PATH` writes to disk (default).
+- **Vercel:** set `BLOB_READ_WRITE_TOKEN` (Vercel Blob store) so the API uses
+  object storage. Without the token, uploads hit ephemeral disk and will not
+  survive between invocations.
 
 ## Local dev is unaffected
 

@@ -12,8 +12,13 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1).default("file:.data/hotelos.sqlite"),
   /** Required only when DATABASE_URL points at a hosted Turso database */
   DATABASE_AUTH_TOKEN: z.string().optional().default(""),
-  /** Separated by tenant/chain/room under this root */
+  /** Separated by tenant/chain/room under this root (local object storage) */
   RECORDINGS_PATH: z.string().min(1).default(".data/recordings"),
+  /**
+   * Optional Vercel Blob read/write token. When set, recordings use Blob
+   * instead of local disk (required for durable files on Vercel).
+   */
+  BLOB_READ_WRITE_TOKEN: z.string().optional().default(""),
   /** Comma-separated origins for the three separate apps */
   CORS_ORIGINS: z
     .string()
