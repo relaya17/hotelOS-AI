@@ -207,6 +207,20 @@ export async function composeApp() {
     },
     approvals: { approvals, audit, tokens },
     twin: { rooms, tokens, pms: createDemoPmsConnector() },
+    cron: {
+      cronSecret: env.CRON_SECRET,
+      cioDaily: {
+        overview,
+        ops,
+        maintenance,
+        procurement,
+        feedback,
+        kashrut,
+        hotels,
+        turbo,
+        orgComms,
+      },
+    },
   });
 
   logger.info("database ready", { url: dbUrl });

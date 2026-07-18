@@ -2122,6 +2122,17 @@ export async function createLetterDraft(input: {
   return payload.data;
 }
 
+export async function updateLetterDraftStatus(
+  draftId: string,
+  status: "draft" | "approved" | "discarded",
+): Promise<LetterDraftDto> {
+  const payload = (await authPost(
+    `/v1/correspondence/drafts/${draftId}/status`,
+    { status },
+  )) as { data: LetterDraftDto };
+  return payload.data;
+}
+
 export type AiApprovalDto = {
   readonly id: string;
   readonly agentId: string;

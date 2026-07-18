@@ -141,15 +141,26 @@ export function createCorrespondenceRoutes(deps: CorrespondenceRouteDeps): Hono<
         status: z.enum(["draft", "approved", "discarded"]),
       });
       const body = statusSchema.parse(await c.req.json());
+      const now = new Date().toISOString();
       const updated = await deps.correspondence.updateStatus(
         principal.scope.tenantId,
         c.req.param("id"),
         body.status,
-        new Date().toISOString(),
+        now,
       );
       if (!updated) {
         return sendError(c, 404, "DRAFT_NOT_FOUND", "Draft not found");
       }
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: `correspondence.draft.${body.status}`,
+        resourceType: "letter_draft",
+        resourceId: updated.id,
+        metadata: { status: body.status },
+        createdAt: now,
+      });
       return c.json({ data: updated });
     } catch (error) {
       return mapUnknownError(c, error);

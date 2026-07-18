@@ -65,6 +65,7 @@ each `vercel.json` already assume this.
 | `WEBAUTHN_RP_ID` | your API's domain (WebAuthn ties credentials to a specific RP ID) |
 | `RECORDINGS_PATH` | local/dev path only; on Vercel prefer Blob (below) |
 | `BLOB_READ_WRITE_TOKEN` | optional — Vercel Blob read/write token; when set, Meet recordings persist via Blob instead of ephemeral disk |
+| `CRON_SECRET` | optional — enables `GET/POST /v1/cron/cio-daily` (Vercel Cron sends `Authorization: Bearer …`) |
 
 Deploy this project first; note its URL (e.g. `https://hotelos-api.vercel.app`).
 
@@ -94,6 +95,13 @@ Emergency override without rebuild: open
 - **Vercel:** set `BLOB_READ_WRITE_TOKEN` (Vercel Blob store) so the API uses
   object storage. Without the token, uploads hit ephemeral disk and will not
   survive between invocations.
+
+## Scheduled CIO daily digest
+
+`apps/api/vercel.json` defines a daily cron (`0 5 * * *` UTC) →
+`/v1/cron/cio-daily`. Set matching `CRON_SECRET` in the API project env.
+The job builds the deterministic CEO digest and posts it to org-comms channel
+`cio_daily` (demo tenant MVP). Without `CRON_SECRET` the endpoint returns 503.
 
 ## Local dev is unaffected
 

@@ -14,6 +14,7 @@ import {
   registerHrDocumentFlag,
   reviewHrDocument,
   submitAssessment,
+  updateLetterDraftStatus,
   type AssessmentDetailDto,
   type AssessmentTemplateDto,
   type HrDocumentDto,
@@ -498,8 +499,46 @@ export function HrPanel({ hotelId }: HrPanelProps) {
       <ul>
         {drafts.map((draft) => (
           <li key={draft.id}>
-            <strong>{draft.subject}</strong> → {draft.recipientLabel}
+            <strong>{draft.subject}</strong> → {draft.recipientLabel} ·{" "}
+            {draft.status}
             <pre className="draft-body">{draft.body}</pre>
+            {draft.status === "draft" ? (
+              <span className="doc-actions">
+                <Button
+                  type="button"
+                  onClick={() =>
+                    void updateLetterDraftStatus(draft.id, "approved")
+                      .then(reload)
+                      .catch((statusError: unknown) => {
+                        setError(
+                          statusError instanceof Error
+                            ? statusError.message
+                            : "אישור טיוטה נכשל",
+                        );
+                      })
+                  }
+                >
+                  אשר טיוטה
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() =>
+                    void updateLetterDraftStatus(draft.id, "discarded")
+                      .then(reload)
+                      .catch((statusError: unknown) => {
+                        setError(
+                          statusError instanceof Error
+                            ? statusError.message
+                            : "ביטול טיוטה נכשל",
+                        );
+                      })
+                  }
+                >
+                  בטל
+                </Button>
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>

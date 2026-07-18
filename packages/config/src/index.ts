@@ -49,6 +49,11 @@ const envSchema = z.object({
     .optional()
     .default("https://api.openai.com/v1"),
   AI_GATEWAY_MODEL: z.string().optional().default("gpt-4o-mini"),
+  /**
+   * Shared secret for `/v1/cron/*` (Vercel Cron / external scheduler).
+   * Empty = cron endpoints disabled (503).
+   */
+  CRON_SECRET: z.string().optional().default(""),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

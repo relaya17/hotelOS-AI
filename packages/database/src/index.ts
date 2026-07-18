@@ -72,6 +72,7 @@ export {
 } from "./repositories/turbo-repository.js";
 export {
   DEMO_TENANT_ID,
+  DEMO_CHAIN_ID,
   DEMO_HOTEL_TLV_ID,
   DEMO_HOTEL_EILAT_ID,
   DEMO_USER_EMAIL,

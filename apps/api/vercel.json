@@ -3,5 +3,11 @@
   "buildCommand": "cd ../.. && pnpm turbo run build --filter=@hotelos/api^...",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile --prod=false",
   "outputDirectory": "public",
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
+  "crons": [
+    {
+      "path": "/v1/cron/cio-daily",
+      "schedule": "0 5 * * *"
+    }
+  ]
 }
