@@ -16,6 +16,7 @@
     "@hotelos/ai-gateway": "workspace:*",
     "@hotelos/auth": "workspace:*",
     "@hotelos/config": "workspace:*",
+    "@hotelos/connectors": "workspace:*",
     "@hotelos/database": "workspace:*",
     "@hotelos/i18n": "workspace:*",
     "@hotelos/legal": "workspace:*",

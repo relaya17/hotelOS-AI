@@ -5,9 +5,11 @@ import { DailyBriefingPanel } from "./facilities/daily-briefing-panel.js";
 import { DepartmentsPanel } from "./facilities/departments-panel.js";
 import { FeedbackPanel } from "./facilities/feedback-panel.js";
 import { HrPanel } from "./facilities/hr-panel.js";
+import { KnowledgePanel } from "./facilities/knowledge-panel.js";
 import { MaintenancePanel } from "./facilities/maintenance-panel.js";
 import { ProcurementPanel } from "./facilities/procurement-panel.js";
 import { RecruitingPanel } from "./facilities/recruiting-panel.js";
+import { TwinPanel } from "./facilities/twin-panel.js";
 
 type SubView =
   | "briefing"
@@ -17,7 +19,9 @@ type SubView =
   | "feedback"
   | "recruiting"
   | "hr"
-  | "approvals";
+  | "approvals"
+  | "knowledge"
+  | "twin";
 
 const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "briefing", label: "תדריך יומי" },
@@ -28,6 +32,8 @@ const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "recruiting", label: "גיוס" },
   { key: "hr", label: "עובדים ותכתובת" },
   { key: "approvals", label: "אישורי AI" },
+  { key: "knowledge", label: "ידע ארגוני" },
+  { key: "twin", label: "Digital Twin" },
 ];
 
 function readHotelIdFromUrl(): string | undefined {
@@ -142,6 +148,8 @@ export function FacilitiesPage() {
           ) : null}
           {view === "hr" ? <HrPanel hotelId={selectedHotelId} /> : null}
           {view === "approvals" ? <ApprovalsPanel /> : null}
+          {view === "knowledge" ? <KnowledgePanel /> : null}
+          {view === "twin" ? <TwinPanel hotelId={selectedHotelId} /> : null}
         </div>
       ) : null}
 

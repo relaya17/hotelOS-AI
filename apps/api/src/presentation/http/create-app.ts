@@ -69,6 +69,10 @@ import {
   createApprovalRoutes,
   type ApprovalRouteDeps,
 } from "./approval-routes.js";
+import {
+  createTwinRoutes,
+  type TwinRouteDeps,
+} from "./twin-routes.js";
 import { isOriginAllowed } from "@hotelos/config";
 import { createRateLimitMiddleware } from "./rate-limit.js";
 import { securityHeaders } from "./security-headers.js";
@@ -94,6 +98,7 @@ export type ApiDependencies = {
   readonly hr: HrRouteDeps;
   readonly correspondence: CorrespondenceRouteDeps;
   readonly approvals: ApprovalRouteDeps;
+  readonly twin: TwinRouteDeps;
 };
 
 export function createApp(deps: ApiDependencies): Hono {
@@ -208,6 +213,7 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/ai/approvals", createApprovalRoutes(deps.approvals));
   app.route("/v1/hr", createHrRoutes(deps.hr));
   app.route("/v1/correspondence", createCorrespondenceRoutes(deps.correspondence));
+  app.route("/v1/twin", createTwinRoutes(deps.twin));
 
   return app;
 }

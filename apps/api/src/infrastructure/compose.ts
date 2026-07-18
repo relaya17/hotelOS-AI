@@ -9,6 +9,7 @@ import {
 import { createLogger } from "@hotelos/logger";
 import { createJwtTokenService, hashPassword } from "@hotelos/auth";
 import { createAiGateway } from "@hotelos/ai-gateway";
+import { createDemoPmsConnector } from "@hotelos/connectors";
 import { Ids } from "@hotelos/shared";
 import {
   AGENT_CATALOG,
@@ -194,10 +195,12 @@ export async function composeApp() {
     hr: { hr, assessments, audit, tokens },
     correspondence: { correspondence, gateway, audit, tokens },
     approvals: { approvals, audit, tokens },
+    twin: { rooms, tokens, pms: createDemoPmsConnector() },
   });
 
   logger.info("database ready", { url: dbUrl });
   logger.info("recordings storage ready", { path: recordings.root });
   logger.info("ai gateway ready", { provider: gateway.primaryProvider });
+  logger.info("pms connector ready", { provider: "demo.pms" });
   return { app, env, logger };
 }

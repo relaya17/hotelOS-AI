@@ -4,11 +4,14 @@ import {
   assignAssessment,
   createHrInvite,
   createLetterDraft,
+  fetchAssessmentDetail,
   listAssessmentTemplates,
   listEmployeeAssessments,
   listHrEmployees,
   listHrInvites,
   listLetterDrafts,
+  submitAssessment,
+  type AssessmentDetailDto,
   type AssessmentTemplateDto,
   type HrEmployeeDto,
   type HrInviteDto,
@@ -40,6 +43,10 @@ export function HrPanel({ hotelId }: HrPanelProps) {
   const [employeeAssessments, setEmployeeAssessments] = useState<
     readonly { readonly id: string; readonly status: string; readonly titleHe?: string }[]
   >([]);
+  const [activeAssessment, setActiveAssessment] =
+    useState<AssessmentDetailDto | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [lastScore, setLastScore] = useState<string | undefined>();
 
   async function reload() {
     setLoading(true);
@@ -242,10 +249,85 @@ export function HrPanel({ hotelId }: HrPanelProps) {
       <ul>
         {employeeAssessments.map((row) => (
           <li key={row.id}>
-            {row.titleHe ?? row.id} · {row.status}
+            {row.titleHe ?? row.id} · {row.status}{" "}
+            {row.status !== "completed" ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() =>
+                  void fetchAssessmentDetail(row.id)
+                    .then((detail) => {
+                      setActiveAssessment(detail);
+                      setAnswers({});
+                      setLastScore(undefined);
+                    })
+                    .catch((loadError: unknown) => {
+                      setError(
+                        loadError instanceof Error
+                          ? loadError.message
+                          : "טעינת מבחן נכשלה",
+                      );
+                    })
+                }
+              >
+                מלא מבחן
+              </Button>
+            ) : null}
           </li>
         ))}
       </ul>
+
+      {activeAssessment ? (
+        <form
+          className="stack"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submitAssessment(activeAssessment.id, answers)
+              .then((result) => {
+                setLastScore(
+                  `ציון ${result.score} · ${result.passed ? "עבר" : "לא עבר"}`,
+                );
+                setActiveAssessment(null);
+                return listEmployeeAssessments(selectedEmployeeId);
+              })
+              .then(setEmployeeAssessments)
+              .catch((submitError: unknown) => {
+                setError(
+                  submitError instanceof Error
+                    ? submitError.message
+                    : "הגשה נכשלה",
+                );
+              });
+          }}
+        >
+          <h3>{activeAssessment.titleHe ?? "מבחן"}</h3>
+          {activeAssessment.questions.map((question) => (
+            <fieldset key={question.id}>
+              <legend>{question.promptHe}</legend>
+              {question.options.map((option) => (
+                <label key={option.id} className="option">
+                  <input
+                    type="radio"
+                    name={question.id}
+                    value={option.id}
+                    checked={answers[question.id] === option.id}
+                    onChange={() =>
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [question.id]: option.id,
+                      }))
+                    }
+                    required
+                  />
+                  {option.labelHe}
+                </label>
+              ))}
+            </fieldset>
+          ))}
+          <Button type="submit">הגש מבחן</Button>
+        </form>
+      ) : null}
+      {lastScore ? <p className="hint">{lastScore}</p> : null}
 
       <form className="stack" onSubmit={(e) => void onLetter(e)}>
         <h3>טיוטת מכתב רשמי (Correspondence)</h3>
@@ -283,6 +365,8 @@ export function HrPanel({ hotelId }: HrPanelProps) {
         .hr-panel .hint{background:rgb(16 36 31 / 6%);padding:.75rem;border-radius:8px;word-break:break-all}
         .hr-panel .draft-body{white-space:pre-wrap;font:inherit;background:rgb(255 250 242);padding:.75rem;border-radius:8px}
         .hr-panel .error{color:#8b1e1e}
+        .hr-panel .option{display:flex;gap:.5rem;align-items:center;margin-block:.25rem}
+        .hr-panel fieldset{border:1px solid rgb(16 36 31 / 12%);border-radius:8px;padding:.75rem}
       `}</style>
     </section>
   );

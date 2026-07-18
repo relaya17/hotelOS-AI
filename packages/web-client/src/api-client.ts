@@ -2192,6 +2192,77 @@ export async function approveCompanyKnowledgeDoc(
   return payload.data;
 }
 
+export type HotelTwinDto = {
+  readonly hotelId: string;
+  readonly generatedAt: string;
+  readonly rooms: readonly {
+    readonly roomNumber: string;
+    readonly status: string;
+    readonly source: string;
+  }[];
+  readonly pms?: {
+    readonly providerId: string;
+    readonly externalHotelId: string;
+    readonly fetchedAt: string;
+    readonly reservationCount: number;
+  };
+};
+
+export async function fetchHotelTwin(hotelId: string): Promise<HotelTwinDto> {
+  const payload = (await authGet(`/v1/twin/hotels/${hotelId}`)) as {
+    data: HotelTwinDto;
+  };
+  return payload.data;
+}
+
+export async function syncHotelTwinPms(hotelId: string): Promise<{
+  readonly twin: HotelTwinDto;
+  readonly sync: { readonly noteHe: string; readonly providerId: string };
+}> {
+  const payload = (await authPost(
+    `/v1/twin/hotels/${hotelId}/pms-sync`,
+    {},
+  )) as {
+    data: {
+      twin: HotelTwinDto;
+      sync: { noteHe: string; providerId: string };
+    };
+  };
+  return payload.data;
+}
+
+export type AssessmentDetailDto = {
+  readonly id: string;
+  readonly status: string;
+  readonly titleHe?: string;
+  readonly passingScore: number;
+  readonly questions: readonly {
+    readonly id: string;
+    readonly promptHe: string;
+    readonly options: readonly { readonly id: string; readonly labelHe: string }[];
+  }[];
+};
+
+export async function fetchAssessmentDetail(
+  assignmentId: string,
+): Promise<AssessmentDetailDto> {
+  const payload = (await authGet(`/v1/hr/assessments/${assignmentId}`)) as {
+    data: AssessmentDetailDto;
+  };
+  return payload.data;
+}
+
+export async function submitAssessment(
+  assignmentId: string,
+  answers: Readonly<Record<string, string>>,
+): Promise<{ readonly score: number; readonly passed: boolean }> {
+  const payload = (await authPost(
+    `/v1/hr/assessments/${assignmentId}/submit`,
+    { answers },
+  )) as { data: { score: number; passed: boolean } };
+  return payload.data;
+}
+
 export const APP_URLS = {
   get executive(): string {
     return resolveAppUrl(
