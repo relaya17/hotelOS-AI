@@ -1,6 +1,8 @@
 import { Hono } from "hono";
+import type { AiGateway } from "@hotelos/ai-gateway";
 import type {
   AgentRepository,
+  ApprovalRepository,
   AuditRepository,
   BriefingRepository,
   OverviewRepository,
@@ -26,6 +28,8 @@ export type BriefingRouteDeps = {
   readonly users: UserRepository;
   readonly tokens: JwtTokenService;
   readonly recordings: RecordingStorage;
+  readonly gateway: AiGateway;
+  readonly approvals: ApprovalRepository;
 };
 
 const roomIdSchema = z.string().uuid();
@@ -352,6 +356,7 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
         deps.agents,
         deps.briefing,
         deps.overview,
+        deps.gateway,
         {
           tenantId: principal.scope.tenantId,
           roomId,
@@ -369,6 +374,23 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
           result.error.code,
           result.error.message,
         );
+      }
+      if (result.value.requiresHumanApproval) {
+        await deps.approvals.create({
+          id: randomUUID(),
+          tenantId: principal.scope.tenantId,
+          agentId: String(agentId),
+          requestedByUserId: principal.userId,
+          summaryHe: result.value.body.slice(0, 280),
+          reasonHe:
+            result.value.approvalReasonHe ??
+            "המלצת סוכן בבריפינג דורשת אישור אנושי",
+          payloadJson: JSON.stringify({
+            roomId: String(roomId),
+            messageId: result.value.id,
+          }),
+          createdAt: new Date().toISOString(),
+        });
       }
       return c.json({ data: result.value }, 201);
     } catch (error) {

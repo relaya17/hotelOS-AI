@@ -161,4 +161,12 @@ export const AGENT_CATALOG: readonly AgentCatalogEntry[] = [
     summaryHe: "קבוצות, חוזים עסקיים וצינור מכירות.",
     autonomyMode: "approve",
   },
+  {
+    id: "agent.correspondence",
+    nameHe: "סוכן תכתובת",
+    nameEn: "Correspondence Agent",
+    domain: "communications",
+    summaryHe: "טיוטות מכתבים רשמיים, הזמנות בכתב ונאומים — ללא שליחה אוטומטית.",
+    autonomyMode: "suggest",
+  },
 ] as const;

@@ -3,6 +3,7 @@ import { listHotels, type HotelDto } from "@hotelos/web-client";
 import { DailyBriefingPanel } from "./facilities/daily-briefing-panel.js";
 import { DepartmentsPanel } from "./facilities/departments-panel.js";
 import { FeedbackPanel } from "./facilities/feedback-panel.js";
+import { HrPanel } from "./facilities/hr-panel.js";
 import { MaintenancePanel } from "./facilities/maintenance-panel.js";
 import { ProcurementPanel } from "./facilities/procurement-panel.js";
 import { RecruitingPanel } from "./facilities/recruiting-panel.js";
@@ -13,7 +14,8 @@ type SubView =
   | "maintenance"
   | "procurement"
   | "feedback"
-  | "recruiting";
+  | "recruiting"
+  | "hr";
 
 const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "briefing", label: "תדריך יומי" },
@@ -21,7 +23,8 @@ const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "maintenance", label: "תחזוקה, תיקונים ושיפוצים" },
   { key: "procurement", label: "רכש ומלאי" },
   { key: "feedback", label: "משוב אורחים" },
-  { key: "recruiting", label: "גיוס (משאבי אנוש)" },
+  { key: "recruiting", label: "גיוס" },
+  { key: "hr", label: "עובדים ותכתובת" },
 ];
 
 function readHotelIdFromUrl(): string | undefined {
@@ -134,6 +137,7 @@ export function FacilitiesPage() {
           {view === "recruiting" ? (
             <RecruitingPanel hotelId={selectedHotelId} />
           ) : null}
+          {view === "hr" ? <HrPanel hotelId={selectedHotelId} /> : null}
         </div>
       ) : null}
 

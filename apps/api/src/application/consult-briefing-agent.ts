@@ -1,3 +1,4 @@
+import type { AiGateway } from "@hotelos/ai-gateway";
 import type {
   AgentRepository,
   BriefingRepository,
@@ -16,6 +17,8 @@ export type ConsultBriefingAgentResult =
         readonly speakerName: string;
         readonly body: string;
         readonly createdAt: string;
+        readonly requiresHumanApproval: boolean;
+        readonly approvalReasonHe?: string;
       };
     }
   | {
@@ -27,6 +30,7 @@ export async function consultBriefingAgent(
   agents: AgentRepository,
   briefing: BriefingRepository,
   overview: OverviewRepository,
+  gateway: AiGateway,
   input: {
     readonly tenantId: TenantId;
     readonly roomId: BriefingRoomId;
@@ -65,8 +69,25 @@ export async function consultBriefingAgent(
   }
 
   const chain = await overview.getChainOverview(input.tenantId);
-  void input.actorUserId;
-  const body = buildAgentBriefing(agent.id, agent.nameHe, chain, input.prompt);
+  const contextPack = buildContextPack(agent.nameHe, chain);
+  const messageText =
+    input.prompt && input.prompt.trim().length > 0
+      ? input.prompt.trim()
+      : `תן תדריך קצר לוועדת הבריפינג בתחום ${agent.nameHe}.`;
+
+  const ai = await gateway.invoke({
+    agentId: String(agent.id),
+    message: messageText,
+    tenantId: String(input.tenantId),
+    userId: String(input.actorUserId),
+    locale: "he",
+    contextPack,
+  });
+
+  const approvalNote = ai.requiresHumanApproval
+    ? `\n\n⚠ דורש אישור אנושי${ai.approvalReasonHe ? `: ${ai.approvalReasonHe}` : "."}`
+    : "";
+  const body = `${ai.answerHe}${approvalNote}`;
 
   const message = await briefing.addMessage({
     id: randomUUID(),
@@ -95,23 +116,20 @@ export async function consultBriefingAgent(
       speakerName: message.speakerName,
       body: message.body,
       createdAt: message.createdAt,
+      requiresHumanApproval: ai.requiresHumanApproval,
+      ...(ai.approvalReasonHe !== undefined
+        ? { approvalReasonHe: ai.approvalReasonHe }
+        : {}),
     },
   };
 }
 
-function buildAgentBriefing(
-  agentId: string,
+function buildContextPack(
   agentName: string,
   chain: Awaited<ReturnType<OverviewRepository["getChainOverview"]>>,
-  prompt: string | undefined,
 ): string {
-  const promptLine =
-    prompt && prompt.trim().length > 0
-      ? `שאלה מהוועדה: ${prompt.trim()}\n\n`
-      : "";
-
   if (!chain) {
-    return `${promptLine}${agentName}: אין עדיין נתוני רשת זמינים לתדריך.`;
+    return `Agent ${agentName}: אין עדיין נתוני רשת זמינים לתדריך.`;
   }
 
   const hotelLines = chain.hotels
@@ -139,42 +157,13 @@ function buildAgentBriefing(
       ? 0
       : Math.round((totals.occupied / totals.rooms) * 100);
 
-  if (String(agentId) === "agent.cfo") {
-    return (
-      `${promptLine}תדריך כספים / תפעול־פיננסי (Suggest):\n` +
-      `רשת ${chain.tenantName} · ${chain.hotelCount} מלונות · תפוסת רשת ${chainOcc}% · הזמנות פעילות ${totals.active}.\n` +
-      `${hotelLines}\n\n` +
-      `המלצה: לבחון פער תפוסה בין נכסים ועלות הזדמנות בחדרים dirty/maintenance לפני אישור הוצאות חדשות. ` +
-      `מצב אוטונומיה: Suggest → Approve לפני פעולה כספית.`
-    );
-  }
-
-  if (String(agentId) === "agent.revenue") {
-    return (
-      `${promptLine}תדריך הכנסות:\n` +
-      `תפוסת רשת ${chainOcc}% על ${totals.rooms} חדרים. ` +
-      `מומלץ לבדוק תמחור דינמי בנכס עם תפוסה נמוכה יחסית.\n${hotelLines}`
-    );
-  }
-
-  if (String(agentId) === "agent.analytics") {
-    return (
-      `${promptLine}תדריך אנליטיקה:\n` +
-      `מדדי רשת חיים — תפוסה ${chainOcc}%, dirty ${totals.dirty}, הזמנות פעילות ${totals.active}.\n${hotelLines}`
-    );
-  }
-
-  if (String(agentId) === "agent.ceo") {
-    return (
-      `${promptLine}תדריך הנהלה:\n` +
-      `${chain.tenantName}: ${chain.hotelCount} נכסים תחת בקרה. ` +
-      `נקודות תשומת לב — חדרים לניקיון ${totals.dirty}, תפוסה ${chainOcc}%.\n${hotelLines}`
-    );
-  }
-
-  return (
-    `${promptLine}${agentName} בחדר הבריפינג:\n` +
-    `יש לי גישה לנתוני הרשת (${chain.hotelCount} מלונות, תפוסה ${chainOcc}%). ` +
-    `אפשר לשתף אותי בוועדות נוספות או לבקש תדריך ממוקד לפי הדומיין שלי.\n${hotelLines}`
-  );
+  return [
+    `רשת: ${chain.tenantName}`,
+    `מלונות: ${chain.hotelCount}`,
+    `תפוסת רשת: ${chainOcc}%`,
+    `חדרים: ${totals.rooms} · תפוסים: ${totals.occupied} · dirty: ${totals.dirty}`,
+    `הזמנות פעילות: ${totals.active}`,
+    "פירוט נכסים:",
+    hotelLines,
+  ].join("\n");
 }

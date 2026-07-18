@@ -15,6 +15,7 @@ import {
 } from "@hotelos/web-client";
 import { DashboardPage } from "./dashboard-page.js";
 import { FacilitiesPage } from "./facilities-page.js";
+import { InvitePage } from "./invite-page.js";
 import { KashrutPage } from "./kashrut-page.js";
 import { LoginPage } from "./login-page.js";
 
@@ -22,10 +23,17 @@ const DEMO_TENANT_ID = "11111111-1111-4111-8111-111111111111";
 
 type View = "ops" | "facilities" | "kashrut" | "attendance";
 
+function readInviteToken(): string | undefined {
+  const fromQuery = new URLSearchParams(window.location.search).get("invite");
+  if (fromQuery && fromQuery.length > 10) return fromQuery;
+  return undefined;
+}
+
 export function App() {
   const [user, setUser] = useState<StoredUser | null>(null);
   const [booting, setBooting] = useState(true);
   const [view, setView] = useState<View>("ops");
+  const inviteToken = readInviteToken();
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +82,10 @@ export function App() {
 
   if (booting) {
     return <main className="boot">HotelOS AI · Admin</main>;
+  }
+
+  if (inviteToken) {
+    return <InvitePage token={inviteToken} />;
   }
 
   return (

@@ -57,6 +57,18 @@ import {
   createAiGatewayRoutes,
   type AiGatewayRouteDeps,
 } from "./ai-gateway-routes.js";
+import {
+  createHrRoutes,
+  type HrRouteDeps,
+} from "./hr-routes.js";
+import {
+  createCorrespondenceRoutes,
+  type CorrespondenceRouteDeps,
+} from "./correspondence-routes.js";
+import {
+  createApprovalRoutes,
+  type ApprovalRouteDeps,
+} from "./approval-routes.js";
 import { isOriginAllowed } from "@hotelos/config";
 import { createRateLimitMiddleware } from "./rate-limit.js";
 import { securityHeaders } from "./security-headers.js";
@@ -79,6 +91,9 @@ export type ApiDependencies = {
   readonly knowledge: KnowledgeRouteDeps;
   readonly kashrut: KashrutRouteDeps;
   readonly aiGateway: AiGatewayRouteDeps;
+  readonly hr: HrRouteDeps;
+  readonly correspondence: CorrespondenceRouteDeps;
+  readonly approvals: ApprovalRouteDeps;
 };
 
 export function createApp(deps: ApiDependencies): Hono {
@@ -190,6 +205,9 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/knowledge", createKnowledgeRoutes(deps.knowledge));
   app.route("/v1/kashrut", createKashrutRoutes(deps.kashrut));
   app.route("/v1/ai/gateway", createAiGatewayRoutes(deps.aiGateway));
+  app.route("/v1/ai/approvals", createApprovalRoutes(deps.approvals));
+  app.route("/v1/hr", createHrRoutes(deps.hr));
+  app.route("/v1/correspondence", createCorrespondenceRoutes(deps.correspondence));
 
   return app;
 }

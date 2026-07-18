@@ -1901,6 +1901,205 @@ export async function invokeAiGateway(input: {
   return payload.data;
 }
 
+export type HrEmployeeDto = {
+  readonly id: string;
+  readonly userId: string | null;
+  readonly displayName: string;
+  readonly roleLabel: string;
+  readonly preferredLocale: string;
+  readonly hotelId: string | null;
+  readonly employeeCode: string | null;
+  readonly phone: string | null;
+  readonly status: string;
+  readonly departmentId: string | null;
+  readonly createdAt: string;
+};
+
+export type HrInviteDto = {
+  readonly id: string;
+  readonly email: string;
+  readonly displayNameHint: string;
+  readonly roleHint: string;
+  readonly expiresAt: string;
+  readonly consumedAt: string | null;
+  readonly createdAt: string;
+};
+
+export async function listHrEmployees(
+  hotelId?: string,
+): Promise<readonly HrEmployeeDto[]> {
+  const qs = hotelId ? `?${hotelQuery(hotelId)}` : "";
+  const payload = (await authGet(`/v1/hr/employees${qs}`)) as {
+    data: HrEmployeeDto[];
+  };
+  return payload.data;
+}
+
+export async function listHrInvites(
+  hotelId: string,
+): Promise<readonly HrInviteDto[]> {
+  const payload = (await authGet(
+    `/v1/hr/invites?${hotelQuery(hotelId)}`,
+  )) as { data: HrInviteDto[] };
+  return payload.data;
+}
+
+export async function createHrInvite(input: {
+  readonly hotelId: string;
+  readonly email: string;
+  readonly displayNameHint: string;
+  readonly roleHint: string;
+  readonly departmentId?: string;
+  readonly expiresInDays?: number;
+}): Promise<{
+  readonly id: string;
+  readonly email: string;
+  readonly expiresAt: string;
+  readonly inviteUrlPath: string;
+  readonly token: string;
+}> {
+  const payload = (await authPost("/v1/hr/invites", input)) as {
+    data: {
+      id: string;
+      email: string;
+      expiresAt: string;
+      inviteUrlPath: string;
+      token: string;
+    };
+  };
+  return payload.data;
+}
+
+export type PublicHrInviteDto = {
+  readonly email: string;
+  readonly displayNameHint: string;
+  readonly roleHint: string;
+  readonly hotelId: string;
+  readonly expiresAt: string;
+};
+
+export async function fetchPublicHrInvite(
+  token: string,
+): Promise<PublicHrInviteDto> {
+  const response = await fetch(
+    `${getApiBase()}/v1/public/hr/invites/${encodeURIComponent(token)}`,
+  );
+  if (!response.ok) {
+    throw new Error("ההזמנה לא זמינה או שפגה");
+  }
+  const payload = (await response.json()) as { data: PublicHrInviteDto };
+  return payload.data;
+}
+
+export async function completePublicHrInvite(
+  token: string,
+  input: {
+    readonly displayName: string;
+    readonly phone?: string;
+    readonly nationalId?: string;
+    readonly address?: string;
+    readonly emergencyContactName?: string;
+    readonly emergencyContactPhone?: string;
+    readonly preferredLocale?: string;
+    readonly password: string;
+  },
+): Promise<{
+  readonly employeeId: string;
+  readonly employeeCode: string | null;
+  readonly userId: string;
+}> {
+  const response = await fetch(
+    `${getApiBase()}/v1/public/hr/invites/${encodeURIComponent(token)}/complete`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
+  if (!response.ok) {
+    throw new Error("השלמת ההרשמה נכשלה");
+  }
+  const payload = (await response.json()) as {
+    data: {
+      employeeId: string;
+      employeeCode: string | null;
+      userId: string;
+    };
+  };
+  return payload.data;
+}
+
+export type LetterDraftDto = {
+  readonly id: string;
+  readonly kind: string;
+  readonly subject: string;
+  readonly recipientLabel: string;
+  readonly body: string;
+  readonly status: string;
+  readonly createdAt: string;
+};
+
+export async function listLetterDrafts(
+  hotelId?: string,
+): Promise<readonly LetterDraftDto[]> {
+  const qs = hotelId ? `?${hotelQuery(hotelId)}` : "";
+  const payload = (await authGet(`/v1/correspondence/drafts${qs}`)) as {
+    data: LetterDraftDto[];
+  };
+  return payload.data;
+}
+
+export async function createLetterDraft(input: {
+  readonly kind: "formal_letter" | "purchase_note" | "speech";
+  readonly subject: string;
+  readonly recipientLabel: string;
+  readonly hotelId?: string;
+  readonly contextNotes?: string;
+}): Promise<LetterDraftDto> {
+  const payload = (await authPost("/v1/correspondence/drafts", input)) as {
+    data: LetterDraftDto;
+  };
+  return payload.data;
+}
+
+export type AiApprovalDto = {
+  readonly id: string;
+  readonly agentId: string;
+  readonly summaryHe: string;
+  readonly reasonHe: string;
+  readonly status: string;
+  readonly createdAt: string;
+};
+
+export async function listPendingAiApprovals(): Promise<
+  readonly AiApprovalDto[]
+> {
+  const payload = (await authGet("/v1/ai/approvals/pending")) as {
+    data: AiApprovalDto[];
+  };
+  return payload.data;
+}
+
+export async function decideAiApproval(
+  id: string,
+  status: "approved" | "rejected",
+): Promise<AiApprovalDto> {
+  const payload = (await authPost(`/v1/ai/approvals/${id}/decide`, {
+    status,
+  })) as { data: AiApprovalDto };
+  return payload.data;
+}
+
+export async function postSecurityEvent(input: {
+  readonly hotelId: string;
+  readonly title: string;
+  readonly description: string;
+  readonly priority?: "low" | "medium" | "high" | "urgent";
+  readonly source?: string;
+}): Promise<unknown> {
+  return authPost("/v1/ops/security-events", input);
+}
+
 export const APP_URLS = {
   get executive(): string {
     return resolveAppUrl(

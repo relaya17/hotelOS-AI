@@ -163,3 +163,25 @@ export {
   type KashrutTargetKind,
   type PersistedKashrutAnnotation,
 } from "./repositories/kashrut-repository.js";
+export * from "./schema/hr.js";
+export * from "./schema/ai.js";
+export {
+  createHrRepository,
+  type CompleteInviteInput,
+  type HrRepository,
+  type PersistedEmployeeInvite,
+  type PersistedHrEmployee,
+} from "./repositories/hr-repository.js";
+export {
+  createCorrespondenceRepository,
+  type CorrespondenceRepository,
+  type LetterKind,
+  type LetterStatus,
+  type PersistedLetterDraft,
+} from "./repositories/correspondence-repository.js";
+export {
+  createApprovalRepository,
+  type ApprovalRepository,
+  type ApprovalStatus,
+  type PersistedApprovalRequest,
+} from "./repositories/approval-repository.js";

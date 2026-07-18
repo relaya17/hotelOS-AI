@@ -38,6 +38,7 @@
 | Legal Agent | [legal-agent.md](./legal-agent.md) | P7 |
 | Analytics Agent | [analytics-agent.md](./analytics-agent.md) | P6 |
 | Sales Agent | [sales-agent.md](./sales-agent.md) | P6 |
+| Correspondence Agent (מכתבים/הזמנות/נאומים) | [correspondence-agent.md](./correspondence-agent.md) | P5–P6 |
 
 ## 11.2.1 Org Comms — ערוצים ישירים בהיררכיה
 
@@ -80,4 +81,10 @@
 - [x] Org Comms graph מוגדר לכל tenant demo
 - [x] סף כספי מחייב לאישור אנושי: ₪2,000 / 5% ADR (מיושר עם כרך 5)
 
-> אושר על ידי Product Owner ב־2026-07-18.
+> אושר על ידי Product Owner ב־2026-07-18 (19 סוכנים מקוריים).
+
+## 11.6 תוספות לאחר האישור
+
+| תאריך | מה נוסף | סטטוס |
+|-------|---------|--------|
+| 2026-07-19 | Correspondence Agent — ניסוח מכתבים/הזמנות/נאומים, ראה [correspondence-agent.md](./correspondence-agent.md) | ✅ Approved + MVP בקוד (`/v1/correspondence`) |

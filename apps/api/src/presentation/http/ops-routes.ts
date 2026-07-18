@@ -707,6 +707,71 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
     }
   });
 
+  // ---- Security events (generic webhook → department task; no VMS lock-in) ----
+
+  const securityEventSchema = z.object({
+    hotelId: z.string().uuid(),
+    title: z.string().trim().min(2).max(200),
+    description: z.string().trim().min(1).max(4000),
+    priority: z.enum(["low", "medium", "high", "urgent"]).default("high"),
+    source: z.string().trim().min(1).max(80).default("webhook"),
+  });
+
+  routes.post("/security-events", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = securityEventSchema.parse(await c.req.json());
+      const hotelId = Ids.hotel(body.hotelId);
+      if (!canAccessHotel(principal, hotelId)) {
+        return sendError(c, 403, "FORBIDDEN", "Hotel out of scope");
+      }
+      const now = new Date().toISOString();
+      await deps.ops.ensureStandardDepartments(
+        principal.scope.tenantId,
+        hotelId,
+        now,
+      );
+      const dept = await deps.ops.findDepartmentByCode(
+        principal.scope.tenantId,
+        hotelId,
+        "security",
+      );
+      if (!dept) {
+        return sendError(
+          c,
+          500,
+          "SECURITY_DEPT_MISSING",
+          "Security department not available",
+        );
+      }
+      const created = await deps.ops.createTask({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId,
+        departmentId: dept.id,
+        taskType: "security_event",
+        title: body.title,
+        description: `[${body.source}] ${body.description}`,
+        priority: body.priority,
+        createdByUserId: principal.userId,
+        createdAt: now,
+      });
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "ops.security_event.create",
+        resourceType: "department_task",
+        resourceId: created.id,
+        metadata: { source: body.source, hotelId: body.hotelId },
+        createdAt: now,
+      });
+      return c.json({ data: created }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
   // ---- Daily briefing (in-system digest for managers/executives) ----
 
   routes.get("/daily-briefing", async (c) => {

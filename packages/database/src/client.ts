@@ -678,6 +678,74 @@ export async function migrate(client: Client): Promise<void> {
     CREATE INDEX IF NOT EXISTS kashrut_annotations_tenant_idx ON kashrut_annotations(tenant_id);
     CREATE INDEX IF NOT EXISTS kashrut_annotations_hotel_idx ON kashrut_annotations(hotel_id);
     CREATE INDEX IF NOT EXISTS kashrut_annotations_target_idx ON kashrut_annotations(target_kind, target_id);
+
+    CREATE TABLE IF NOT EXISTS employee_invites (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      department_id TEXT REFERENCES departments(id),
+      email TEXT NOT NULL,
+      display_name_hint TEXT NOT NULL,
+      role_hint TEXT NOT NULL,
+      invite_token_hash TEXT NOT NULL UNIQUE,
+      created_by_user_id TEXT NOT NULL REFERENCES users(id),
+      expires_at TEXT NOT NULL,
+      consumed_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS employee_invites_tenant_idx ON employee_invites(tenant_id);
+
+    CREATE TABLE IF NOT EXISTS employee_documents (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      employee_id TEXT NOT NULL REFERENCES employee_profiles(id),
+      doc_type TEXT NOT NULL,
+      content_hash TEXT,
+      issuing_authority TEXT,
+      issued_at TEXT,
+      expires_at TEXT,
+      status TEXT NOT NULL,
+      reviewed_by_user_id TEXT REFERENCES users(id),
+      reviewed_at TEXT,
+      notes TEXT,
+      uploaded_at TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS employee_documents_tenant_idx ON employee_documents(tenant_id);
+    CREATE INDEX IF NOT EXISTS employee_documents_employee_idx ON employee_documents(employee_id);
+
+    CREATE TABLE IF NOT EXISTS letter_drafts (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT REFERENCES hotels(id),
+      kind TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      recipient_label TEXT NOT NULL,
+      body TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_by_user_id TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS letter_drafts_tenant_idx ON letter_drafts(tenant_id);
+    CREATE INDEX IF NOT EXISTS letter_drafts_status_idx ON letter_drafts(status);
+
+    CREATE TABLE IF NOT EXISTS ai_approval_requests (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT REFERENCES hotels(id),
+      agent_id TEXT NOT NULL,
+      requested_by_user_id TEXT NOT NULL REFERENCES users(id),
+      summary_he TEXT NOT NULL,
+      reason_he TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      status TEXT NOT NULL,
+      decided_by_user_id TEXT REFERENCES users(id),
+      decided_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS ai_approval_requests_tenant_idx ON ai_approval_requests(tenant_id);
+    CREATE INDEX IF NOT EXISTS ai_approval_requests_status_idx ON ai_approval_requests(status);
   `);
 
   // Column added after initial release (ADR 0007) — existing on-disk DBs
@@ -689,6 +757,26 @@ export async function migrate(client: Client): Promise<void> {
     "kashrut_enabled",
     "kashrut_enabled INTEGER NOT NULL DEFAULT 0",
   );
+
+  // HR module (PO-approved) — extend employee_profiles for self-registration.
+  await ensureColumn(client, "employee_profiles", "employee_code", "employee_code TEXT");
+  await ensureColumn(client, "employee_profiles", "phone", "phone TEXT");
+  await ensureColumn(client, "employee_profiles", "national_id", "national_id TEXT");
+  await ensureColumn(client, "employee_profiles", "address", "address TEXT");
+  await ensureColumn(
+    client,
+    "employee_profiles",
+    "emergency_contact_name",
+    "emergency_contact_name TEXT",
+  );
+  await ensureColumn(
+    client,
+    "employee_profiles",
+    "emergency_contact_phone",
+    "emergency_contact_phone TEXT",
+  );
+  await ensureColumn(client, "employee_profiles", "status", "status TEXT");
+  await ensureColumn(client, "employee_profiles", "department_id", "department_id TEXT");
 }
 
 async function ensureColumn(

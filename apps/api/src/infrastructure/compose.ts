@@ -33,6 +33,9 @@ import {
   createTrustRepository,
   createTurboRepository,
   createUserRepository,
+  createHrRepository,
+  createCorrespondenceRepository,
+  createApprovalRepository,
   seedDemoTenant,
 } from "@hotelos/database";
 import { createGetHealth } from "../application/get-health.js";
@@ -81,6 +84,9 @@ export async function composeApp() {
   const orgComms = createOrgCommsRepository(db);
   const trustedSources = createTrustedSourcesRepository(db);
   const kashrut = createKashrutRepository(db);
+  const hr = createHrRepository(db);
+  const correspondence = createCorrespondenceRepository(db);
+  const approvals = createApprovalRepository(db);
   const recordings = createRecordingStorage(
     resolveRepoPath(env.RECORDINGS_PATH),
   );
@@ -137,7 +143,7 @@ export async function composeApp() {
     auth: { users, sessions, audit, tokens },
     hotels: { hotels, rooms, bookings, audit, tokens },
     overview: { overview, tokens },
-    publicRoutes: { guestStays, feedback },
+    publicRoutes: { guestStays, feedback, hr },
     agents: { agents, tokens },
     briefing: {
       audit,
@@ -147,6 +153,8 @@ export async function composeApp() {
       users,
       tokens,
       recordings,
+      gateway,
+      approvals,
     },
     turbo: { audit, turbo, users, tokens },
     trust: {
@@ -179,6 +187,9 @@ export async function composeApp() {
     knowledge: { trustedSources, tokens },
     kashrut: { kashrut, hotels, tokens },
     aiGateway: { gateway, tokens },
+    hr: { hr, audit, tokens },
+    correspondence: { correspondence, gateway, audit, tokens },
+    approvals: { approvals, audit, tokens },
   });
 
   logger.info("database ready", { url: dbUrl });
