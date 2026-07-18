@@ -47,8 +47,8 @@ describe("buildKnowledgeContextPack", () => {
       "מה מדיניות הביטולים אצלנו?",
     );
     assert.ok(pack);
-    assert.match(pack!, /Company Knowledge/);
-    assert.match(pack!, /מדיניות ביטולים/);
-    assert.match(pack!, /48 שעות/);
+    assert.match(pack, /Company Knowledge/);
+    assert.match(pack, /מדיניות ביטולים/);
+    assert.match(pack, /48 שעות/);
   });
 });

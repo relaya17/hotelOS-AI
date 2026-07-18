@@ -29,7 +29,7 @@ export function installClientErrorReporting(appName: string): void {
   });
 
   window.addEventListener("unhandledrejection", (event) => {
-    const reason = event.reason;
+    const reason: unknown = event.reason;
     const message =
       reason instanceof Error
         ? reason.message
