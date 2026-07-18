@@ -1,11 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Button, TextField } from "@hotelos/ui";
 import {
+  assignAssessment,
   createHrInvite,
   createLetterDraft,
+  listAssessmentTemplates,
+  listEmployeeAssessments,
   listHrEmployees,
   listHrInvites,
   listLetterDrafts,
+  type AssessmentTemplateDto,
   type HrEmployeeDto,
   type HrInviteDto,
   type LetterDraftDto,
@@ -28,19 +32,35 @@ export function HrPanel({ hotelId }: HrPanelProps) {
   const [letterSubject, setLetterSubject] = useState("");
   const [letterRecipient, setLetterRecipient] = useState("");
   const [letterNotes, setLetterNotes] = useState("");
+  const [templates, setTemplates] = useState<readonly AssessmentTemplateDto[]>(
+    [],
+  );
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [employeeAssessments, setEmployeeAssessments] = useState<
+    readonly { readonly id: string; readonly status: string; readonly titleHe?: string }[]
+  >([]);
 
   async function reload() {
     setLoading(true);
     setError(undefined);
     try {
-      const [emps, inv, letters] = await Promise.all([
+      const [emps, inv, letters, tmpls] = await Promise.all([
         listHrEmployees(hotelId),
         listHrInvites(hotelId),
         listLetterDrafts(hotelId),
+        listAssessmentTemplates(),
       ]);
       setEmployees(emps);
       setInvites(inv);
       setDrafts(letters);
+      setTemplates(tmpls);
+      if (!selectedEmployeeId && emps[0]) {
+        setSelectedEmployeeId(emps[0].id);
+      }
+      if (!selectedTemplateId && tmpls[0]) {
+        setSelectedTemplateId(tmpls[0].id);
+      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "שגיאה בטעינה");
     } finally {
@@ -51,6 +71,24 @@ export function HrPanel({ hotelId }: HrPanelProps) {
   useEffect(() => {
     void reload();
   }, [hotelId]);
+
+  useEffect(() => {
+    if (!selectedEmployeeId) {
+      setEmployeeAssessments([]);
+      return;
+    }
+    let cancelled = false;
+    void listEmployeeAssessments(selectedEmployeeId)
+      .then((rows) => {
+        if (!cancelled) setEmployeeAssessments(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setEmployeeAssessments([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedEmployeeId]);
 
   async function onInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -151,6 +189,60 @@ export function HrPanel({ hotelId }: HrPanelProps) {
           <li key={employee.id}>
             {employee.employeeCode ?? "—"} · {employee.displayName} ·{" "}
             {employee.roleLabel} · {employee.status}
+          </li>
+        ))}
+      </ul>
+
+      <form
+        className="stack"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!selectedEmployeeId || !selectedTemplateId) return;
+          void assignAssessment(selectedEmployeeId, selectedTemplateId)
+            .then(() => listEmployeeAssessments(selectedEmployeeId))
+            .then(setEmployeeAssessments)
+            .catch((assignError: unknown) => {
+              setError(
+                assignError instanceof Error
+                  ? assignError.message
+                  : "הקצאת מבחן נכשלה",
+              );
+            });
+        }}
+      >
+        <h3>הקצאת מבחן יכולת</h3>
+        <label>
+          עובד
+          <select
+            value={selectedEmployeeId}
+            onChange={(e) => setSelectedEmployeeId(e.target.value)}
+          >
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {employee.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          תבנית
+          <select
+            value={selectedTemplateId}
+            onChange={(e) => setSelectedTemplateId(e.target.value)}
+          >
+            {templates.map((tmpl) => (
+              <option key={tmpl.id} value={tmpl.id}>
+                {tmpl.titleHe} ({tmpl.questionCount} שאלות)
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button type="submit">הקצה מבחן</Button>
+      </form>
+      <ul>
+        {employeeAssessments.map((row) => (
+          <li key={row.id}>
+            {row.titleHe ?? row.id} · {row.status}
           </li>
         ))}
       </ul>

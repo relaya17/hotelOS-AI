@@ -58,3 +58,64 @@ export const employeeDocuments = sqliteTable(
     index("employee_documents_employee_idx").on(table.employeeId),
   ],
 );
+
+export const assessmentTemplates = sqliteTable(
+  "assessment_templates",
+  {
+    id: text("id").primaryKey(),
+    /** null = global shared catalog */
+    tenantId: text("tenant_id").references(() => tenants.id),
+    titleHe: text("title_he").notNull(),
+    titleEn: text("title_en").notNull(),
+    category: text("category").notNull(),
+    passingScore: text("passing_score").notNull(),
+    questionsJson: text("questions_json").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [index("assessment_templates_tenant_idx").on(table.tenantId)],
+);
+
+export const assessmentAssignments = sqliteTable(
+  "assessment_assignments",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    employeeId: text("employee_id")
+      .notNull()
+      .references(() => employeeProfiles.id),
+    templateId: text("template_id")
+      .notNull()
+      .references(() => assessmentTemplates.id),
+    assignedByUserId: text("assigned_by_user_id")
+      .notNull()
+      .references(() => users.id),
+    status: text("status").notNull(),
+    dueAt: text("due_at"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("assessment_assignments_tenant_idx").on(table.tenantId),
+    index("assessment_assignments_employee_idx").on(table.employeeId),
+  ],
+);
+
+export const assessmentResults = sqliteTable(
+  "assessment_results",
+  {
+    id: text("id").primaryKey(),
+    assignmentId: text("assignment_id")
+      .notNull()
+      .references(() => assessmentAssignments.id),
+    score: text("score").notNull(),
+    passed: text("passed").notNull(),
+    answersJson: text("answers_json").notNull(),
+    completedAt: text("completed_at").notNull(),
+    notes: text("notes"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("assessment_results_assignment_uidx").on(table.assignmentId),
+  ],
+);

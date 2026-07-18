@@ -1,12 +1,15 @@
 import { Hono } from "hono";
 import type { AiGateway } from "@hotelos/ai-gateway";
 import type { JwtTokenService } from "@hotelos/auth";
+import type { OverviewRepository } from "@hotelos/database";
 import { z } from "@hotelos/validation";
+import { buildOpsContextPack } from "../../application/build-ops-context-pack.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type AiGatewayRouteDeps = {
   readonly gateway: AiGateway;
+  readonly overview: OverviewRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -41,6 +44,19 @@ export function createAiGatewayRoutes(deps: AiGatewayRouteDeps): Hono<{
     }
 
     try {
+      let contextPack = parsed.data.contextPack;
+      if (
+        contextPack === undefined &&
+        (parsed.data.agentId === "agent.revenue" ||
+          parsed.data.agentId === "agent.housekeeping" ||
+          parsed.data.agentId === "agent.maintenance")
+      ) {
+        contextPack = await buildOpsContextPack(
+          deps.overview,
+          principal.scope.tenantId,
+          parsed.data.agentId,
+        );
+      }
       const result = await deps.gateway.invoke({
         agentId: parsed.data.agentId,
         message: parsed.data.message,
@@ -52,9 +68,7 @@ export function createAiGatewayRoutes(deps: AiGatewayRouteDeps): Hono<{
         ...(parsed.data.locale !== undefined
           ? { locale: parsed.data.locale }
           : {}),
-        ...(parsed.data.contextPack !== undefined
-          ? { contextPack: parsed.data.contextPack }
-          : {}),
+        ...(contextPack !== undefined ? { contextPack } : {}),
       });
       return c.json({ data: result });
     } catch (error) {

@@ -185,3 +185,15 @@ export {
   type ApprovalStatus,
   type PersistedApprovalRequest,
 } from "./repositories/approval-repository.js";
+export {
+  createAssessmentRepository,
+  type AssessmentQuestion,
+  type AssessmentRepository,
+  type PersistedAssessmentAssignment,
+  type PersistedAssessmentTemplate,
+} from "./repositories/assessment-repository.js";
+export {
+  createCompanyKnowledgeRepository,
+  type CompanyKnowledgeRepository,
+  type PersistedCompanyKnowledgeDoc,
+} from "./repositories/company-knowledge-repository.js";

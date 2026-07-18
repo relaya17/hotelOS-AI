@@ -746,6 +746,57 @@ export async function migrate(client: Client): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS ai_approval_requests_tenant_idx ON ai_approval_requests(tenant_id);
     CREATE INDEX IF NOT EXISTS ai_approval_requests_status_idx ON ai_approval_requests(status);
+
+    CREATE TABLE IF NOT EXISTS assessment_templates (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT REFERENCES tenants(id),
+      title_he TEXT NOT NULL,
+      title_en TEXT NOT NULL,
+      category TEXT NOT NULL,
+      passing_score TEXT NOT NULL,
+      questions_json TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS assessment_templates_tenant_idx ON assessment_templates(tenant_id);
+
+    CREATE TABLE IF NOT EXISTS assessment_assignments (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      employee_id TEXT NOT NULL REFERENCES employee_profiles(id),
+      template_id TEXT NOT NULL REFERENCES assessment_templates(id),
+      assigned_by_user_id TEXT NOT NULL REFERENCES users(id),
+      status TEXT NOT NULL,
+      due_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS assessment_assignments_tenant_idx ON assessment_assignments(tenant_id);
+    CREATE INDEX IF NOT EXISTS assessment_assignments_employee_idx ON assessment_assignments(employee_id);
+
+    CREATE TABLE IF NOT EXISTS assessment_results (
+      id TEXT PRIMARY KEY,
+      assignment_id TEXT NOT NULL UNIQUE REFERENCES assessment_assignments(id),
+      score TEXT NOT NULL,
+      passed TEXT NOT NULL,
+      answers_json TEXT NOT NULL,
+      completed_at TEXT NOT NULL,
+      notes TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS company_knowledge_docs (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      category TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_by_user_id TEXT NOT NULL REFERENCES users(id),
+      approved_by_user_id TEXT REFERENCES users(id),
+      approved_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS company_knowledge_docs_tenant_idx ON company_knowledge_docs(tenant_id);
+    CREATE INDEX IF NOT EXISTS company_knowledge_docs_status_idx ON company_knowledge_docs(status);
   `);
 
   // Column added after initial release (ADR 0007) — existing on-disk DBs

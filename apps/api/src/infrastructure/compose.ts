@@ -36,6 +36,8 @@ import {
   createHrRepository,
   createCorrespondenceRepository,
   createApprovalRepository,
+  createAssessmentRepository,
+  createCompanyKnowledgeRepository,
   seedDemoTenant,
 } from "@hotelos/database";
 import { createGetHealth } from "../application/get-health.js";
@@ -85,6 +87,8 @@ export async function composeApp() {
   const trustedSources = createTrustedSourcesRepository(db);
   const kashrut = createKashrutRepository(db);
   const hr = createHrRepository(db);
+  const assessments = createAssessmentRepository(db);
+  const companyKnowledge = createCompanyKnowledgeRepository(db);
   const correspondence = createCorrespondenceRepository(db);
   const approvals = createApprovalRepository(db);
   const recordings = createRecordingStorage(
@@ -184,10 +188,10 @@ export async function composeApp() {
       tokens,
     },
     orgComms: { orgComms, tokens },
-    knowledge: { trustedSources, tokens },
+    knowledge: { trustedSources, companyKnowledge, tokens },
     kashrut: { kashrut, hotels, tokens },
-    aiGateway: { gateway, tokens },
-    hr: { hr, audit, tokens },
+    aiGateway: { gateway, overview, tokens },
+    hr: { hr, assessments, audit, tokens },
     correspondence: { correspondence, gateway, audit, tokens },
     approvals: { approvals, audit, tokens },
   });

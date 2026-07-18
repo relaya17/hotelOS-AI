@@ -26,6 +26,30 @@ export const letterDrafts = sqliteTable(
   ],
 );
 
+export const companyKnowledgeDocs = sqliteTable(
+  "company_knowledge_docs",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    category: text("category").notNull(),
+    status: text("status").notNull(),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => users.id),
+    approvedByUserId: text("approved_by_user_id").references(() => users.id),
+    approvedAt: text("approved_at"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("company_knowledge_docs_tenant_idx").on(table.tenantId),
+    index("company_knowledge_docs_status_idx").on(table.status),
+  ],
+);
+
 export const aiApprovalRequests = sqliteTable(
   "ai_approval_requests",
   {

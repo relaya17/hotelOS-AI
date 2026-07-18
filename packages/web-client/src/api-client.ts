@@ -2100,6 +2100,98 @@ export async function postSecurityEvent(input: {
   return authPost("/v1/ops/security-events", input);
 }
 
+export type AssessmentTemplateDto = {
+  readonly id: string;
+  readonly titleHe: string;
+  readonly titleEn: string;
+  readonly category: string;
+  readonly passingScore: number;
+  readonly questionCount: number;
+};
+
+export async function listAssessmentTemplates(): Promise<
+  readonly AssessmentTemplateDto[]
+> {
+  const payload = (await authGet("/v1/hr/assessment-templates")) as {
+    data: AssessmentTemplateDto[];
+  };
+  return payload.data;
+}
+
+export async function assignAssessment(
+  employeeId: string,
+  templateId: string,
+): Promise<unknown> {
+  return authPost(`/v1/hr/employees/${employeeId}/assessments`, {
+    templateId,
+  });
+}
+
+export async function listEmployeeAssessments(
+  employeeId: string,
+): Promise<
+  readonly {
+    readonly id: string;
+    readonly templateId: string;
+    readonly status: string;
+    readonly titleHe?: string;
+    readonly createdAt: string;
+  }[]
+> {
+  const payload = (await authGet(
+    `/v1/hr/employees/${employeeId}/assessments`,
+  )) as {
+    data: {
+      id: string;
+      templateId: string;
+      status: string;
+      titleHe?: string;
+      createdAt: string;
+    }[];
+  };
+  return payload.data;
+}
+
+export type CompanyKnowledgeDocDto = {
+  readonly id: string;
+  readonly title: string;
+  readonly body: string;
+  readonly category: string;
+  readonly status: string;
+  readonly createdAt: string;
+};
+
+export async function listCompanyKnowledgeDocs(
+  status?: string,
+): Promise<readonly CompanyKnowledgeDocDto[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  const payload = (await authGet(`/v1/knowledge/company-docs${qs}`)) as {
+    data: CompanyKnowledgeDocDto[];
+  };
+  return payload.data;
+}
+
+export async function createCompanyKnowledgeDoc(input: {
+  readonly title: string;
+  readonly body: string;
+  readonly category: "brand" | "sop" | "policy" | "letter_template" | "other";
+}): Promise<CompanyKnowledgeDocDto> {
+  const payload = (await authPost("/v1/knowledge/company-docs", input)) as {
+    data: CompanyKnowledgeDocDto;
+  };
+  return payload.data;
+}
+
+export async function approveCompanyKnowledgeDoc(
+  id: string,
+): Promise<CompanyKnowledgeDocDto> {
+  const payload = (await authPost(
+    `/v1/knowledge/company-docs/${id}/approve`,
+    {},
+  )) as { data: CompanyKnowledgeDocDto };
+  return payload.data;
+}
+
 export const APP_URLS = {
   get executive(): string {
     return resolveAppUrl(

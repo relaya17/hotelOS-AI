@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { JwtTokenService } from "@hotelos/auth";
 import { hashPassword } from "@hotelos/auth";
 import type {
+  AssessmentRepository,
   AuditRepository,
   HrRepository,
 } from "@hotelos/database";
@@ -13,6 +14,7 @@ import { mapUnknownError, sendError } from "./errors.js";
 
 export type HrRouteDeps = {
   readonly hr: HrRepository;
+  readonly assessments: AssessmentRepository;
   readonly audit: AuditRepository;
   readonly tokens: JwtTokenService;
 };
@@ -139,6 +141,112 @@ export function createHrRoutes(deps: HrRouteDeps): Hono<{
         Ids.hotel(hotelId),
       );
       return c.json({ data });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.get("/assessment-templates", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const data = await deps.assessments.listTemplates(
+        principal.scope.tenantId,
+      );
+      return c.json({
+        data: data.map((tmpl) => ({
+          id: tmpl.id,
+          titleHe: tmpl.titleHe,
+          titleEn: tmpl.titleEn,
+          category: tmpl.category,
+          passingScore: tmpl.passingScore,
+          questionCount: tmpl.questions.length,
+        })),
+      });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/employees/:employeeId/assessments", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = z
+        .object({
+          templateId: z.string().trim().min(3).max(80),
+          dueAt: z.string().datetime().optional(),
+        })
+        .parse(await c.req.json());
+      const employeeId = c.req.param("employeeId");
+      const employee = await deps.hr.getEmployee(
+        principal.scope.tenantId,
+        employeeId,
+      );
+      if (!employee) {
+        return sendError(c, 404, "EMPLOYEE_NOT_FOUND", "Employee not found");
+      }
+      const created = await deps.assessments.assign({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        employeeId,
+        templateId: body.templateId,
+        assignedByUserId: principal.userId,
+        createdAt: new Date().toISOString(),
+        ...(body.dueAt !== undefined ? { dueAt: body.dueAt } : {}),
+      });
+      return c.json({ data: created }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.get("/employees/:employeeId/assessments", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const data = await deps.assessments.listByEmployee(
+        principal.scope.tenantId,
+        c.req.param("employeeId"),
+      );
+      return c.json({ data });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.get("/assessments/:assignmentId", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const data = await deps.assessments.getAssignment(
+        principal.scope.tenantId,
+        c.req.param("assignmentId"),
+      );
+      if (!data) {
+        return sendError(c, 404, "ASSIGNMENT_NOT_FOUND", "Not found");
+      }
+      return c.json({ data });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/assessments/:assignmentId/submit", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = z
+        .object({
+          answers: z.record(z.string(), z.string()),
+        })
+        .parse(await c.req.json());
+      const result = await deps.assessments.submit({
+        tenantId: principal.scope.tenantId,
+        assignmentId: c.req.param("assignmentId"),
+        answers: body.answers,
+        completedAt: new Date().toISOString(),
+      });
+      if (!result.ok) {
+        const status = result.reason === "ALREADY_DONE" ? 409 : 404;
+        return sendError(c, status, result.reason, result.reason);
+      }
+      return c.json({ data: result });
     } catch (error) {
       return mapUnknownError(c, error);
     }

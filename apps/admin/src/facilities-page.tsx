@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { listHotels, type HotelDto } from "@hotelos/web-client";
+import { ApprovalsPanel } from "./facilities/approvals-panel.js";
 import { DailyBriefingPanel } from "./facilities/daily-briefing-panel.js";
 import { DepartmentsPanel } from "./facilities/departments-panel.js";
 import { FeedbackPanel } from "./facilities/feedback-panel.js";
@@ -15,7 +16,8 @@ type SubView =
   | "procurement"
   | "feedback"
   | "recruiting"
-  | "hr";
+  | "hr"
+  | "approvals";
 
 const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "briefing", label: "תדריך יומי" },
@@ -25,6 +27,7 @@ const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "feedback", label: "משוב אורחים" },
   { key: "recruiting", label: "גיוס" },
   { key: "hr", label: "עובדים ותכתובת" },
+  { key: "approvals", label: "אישורי AI" },
 ];
 
 function readHotelIdFromUrl(): string | undefined {
@@ -138,6 +141,7 @@ export function FacilitiesPage() {
             <RecruitingPanel hotelId={selectedHotelId} />
           ) : null}
           {view === "hr" ? <HrPanel hotelId={selectedHotelId} /> : null}
+          {view === "approvals" ? <ApprovalsPanel /> : null}
         </div>
       ) : null}
 

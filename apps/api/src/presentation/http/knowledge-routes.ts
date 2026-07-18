@@ -1,13 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
-import type { TrustedSourcesRepository } from "@hotelos/database";
+import type {
+  CompanyKnowledgeRepository,
+  TrustedSourcesRepository,
+} from "@hotelos/database";
 import type { JwtTokenService } from "@hotelos/auth";
 import { z } from "@hotelos/validation";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
-import { mapUnknownError } from "./errors.js";
+import { mapUnknownError, sendError } from "./errors.js";
 
 export type KnowledgeRouteDeps = {
   readonly trustedSources: TrustedSourcesRepository;
+  readonly companyKnowledge: CompanyKnowledgeRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -59,6 +63,69 @@ export function createKnowledgeRoutes(deps: KnowledgeRouteDeps): Hono<{
         createdAt: new Date().toISOString(),
       });
       return c.json({ data: created }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  const companyDocSchema = z.object({
+    title: z.string().trim().min(2).max(200),
+    body: z.string().trim().min(2).max(12000),
+    category: z.enum([
+      "brand",
+      "sop",
+      "policy",
+      "letter_template",
+      "other",
+    ]),
+  });
+
+  routes.get("/company-docs", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const status = c.req.query("status");
+      const list = await deps.companyKnowledge.list(
+        principal.scope.tenantId,
+        status,
+      );
+      return c.json({ data: list });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/company-docs", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = companyDocSchema.parse(await c.req.json());
+      const created = await deps.companyKnowledge.create({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        title: body.title,
+        body: body.body,
+        category: body.category,
+        createdByUserId: principal.userId,
+        createdAt: new Date().toISOString(),
+      });
+      return c.json({ data: created }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/company-docs/:id/approve", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const updated = await deps.companyKnowledge.approve(
+        principal.scope.tenantId,
+        c.req.param("id"),
+        principal.userId,
+        new Date().toISOString(),
+      );
+      if (!updated) {
+        return sendError(c, 404, "DOC_NOT_FOUND", "Document not found");
+      }
+      return c.json({ data: updated });
     } catch (error) {
       return mapUnknownError(c, error);
     }
