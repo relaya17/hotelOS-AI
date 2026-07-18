@@ -196,9 +196,15 @@ export async function composeApp() {
     orgComms: { orgComms, tokens },
     knowledge: { trustedSources, companyKnowledge, tokens },
     kashrut: { kashrut, hotels, tokens },
-    aiGateway: { gateway, overview, tokens },
+    aiGateway: { gateway, overview, companyKnowledge, tokens },
     hr: { hr, assessments, audit, tokens },
-    correspondence: { correspondence, gateway, audit, tokens },
+    correspondence: {
+      correspondence,
+      companyKnowledge,
+      gateway,
+      audit,
+      tokens,
+    },
     approvals: { approvals, audit, tokens },
     twin: { rooms, tokens, pms: createDemoPmsConnector() },
   });

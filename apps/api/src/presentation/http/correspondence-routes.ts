@@ -3,16 +3,19 @@ import type { AiGateway } from "@hotelos/ai-gateway";
 import type { JwtTokenService } from "@hotelos/auth";
 import type {
   AuditRepository,
+  CompanyKnowledgeRepository,
   CorrespondenceRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
+import { buildKnowledgeContextPack } from "../../application/build-knowledge-context-pack.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type CorrespondenceRouteDeps = {
   readonly correspondence: CorrespondenceRepository;
+  readonly companyKnowledge: CompanyKnowledgeRepository;
   readonly gateway: AiGateway;
   readonly audit: AuditRepository;
   readonly tokens: JwtTokenService;
@@ -57,6 +60,18 @@ export function createCorrespondenceRoutes(deps: CorrespondenceRouteDeps): Hono<
             ? "הזמנת רכש בכתב"
             : "נאום / דברי פתיחה";
 
+      const knowledgePack = await buildKnowledgeContextPack(
+        deps.companyKnowledge,
+        principal.scope.tenantId,
+        [body.subject, body.contextNotes ?? ""].join(" "),
+      );
+      const basePack =
+        "תבנית מכתב רשמי HotelOS · טיוטה לבדיקה בלבד · אין שליחה אוטומטית";
+      const contextPack =
+        knowledgePack !== undefined
+          ? `${basePack}\n\n${knowledgePack}`.slice(0, 12000)
+          : basePack;
+
       const ai = await deps.gateway.invoke({
         agentId: "agent.correspondence",
         message: [
@@ -72,8 +87,7 @@ export function createCorrespondenceRoutes(deps: CorrespondenceRouteDeps): Hono<
         userId: String(principal.userId),
         locale: "he",
         ...(body.hotelId !== undefined ? { hotelId: body.hotelId } : {}),
-        contextPack:
-          "תבנית מכתב רשמי HotelOS · טיוטה לבדיקה בלבד · אין שליחה אוטומטית",
+        contextPack,
       });
 
       const now = new Date().toISOString();
