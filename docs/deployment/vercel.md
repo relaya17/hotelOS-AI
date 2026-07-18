@@ -66,6 +66,8 @@ each `vercel.json` already assume this.
 | `RECORDINGS_PATH` | local/dev path only; on Vercel prefer Blob (below) |
 | `BLOB_READ_WRITE_TOKEN` | optional — Vercel Blob read/write token; when set, Meet recordings persist via Blob instead of ephemeral disk |
 | `CRON_SECRET` | optional — enables `GET/POST /v1/cron/cio-daily` (Vercel Cron sends `Authorization: Bearer …`) |
+| `SENTRY_DSN` | optional — Sentry/GlitchTip DSN for API server errors |
+| `SENTRY_ENVIRONMENT` | optional — defaults to `NODE_ENV` |
 
 Deploy this project first; note its URL (e.g. `https://hotelos-api.vercel.app`).
 
@@ -102,6 +104,14 @@ Emergency override without rebuild: open
 `/v1/cron/cio-daily`. Set matching `CRON_SECRET` in the API project env.
 The job builds the deterministic CEO digest and posts it to org-comms channel
 `cio_daily` (demo tenant MVP). Without `CRON_SECRET` the endpoint returns 503.
+
+## Error monitoring
+
+- **API:** set `SENTRY_DSN` (Sentry SaaS or GlitchTip). Unhandled Hono errors are
+  captured; without a DSN the SDK stays off.
+- **In-app inbox:** authenticated clients report uncaught browser errors to
+  `POST /v1/ops/error-events`, which creates an **IT** department task (same
+  pattern as security webhooks).
 
 ## Local dev is unaffected
 

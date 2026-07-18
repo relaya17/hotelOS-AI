@@ -54,6 +54,10 @@ const envSchema = z.object({
    * Empty = cron endpoints disabled (503).
    */
   CRON_SECRET: z.string().optional().default(""),
+  /** Optional Sentry DSN for API error monitoring (empty = disabled). */
+  SENTRY_DSN: z.string().optional().default(""),
+  /** Optional Sentry environment tag (defaults to NODE_ENV). */
+  SENTRY_ENVIRONMENT: z.string().optional().default(""),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

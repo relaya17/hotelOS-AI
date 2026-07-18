@@ -2171,6 +2171,17 @@ export async function postSecurityEvent(input: {
   return authPost("/v1/ops/security-events", input);
 }
 
+export async function postErrorEvent(input: {
+  readonly hotelId?: string;
+  readonly title: string;
+  readonly description: string;
+  readonly priority?: "low" | "medium" | "high" | "urgent";
+  readonly source?: string;
+  readonly app?: string;
+}): Promise<unknown> {
+  return authPost("/v1/ops/error-events", input);
+}
+
 export type AssessmentTemplateDto = {
   readonly id: string;
   readonly titleHe: string;

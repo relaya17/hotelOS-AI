@@ -772,6 +772,83 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
     }
   });
 
+  // ---- Error / observability events → IT department inbox ----
+
+  const errorEventSchema = z.object({
+    hotelId: z.string().uuid().optional(),
+    title: z.string().trim().min(2).max(200),
+    description: z.string().trim().min(1).max(4000),
+    priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+    source: z.string().trim().min(1).max(80).default("client"),
+    app: z.string().trim().min(1).max(40).optional(),
+  });
+
+  routes.post("/error-events", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = errorEventSchema.parse(await c.req.json());
+      let hotelId =
+        body.hotelId !== undefined
+          ? Ids.hotel(body.hotelId)
+          : principal.scope.hotelId;
+      if (hotelId === undefined) {
+        const hotels = await deps.hotels.listByTenant(principal.scope.tenantId);
+        const first = hotels[0];
+        if (!first) {
+          return sendError(c, 404, "NO_HOTEL", "No hotel available for task");
+        }
+        hotelId = first.id;
+      }
+      if (!canAccessHotel(principal, hotelId)) {
+        return sendError(c, 403, "FORBIDDEN", "Hotel out of scope");
+      }
+      const now = new Date().toISOString();
+      await deps.ops.ensureStandardDepartments(
+        principal.scope.tenantId,
+        hotelId,
+        now,
+      );
+      const dept = await deps.ops.findDepartmentByCode(
+        principal.scope.tenantId,
+        hotelId,
+        "it",
+      );
+      if (!dept) {
+        return sendError(c, 500, "IT_DEPT_MISSING", "IT department not available");
+      }
+      const appTag = body.app ? `${body.app}/` : "";
+      const created = await deps.ops.createTask({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId,
+        departmentId: dept.id,
+        taskType: "error_event",
+        title: body.title,
+        description: `[${appTag}${body.source}] ${body.description}`,
+        priority: body.priority,
+        createdByUserId: principal.userId,
+        createdAt: now,
+      });
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "ops.error_event.create",
+        resourceType: "department_task",
+        resourceId: created.id,
+        metadata: {
+          source: body.source,
+          hotelId: String(hotelId),
+          ...(body.app !== undefined ? { app: body.app } : {}),
+        },
+        createdAt: now,
+      });
+      return c.json({ data: created }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
   // ---- Daily briefing (in-system digest for managers/executives) ----
 
   routes.get("/daily-briefing", async (c) => {

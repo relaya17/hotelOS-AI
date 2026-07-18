@@ -78,6 +78,7 @@ import {
   type CronRouteDeps,
 } from "./cron-routes.js";
 import { isOriginAllowed } from "@hotelos/config";
+import { captureException } from "../../infrastructure/observability.js";
 import { createRateLimitMiddleware } from "./rate-limit.js";
 import { securityHeaders } from "./security-headers.js";
 
@@ -108,6 +109,25 @@ export type ApiDependencies = {
 
 export function createApp(deps: ApiDependencies): Hono {
   const app = new Hono();
+
+  app.onError((error, c) => {
+    captureException(error);
+    deps.logger.error("unhandled request error", {
+      path: c.req.path,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return c.json(
+      {
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Unexpected server error",
+          details: {},
+          correlationId: c.res.headers.get("x-correlation-id") ?? "unknown",
+        },
+      },
+      500,
+    );
+  });
 
   app.use("*", securityHeaders(deps.isProduction));
 

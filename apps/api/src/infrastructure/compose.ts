@@ -43,6 +43,7 @@ import {
 } from "@hotelos/database";
 import { createGetHealth } from "../application/get-health.js";
 import { createApp } from "../presentation/http/create-app.js";
+import { initObservability } from "./observability.js";
 import { createRecordingStorage } from "./recording-storage.js";
 
 const API_VERSION = "0.9.0";
@@ -56,6 +57,7 @@ function resolveRepoPath(relativePath: string): string {
 export async function composeApp() {
   const env = loadEnv();
   const logger = createLogger({ service: "api" }, env.LOG_LEVEL);
+  await initObservability(env, logger);
   const dbUrl = env.DATABASE_URL.startsWith("file:")
     ? `file:${resolveRepoPath(env.DATABASE_URL.slice("file:".length))}`
     : env.DATABASE_URL;
