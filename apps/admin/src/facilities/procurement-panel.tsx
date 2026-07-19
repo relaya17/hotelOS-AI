@@ -7,6 +7,7 @@ import {
   listPurchaseOrders,
   listVendors,
   receivePurchaseOrder,
+  suggestAutonomyLowStockReorder,
   type InventoryCategory,
   type InventoryItemDto,
   type PurchaseOrderDto,
@@ -41,6 +42,8 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
   const [vendors, setVendors] = useState<readonly VendorDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  const [notice, setNotice] = useState<string | undefined>();
+  const [suggesting, setSuggesting] = useState(false);
 
   const [itemCategory, setItemCategory] = useState<InventoryCategory>("towels");
   const [itemName, setItemName] = useState("");
@@ -152,12 +155,46 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
     }
   }
 
+  async function onSuggestLowStock() {
+    if (!poVendorId) {
+      setError("בחרו ספק לפני הצעת רכש");
+      return;
+    }
+    setSuggesting(true);
+    setError(undefined);
+    try {
+      const result = await suggestAutonomyLowStockReorder({
+        hotelId,
+        vendorId: poVendorId,
+        defaultUnitPrice: 25,
+      });
+      setNotice(
+        `Suggest נשלח לאישורי AI: ${result.lowStockCount} פריטים · ₪${result.estimatedTotal}. אשרו בתיבת האישורים → Act ייצור טיוטת PO.`,
+      );
+    } catch (suggestError) {
+      setError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "הצעת רכש ממלאי נמוך נכשלה",
+      );
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
+  const lowStockCount = inventory.filter((item) => item.belowThreshold).length;
+
   return (
     <div className="panel">
       {loading ? <p className="state">טוען…</p> : null}
       {error !== undefined ? (
         <p className="state state--error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {notice !== undefined ? (
+        <p className="state state--ok" role="status">
+          {notice}
         </p>
       ) : null}
 
@@ -180,6 +217,37 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
             </li>
           ))}
         </ul>
+
+        <div className="suggest-box">
+          <p>
+            Suggest→Approve→Act: הצעת השלמת מלאי נמוך לתיבת אישורי AI. אחרי אישור
+            נוצרת טיוטת PO בלבד (לא נשלחת לספק).
+          </p>
+          <label className="select-field">
+            <span>ספק להצעה</span>
+            <select
+              value={poVendorId}
+              onChange={(e) => setPoVendorId(e.target.value)}
+            >
+              {vendors.map((vendor) => (
+                <option key={vendor.id} value={vendor.id}>
+                  {vendor.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button
+            type="button"
+            disabled={suggesting || lowStockCount === 0 || !poVendorId}
+            onClick={() => void onSuggestLowStock()}
+          >
+            {suggesting
+              ? "שולח הצעה…"
+              : lowStockCount === 0
+                ? "אין מלאי נמוך"
+                : `הצע הזמנה ממלאי נמוך (${lowStockCount})`}
+          </Button>
+        </div>
 
         <form className="create-form" onSubmit={onAddItem} noValidate>
           <h3>פריט מלאי חדש</h3>
@@ -336,6 +404,9 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
         .select-field select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
+        .state--ok { color:#0f6a5c; background:rgb(15 106 92 / 10%); padding:.75rem 1rem; border-radius:var(--radius-sm); }
+        .suggest-box { display:grid; gap:var(--space-3); border:1px dashed rgb(16 36 31 / 22%); border-radius:var(--radius-sm); padding:var(--space-4); }
+        .suggest-box p { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); }
       `}</style>
     </div>
   );

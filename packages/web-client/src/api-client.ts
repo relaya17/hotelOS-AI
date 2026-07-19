@@ -2197,6 +2197,60 @@ export async function suggestAutonomyDepartmentTask(input: {
   return { approvalId: payload.data.approval.id };
 }
 
+export async function suggestAutonomyProcurementDraft(input: {
+  readonly hotelId: string;
+  readonly vendorId: string;
+  readonly currency?: string;
+  readonly notes?: string;
+  readonly items: readonly {
+    readonly inventoryItemId?: string;
+    readonly description: string;
+    readonly quantity: number;
+    readonly unitPrice: number;
+  }[];
+  readonly agentId?: string;
+  readonly summaryHe?: string;
+  readonly reasonHe?: string;
+}): Promise<{ readonly approvalId: string; readonly estimatedTotal?: number }> {
+  const payload = (await authPost("/v1/autonomy/suggest", {
+    kind: "procurement_draft",
+    ...input,
+  })) as {
+    data: { approval: { id: string }; estimatedTotal?: number };
+  };
+  return {
+    approvalId: payload.data.approval.id,
+    ...(payload.data.estimatedTotal !== undefined
+      ? { estimatedTotal: payload.data.estimatedTotal }
+      : {}),
+  };
+}
+
+export async function suggestAutonomyLowStockReorder(input: {
+  readonly hotelId: string;
+  readonly vendorId: string;
+  readonly currency?: string;
+  readonly defaultUnitPrice?: number;
+  readonly agentId?: string;
+}): Promise<{
+  readonly approvalId: string;
+  readonly lowStockCount: number;
+  readonly estimatedTotal: number;
+}> {
+  const payload = (await authPost("/v1/autonomy/suggest-low-stock", input)) as {
+    data: {
+      approval: { id: string };
+      lowStockCount: number;
+      estimatedTotal: number;
+    };
+  };
+  return {
+    approvalId: payload.data.approval.id,
+    lowStockCount: payload.data.lowStockCount,
+    estimatedTotal: payload.data.estimatedTotal,
+  };
+}
+
 export async function postSecurityEvent(input: {
   readonly hotelId: string;
   readonly title: string;

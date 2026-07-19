@@ -4,6 +4,7 @@ import type {
   ApprovalRepository,
   AuditRepository,
   OpsRepository,
+  ProcurementRepository,
 } from "@hotelos/database";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
@@ -15,6 +16,7 @@ export type ApprovalRouteDeps = {
   readonly approvals: ApprovalRepository;
   readonly audit: AuditRepository;
   readonly ops: OpsRepository;
+  readonly procurement: ProcurementRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -61,7 +63,12 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
 
       const act =
         body.status === "approved"
-          ? await executeApprovalAct(deps.ops, updated, principal.userId, now)
+          ? await executeApprovalAct(
+              { ops: deps.ops, procurement: deps.procurement },
+              updated,
+              principal.userId,
+              now,
+            )
           : ({
               status: "skipped" as const,
               reasonHe: "נדחה — לא בוצע Act.",

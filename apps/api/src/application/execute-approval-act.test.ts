@@ -4,12 +4,16 @@ import type {
   OpsRepository,
   PersistedApprovalRequest,
   PersistedDepartmentTask,
+  PersistedPurchaseOrder,
+  ProcurementRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { executeApprovalAct } from "./execute-approval-act.js";
 
 describe("executeApprovalAct", () => {
-  const created: PersistedDepartmentTask[] = [];
+  const createdTasks: PersistedDepartmentTask[] = [];
+  const createdOrders: PersistedPurchaseOrder[] = [];
+
   const ops = {
     ensureStandardDepartments: async () => undefined,
     findDepartmentByCode: async (
@@ -17,7 +21,7 @@ describe("executeApprovalAct", () => {
       _hotelId: unknown,
       code: string,
     ) =>
-      code === "sales_marketing" || code === "housekeeping"
+      ["sales_marketing", "housekeeping", "procurement"].includes(code)
         ? { id: `dept-${code}`, hotelId: "h1", code, name: code }
         : null,
     createTask: async (input: {
@@ -46,10 +50,42 @@ describe("executeApprovalAct", () => {
         createdAt: input.createdAt,
         updatedAt: input.createdAt,
       };
-      created.push(task);
+      createdTasks.push(task);
       return task;
     },
   } as unknown as OpsRepository;
+
+  const procurement = {
+    createPurchaseOrder: async (input: {
+      readonly id: string;
+      readonly hotelId: string;
+      readonly vendorId: string;
+      readonly currency: string;
+      readonly items: readonly {
+        readonly quantity: number;
+        readonly unitPrice: number;
+      }[];
+      readonly createdAt: string;
+    }) => {
+      const totalAmount = input.items.reduce(
+        (sum, item) => sum + item.quantity * item.unitPrice,
+        0,
+      );
+      const order: PersistedPurchaseOrder = {
+        id: input.id,
+        hotelId: String(input.hotelId),
+        vendorId: input.vendorId,
+        status: "draft",
+        totalAmount,
+        currency: input.currency,
+        createdAt: input.createdAt,
+      };
+      createdOrders.push(order);
+      return order;
+    },
+  } as unknown as ProcurementRepository;
+
+  const deps = { ops, procurement };
 
   const baseApproval: PersistedApprovalRequest = {
     id: "appr-1",
@@ -67,9 +103,9 @@ describe("executeApprovalAct", () => {
   };
 
   it("creates revenue follow-up task for simulator.revenue", async () => {
-    created.length = 0;
+    createdTasks.length = 0;
     const result = await executeApprovalAct(
-      ops,
+      deps,
       {
         ...baseApproval,
         payloadJson: JSON.stringify({
@@ -94,13 +130,13 @@ describe("executeApprovalAct", () => {
     assert.equal(result.status, "executed");
     if (result.status !== "executed") return;
     assert.equal(result.action, "create_department_task");
-    assert.match(result.task.title, /ADR/);
-    assert.equal(created.length, 1);
+    assert.match(result.task?.title ?? "", /ADR/);
+    assert.equal(createdTasks.length, 1);
   });
 
   it("skips Act when rejected", async () => {
     const result = await executeApprovalAct(
-      ops,
+      deps,
       { ...baseApproval, status: "rejected" },
       Ids.user("00000000-0000-4000-8000-000000000099"),
       "2026-07-19T01:00:00.000Z",
@@ -109,9 +145,9 @@ describe("executeApprovalAct", () => {
   });
 
   it("creates department task for autonomy.department_task", async () => {
-    created.length = 0;
+    createdTasks.length = 0;
     const result = await executeApprovalAct(
-      ops,
+      deps,
       {
         ...baseApproval,
         agentId: "agent.housekeeping",
@@ -130,6 +166,40 @@ describe("executeApprovalAct", () => {
     );
     assert.equal(result.status, "executed");
     if (result.status !== "executed") return;
-    assert.equal(result.task.taskType, "urgent_clean");
+    assert.equal(result.task?.taskType, "urgent_clean");
+  });
+
+  it("creates draft PO for autonomy.procurement_draft without sending", async () => {
+    createdOrders.length = 0;
+    createdTasks.length = 0;
+    const result = await executeApprovalAct(
+      deps,
+      {
+        ...baseApproval,
+        agentId: "agent.procurement",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.procurement_draft",
+          hotelId: "00000000-0000-4000-8000-000000000010",
+          vendorId: "00000000-0000-4000-8000-000000000020",
+          currency: "ILS",
+          items: [
+            {
+              description: "מגבות",
+              quantity: 40,
+              unitPrice: 60,
+            },
+          ],
+        }),
+      },
+      Ids.user("00000000-0000-4000-8000-000000000099"),
+      "2026-07-19T01:00:00.000Z",
+    );
+    assert.equal(result.status, "executed");
+    if (result.status !== "executed") return;
+    assert.equal(result.action, "create_purchase_order_draft");
+    assert.equal(result.purchaseOrder?.status, "draft");
+    assert.equal(result.purchaseOrder?.totalAmount, 2400);
+    assert.equal(createdOrders.length, 1);
+    assert.ok(createdTasks.some((t) => t.departmentId === "dept-procurement"));
   });
 });

@@ -3,10 +3,17 @@ import type {
   OpsRepository,
   PersistedApprovalRequest,
   PersistedDepartmentTask,
+  PersistedPurchaseOrder,
+  ProcurementRepository,
   TaskPriority,
 } from "@hotelos/database";
 import type { HotelId, TenantId, UserId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
+
+export type ExecuteApprovalActDeps = {
+  readonly ops: OpsRepository;
+  readonly procurement: ProcurementRepository;
+};
 
 export type ApprovalActResult =
   | {
@@ -15,11 +22,12 @@ export type ApprovalActResult =
     }
   | {
       readonly status: "executed";
-      readonly action: "create_department_task";
-      readonly resourceType: "department_task";
+      readonly action: "create_department_task" | "create_purchase_order_draft";
+      readonly resourceType: "department_task" | "purchase_order";
       readonly resourceId: string;
       readonly summaryHe: string;
-      readonly task: PersistedDepartmentTask;
+      readonly task?: PersistedDepartmentTask;
+      readonly purchaseOrder?: PersistedPurchaseOrder;
     }
   | {
       readonly status: "failed";
@@ -54,6 +62,20 @@ type AutonomyDepartmentTaskPayload = {
   readonly title: string;
   readonly description: string;
   readonly priority: TaskPriority;
+};
+
+type AutonomyProcurementDraftPayload = {
+  readonly kind: "autonomy.procurement_draft";
+  readonly hotelId: string;
+  readonly vendorId: string;
+  readonly currency: string;
+  readonly notes?: string;
+  readonly items: readonly {
+    readonly inventoryItemId?: string;
+    readonly description: string;
+    readonly quantity: number;
+    readonly unitPrice: number;
+  }[];
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -103,6 +125,52 @@ function asDepartmentTaskPayload(
   return value as AutonomyDepartmentTaskPayload;
 }
 
+function asProcurementDraftPayload(
+  value: unknown,
+): AutonomyProcurementDraftPayload | null {
+  if (!isRecord(value) || value["kind"] !== "autonomy.procurement_draft") {
+    return null;
+  }
+  if (
+    typeof value["hotelId"] !== "string" ||
+    typeof value["vendorId"] !== "string" ||
+    typeof value["currency"] !== "string" ||
+    !Array.isArray(value["items"]) ||
+    value["items"].length === 0
+  ) {
+    return null;
+  }
+  const items: AutonomyProcurementDraftPayload["items"][number][] = [];
+  for (const item of value["items"]) {
+    if (!isRecord(item)) return null;
+    if (
+      typeof item["description"] !== "string" ||
+      typeof item["quantity"] !== "number" ||
+      typeof item["unitPrice"] !== "number" ||
+      item["quantity"] <= 0 ||
+      item["unitPrice"] < 0
+    ) {
+      return null;
+    }
+    items.push({
+      ...(typeof item["inventoryItemId"] === "string"
+        ? { inventoryItemId: item["inventoryItemId"] }
+        : {}),
+      description: item["description"],
+      quantity: item["quantity"],
+      unitPrice: item["unitPrice"],
+    });
+  }
+  return {
+    kind: "autonomy.procurement_draft",
+    hotelId: value["hotelId"],
+    vendorId: value["vendorId"],
+    currency: value["currency"],
+    ...(typeof value["notes"] === "string" ? { notes: value["notes"] } : {}),
+    items,
+  };
+}
+
 async function createTaskForDepartment(
   ops: OpsRepository,
   input: {
@@ -144,10 +212,10 @@ async function createTaskForDepartment(
 
 /**
  * Autonomy step 4 — Act after human Approve.
- * Safe MVP: creates department follow-up tasks only (no PMS rate / money mutation).
+ * Safe MVP: department tasks + draft PO only (no PMS rates, no send/pay).
  */
 export async function executeApprovalAct(
-  ops: OpsRepository,
+  deps: ExecuteApprovalActDeps,
   approval: PersistedApprovalRequest,
   decidedByUserId: UserId,
   now: string,
@@ -167,7 +235,7 @@ export async function executeApprovalAct(
   const simulator = asSimulatorPayload(payload);
   if (simulator) {
     const sim = simulator.simulation;
-    const task = await createTaskForDepartment(ops, {
+    const task = await createTaskForDepartment(deps.ops, {
       tenantId: Ids.tenant(approval.tenantId),
       hotelId: Ids.hotel(sim.hotelId),
       departmentCode: "sales_marketing",
@@ -203,7 +271,7 @@ export async function executeApprovalAct(
 
   const departmentTask = asDepartmentTaskPayload(payload);
   if (departmentTask) {
-    const task = await createTaskForDepartment(ops, {
+    const task = await createTaskForDepartment(deps.ops, {
       tenantId: Ids.tenant(approval.tenantId),
       hotelId: Ids.hotel(departmentTask.hotelId),
       departmentCode: departmentTask.departmentCode,
@@ -234,8 +302,70 @@ export async function executeApprovalAct(
     };
   }
 
+  const procurementDraft = asProcurementDraftPayload(payload);
+  if (procurementDraft) {
+    const total = procurementDraft.items.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
+      0,
+    );
+    const order = await deps.procurement.createPurchaseOrder({
+      id: randomUUID(),
+      tenantId: Ids.tenant(approval.tenantId),
+      hotelId: Ids.hotel(procurementDraft.hotelId),
+      vendorId: procurementDraft.vendorId,
+      currency: procurementDraft.currency,
+      createdByUserId: decidedByUserId,
+      notes: [
+        procurementDraft.notes ?? "טיוטת רכש מאישור AI (Suggest→Approve→Act)",
+        `מזהה אישור: ${approval.id}`,
+        "סטטוס: draft בלבד — לא נשלח לספק ולא שולם.",
+      ].join("\n"),
+      createdAt: now,
+      items: procurementDraft.items.map((item) => ({
+        id: randomUUID(),
+        ...(item.inventoryItemId
+          ? { inventoryItemId: item.inventoryItemId }
+          : {}),
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
+    });
+
+    await createTaskForDepartment(deps.ops, {
+      tenantId: Ids.tenant(approval.tenantId),
+      hotelId: Ids.hotel(procurementDraft.hotelId),
+      departmentCode: "procurement",
+      taskType: "po_draft_followup",
+      title: `לבדוק טיוטת PO ${order.id.slice(0, 8)}…`,
+      description: [
+        "נוצרה טיוטת הזמנת רכש אחרי אישור AI.",
+        `סכום מנייר: ₪${total} ${procurementDraft.currency}.`,
+        "לא נשלח לספק — יש לאשר ידנית לפני שליחה.",
+        `מזהה PO: ${order.id}`,
+      ].join("\n"),
+      priority: total >= 5000 ? "urgent" : total >= 2000 ? "high" : "medium",
+      createdByUserId: decidedByUserId,
+      now,
+    });
+
+    return {
+      status: "executed",
+      action: "create_purchase_order_draft",
+      resourceType: "purchase_order",
+      resourceId: order.id,
+      summaryHe: `בוצע Act — נוצרה טיוטת PO בסך ₪${total} (לא נשלחה).`,
+      purchaseOrder: order,
+    };
+  }
+
   return {
     status: "skipped",
     reasonHe: "סוג הצעה ללא Act מוגדר עדיין — האישור נשמר ללא ביצוע.",
   };
 }
+
+/** Hotel-manager threshold from procurement-agent.md */
+export const PROCUREMENT_HOTEL_APPROVAL_ILS = 2000;
+/** Chain HQ threshold from procurement-agent.md */
+export const PROCUREMENT_CHAIN_APPROVAL_ILS = 5000;
