@@ -2142,6 +2142,22 @@ export type AiApprovalDto = {
   readonly createdAt: string;
 };
 
+export type ApprovalActDto =
+  | { readonly status: "skipped"; readonly reasonHe: string }
+  | { readonly status: "failed"; readonly reasonHe: string }
+  | {
+      readonly status: "executed";
+      readonly action: string;
+      readonly resourceType: string;
+      readonly resourceId: string;
+      readonly summaryHe: string;
+    };
+
+export type DecideAiApprovalResult = {
+  readonly approval: AiApprovalDto;
+  readonly act: ApprovalActDto;
+};
+
 export async function listPendingAiApprovals(): Promise<
   readonly AiApprovalDto[]
 > {
@@ -2154,11 +2170,31 @@ export async function listPendingAiApprovals(): Promise<
 export async function decideAiApproval(
   id: string,
   status: "approved" | "rejected",
-): Promise<AiApprovalDto> {
+): Promise<DecideAiApprovalResult> {
   const payload = (await authPost(`/v1/ai/approvals/${id}/decide`, {
     status,
-  })) as { data: AiApprovalDto };
-  return payload.data;
+  })) as { data: AiApprovalDto; act: ApprovalActDto };
+  return { approval: payload.data, act: payload.act };
+}
+
+export async function suggestAutonomyDepartmentTask(input: {
+  readonly hotelId: string;
+  readonly departmentCode: string;
+  readonly taskType: string;
+  readonly title: string;
+  readonly description: string;
+  readonly priority?: "low" | "medium" | "high" | "urgent";
+  readonly agentId?: string;
+  readonly summaryHe?: string;
+  readonly reasonHe?: string;
+}): Promise<{ readonly approvalId: string }> {
+  const payload = (await authPost("/v1/autonomy/suggest", {
+    kind: "department_task",
+    ...input,
+  })) as {
+    data: { approval: { id: string } };
+  };
+  return { approvalId: payload.data.approval.id };
 }
 
 export async function postSecurityEvent(input: {

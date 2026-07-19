@@ -1,14 +1,20 @@
 import { Hono } from "hono";
 import type { JwtTokenService } from "@hotelos/auth";
-import type { ApprovalRepository, AuditRepository } from "@hotelos/database";
+import type {
+  ApprovalRepository,
+  AuditRepository,
+  OpsRepository,
+} from "@hotelos/database";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
+import { executeApprovalAct } from "../../application/execute-approval-act.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type ApprovalRouteDeps = {
   readonly approvals: ApprovalRepository;
   readonly audit: AuditRepository;
+  readonly ops: OpsRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -52,6 +58,15 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
           "Pending approval not found",
         );
       }
+
+      const act =
+        body.status === "approved"
+          ? await executeApprovalAct(deps.ops, updated, principal.userId, now)
+          : ({
+              status: "skipped" as const,
+              reasonHe: "נדחה — לא בוצע Act.",
+            } as const);
+
       await deps.audit.append({
         id: randomUUID(),
         tenantId: principal.scope.tenantId,
@@ -59,10 +74,37 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
         action: `ai.approval.${body.status}`,
         resourceType: "ai_approval_request",
         resourceId: updated.id,
-        metadata: { agentId: updated.agentId },
+        metadata: {
+          agentId: updated.agentId,
+          actStatus: act.status,
+          ...(act.status === "executed"
+            ? {
+                actAction: act.action,
+                actResourceId: act.resourceId,
+              }
+            : {}),
+        },
         createdAt: now,
       });
-      return c.json({ data: updated });
+
+      if (act.status === "executed") {
+        await deps.audit.append({
+          id: randomUUID(),
+          tenantId: principal.scope.tenantId,
+          actorUserId: principal.userId,
+          action: "autonomy.act",
+          resourceType: act.resourceType,
+          resourceId: act.resourceId,
+          metadata: {
+            approvalId: updated.id,
+            agentId: updated.agentId,
+            actAction: act.action,
+          },
+          createdAt: now,
+        });
+      }
+
+      return c.json({ data: updated, act });
     } catch (error) {
       return mapUnknownError(c, error);
     }

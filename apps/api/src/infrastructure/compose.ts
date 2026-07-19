@@ -207,7 +207,8 @@ export async function composeApp() {
       audit,
       tokens,
     },
-    approvals: { approvals, audit, tokens },
+    approvals: { approvals, audit, ops, tokens },
+    autonomy: { approvals, audit, ops, tokens },
     twin: { rooms, tokens, pms: createPmsConnector(env.PMS_PROVIDER) },
     cron: {
       cronSecret: env.CRON_SECRET,

@@ -81,6 +81,10 @@ import {
   createSimulatorRoutes,
   type SimulatorRouteDeps,
 } from "./simulator-routes.js";
+import {
+  createAutonomyRoutes,
+  type AutonomyRouteDeps,
+} from "./autonomy-routes.js";
 import { isOriginAllowed } from "@hotelos/config";
 import { captureException } from "../../infrastructure/observability.js";
 import { createRateLimitMiddleware } from "./rate-limit.js";
@@ -107,6 +111,7 @@ export type ApiDependencies = {
   readonly hr: HrRouteDeps;
   readonly correspondence: CorrespondenceRouteDeps;
   readonly approvals: ApprovalRouteDeps;
+  readonly autonomy: AutonomyRouteDeps;
   readonly twin: TwinRouteDeps;
   readonly cron: CronRouteDeps;
   readonly simulator: SimulatorRouteDeps;
@@ -241,6 +246,7 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/kashrut", createKashrutRoutes(deps.kashrut));
   app.route("/v1/ai/gateway", createAiGatewayRoutes(deps.aiGateway));
   app.route("/v1/ai/approvals", createApprovalRoutes(deps.approvals));
+  app.route("/v1/autonomy", createAutonomyRoutes(deps.autonomy));
   app.route("/v1/hr", createHrRoutes(deps.hr));
   app.route("/v1/correspondence", createCorrespondenceRoutes(deps.correspondence));
   app.route("/v1/twin", createTwinRoutes(deps.twin));
