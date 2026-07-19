@@ -121,6 +121,7 @@ export {
   type InventoryCategory,
   type PersistedInventoryItem,
   type PersistedPurchaseOrder,
+  type PersistedPurchaseOrderItem,
   type ProcurementRepository,
   type PurchaseOrderStatus,
 } from "./repositories/procurement-repository.js";

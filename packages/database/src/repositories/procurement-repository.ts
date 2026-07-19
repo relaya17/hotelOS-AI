@@ -54,7 +54,17 @@ export type PersistedPurchaseOrder = {
   readonly status: PurchaseOrderStatus;
   readonly totalAmount: number;
   readonly currency: string;
+  readonly notes: string | null;
   readonly createdAt: string;
+};
+
+export type PersistedPurchaseOrderItem = {
+  readonly id: string;
+  readonly purchaseOrderId: string;
+  readonly inventoryItemId: string | null;
+  readonly description: string;
+  readonly quantity: number;
+  readonly unitPrice: number;
 };
 
 export type CreatePurchaseOrderInput = {
@@ -100,7 +110,21 @@ function mapPurchaseOrder(
     status: row.status as PurchaseOrderStatus,
     totalAmount: row.totalAmount,
     currency: row.currency,
+    notes: row.notes ?? null,
     createdAt: row.createdAt,
+  };
+}
+
+function mapPurchaseOrderItem(
+  row: typeof purchaseOrderItems.$inferSelect,
+): PersistedPurchaseOrderItem {
+  return {
+    id: row.id,
+    purchaseOrderId: row.purchaseOrderId,
+    inventoryItemId: row.inventoryItemId ?? null,
+    description: row.description,
+    quantity: row.quantity,
+    unitPrice: row.unitPrice,
   };
 }
 
@@ -123,6 +147,14 @@ export type ProcurementRepository = {
     tenantId: TenantId,
     hotelId: HotelId,
   ) => Promise<readonly PersistedPurchaseOrder[]>;
+  findPurchaseOrderInHotel: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    orderId: string,
+  ) => Promise<PersistedPurchaseOrder | null>;
+  listPurchaseOrderItems: (
+    orderId: string,
+  ) => Promise<readonly PersistedPurchaseOrderItem[]>;
   createPurchaseOrder: (
     input: CreatePurchaseOrderInput,
   ) => Promise<PersistedPurchaseOrder>;
@@ -215,6 +247,30 @@ export function createProcurementRepository(db: HotelOsDb): ProcurementRepositor
         .orderBy(desc(purchaseOrders.createdAt))
         .all();
       return rows.map(mapPurchaseOrder);
+    },
+
+    async findPurchaseOrderInHotel(tenantId, hotelId, orderId) {
+      const row = await db
+        .select()
+        .from(purchaseOrders)
+        .where(
+          and(
+            eq(purchaseOrders.id, orderId),
+            eq(purchaseOrders.tenantId, tenantId),
+            eq(purchaseOrders.hotelId, hotelId),
+          ),
+        )
+        .get();
+      return row ? mapPurchaseOrder(row) : null;
+    },
+
+    async listPurchaseOrderItems(orderId) {
+      const rows = await db
+        .select()
+        .from(purchaseOrderItems)
+        .where(eq(purchaseOrderItems.purchaseOrderId, orderId))
+        .all();
+      return rows.map(mapPurchaseOrderItem);
     },
 
     async createPurchaseOrder(input) {

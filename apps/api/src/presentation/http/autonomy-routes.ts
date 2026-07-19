@@ -94,6 +94,12 @@ const suggestTodaysArrivalsSchema = z.object({
   agentId: z.string().trim().min(3).max(80).default("agent.reception"),
 });
 
+const suggestSendPurchaseOrderSchema = z.object({
+  hotelId: z.string().uuid(),
+  purchaseOrderId: z.string().uuid(),
+  agentId: z.string().trim().min(3).max(80).default("agent.procurement"),
+});
+
 const suggestMaintenanceQuoteAcceptSchema = z.object({
   kind: z.literal("maintenance_quote_accept"),
   hotelId: z.string().uuid(),
@@ -111,20 +117,35 @@ const suggestSchema = z.discriminatedUnion("kind", [
   suggestMaintenanceQuoteAcceptSchema,
 ]);
 
-function approvalReasonForTotal(total: number, purpose: "po" | "quote"): string {
+function approvalReasonForTotal(
+  total: number,
+  purpose: "po" | "quote" | "send",
+): string {
   if (total >= PROCUREMENT_CHAIN_APPROVAL_ILS) {
-    return purpose === "quote"
-      ? `סכום הצעה ₪${total} ≥ סף רשת (₪${PROCUREMENT_CHAIN_APPROVAL_ILS}) — נדרש אישור הנהלה לפני קבלת הצעת מחיר.`
-      : `סכום משוער ₪${total} ≥ סף רשת (₪${PROCUREMENT_CHAIN_APPROVAL_ILS}) — נדרש אישור הנהלה לפני טיוטת PO.`;
+    if (purpose === "quote") {
+      return `סכום הצעה ₪${total} ≥ סף רשת (₪${PROCUREMENT_CHAIN_APPROVAL_ILS}) — נדרש אישור הנהלה לפני קבלת הצעת מחיר.`;
+    }
+    if (purpose === "send") {
+      return `סכום PO ₪${total} ≥ סף רשת (₪${PROCUREMENT_CHAIN_APPROVAL_ILS}) — נדרש אישור הנהלה לפני סימון שליחה לספק.`;
+    }
+    return `סכום משוער ₪${total} ≥ סף רשת (₪${PROCUREMENT_CHAIN_APPROVAL_ILS}) — נדרש אישור הנהלה לפני טיוטת PO.`;
   }
   if (total >= PROCUREMENT_HOTEL_APPROVAL_ILS) {
-    return purpose === "quote"
-      ? `סכום הצעה ₪${total} ≥ סף מנהל מלון (₪${PROCUREMENT_HOTEL_APPROVAL_ILS}) — נדרש אישור לפני קבלת הצעת מחיר.`
-      : `סכום משוער ₪${total} ≥ סף מנהל מלון (₪${PROCUREMENT_HOTEL_APPROVAL_ILS}) — נדרש אישור לפני טיוטת PO.`;
+    if (purpose === "quote") {
+      return `סכום הצעה ₪${total} ≥ סף מנהל מלון (₪${PROCUREMENT_HOTEL_APPROVAL_ILS}) — נדרש אישור לפני קבלת הצעת מחיר.`;
+    }
+    if (purpose === "send") {
+      return `סכום PO ₪${total} ≥ סף מנהל מלון (₪${PROCUREMENT_HOTEL_APPROVAL_ILS}) — נדרש אישור לפני סימון שליחה לספק.`;
+    }
+    return `סכום משוער ₪${total} ≥ סף מנהל מלון (₪${PROCUREMENT_HOTEL_APPROVAL_ILS}) — נדרש אישור לפני טיוטת PO.`;
   }
-  return purpose === "quote"
-    ? `הצעת מחיר תחזוקה בסך ₪${total} — אישור אנושי לפני Accept (ללא שליחה לקבלן).`
-    : `הצעת רכש AI בסך ₪${total} — אישור אנושי לפני יצירת טיוטת PO (לא נשלח לספק).`;
+  if (purpose === "quote") {
+    return `הצעת מחיר תחזוקה בסך ₪${total} — אישור אנושי לפני Accept (ללא שליחה לקבלן).`;
+  }
+  if (purpose === "send") {
+    return `שליחת PO בסך ₪${total} — אישור אנושי לפני סימון sent (ללא אימייל אמיתי ב-MVP).`;
+  }
+  return `הצעת רכש AI בסך ₪${total} — אישור אנושי לפני יצירת טיוטת PO (לא נשלח לספק).`;
 }
 
 /**
@@ -561,6 +582,116 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
             rooms: roomPayload,
             nextStepHe:
               "Approve בתיבת אישורי AI → Act ייפתח משימות ניקיון (חדרים נשארים dirty)",
+          },
+        },
+        201,
+      );
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /** Suggest marking a draft PO as sent (HITL; no real vendor email/pay). */
+  routes.post("/suggest-send-purchase-order", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = suggestSendPurchaseOrderSchema.parse(await c.req.json());
+      const hotelId = Ids.hotel(body.hotelId);
+      const now = new Date().toISOString();
+
+      const belongs = await deps.rooms.hotelBelongsToTenant(
+        principal.scope.tenantId,
+        hotelId,
+      );
+      if (!belongs) {
+        return sendError(c, 404, "HOTEL_NOT_FOUND", "Hotel not found");
+      }
+
+      const order = await deps.procurement.findPurchaseOrderInHotel(
+        principal.scope.tenantId,
+        hotelId,
+        body.purchaseOrderId,
+      );
+      if (!order) {
+        return sendError(
+          c,
+          404,
+          "PURCHASE_ORDER_NOT_FOUND",
+          "Purchase order not found",
+        );
+      }
+      if (order.status !== "draft") {
+        return sendError(
+          c,
+          409,
+          "PURCHASE_ORDER_NOT_DRAFT",
+          `Purchase order is ${order.status}; only draft can be sent`,
+        );
+      }
+
+      const items = await deps.procurement.listPurchaseOrderItems(order.id);
+      const sendPayload = {
+        kind: "autonomy.procurement_send" as const,
+        hotelId: body.hotelId,
+        purchaseOrderId: order.id,
+        vendorId: order.vendorId,
+        totalAmount: order.totalAmount,
+        currency: order.currency,
+        notes: order.notes ?? undefined,
+        items: items.map((item) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          ...(item.inventoryItemId
+            ? { inventoryItemId: item.inventoryItemId }
+            : {}),
+        })),
+      };
+      const foodRelated = detectFoodRelatedProcurement(sendPayload);
+
+      const created = await deps.approvals.create({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId,
+        agentId: body.agentId,
+        requestedByUserId: principal.userId,
+        summaryHe: `שליחת PO לספק — ₪${order.totalAmount} ${order.currency}`,
+        reasonHe: approvalReasonForTotal(order.totalAmount, "send"),
+        payloadJson: JSON.stringify({
+          ...sendPayload,
+          foodRelated,
+          notifyMode: "status_only",
+        }),
+        createdAt: now,
+      });
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "autonomy.suggest_send_purchase_order",
+        resourceType: "ai_approval_request",
+        resourceId: created.id,
+        metadata: {
+          purchaseOrderId: order.id,
+          totalAmount: order.totalAmount,
+          foodRelated,
+          agentId: body.agentId,
+        },
+        createdAt: now,
+      });
+
+      return c.json(
+        {
+          data: {
+            approval: created,
+            autonomyStep: "suggest",
+            purchaseOrderId: order.id,
+            totalAmount: order.totalAmount,
+            currency: order.currency,
+            foodRelated,
+            nextStepHe:
+              "Approve בתיבת אישורי AI → Act יסמן PO כ-sent (ללא אימייל/תשלום אמיתי)",
           },
         },
         201,

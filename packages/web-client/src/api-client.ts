@@ -2438,6 +2438,38 @@ export async function suggestAutonomyTodaysArrivals(input: {
   };
 }
 
+export async function suggestAutonomySendPurchaseOrder(input: {
+  readonly hotelId: string;
+  readonly purchaseOrderId: string;
+  readonly agentId?: string;
+}): Promise<{
+  readonly approvalId: string;
+  readonly purchaseOrderId: string;
+  readonly totalAmount: number;
+  readonly currency: string;
+  readonly foodRelated: boolean;
+}> {
+  const payload = (await authPost(
+    "/v1/autonomy/suggest-send-purchase-order",
+    input,
+  )) as {
+    data: {
+      approval: { id: string };
+      purchaseOrderId: string;
+      totalAmount: number;
+      currency: string;
+      foodRelated: boolean;
+    };
+  };
+  return {
+    approvalId: payload.data.approval.id,
+    purchaseOrderId: payload.data.purchaseOrderId,
+    totalAmount: payload.data.totalAmount,
+    currency: payload.data.currency,
+    foodRelated: payload.data.foodRelated,
+  };
+}
+
 export async function postSecurityEvent(input: {
   readonly hotelId: string;
   readonly title: string;

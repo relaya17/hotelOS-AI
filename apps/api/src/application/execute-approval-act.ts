@@ -28,6 +28,7 @@ export type ApprovalActResult =
       readonly action:
         | "create_department_task"
         | "create_purchase_order_draft"
+        | "send_purchase_order"
         | "accept_maintenance_quote"
         | "create_housekeeping_clean_tasks"
         | "create_reception_arrival_tasks";
@@ -126,6 +127,15 @@ type AutonomyReceptionArrivalPrepBatchPayload = {
     readonly roomId: string;
     readonly checkOutDate: string;
   }[];
+};
+
+type AutonomyProcurementSendPayload = {
+  readonly kind: "autonomy.procurement_send";
+  readonly hotelId: string;
+  readonly purchaseOrderId: string;
+  readonly vendorId: string;
+  readonly totalAmount: number;
+  readonly currency: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -338,6 +348,31 @@ function asReceptionArrivalPrepBatchPayload(
   };
 }
 
+function asProcurementSendPayload(
+  value: unknown,
+): AutonomyProcurementSendPayload | null {
+  if (!isRecord(value) || value["kind"] !== "autonomy.procurement_send") {
+    return null;
+  }
+  if (
+    typeof value["hotelId"] !== "string" ||
+    typeof value["purchaseOrderId"] !== "string" ||
+    typeof value["vendorId"] !== "string" ||
+    typeof value["totalAmount"] !== "number" ||
+    typeof value["currency"] !== "string"
+  ) {
+    return null;
+  }
+  return {
+    kind: "autonomy.procurement_send",
+    hotelId: value["hotelId"],
+    purchaseOrderId: value["purchaseOrderId"],
+    vendorId: value["vendorId"],
+    totalAmount: value["totalAmount"],
+    currency: value["currency"],
+  };
+}
+
 async function createTaskForDepartment(
   ops: OpsRepository,
   input: {
@@ -379,7 +414,7 @@ async function createTaskForDepartment(
 
 /**
  * Autonomy step 4 — Act after human Approve.
- * Safe MVP: department tasks + draft PO only (no PMS rates, no send/pay).
+ * Safe MVP: tasks, draft/send PO status, quote accept — no PMS rates, no real vendor email/pay.
  */
 export async function executeApprovalAct(
   deps: ExecuteApprovalActDeps,
@@ -508,7 +543,7 @@ export async function executeApprovalAct(
       description: [
         "נוצרה טיוטת הזמנת רכש אחרי אישור AI.",
         `סכום מנייר: ₪${total} ${procurementDraft.currency}.`,
-        "לא נשלח לספק — יש לאשר ידנית לפני שליחה.",
+        "לא נשלח לספק — השתמשו ב־Suggest שליחת PO לאישור לפני סימון sent.",
         `מזהה PO: ${order.id}`,
       ].join("\n"),
       priority: total >= 5000 ? "urgent" : total >= 2000 ? "high" : "medium",
@@ -522,6 +557,66 @@ export async function executeApprovalAct(
       resourceType: "purchase_order",
       resourceId: order.id,
       summaryHe: `בוצע Act — נוצרה טיוטת PO בסך ₪${total} (לא נשלחה).`,
+      purchaseOrder: order,
+    };
+  }
+
+  const procurementSend = asProcurementSendPayload(payload);
+  if (procurementSend) {
+    const existing = await deps.procurement.findPurchaseOrderInHotel(
+      Ids.tenant(approval.tenantId),
+      Ids.hotel(procurementSend.hotelId),
+      procurementSend.purchaseOrderId,
+    );
+    if (!existing) {
+      return { status: "failed", reasonHe: "הזמנת רכש לא נמצאה — Act נכשל." };
+    }
+    if (existing.status !== "draft") {
+      return {
+        status: "failed",
+        reasonHe: `הזמנת רכש במצב ${existing.status} — ניתן לשלוח רק טיוטה.`,
+      };
+    }
+
+    const order = await deps.procurement.updatePurchaseOrderStatus(
+      Ids.tenant(approval.tenantId),
+      procurementSend.purchaseOrderId,
+      "sent",
+    );
+    if (!order) {
+      return { status: "failed", reasonHe: "עדכון סטטוס PO נכשל." };
+    }
+
+    await createTaskForDepartment(deps.ops, {
+      tenantId: Ids.tenant(approval.tenantId),
+      hotelId: Ids.hotel(procurementSend.hotelId),
+      departmentCode: "procurement",
+      taskType: "po_sent_followup",
+      title: `מעקב אספקה — PO ${order.id.slice(0, 8)}…`,
+      description: [
+        "הזמנת רכש סומנה כנשלחה אחרי HITL (Suggest→Approve→Act).",
+        `סכום: ₪${procurementSend.totalAmount} ${procurementSend.currency}.`,
+        `ספק: ${procurementSend.vendorId}`,
+        "MVP: אין אימייל/פקס אמיתי לספק ואין תשלום — סטטוס מערכת בלבד.",
+        `מזהה PO: ${order.id}`,
+        `מזהה אישור: ${approval.id}`,
+      ].join("\n"),
+      priority:
+        procurementSend.totalAmount >= PROCUREMENT_CHAIN_APPROVAL_ILS
+          ? "urgent"
+          : procurementSend.totalAmount >= PROCUREMENT_HOTEL_APPROVAL_ILS
+            ? "high"
+            : "medium",
+      createdByUserId: decidedByUserId,
+      now,
+    });
+
+    return {
+      status: "executed",
+      action: "send_purchase_order",
+      resourceType: "purchase_order",
+      resourceId: order.id,
+      summaryHe: `בוצע Act — PO סומנה כנשלחה (₪${procurementSend.totalAmount}, ללא אימייל אמיתי).`,
       purchaseOrder: order,
     };
   }

@@ -40,6 +40,21 @@ describe("evaluateKashrutProcurementGate", () => {
     );
   });
 
+  it("detects food-related send payload", () => {
+    assert.equal(
+      detectFoodRelatedProcurement({
+        kind: "autonomy.procurement_send",
+        hotelId: "h1",
+        purchaseOrderId: "po1",
+        vendorId: "v1",
+        totalAmount: 100,
+        currency: "ILS",
+        items: [{ description: "בשר טחון", quantity: 2, unitPrice: 50 }],
+      }),
+      true,
+    );
+  });
+
   it("skips when kashrut disabled", () => {
     const gate = evaluateKashrutProcurementGate({
       approval,

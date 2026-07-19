@@ -8,6 +8,7 @@ import {
   listVendors,
   receivePurchaseOrder,
   suggestAutonomyLowStockReorder,
+  suggestAutonomySendPurchaseOrder,
   type InventoryCategory,
   type InventoryItemDto,
   type PurchaseOrderDto,
@@ -45,6 +46,7 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
   const [error, setError] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
   const [suggesting, setSuggesting] = useState(false);
+  const [sendingPoId, setSendingPoId] = useState<string | undefined>();
 
   const [itemCategory, setItemCategory] = useState<InventoryCategory>("towels");
   const [itemName, setItemName] = useState("");
@@ -180,6 +182,30 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
       );
     } finally {
       setSuggesting(false);
+    }
+  }
+
+  async function onSuggestSend(orderId: string) {
+    setSendingPoId(orderId);
+    setError(undefined);
+    try {
+      const result = await suggestAutonomySendPurchaseOrder({
+        hotelId,
+        purchaseOrderId: orderId,
+      });
+      setNotice(
+        `Suggest שליחת PO נשלח לאישור: ₪${result.totalAmount} ${result.currency}${
+          result.foodRelated ? " · כולל שער Kashrut" : ""
+        }. אשרו → Act יסמן sent (ללא אימייל אמיתי).`,
+      );
+    } catch (suggestError) {
+      setError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "הצעת שליחת PO נכשלה",
+      );
+    } finally {
+      setSendingPoId(undefined);
     }
   }
 
@@ -320,6 +346,18 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
                   <span className="status status--ok">
                     {poStatusLabel[order.status] ?? order.status}
                   </span>
+                  {order.status === "draft" ? (
+                    <button
+                      type="button"
+                      className="mini-btn"
+                      disabled={sendingPoId === order.id}
+                      onClick={() => void onSuggestSend(order.id)}
+                    >
+                      {sendingPoId === order.id
+                        ? "שולח הצעה…"
+                        : "הצע שליחה (Suggest)"}
+                    </button>
+                  ) : null}
                   {order.status !== "received" && order.status !== "cancelled" ? (
                     <button
                       type="button"

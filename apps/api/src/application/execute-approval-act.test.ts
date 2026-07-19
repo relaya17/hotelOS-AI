@@ -87,10 +87,28 @@ describe("executeApprovalAct", () => {
         status: "draft",
         totalAmount,
         currency: input.currency,
+        notes: null,
         createdAt: input.createdAt,
       };
       createdOrders.push(order);
       return order;
+    },
+    findPurchaseOrderInHotel: async (
+      _tenantId: unknown,
+      _hotelId: unknown,
+      orderId: string,
+    ) => createdOrders.find((order) => order.id === orderId) ?? null,
+    updatePurchaseOrderStatus: async (
+      _tenantId: unknown,
+      orderId: string,
+      status: PersistedPurchaseOrder["status"],
+    ) => {
+      const index = createdOrders.findIndex((order) => order.id === orderId);
+      if (index < 0) return null;
+      const current = createdOrders[index]!;
+      const updated: PersistedPurchaseOrder = { ...current, status };
+      createdOrders[index] = updated;
+      return updated;
     },
   } as unknown as ProcurementRepository;
 
@@ -299,6 +317,44 @@ describe("executeApprovalAct", () => {
     assert.equal(result.taskCount, 2);
     assert.equal(createdTasks.length, 2);
     assert.ok(createdTasks.every((t) => t.taskType === "room_clean"));
+  });
+
+  it("marks draft PO as sent for autonomy.procurement_send", async () => {
+    createdOrders.length = 0;
+    createdTasks.length = 0;
+    const draftId = "00000000-0000-4000-8000-000000000060";
+    createdOrders.push({
+      id: draftId,
+      hotelId: "00000000-0000-4000-8000-000000000010",
+      vendorId: "00000000-0000-4000-8000-000000000020",
+      status: "draft",
+      totalAmount: 3200,
+      currency: "ILS",
+      notes: null,
+      createdAt: "2026-07-19T00:00:00.000Z",
+    });
+    const result = await executeApprovalAct(
+      deps,
+      {
+        ...baseApproval,
+        agentId: "agent.procurement",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.procurement_send",
+          hotelId: "00000000-0000-4000-8000-000000000010",
+          purchaseOrderId: draftId,
+          vendorId: "00000000-0000-4000-8000-000000000020",
+          totalAmount: 3200,
+          currency: "ILS",
+        }),
+      },
+      Ids.user("00000000-0000-4000-8000-000000000099"),
+      "2026-07-19T01:00:00.000Z",
+    );
+    assert.equal(result.status, "executed");
+    if (result.status !== "executed") return;
+    assert.equal(result.action, "send_purchase_order");
+    assert.equal(result.purchaseOrder?.status, "sent");
+    assert.ok(createdTasks.some((t) => t.taskType === "po_sent_followup"));
   });
 
   it("creates reception arrival-prep tasks for confirmed arrivals", async () => {

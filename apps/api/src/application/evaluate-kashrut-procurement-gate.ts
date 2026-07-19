@@ -27,7 +27,13 @@ const FOOD_PATTERN =
 export function detectFoodRelatedProcurement(payload: unknown): boolean {
   if (!isRecord(payload)) return false;
   if (payload["foodRelated"] === true) return true;
-  if (payload["kind"] !== "autonomy.procurement_draft") return false;
+  const kind = payload["kind"];
+  if (
+    kind !== "autonomy.procurement_draft" &&
+    kind !== "autonomy.procurement_send"
+  ) {
+    return false;
+  }
   const notes = typeof payload["notes"] === "string" ? payload["notes"] : "";
   if (FOOD_PATTERN.test(notes)) return true;
   const items = payload["items"];
@@ -85,7 +91,7 @@ export function evaluateKashrutProcurementGate(input: {
       requiresAck: false,
       requiresOverrideBlock: true,
       gateHe:
-        "agent.kashrut סימן block — אסור לאשר טיוטת רכש בלי דריסת משגיח מפורשת.",
+        "agent.kashrut סימן block — אסור לאשר רכש מזון בלי דריסת משגיח מפורשת.",
     };
   }
 
@@ -130,7 +136,7 @@ export function evaluateKashrutProcurementGate(input: {
     requiresAck: true,
     requiresOverrideBlock: false,
     gateHe:
-      "רכש מזון במלון כשר — חובה הערת Kashrut או אישור מודע לפני יצירת טיוטת PO.",
+      "רכש מזון במלון כשר — חובה הערת Kashrut או אישור מודע לפני Act (טיוטה/שליחה).",
   };
 }
 
