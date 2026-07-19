@@ -156,7 +156,13 @@ export function createApp(deps: ApiDependencies): Hono {
         "X-Tenant-Id",
         "X-HotelOS-Tenant",
       ],
-      exposeHeaders: ["X-Correlation-Id"],
+      exposeHeaders: [
+        "X-Correlation-Id",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+        "Retry-After",
+      ],
     }),
   );
 

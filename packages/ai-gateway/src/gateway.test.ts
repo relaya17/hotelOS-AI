@@ -38,4 +38,13 @@ describe("createAiGateway", () => {
       /Unknown agentId/,
     );
   });
+
+  it("embeds texts via the deterministic provider", async () => {
+    const gateway = createAiGateway({ agents });
+    const result = await gateway.embed(["נוהל קבלה", "נוהל קבלה"]);
+    assert.equal(result.model, "hotelos.deterministic.embed.v1");
+    assert.equal(result.vectors.length, 2);
+    assert.equal(result.vectors[0]?.length, result.vectors[1]?.length);
+    assert.ok((result.vectors[0]?.length ?? 0) > 0);
+  });
 });

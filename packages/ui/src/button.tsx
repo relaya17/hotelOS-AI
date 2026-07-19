@@ -25,6 +25,7 @@ export function Button({
           border-radius: var(--radius-sm);
           border: 1px solid transparent;
           padding: 0.85rem 1.2rem;
+          min-height: var(--touch-min, 2.75rem);
           cursor: pointer;
           transition: transform var(--motion-fast), background var(--motion-fast);
         }

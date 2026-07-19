@@ -1,17 +1,20 @@
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
+import type { AiGateway } from "@hotelos/ai-gateway";
 import type {
   CompanyKnowledgeRepository,
   TrustedSourcesRepository,
 } from "@hotelos/database";
 import type { JwtTokenService } from "@hotelos/auth";
 import { z } from "@hotelos/validation";
+import { embedCompanyKnowledgeDoc } from "../../application/embed-company-knowledge-doc.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type KnowledgeRouteDeps = {
   readonly trustedSources: TrustedSourcesRepository;
   readonly companyKnowledge: CompanyKnowledgeRepository;
+  readonly gateway: AiGateway;
   readonly tokens: JwtTokenService;
 };
 
@@ -147,6 +150,14 @@ export function createKnowledgeRoutes(deps: KnowledgeRouteDeps): Hono<{
       if (!updated) {
         return sendError(c, 404, "DOC_NOT_FOUND", "Document not found");
       }
+      // Best-effort embed — approve must succeed even if embeddings are down.
+      await embedCompanyKnowledgeDoc(
+        {
+          companyKnowledge: deps.companyKnowledge,
+          gateway: deps.gateway,
+        },
+        { tenantId: principal.scope.tenantId, doc: updated },
+      );
       return c.json({ data: updated });
     } catch (error) {
       return mapUnknownError(c, error);

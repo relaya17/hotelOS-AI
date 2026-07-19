@@ -195,7 +195,9 @@ export {
   type PersistedAssessmentTemplate,
 } from "./repositories/assessment-repository.js";
 export {
+  cosineSimilarity,
   createCompanyKnowledgeRepository,
   type CompanyKnowledgeRepository,
   type PersistedCompanyKnowledgeDoc,
+  type PersistedCompanyKnowledgeEmbedding,
 } from "./repositories/company-knowledge-repository.js";

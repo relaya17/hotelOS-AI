@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Button, CookieBanner, TextField } from "@hotelos/ui";
+import { Button, CookieBanner, TextField, SkipLink } from "@hotelos/ui";
 import {
   APP_URLS,
   fetchLegalDocument,
@@ -143,7 +143,9 @@ export function App() {
 
   if (legalDoc) {
     return (
-      <main className="legal">
+      <>
+      <SkipLink />
+      <main id="main-content" className="legal" tabIndex={-1}>
         <p className="eyebrow">HotelOS AI · Legal</p>
         <h1>{legalDoc.titleHe}</h1>
         <p className="meta">
@@ -175,11 +177,18 @@ export function App() {
           section p{margin:0;color:var(--color-ink-soft);line-height:1.7}
         `}</style>
       </main>
+      </>
     );
   }
 
   return (
-    <main className={`shell${hasStay ? " shell--stay" : ""}`}>
+    <>
+    <SkipLink />
+    <main
+      id="main-content"
+      className={`shell${hasStay ? " shell--stay" : ""}`}
+      tabIndex={-1}
+    >
       {!hasStay ? (
         <section className="hero">
           <p className="eyebrow">Guest App · HotelOS AI</p>
@@ -261,5 +270,6 @@ export function App() {
         @media (max-width:900px){ .shell{ grid-template-columns:1fr; } }
       `}</style>
     </main>
+    </>
   );
 }

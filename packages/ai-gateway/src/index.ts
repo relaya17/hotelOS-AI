@@ -6,6 +6,7 @@ export {
 } from "./gateway.js";
 export {
   createDeterministicProvider,
+  deterministicEmbed,
 } from "./providers/deterministic.js";
 export {
   createOpenAiCompatibleProvider,
@@ -18,5 +19,6 @@ export type {
   AiProviderId,
   LlmChatMessage,
   LlmCompletionResult,
+  LlmEmbeddingResult,
   LlmProvider,
 } from "./types.js";

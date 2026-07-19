@@ -45,7 +45,13 @@ export type LlmCompletionResult = {
   readonly completionTokens?: number;
 };
 
+export type LlmEmbeddingResult = {
+  readonly vectors: readonly (readonly number[])[];
+  readonly model: string;
+};
+
 export type LlmProvider = {
   readonly id: AiProviderId;
   complete(messages: readonly LlmChatMessage[]): Promise<LlmCompletionResult>;
+  embed(texts: readonly string[]): Promise<LlmEmbeddingResult>;
 };

@@ -50,6 +50,27 @@ export const companyKnowledgeDocs = sqliteTable(
   ],
 );
 
+/** One whole-doc vector per approved company knowledge doc (MVP — no chunking). */
+export const companyKnowledgeEmbeddings = sqliteTable(
+  "company_knowledge_embeddings",
+  {
+    docId: text("doc_id")
+      .primaryKey()
+      .references(() => companyKnowledgeDocs.id),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    model: text("model").notNull(),
+    dims: text("dims").notNull(),
+    embeddingJson: text("embedding_json").notNull(),
+    contentHash: text("content_hash").notNull(),
+    embeddedAt: text("embedded_at").notNull(),
+  },
+  (table) => [
+    index("company_knowledge_embeddings_tenant_idx").on(table.tenantId),
+  ],
+);
+
 export const aiApprovalRequests = sqliteTable(
   "ai_approval_requests",
   {

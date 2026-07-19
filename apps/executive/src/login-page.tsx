@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { staffGoogleLogin, staffWebAuthnLogin } from "@hotelos/features";
-import { Button, CookieBanner, TextField } from "@hotelos/ui";
+import { Button, CookieBanner, TextField, SkipLink } from "@hotelos/ui";
 import {
   APP_URLS,
   login,
@@ -101,7 +101,9 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
   }
 
   return (
-    <main className="shell">
+    <>
+    <SkipLink />
+    <main id="main-content" className="shell" tabIndex={-1}>
       <section className="hero">
         <p className="eyebrow">Executive · רשת</p>
         <h1>HotelOS AI</h1>
@@ -192,5 +194,6 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
         @media (max-width:900px){ .shell{ grid-template-columns:1fr; } }
       `}</style>
     </main>
+    </>
   );
 }

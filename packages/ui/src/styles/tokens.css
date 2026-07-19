@@ -35,6 +35,9 @@
   --text-small: 0.875rem;
 
   --motion-fast: 160ms ease;
+
+  /* WCAG 2.2 AA — minimum pointer target (2.5.8 Target Size) */
+  --touch-min: 2.75rem;
 }
 
 *,
@@ -76,12 +79,59 @@ a {
   outline-offset: 3px;
 }
 
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+  }
+}
+
+/* Visually hidden until keyboard focus — Vol. 4 §4.6 Skip links */
+.hotelos-skip-link {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-start: var(--space-2);
+  z-index: 100;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-sea-deep);
+  color: #f7fffc;
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-120%);
+  transition: transform var(--motion-fast);
+}
+
+.hotelos-skip-link:focus {
+  transform: translateY(0);
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.hotelos-touch-target {
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+}
+
+#main-content:focus {
+  outline: none;
+}
+
+#main-content:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+
+  .hotelos-skip-link {
+    transition: none;
   }
 }
 

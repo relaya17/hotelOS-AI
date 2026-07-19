@@ -65,7 +65,7 @@ export function InvitePage({ token }: InvitePageProps) {
 
   if (doneCode !== null) {
     return (
-      <main className="invite">
+      <main id="main-content" className="invite" tabIndex={-1}>
         <h1>נרשמת בהצלחה</h1>
         <p>
           קוד העובד שלך: <strong>{doneCode ?? "—"}</strong>
@@ -76,7 +76,7 @@ export function InvitePage({ token }: InvitePageProps) {
   }
 
   return (
-    <main className="invite">
+    <main id="main-content" className="invite" tabIndex={-1}>
       <p className="eyebrow">HotelOS AI · הרשמת עובד</p>
       <h1>השלמת הרשמה עצמית</h1>
       {invite ? (

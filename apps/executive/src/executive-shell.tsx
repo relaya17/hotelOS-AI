@@ -6,7 +6,7 @@ import {
   type LocaleCode,
 } from "@hotelos/i18n";
 import { AttendancePage, LegalFooter } from "@hotelos/features";
-import { Button, CookieBanner } from "@hotelos/ui";
+import { Button, CookieBanner, SkipLink } from "@hotelos/ui";
 import {
   APP_URLS,
   getConsentSubjectKey,
@@ -65,8 +65,14 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
     document.documentElement.dir = localeDirection(locale);
   }, [locale]);
 
+  useEffect(() => {
+    const main = document.getElementById("main-content");
+    main?.focus({ preventScroll: true });
+  }, [view.kind]);
+
   return (
     <div className="shell">
+      <SkipLink />
       <nav className="nav" aria-label="HotelOS Turbo OS">
         <div className="brand">
           <strong>{tUi(locale, "app.brand")}</strong>
@@ -94,8 +100,8 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
               className={
                 view.kind === kind ||
                 (kind === "briefings" && view.kind === "meet")
-                  ? "tab tab--on"
-                  : "tab"
+                  ? "tab tab--on hotelos-touch-target"
+                  : "tab hotelos-touch-target"
               }
               onClick={() => setView({ kind })}
             >
@@ -131,6 +137,8 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
       </nav>
 
       <main
+        id="main-content"
+        tabIndex={-1}
         className={
           view.kind === "portfolio" ? "shell__main shell__main--portfolio" : "shell__main"
         }

@@ -1,4 +1,8 @@
-import type { CompanyKnowledgeRepository } from "@hotelos/database";
+import type { AiGateway } from "@hotelos/ai-gateway";
+import type {
+  CompanyKnowledgeRepository,
+  PersistedCompanyKnowledgeDoc,
+} from "@hotelos/database";
 import type { TenantId } from "@hotelos/shared";
 
 const MAX_DOCS = 5;
@@ -6,35 +10,50 @@ const MAX_SNIPPET = 400;
 const MAX_PACK = 4000;
 
 /**
- * Keyword hits from approved company knowledge — authorized facts only.
+ * Hybrid keyword + embedding hits from approved company knowledge.
  * Gateway never searches; API builds the pack (Vol. 5 / ADR 0008).
+ * When embed fails or no vectors exist, falls back to keyword-only.
  */
 export async function buildKnowledgeContextPack(
   companyKnowledge: CompanyKnowledgeRepository,
   tenantId: TenantId,
   message: string,
+  gateway?: AiGateway,
 ): Promise<string | undefined> {
   const terms = extractSearchTerms(message);
-  if (terms.length === 0) return undefined;
-
-  const byId = new Map<
-    string,
-    { readonly title: string; readonly body: string; readonly category: string }
-  >();
+  const byId = new Map<string, PersistedCompanyKnowledgeDoc>();
 
   for (const term of terms) {
     const hits = await companyKnowledge.search(tenantId, term);
     for (const hit of hits) {
       if (!byId.has(hit.id)) {
-        byId.set(hit.id, {
-          title: hit.title,
-          body: hit.body,
-          category: hit.category,
-        });
+        byId.set(hit.id, hit);
       }
       if (byId.size >= MAX_DOCS) break;
     }
     if (byId.size >= MAX_DOCS) break;
+  }
+
+  if (gateway !== undefined && byId.size < MAX_DOCS) {
+    try {
+      const embedded = await gateway.embed([message.slice(0, 2000)]);
+      const queryVector = embedded.vectors[0];
+      if (queryVector && queryVector.length > 0) {
+        const semanticHits = await companyKnowledge.searchByEmbedding(
+          tenantId,
+          queryVector,
+          MAX_DOCS,
+        );
+        for (const hit of semanticHits) {
+          if (!byId.has(hit.id)) {
+            byId.set(hit.id, hit);
+          }
+          if (byId.size >= MAX_DOCS) break;
+        }
+      }
+    } catch {
+      // Keyword pack remains valid when embeddings are unavailable.
+    }
   }
 
   if (byId.size === 0) return undefined;

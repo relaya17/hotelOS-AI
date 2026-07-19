@@ -25,6 +25,12 @@ export const STRICT_RATE_LIMIT_POLICY: SlidingWindowPolicy = {
   windowMs: 60_000,
 };
 
+/** Dedicated AI budget (Vol. 5 §5.2 / Vol. 7 §7.5) — separate from the general API bucket. */
+export const AI_RATE_LIMIT_POLICY: SlidingWindowPolicy = {
+  limit: 30,
+  windowMs: 60_000,
+};
+
 export type RateLimitOptions = {
   readonly tokens: JwtTokenService;
   readonly now?: () => number;
@@ -85,7 +91,7 @@ export function createRateLimitMiddleware(
     const tenantId = await resolveTenantId(c, options.tokens);
     const decision = consumeSlidingWindow(
       store,
-      `${ip}:${tenantId ?? "anonymous"}`,
+      rateLimitBucketKey(c.req.path, ip, tenantId),
       policy,
       now(),
     );
@@ -116,7 +122,10 @@ export function createRateLimitMiddleware(
   };
 }
 
-function selectRateLimitPolicy(pathname: string): SlidingWindowPolicy {
+export function selectRateLimitPolicy(pathname: string): SlidingWindowPolicy {
+  if (pathname.startsWith("/v1/ai/")) {
+    return AI_RATE_LIMIT_POLICY;
+  }
   if (
     pathname === "/v1/auth/login" ||
     pathname.startsWith("/v1/public/stays/")
@@ -124,6 +133,19 @@ function selectRateLimitPolicy(pathname: string): SlidingWindowPolicy {
     return STRICT_RATE_LIMIT_POLICY;
   }
   return DEFAULT_RATE_LIMIT_POLICY;
+}
+
+/** AI calls use a separate bucket so they do not share the general API quota. */
+export function rateLimitBucketKey(
+  pathname: string,
+  ip: string,
+  tenantId: string | null,
+): string {
+  const tenant = tenantId ?? "anonymous";
+  if (pathname.startsWith("/v1/ai/")) {
+    return `ai:${ip}:${tenant}`;
+  }
+  return `${ip}:${tenant}`;
 }
 
 async function resolveTenantId(

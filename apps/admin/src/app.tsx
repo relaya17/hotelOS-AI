@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AttendancePage, LegalFooter } from "@hotelos/features";
-import { Button, CookieBanner } from "@hotelos/ui";
+import { Button, CookieBanner, SkipLink } from "@hotelos/ui";
 import {
   APP_URLS,
   clearSession,
@@ -34,6 +34,12 @@ export function App() {
   const [booting, setBooting] = useState(true);
   const [view, setView] = useState<View>("ops");
   const inviteToken = readInviteToken();
+
+  useEffect(() => {
+    if (booting || inviteToken || !user) return;
+    const main = document.getElementById("main-content");
+    main?.focus({ preventScroll: true });
+  }, [view, user, booting, inviteToken]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,38 +91,60 @@ export function App() {
   }
 
   if (inviteToken) {
-    return <InvitePage token={inviteToken} />;
+    return (
+      <>
+        <SkipLink />
+        <InvitePage token={inviteToken} />
+      </>
+    );
   }
 
   return (
     <div className="admin-root">
+      <SkipLink />
       {user ? (
         <>
           <nav className="admin-nav" aria-label="Admin">
             <button
               type="button"
-              className={view === "ops" ? "tab tab--on" : "tab"}
+              className={
+                view === "ops"
+                  ? "tab tab--on hotelos-touch-target"
+                  : "tab hotelos-touch-target"
+              }
               onClick={() => setView("ops")}
             >
               חדרים והזמנות
             </button>
             <button
               type="button"
-              className={view === "facilities" ? "tab tab--on" : "tab"}
+              className={
+                view === "facilities"
+                  ? "tab tab--on hotelos-touch-target"
+                  : "tab hotelos-touch-target"
+              }
               onClick={() => setView("facilities")}
             >
               מחלקות ותפעול
             </button>
             <button
               type="button"
-              className={view === "kashrut" ? "tab tab--on" : "tab"}
+              className={
+                view === "kashrut"
+                  ? "tab tab--on hotelos-touch-target"
+                  : "tab hotelos-touch-target"
+              }
               onClick={() => setView("kashrut")}
             >
               כשרות
             </button>
             <button
               type="button"
-              className={view === "attendance" ? "tab tab--on" : "tab"}
+              className={
+                view === "attendance"
+                  ? "tab tab--on hotelos-touch-target"
+                  : "tab hotelos-touch-target"
+              }
               onClick={() => setView("attendance")}
             >
               נוכחות מהטלפון
@@ -139,17 +167,25 @@ export function App() {
           </nav>
           {view === "ops" ? <DashboardPage user={user} /> : null}
           {view === "facilities" ? (
-            <main className="facilities-wrap">
+            <main
+              id="main-content"
+              className="facilities-wrap"
+              tabIndex={-1}
+            >
               <FacilitiesPage />
             </main>
           ) : null}
           {view === "kashrut" ? (
-            <main className="kashrut-wrap">
+            <main id="main-content" className="kashrut-wrap" tabIndex={-1}>
               <KashrutPage />
             </main>
           ) : null}
           {view === "attendance" ? (
-            <main className="attendance-wrap">
+            <main
+              id="main-content"
+              className="attendance-wrap"
+              tabIndex={-1}
+            >
               <AttendancePage />
             </main>
           ) : null}

@@ -103,7 +103,7 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
   }
 
   return (
-    <main className="shell">
+    <main id="main-content" className="shell" tabIndex={-1}>
       <section className="hero">
         <p className="eyebrow">Admin · תפעול מלון</p>
         <h1>HotelOS AI</h1>

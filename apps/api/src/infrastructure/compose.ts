@@ -122,6 +122,7 @@ export async function composeApp() {
             apiKey: env.AI_GATEWAY_API_KEY.trim(),
             baseUrl: env.AI_GATEWAY_BASE_URL,
             model: env.AI_GATEWAY_MODEL,
+            embedModel: env.AI_GATEWAY_EMBED_MODEL,
           },
         }
       : {}),
@@ -199,7 +200,7 @@ export async function composeApp() {
       tokens,
     },
     orgComms: { orgComms, tokens },
-    knowledge: { trustedSources, companyKnowledge, tokens },
+    knowledge: { trustedSources, companyKnowledge, gateway, tokens },
     kashrut: { kashrut, hotels, tokens },
     aiGateway: {
       gateway,

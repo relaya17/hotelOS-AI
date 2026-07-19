@@ -1,9 +1,16 @@
-import type { LlmChatMessage, LlmCompletionResult, LlmProvider } from "../types.js";
+import type {
+  LlmChatMessage,
+  LlmCompletionResult,
+  LlmEmbeddingResult,
+  LlmProvider,
+} from "../types.js";
 
 export type OpenAiCompatibleConfig = {
   readonly apiKey: string;
   readonly baseUrl: string;
   readonly model: string;
+  /** Defaults to text-embedding-3-small when omitted. */
+  readonly embedModel?: string;
 };
 
 type ChatCompletionsResponse = {
@@ -17,22 +24,34 @@ type ChatCompletionsResponse = {
   };
 };
 
+type EmbeddingsResponse = {
+  readonly data?: readonly {
+    readonly embedding?: readonly number[];
+    readonly index?: number;
+  }[];
+  readonly model?: string;
+};
+
 /**
- * OpenAI-compatible Chat Completions (OpenAI, Azure OpenAI with compatible path, etc.).
+ * OpenAI-compatible Chat Completions + Embeddings
+ * (OpenAI, Azure OpenAI with compatible path, etc.).
  */
 export function createOpenAiCompatibleProvider(
   config: OpenAiCompatibleConfig,
 ): LlmProvider {
   const base = config.baseUrl.replace(/\/$/, "");
+  const embedModel = config.embedModel?.trim() || "text-embedding-3-small";
+  const authHeaders = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${config.apiKey}`,
+  };
+
   return {
     id: "openai_compatible",
     async complete(messages: readonly LlmChatMessage[]): Promise<LlmCompletionResult> {
       const response = await fetch(`${base}/chat/completions`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${config.apiKey}`,
-        },
+        headers: authHeaders,
         body: JSON.stringify({
           model: config.model,
           messages: messages.map((m) => ({ role: m.role, content: m.content })),
@@ -62,6 +81,42 @@ export function createOpenAiCompatibleProvider(
         ...(payload.usage?.completion_tokens !== undefined
           ? { completionTokens: payload.usage.completion_tokens }
           : {}),
+      };
+    },
+
+    async embed(texts: readonly string[]): Promise<LlmEmbeddingResult> {
+      if (texts.length === 0) {
+        return { vectors: [], model: embedModel };
+      }
+
+      const response = await fetch(`${base}/embeddings`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          model: embedModel,
+          input: [...texts],
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(
+          `Embedding provider HTTP ${response.status}: ${body.slice(0, 400)}`,
+        );
+      }
+
+      const payload = (await response.json()) as EmbeddingsResponse;
+      const sorted = [...(payload.data ?? [])].sort(
+        (a, b) => (a.index ?? 0) - (b.index ?? 0),
+      );
+      const vectors = sorted.map((row) => row.embedding ?? []);
+      if (vectors.length !== texts.length || vectors.some((v) => v.length === 0)) {
+        throw new Error("Embedding provider returned incomplete vectors");
+      }
+
+      return {
+        vectors,
+        model: payload.model ?? embedModel,
       };
     },
   };

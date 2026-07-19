@@ -32,7 +32,12 @@ export function CookieBanner({
   if (!visible) return null;
 
   return (
-    <aside className="cookie" role="dialog" aria-label="הסכמת עוגיות">
+    <aside
+      className="cookie"
+      role="dialog"
+      aria-modal="true"
+      aria-label="הסכמת עוגיות"
+    >
       <p>
         אנו משתמשים באחסון הכרחי לסשן ואבטחה. עוגיות פונקציונליות לשפה והעדפות.{" "}
         <a href={legalCookiesUrl}>מדיניות עוגיות</a>

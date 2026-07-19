@@ -85,6 +85,7 @@ export function createAiGatewayRoutes(deps: AiGatewayRouteDeps): Hono<{
             deps.companyKnowledge,
             principal.scope.tenantId,
             parsed.data.message,
+            deps.gateway,
           ),
           buildTrustedSourcesContextPack(
             deps.trustedSources,

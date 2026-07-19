@@ -44,6 +44,7 @@ export function TextField({
           border: 1px solid rgb(16 36 31 / 18%);
           border-radius: var(--radius-sm);
           padding: 0.85rem 0.95rem;
+          min-height: var(--touch-min, 2.75rem);
           background: var(--color-paper-elevated);
           color: var(--color-ink);
         }

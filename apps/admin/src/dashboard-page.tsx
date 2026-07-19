@@ -229,7 +229,7 @@ export function DashboardPage({ user, hideChrome = true }: DashboardPageProps) {
   }
 
   return (
-    <main className="dash">
+    <main id="main-content" className="dash" tabIndex={-1}>
       {hideChrome ? (
         <header className="dash__header dash__header--compact">
           <div>

@@ -2,6 +2,7 @@ import type {
   AiCitation,
   AiGatewayRequest,
   AiGatewayResponse,
+  LlmEmbeddingResult,
   LlmProvider,
 } from "./types.js";
 import { createDeterministicProvider } from "./providers/deterministic.js";
@@ -23,6 +24,8 @@ export type GatewayAgent = {
 export type AiGateway = {
   readonly primaryProvider: LlmProvider["id"];
   invoke(request: AiGatewayRequest): Promise<AiGatewayResponse>;
+  /** Embedding via AI Platform only — used by API to build authorized packs. */
+  embed(texts: readonly string[]): Promise<LlmEmbeddingResult>;
 };
 
 export type CreateAiGatewayOptions = {
@@ -76,6 +79,20 @@ export function createAiGateway(options: CreateAiGatewayOptions): AiGateway {
 
   return {
     primaryProvider: remote?.id ?? deterministic.id,
+
+    async embed(texts: readonly string[]): Promise<LlmEmbeddingResult> {
+      let provider: LlmProvider = remote ?? deterministic;
+      try {
+        return await provider.embed(texts);
+      } catch (error) {
+        if (provider.id !== "deterministic") {
+          provider = deterministic;
+          return provider.embed(texts);
+        }
+        throw error;
+      }
+    },
+
     async invoke(request: AiGatewayRequest): Promise<AiGatewayResponse> {
       const started = Date.now();
       const agent = byId.get(request.agentId);

@@ -63,6 +63,7 @@ export async function synthesizeCioDigest(
       deps.companyKnowledge,
       input.tenantId,
       searchBlob,
+      deps.gateway,
     ),
     buildTrustedSourcesContextPack(
       deps.trustedSources,

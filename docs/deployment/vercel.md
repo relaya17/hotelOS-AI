@@ -83,6 +83,8 @@ two apps (for cross-app deep links, e.g. Admin → Executive):
 | `VITE_APP_URL_EXECUTIVE` | executive URL (optional if names follow `…-executive-…` convention) |
 | `VITE_APP_URL_ADMIN` | admin URL (optional with `…-admin-…` naming) |
 | `VITE_APP_URL_GUEST` | guest URL (optional with `…-guest-…` naming) |
+| `VITE_SENTRY_DSN` | optional — browser Sentry/GlitchTip DSN (empty = disabled) |
+| `VITE_SENTRY_ENVIRONMENT` | optional — defaults to Vite `MODE` |
 
 **Naming convention:** if frontends are `…-admin-…` / `…-executive-…` / `…-guest-…`
 and API is `…-api-…` on the same suffix, the client **infers** the API URL
@@ -110,6 +112,8 @@ The job builds the deterministic CEO digest and posts it to org-comms channel
 
 - **API:** set `SENTRY_DSN` (Sentry SaaS or GlitchTip). Unhandled Hono errors are
   captured; without a DSN the SDK stays off.
+- **Vite apps (admin / executive / guest):** set `VITE_SENTRY_DSN` (and optional
+  `VITE_SENTRY_ENVIRONMENT`) on each frontend Vercel project. Empty DSN = SDK off.
 - **In-app inbox:** authenticated clients report uncaught browser errors to
   `POST /v1/ops/error-events`, which creates an **IT** department task (same
   pattern as security webhooks).

@@ -74,6 +74,7 @@ export function createCorrespondenceRoutes(deps: CorrespondenceRouteDeps): Hono<
           deps.companyKnowledge,
           principal.scope.tenantId,
           searchBlob,
+          deps.gateway,
         ),
         buildTrustedSourcesContextPack(
           deps.trustedSources,
