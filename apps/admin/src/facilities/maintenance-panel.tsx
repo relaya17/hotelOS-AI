@@ -8,6 +8,7 @@ import {
   listMaintenanceRequests,
   listQuotesForRequest,
   listVendors,
+  suggestAutonomyDepartmentTask,
   suggestAutonomyMaintenanceQuoteAccept,
   updateMaintenanceRequestStatus,
   type MaintenanceCategory,
@@ -69,6 +70,10 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
   const [error, setError] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
   const [suggestingQuoteId, setSuggestingQuoteId] = useState<string | undefined>();
+  const [suggestingRequestId, setSuggestingRequestId] = useState<
+    string | undefined
+  >();
+  const [suggestingUrgentBatch, setSuggestingUrgentBatch] = useState(false);
 
   const [category, setCategory] = useState<MaintenanceCategory>("repair");
   const [title, setTitle] = useState("");
@@ -271,6 +276,92 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
     }
   }
 
+  const urgentOpen = requests.filter(
+    (r) =>
+      (r.status === "open" || r.status === "in_progress") &&
+      (r.priority === "urgent" || r.priority === "high"),
+  );
+
+  async function onSuggestRequestFollowup(request: MaintenanceRequestDto) {
+    setSuggestingRequestId(request.id);
+    setError(undefined);
+    try {
+      const result = await suggestAutonomyDepartmentTask({
+        hotelId,
+        departmentCode: "maintenance",
+        taskType: "maintenance_followup",
+        title: `מעקב תחזוקה — ${request.title}`.slice(0, 160),
+        description: [
+          "מעקב קריאת תחזוקה אחרי Suggest→Approve→Act.",
+          `עדיפות: ${request.priority}`,
+          `סטטוס: ${request.status}`,
+          `קטגוריה: ${request.category}`,
+          request.description,
+          `מזהה קריאה: ${request.id}`,
+          "אין שיבוץ קבלן / תשלום אוטומטי.",
+        ].join("\n"),
+        priority: request.priority === "urgent" ? "urgent" : "high",
+        agentId: "agent.maintenance",
+        summaryHe: `מעקב תחזוקה: ${request.title}`.slice(0, 240),
+        reasonHe:
+          "קריאה דחופה/גבוהה — נדרש אישור מפקח לפני פתיחת משימת מעקב במחלקה.",
+      });
+      setNotice(
+        `Suggest מעקב תחזוקה נשלח (${result.approvalId.slice(0, 8)}…). אשרו → Act ייפתח משימה.`,
+      );
+    } catch (suggestError) {
+      setError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "הצעת מעקב תחזוקה נכשלה",
+      );
+    } finally {
+      setSuggestingRequestId(undefined);
+    }
+  }
+
+  async function onSuggestUrgentBatch() {
+    if (urgentOpen.length === 0) return;
+    setSuggestingUrgentBatch(true);
+    setError(undefined);
+    try {
+      let count = 0;
+      for (const request of urgentOpen.slice(0, 12)) {
+        await suggestAutonomyDepartmentTask({
+          hotelId,
+          departmentCode: "maintenance",
+          taskType: "maintenance_followup",
+          title: `מעקב תחזוקה — ${request.title}`.slice(0, 160),
+          description: [
+            "מעקב קריאת תחזוקה (אצווה דחופה) אחרי Suggest→Approve→Act.",
+            `עדיפות: ${request.priority}`,
+            `סטטוס: ${request.status}`,
+            request.description,
+            `מזהה קריאה: ${request.id}`,
+            "אין שיבוץ קבלן / תשלום אוטומטי.",
+          ].join("\n"),
+          priority: request.priority === "urgent" ? "urgent" : "high",
+          agentId: "agent.maintenance",
+          summaryHe: `מעקב תחזוקה: ${request.title}`.slice(0, 240),
+          reasonHe:
+            "אצוות קריאות דחופות — נדרש אישור מפקח לפני פתיחת משימות מעקב.",
+        });
+        count += 1;
+      }
+      setNotice(
+        `נשלחו ${count} Suggest לאישורי AI לקריאות דחופות/גבוהות. אשרו → Act ייפתח משימות.`,
+      );
+    } catch (suggestError) {
+      setError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "הצעת אצווה דחופה נכשלה",
+      );
+    } finally {
+      setSuggestingUrgentBatch(false);
+    }
+  }
+
   return (
     <div className="panel">
       {loading ? <p className="state">טוען…</p> : null}
@@ -287,6 +378,23 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
 
       <section className="card">
         <h2>קריאות תחזוקה, תיקונים ושיפוצים</h2>
+        {urgentOpen.length > 0 ? (
+          <div className="suggest-box">
+            <p>
+              Suggest→Approve→Act: {urgentOpen.length} קריאות דחופות/גבוהות
+              פתוחות — שליחה לתיבת אישורי AI כמשימות מעקב (ללא שיבוץ קבלן).
+            </p>
+            <Button
+              type="button"
+              disabled={suggestingUrgentBatch}
+              onClick={() => void onSuggestUrgentBatch()}
+            >
+              {suggestingUrgentBatch
+                ? "שולח…"
+                : `הצע מעקב לכל הדחופות (${Math.min(urgentOpen.length, 12)})`}
+            </Button>
+          </div>
+        ) : null}
         <ul className="list">
           {requests.map((request) => (
             <li key={request.id} className="row row--task">
@@ -305,6 +413,21 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
                 <span className={`status status--maint-${request.status}`}>
                   {statusLabel[request.status]}
                 </span>
+                {(request.priority === "urgent" ||
+                  request.priority === "high") &&
+                (request.status === "open" ||
+                  request.status === "in_progress") ? (
+                  <button
+                    type="button"
+                    className="mini-btn"
+                    disabled={suggestingRequestId === request.id}
+                    onClick={() => void onSuggestRequestFollowup(request)}
+                  >
+                    {suggestingRequestId === request.id
+                      ? "שולח…"
+                      : "הצע מעקב (Suggest)"}
+                  </button>
+                ) : null}
                 {nextStatusOptions[request.status].map((next) => (
                   <button
                     key={next}
@@ -558,6 +681,8 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
         .status--quote-expired { color:#445; background:rgb(68 68 85 / 10%); }
         .mini-btn { font:inherit; font-size:var(--text-small); border:1px solid rgb(16 36 31 / 18%); background:transparent; border-radius:var(--radius-sm); padding:.3rem .6rem; cursor:pointer; font-weight:600; }
         .mini-btn--accent { border-color:var(--color-sea-deep); color:var(--color-sea-deep); }
+        .suggest-box { display:grid; gap:var(--space-3); border:1px dashed rgb(16 36 31 / 22%); border-radius:var(--radius-sm); padding:var(--space-4); }
+        .suggest-box p { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); }
         .create-form { display:grid; gap:var(--space-3); border-top:1px solid rgb(16 36 31 / 10%); padding-top:var(--space-4); }
         .create-form h3 { margin:0; font-family:var(--font-display); }
         .select-field { display:grid; gap:var(--space-2); }
