@@ -55,7 +55,7 @@ export async function runAnomalyScan(
   const now = new Date().toISOString();
   const snapshots = await Promise.all(
     hotelRows.map(async (hotel) => {
-      const hotelId = hotel.id as HotelId;
+      const hotelId = hotel.id;
       const [inventory, maintenance, purchaseOrders] = await Promise.all([
         deps.procurement.listInventory(tenantId, hotelId),
         deps.maintenance.listByHotel(tenantId, hotelId),
@@ -84,9 +84,7 @@ export async function runAnomalyScan(
       const hotelId =
         anomaly.hotelId !== null
           ? Ids.hotel(anomaly.hotelId)
-          : hotelRows[0]
-            ? (hotelRows[0].id as HotelId)
-            : undefined;
+          : hotelRows[0]?.id;
       if (hotelId === undefined) continue;
 
       const created = await ensureAnomalyTask(deps.ops, {
@@ -184,7 +182,7 @@ export async function listOpsAnomalies(
 
   const snapshots = await Promise.all(
     scoped.map(async (hotel) => {
-      const hotelId = hotel.id as HotelId;
+      const hotelId = hotel.id;
       const [inventory, maintenance, purchaseOrders] = await Promise.all([
         deps.procurement.listInventory(input.tenantId, hotelId),
         deps.maintenance.listByHotel(input.tenantId, hotelId),

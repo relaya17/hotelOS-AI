@@ -41,10 +41,12 @@ import {
   createCompanyKnowledgeRepository,
   seedDemoTenant,
 } from "@hotelos/database";
+import { alertOnSensitiveAudit } from "../application/alert-on-sensitive-audit.js";
 import { createGetHealth } from "../application/get-health.js";
 import { createApp } from "../presentation/http/create-app.js";
 import { initObservability } from "./observability.js";
 import { createRecordingStorage } from "./recording-storage.js";
+import type { AuditRepository } from "@hotelos/database";
 
 const API_VERSION = "0.9.0";
 
@@ -71,7 +73,7 @@ export async function composeApp() {
 
   const users = createUserRepository(db);
   const sessions = createRefreshSessionRepository(db);
-  const audit = createAuditRepository(db);
+  const auditStore = createAuditRepository(db);
   const hotels = createHotelRepository(db);
   const rooms = createRoomRepository(db);
   const bookings = createBookingRepository(db);
@@ -82,6 +84,18 @@ export async function composeApp() {
   const turbo = createTurboRepository(db);
   const trust = createTrustRepository(db);
   const ops = createOpsRepository(db);
+
+  /** Append + best-effort IT task for sensitive actions (stage א' alerting). */
+  const audit: AuditRepository = {
+    async append(event) {
+      await auditStore.append(event);
+      try {
+        await alertOnSensitiveAudit({ ops, hotels }, event);
+      } catch {
+        // Never fail the primary audit write if alerting is down.
+      }
+    },
+  };
   const maintenance = createMaintenanceRepository(db);
   const procurement = createProcurementRepository(db);
   const feedback = createFeedbackRepository(db);

@@ -74,4 +74,12 @@ export default tseslint.config(
       "@typescript-eslint/no-floating-promises": "off",
     },
   },
+  // Browser packages exclude Node test files from tsconfig; lint without type-checking.
+  {
+    files: [
+      "packages/ui/src/*.test.ts",
+      "packages/web-client/src/*.test.ts",
+    ],
+    ...tseslint.configs.disableTypeChecked,
+  },
 );

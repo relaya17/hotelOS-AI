@@ -21,10 +21,7 @@ import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { buildCioDigest, CIO_ROLES } from "../../application/build-cio-digest.js";
 import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
-import {
-  mapSecurityWebhook,
-  type SecurityWebhookProvider,
-} from "../../application/map-security-webhook.js";
+import { mapSecurityWebhook } from "../../application/map-security-webhook.js";
 import { listOpsAnomalies } from "../../application/run-anomaly-scan.js";
 import { synthesizeCioDigest } from "../../application/synthesize-cio-digest.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
@@ -960,7 +957,7 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         );
       }
       const body = mapSecurityWebhook(
-        providerParsed.data as SecurityWebhookProvider,
+        providerParsed.data,
         await c.req.json(),
       );
       return await createSecurityTaskFromEvent(c, {

@@ -92,7 +92,7 @@
 
 | שלב | מה | עלות/מורכבות | סטטוס (2026-07-19) |
 |---|---|---|---|
-| א' | Rate limiting + audit log על ה-API הקיים | נמוכה | ✅ MVP — RL + audit קיימים; חסר alerting |
+| א' | Rate limiting + audit log על ה-API הקיים | נמוכה | ✅ MVP — RL + audit + alerting (IT task על פעולות רגישות) |
 | ב' | ניטור שגיאות עם Sentry (טיר חינמי) + חיווט ל-`department_tasks` | נמוכה | ✅ MVP — API + 3 Vite apps + `error-events`→IT; חסר DSN פרוד / webhook Sentry |
 | ג' | נגישות WCAG 2.2 AA על 3 האפליקציות הקיימות | נמוכה-בינונית | 🟡 חלקי — skip-link, touch 44px, focus SPA + בדיקות יסוד ב־CI; axe E2E / jsx-a11y ממתינים (eslint-plugin-jsx-a11y טרם תומך ESLint 10) |
 | ד' | תמצית יומית חכמה לכל מנהל (סעיף 4.1, שלב 1) | בינונית | ✅ MVP — CIO digest + Gateway + cron; WhatsApp בשלב הבא (PO) |
@@ -103,12 +103,11 @@
 ### מה נשאר (סדר מומלץ)
 
 1. **ג׳ (השלמה)** — axe E2E במסכי ליבה (כש־jsx-a11y/ESLint 10 יתייצב)  
-2. **א׳ (השלמה)** — alerting על אירועי audit רגישים  
-3. **ו׳** — החלפת `example_vms` ב־adapter לספק הפיילוט + ייעוץ משפטי תיקון 13 לפני הפעלה  
-4. **ה׳ (העמקה)** — baselines סטטיסטיים כשיש היסטוריה  
-5. **ז׳** — RAG חשבונאות/מס + אכיפת ledger-close ע״י רו״ח  
-6. **ד׳ (המשך)** — WhatsApp מתוזמן (לא חוסם MVP)  
-7. **מחוץ לסקופ** — מנעולים חכמים (נדחה PO); self-healing אוטונומי מלא
+2. **ו׳** — החלפת `example_vms` ב־adapter לספק הפיילוט + ייעוץ משפטי תיקון 13 לפני הפעלה  
+3. **ה׳ (העמקה)** — baselines סטטיסטיים כשיש היסטוריה  
+4. **ז׳** — RAG חשבונאות/מס + אכיפת ledger-close ע״י רו״ח  
+5. **ד׳ (המשך)** — WhatsApp מתוזמן (לא חוסם MVP)  
+6. **מחוץ לסקופ** — מנעולים חכמים (נדחה PO); self-healing אוטונומי מלא
 
 ## החלטות PO (2026-07-18)
 
