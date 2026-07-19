@@ -29,6 +29,7 @@ describe("executeApprovalAct", () => {
         "housekeeping",
         "procurement",
         "maintenance",
+        "front_office",
       ].includes(code)
         ? { id: `dept-${code}`, hotelId: "h1", code, name: code }
         : null,
@@ -298,5 +299,46 @@ describe("executeApprovalAct", () => {
     assert.equal(result.taskCount, 2);
     assert.equal(createdTasks.length, 2);
     assert.ok(createdTasks.every((t) => t.taskType === "room_clean"));
+  });
+
+  it("creates reception arrival-prep tasks for confirmed arrivals", async () => {
+    createdTasks.length = 0;
+    const result = await executeApprovalAct(
+      deps,
+      {
+        ...baseApproval,
+        agentId: "agent.reception",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.reception_arrival_prep_batch",
+          hotelId: "00000000-0000-4000-8000-000000000010",
+          checkInDate: "2026-07-19",
+          arrivals: [
+            {
+              bookingId: "00000000-0000-4000-8000-000000000051",
+              guestName: "דנה כהן",
+              roomNumber: "301",
+              roomId: "00000000-0000-4000-8000-000000000043",
+              checkOutDate: "2026-07-21",
+            },
+            {
+              bookingId: "00000000-0000-4000-8000-000000000052",
+              guestName: "יוסי לוי",
+              roomNumber: "302",
+              roomId: "00000000-0000-4000-8000-000000000044",
+              checkOutDate: "2026-07-22",
+            },
+          ],
+        }),
+      },
+      Ids.user("00000000-0000-4000-8000-000000000099"),
+      "2026-07-19T01:00:00.000Z",
+    );
+    assert.equal(result.status, "executed");
+    if (result.status !== "executed") return;
+    assert.equal(result.action, "create_reception_arrival_tasks");
+    assert.equal(result.taskCount, 2);
+    assert.equal(createdTasks.length, 2);
+    assert.ok(createdTasks.every((t) => t.taskType === "arrival_prep"));
+    assert.ok(createdTasks.every((t) => t.departmentId === "dept-front_office"));
   });
 });

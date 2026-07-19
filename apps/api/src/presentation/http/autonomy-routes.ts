@@ -3,6 +3,7 @@ import type { JwtTokenService } from "@hotelos/auth";
 import type {
   ApprovalRepository,
   AuditRepository,
+  BookingRepository,
   MaintenanceRepository,
   OpsRepository,
   ProcurementRepository,
@@ -26,6 +27,7 @@ export type AutonomyRouteDeps = {
   readonly procurement: ProcurementRepository;
   readonly maintenance: MaintenanceRepository;
   readonly rooms: RoomRepository;
+  readonly bookings: BookingRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -78,6 +80,18 @@ const suggestDirtyRoomsSchema = z.object({
   /** Optional subset; default = all dirty rooms in hotel. */
   roomIds: z.array(z.string().uuid()).max(80).optional(),
   agentId: z.string().trim().min(3).max(80).default("agent.housekeeping"),
+});
+
+const suggestTodaysArrivalsSchema = z.object({
+  hotelId: z.string().uuid(),
+  /** YYYY-MM-DD; default = UTC date of request. */
+  checkInDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  /** Optional subset; default = all confirmed arrivals on that date. */
+  bookingIds: z.array(z.string().uuid()).max(80).optional(),
+  agentId: z.string().trim().min(3).max(80).default("agent.reception"),
 });
 
 const suggestMaintenanceQuoteAcceptSchema = z.object({
@@ -547,6 +561,106 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
             rooms: roomPayload,
             nextStepHe:
               "Approve בתיבת אישורי AI → Act ייפתח משימות ניקיון (חדרים נשארים dirty)",
+          },
+        },
+        201,
+      );
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /** Suggest front-office arrival-prep tasks for confirmed check-ins (HITL before Act). */
+  routes.post("/suggest-todays-arrivals", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = suggestTodaysArrivalsSchema.parse(await c.req.json());
+      const hotelId = Ids.hotel(body.hotelId);
+      const now = new Date().toISOString();
+      const checkInDate = body.checkInDate ?? now.slice(0, 10);
+
+      const belongs = await deps.bookings.hotelBelongsToTenant(
+        principal.scope.tenantId,
+        hotelId,
+      );
+      if (!belongs) {
+        return sendError(c, 404, "HOTEL_NOT_FOUND", "Hotel not found");
+      }
+
+      const all = await deps.bookings.listByHotel(
+        principal.scope.tenantId,
+        hotelId,
+      );
+      const idFilter = body.bookingIds ? new Set(body.bookingIds) : null;
+      const arrivals = all.filter(
+        (booking) =>
+          booking.status === "confirmed" &&
+          booking.checkInDate === checkInDate &&
+          (idFilter === null || idFilter.has(String(booking.id))),
+      );
+      if (arrivals.length === 0) {
+        return sendError(
+          c,
+          404,
+          "NO_ARRIVALS",
+          "No confirmed arrivals match the request",
+        );
+      }
+
+      const arrivalPayload = arrivals.map((booking) => ({
+        bookingId: String(booking.id),
+        guestName: booking.guestName,
+        roomNumber: booking.roomNumber,
+        roomId: String(booking.roomId),
+        checkOutDate: booking.checkOutDate,
+      }));
+      const roomsLabel = arrivalPayload
+        .map((a) => a.roomNumber)
+        .join(", ");
+
+      const created = await deps.approvals.create({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId,
+        agentId: body.agentId,
+        requestedByUserId: principal.userId,
+        summaryHe: `הכנת הגעות ${checkInDate}: ${arrivals.length} אורחים (חדרים ${roomsLabel})`,
+        reasonHe:
+          "הצעת agent.reception — נדרש אישור מפקח לפני פתיחת משימות הכנה בקבלה. ללא צ'ק-אין אוטומטי.",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.reception_arrival_prep_batch",
+          hotelId: body.hotelId,
+          checkInDate,
+          arrivals: arrivalPayload,
+        }),
+        createdAt: now,
+      });
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "autonomy.suggest_todays_arrivals",
+        resourceType: "ai_approval_request",
+        resourceId: created.id,
+        metadata: {
+          arrivalCount: arrivals.length,
+          checkInDate,
+          agentId: body.agentId,
+        },
+        createdAt: now,
+      });
+
+      return c.json(
+        {
+          data: {
+            approval: created,
+            autonomyStep: "suggest",
+            arrivalCount: arrivals.length,
+            checkInDate,
+            arrivals: arrivalPayload,
+            nextStepHe:
+              "Approve בתיבת אישורי AI → Act ייפתח משימות הכנה בקבלה (ללא צ'ק-אין אוטומטי)",
           },
         },
         201,

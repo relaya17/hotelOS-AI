@@ -2396,6 +2396,48 @@ export async function suggestAutonomyDirtyRooms(input: {
   };
 }
 
+export async function suggestAutonomyTodaysArrivals(input: {
+  readonly hotelId: string;
+  readonly checkInDate?: string;
+  readonly bookingIds?: readonly string[];
+  readonly agentId?: string;
+}): Promise<{
+  readonly approvalId: string;
+  readonly arrivalCount: number;
+  readonly checkInDate: string;
+  readonly arrivals: readonly {
+    readonly bookingId: string;
+    readonly guestName: string;
+    readonly roomNumber: string;
+    readonly roomId: string;
+    readonly checkOutDate: string;
+  }[];
+}> {
+  const payload = (await authPost(
+    "/v1/autonomy/suggest-todays-arrivals",
+    input,
+  )) as {
+    data: {
+      approval: { id: string };
+      arrivalCount: number;
+      checkInDate: string;
+      arrivals: readonly {
+        readonly bookingId: string;
+        readonly guestName: string;
+        readonly roomNumber: string;
+        readonly roomId: string;
+        readonly checkOutDate: string;
+      }[];
+    };
+  };
+  return {
+    approvalId: payload.data.approval.id,
+    arrivalCount: payload.data.arrivalCount,
+    checkInDate: payload.data.checkInDate,
+    arrivals: payload.data.arrivals,
+  };
+}
+
 export async function postSecurityEvent(input: {
   readonly hotelId: string;
   readonly title: string;

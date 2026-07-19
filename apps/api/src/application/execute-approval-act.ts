@@ -29,12 +29,14 @@ export type ApprovalActResult =
         | "create_department_task"
         | "create_purchase_order_draft"
         | "accept_maintenance_quote"
-        | "create_housekeeping_clean_tasks";
+        | "create_housekeeping_clean_tasks"
+        | "create_reception_arrival_tasks";
       readonly resourceType:
         | "department_task"
         | "purchase_order"
         | "vendor_quote"
-        | "housekeeping_batch";
+        | "housekeeping_batch"
+        | "reception_arrival_batch";
       readonly resourceId: string;
       readonly summaryHe: string;
       readonly task?: PersistedDepartmentTask;
@@ -110,6 +112,19 @@ type AutonomyHousekeepingCleanBatchPayload = {
     readonly number: string;
     readonly floor: string;
     readonly roomType: string;
+  }[];
+};
+
+type AutonomyReceptionArrivalPrepBatchPayload = {
+  readonly kind: "autonomy.reception_arrival_prep_batch";
+  readonly hotelId: string;
+  readonly checkInDate: string;
+  readonly arrivals: readonly {
+    readonly bookingId: string;
+    readonly guestName: string;
+    readonly roomNumber: string;
+    readonly roomId: string;
+    readonly checkOutDate: string;
   }[];
 };
 
@@ -274,6 +289,52 @@ function asHousekeepingCleanBatchPayload(
     kind: "autonomy.housekeeping_clean_batch",
     hotelId: value["hotelId"],
     rooms,
+  };
+}
+
+function asReceptionArrivalPrepBatchPayload(
+  value: unknown,
+): AutonomyReceptionArrivalPrepBatchPayload | null {
+  if (
+    !isRecord(value) ||
+    value["kind"] !== "autonomy.reception_arrival_prep_batch"
+  ) {
+    return null;
+  }
+  if (
+    typeof value["hotelId"] !== "string" ||
+    typeof value["checkInDate"] !== "string" ||
+    !Array.isArray(value["arrivals"])
+  ) {
+    return null;
+  }
+  const arrivals: AutonomyReceptionArrivalPrepBatchPayload["arrivals"][number][] =
+    [];
+  for (const arrival of value["arrivals"]) {
+    if (!isRecord(arrival)) return null;
+    if (
+      typeof arrival["bookingId"] !== "string" ||
+      typeof arrival["guestName"] !== "string" ||
+      typeof arrival["roomNumber"] !== "string" ||
+      typeof arrival["roomId"] !== "string" ||
+      typeof arrival["checkOutDate"] !== "string"
+    ) {
+      return null;
+    }
+    arrivals.push({
+      bookingId: arrival["bookingId"],
+      guestName: arrival["guestName"],
+      roomNumber: arrival["roomNumber"],
+      roomId: arrival["roomId"],
+      checkOutDate: arrival["checkOutDate"],
+    });
+  }
+  if (arrivals.length === 0) return null;
+  return {
+    kind: "autonomy.reception_arrival_prep_batch",
+    hotelId: value["hotelId"],
+    checkInDate: value["checkInDate"],
+    arrivals,
   };
 }
 
@@ -561,6 +622,49 @@ export async function executeApprovalAct(
       resourceType: "housekeeping_batch",
       resourceId: first.id,
       summaryHe: `בוצע Act — נפתחו ${createdTasks.length} משימות ניקיון במשק בית (חדרים נשארים dirty).`,
+      task: first,
+      taskCount: createdTasks.length,
+    };
+  }
+
+  const arrivalBatch = asReceptionArrivalPrepBatchPayload(payload);
+  if (arrivalBatch) {
+    const createdTasks: PersistedDepartmentTask[] = [];
+    for (const arrival of arrivalBatch.arrivals) {
+      const task = await createTaskForDepartment(deps.ops, {
+        tenantId: Ids.tenant(approval.tenantId),
+        hotelId: Ids.hotel(arrivalBatch.hotelId),
+        departmentCode: "front_office",
+        taskType: "arrival_prep",
+        title: `הכנת צ'ק-אין — ${arrival.guestName} · חדר ${arrival.roomNumber}`,
+        description: [
+          "הכנת הגעה אחרי אישור AI (Suggest→Approve→Act).",
+          `תאריך צ'ק-אין: ${arrivalBatch.checkInDate}.`,
+          `צ'ק-אאוט מתוכנן: ${arrival.checkOutDate}.`,
+          `מזהה הזמנה: ${arrival.bookingId}`,
+          `מזהה חדר: ${arrival.roomId}`,
+          "אין צ'ק-אין אוטומטי / שינוי תעריף / חיוב — רק משימת הכנה בקבלה.",
+          `מזהה אישור: ${approval.id}`,
+        ].join("\n"),
+        priority: "high",
+        createdByUserId: decidedByUserId,
+        now,
+      });
+      if (task) createdTasks.push(task);
+    }
+    if (createdTasks.length === 0) {
+      return {
+        status: "failed",
+        reasonHe: "לא נוצרו משימות קבלה — Act נכשל.",
+      };
+    }
+    const first = createdTasks[0]!;
+    return {
+      status: "executed",
+      action: "create_reception_arrival_tasks",
+      resourceType: "reception_arrival_batch",
+      resourceId: first.id,
+      summaryHe: `בוצע Act — נפתחו ${createdTasks.length} משימות הכנת הגעה בקבלה (ללא צ'ק-אין אוטומטי).`,
       task: first,
       taskCount: createdTasks.length,
     };

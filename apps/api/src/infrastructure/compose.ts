@@ -226,6 +226,7 @@ export async function composeApp() {
       procurement,
       maintenance,
       rooms,
+      bookings,
       tokens,
     },
     twin: { rooms, tokens, pms: createPmsConnector(env.PMS_PROVIDER) },
