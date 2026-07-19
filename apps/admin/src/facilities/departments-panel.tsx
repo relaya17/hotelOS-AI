@@ -4,12 +4,32 @@ import {
   createDepartmentTask,
   fetchDepartmentTasks,
   listDepartments,
+  suggestAutonomyDepartmentTask,
   updateDepartmentTaskStatus,
   type DepartmentDto,
   type DepartmentTaskDto,
   type TaskPriority,
   type TaskStatus,
 } from "@hotelos/web-client";
+
+function agentForDepartment(code: string): string {
+  switch (code) {
+    case "housekeeping":
+      return "agent.housekeeping";
+    case "maintenance":
+      return "agent.maintenance";
+    case "procurement":
+      return "agent.procurement";
+    case "front_office":
+      return "agent.reception";
+    case "hr":
+      return "agent.hr";
+    case "sales_marketing":
+      return "agent.revenue";
+    default:
+      return "agent.cio";
+  }
+}
 
 export type DepartmentsPanelProps = {
   readonly hotelId: string;
@@ -50,7 +70,9 @@ export function DepartmentsPanel({ hotelId }: DepartmentsPanelProps) {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [creating, setCreating] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
   const [createError, setCreateError] = useState<string | undefined>();
+  const [notice, setNotice] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -133,6 +155,46 @@ export function DepartmentsPanel({ hotelId }: DepartmentsPanelProps) {
     }
   }
 
+  async function onSuggestTask() {
+    if (!selectedCode) return;
+    if (title.trim().length < 2 || description.trim().length < 2) {
+      setCreateError("נדרשים כותרת ותיאור לפני Suggest");
+      return;
+    }
+    setSuggesting(true);
+    setCreateError(undefined);
+    setNotice(undefined);
+    try {
+      const result = await suggestAutonomyDepartmentTask({
+        hotelId,
+        departmentCode: selectedCode,
+        taskType: taskType.trim() || "general",
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        agentId: agentForDepartment(selectedCode),
+        summaryHe: `משימת ${selectedCode}: ${title.trim()}`.slice(0, 240),
+        reasonHe:
+          "הצעת משימת מחלקה — נדרש אישור מפקח לפני Act (פתיחת משימה בלבד).",
+      });
+      setNotice(
+        `Suggest נשלח לאישורי AI (${result.approvalId.slice(0, 8)}…). אשרו → Act ייפתח את המשימה.`,
+      );
+      setTaskType("");
+      setTitle("");
+      setDescription("");
+      setPriority("medium");
+    } catch (suggestError) {
+      setCreateError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "שליחת Suggest נכשלה",
+      );
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
   async function onChangeStatus(taskId: string, status: TaskStatus) {
     try {
       const updated = await updateDepartmentTaskStatus(taskId, status);
@@ -150,6 +212,11 @@ export function DepartmentsPanel({ hotelId }: DepartmentsPanelProps) {
       {error !== undefined ? (
         <p className="state state--error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {notice !== undefined ? (
+        <p className="state state--ok" role="status">
+          {notice}
         </p>
       ) : null}
 
@@ -210,6 +277,9 @@ export function DepartmentsPanel({ hotelId }: DepartmentsPanelProps) {
 
           <form className="create-form" onSubmit={onCreateTask} noValidate>
             <h3>משימה חדשה</h3>
+            <p className="hint">
+              יצירה מיידית — או Suggest→Approve→Act לתיבת אישורי AI לפני פתיחה.
+            </p>
             <TextField
               label="סוג משימה"
               name="taskType"
@@ -251,9 +321,19 @@ export function DepartmentsPanel({ hotelId }: DepartmentsPanelProps) {
                 {createError}
               </p>
             ) : null}
-            <Button type="submit" disabled={creating}>
-              {creating ? "יוצר…" : "צור משימה"}
-            </Button>
+            <div className="form-actions">
+              <Button type="submit" disabled={creating || suggesting}>
+                {creating ? "יוצר…" : "צור מיידית"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={creating || suggesting}
+                onClick={() => void onSuggestTask()}
+              >
+                {suggesting ? "שולח…" : "שלח Suggest לאישור"}
+              </Button>
+            </div>
           </form>
         </section>
       ) : null}
@@ -288,6 +368,8 @@ export function DepartmentsPanel({ hotelId }: DepartmentsPanelProps) {
         .select-field select, .select-field textarea { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); resize:vertical; }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
+        .state--ok { color:#0f6a5c; background:rgb(15 106 92 / 10%); padding:.75rem 1rem; border-radius:var(--radius-sm); }
+        .form-actions { display:flex; flex-wrap:wrap; gap:var(--space-2); }
       `}</style>
     </div>
   );
