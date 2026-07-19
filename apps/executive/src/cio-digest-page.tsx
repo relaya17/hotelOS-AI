@@ -8,6 +8,7 @@ import {
   listOrgCommsMessages,
   listTrustedSources,
   postOrgCommsMessage,
+  suggestAutonomyBriefingAction,
   synthesizeCioDigest,
   type AiGatewayInvokeResultDto,
   type CioDigestDto,
@@ -47,6 +48,8 @@ export function CioDigestPage() {
   const [gatewayProvider, setGatewayProvider] = useState<string>("…");
   const [smart, setSmart] = useState<SynthesizedCioDigestDto | null>(null);
   const [smartLoading, setSmartLoading] = useState(false);
+  const [notice, setNotice] = useState<string | undefined>();
+  const [busyAction, setBusyAction] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +88,35 @@ export function CioDigestPage() {
       );
     } finally {
       setSmartLoading(false);
+    }
+  }
+
+  async function onSuggestAction(actionHe: string) {
+    const hotelId = digest?.sections[0]?.hotelId;
+    if (!hotelId) {
+      setError("אין מלון בתדריך — לא ניתן לשלוח Suggest");
+      return;
+    }
+    setBusyAction(actionHe);
+    setError(undefined);
+    try {
+      const result = await suggestAutonomyBriefingAction({
+        hotelId,
+        actionHe,
+        roleHint: role,
+        source: "cio_digest",
+      });
+      setNotice(
+        `Suggest נשלח לאישורי AI → ${result.departmentCode} (${result.approvalId.slice(0, 8)}…).`,
+      );
+    } catch (suggestError) {
+      setError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "הצעת פעולה מתדריך נכשלה",
+      );
+    } finally {
+      setBusyAction(undefined);
     }
   }
 
@@ -195,15 +227,29 @@ export function CioDigestPage() {
         >
           {smartLoading ? "מסכם…" : "סכם תדריך עם AI"}
         </Button>
+        {notice ? (
+          <p className="state state--ok" role="status">
+            {notice}
+          </p>
+        ) : null}
         {smart ? (
           <div className="smart-block">
             <p className="narrative">{smart.narrativeHe}</p>
             {smart.suggestedActionsHe.length > 0 ? (
               <div>
-                <h3>מומלץ היום</h3>
-                <ul>
+                <h3>מומלץ היום · Suggest→Approve→Act</h3>
+                <ul className="action-list">
                   {smart.suggestedActionsHe.map((action) => (
-                    <li key={action}>{action}</li>
+                    <li key={action}>
+                      <span>{action}</span>
+                      <Button
+                        type="button"
+                        disabled={busyAction === action}
+                        onClick={() => void onSuggestAction(action)}
+                      >
+                        {busyAction === action ? "שולח…" : "Suggest"}
+                      </Button>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -389,11 +435,14 @@ export function CioDigestPage() {
         .headline { margin:0; font-weight:700; }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
+        .state--ok { color:#0f6a5c; background:rgb(15 106 92 / 10%); padding:.75rem 1rem; border-radius:var(--radius-sm); }
         .hint { margin:0; color:var(--color-ink-soft); }
         .smart-block { display:grid; gap:var(--space-3); border-top:1px solid rgb(16 36 31 / 10%); padding-top:var(--space-3); }
         .narrative { margin:0; white-space:pre-wrap; line-height:1.55; }
         .smart-block h3 { margin:0; font-size:var(--text-small); text-transform:uppercase; letter-spacing:.06em; }
-        .smart-block ul { margin:0; padding-inline-start:1.2rem; display:grid; gap:.35rem; }
+        .action-list { list-style:none; margin:0; padding:0; display:grid; gap:.5rem; }
+        .action-list li { display:flex; justify-content:space-between; gap:.75rem; align-items:center; padding:.65rem .75rem; border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .action-list li span { flex:1; }
         .sections { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
         .section { padding:var(--space-3); border-radius:var(--radius-sm); background:var(--color-paper-elevated); display:grid; gap:var(--space-2); }
         .section h3 { margin:0; display:flex; gap:var(--space-2); align-items:center; }

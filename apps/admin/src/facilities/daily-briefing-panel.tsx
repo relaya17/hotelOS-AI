@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@hotelos/ui";
 import {
   fetchDailyBriefing,
+  suggestAutonomyBriefingAction,
   synthesizeCioDigest,
   type CioRole,
   type DailyBriefingHotelDto,
@@ -26,9 +27,11 @@ export function DailyBriefingPanel({ hotelId }: Props) {
   const [generatedAt, setGeneratedAt] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  const [notice, setNotice] = useState<string | undefined>();
   const [role, setRole] = useState<CioRole>("ceo");
   const [smart, setSmart] = useState<SynthesizedCioDigestDto | null>(null);
   const [smartLoading, setSmartLoading] = useState(false);
+  const [busyAction, setBusyAction] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -70,6 +73,33 @@ export function DailyBriefingPanel({ hotelId }: Props) {
     }
   }
 
+  async function onSuggestAction(
+    actionHe: string,
+    source: "daily_briefing" | "cio_digest",
+  ) {
+    setBusyAction(actionHe);
+    setError(undefined);
+    try {
+      const result = await suggestAutonomyBriefingAction({
+        hotelId,
+        actionHe,
+        roleHint: role,
+        source,
+      });
+      setNotice(
+        `Suggest נשלח לאישורי AI → ${result.departmentCode} (${result.approvalId.slice(0, 8)}…). אשרו → Act ייפתח משימה.`,
+      );
+    } catch (suggestError) {
+      setError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "הצעת פעולה מתדריך נכשלה",
+      );
+    } finally {
+      setBusyAction(undefined);
+    }
+  }
+
   return (
     <div className="briefing">
       <header className="briefing__header">
@@ -88,6 +118,11 @@ export function DailyBriefingPanel({ hotelId }: Props) {
       {error !== undefined ? (
         <p className="state state--error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {notice !== undefined ? (
+        <p className="state state--ok" role="status">
+          {notice}
         </p>
       ) : null}
 
@@ -151,9 +186,23 @@ export function DailyBriefingPanel({ hotelId }: Props) {
           {section.suggestedActions.length > 0 ? (
             <section className="list-block list-block--action">
               <h3>מומלץ לעשות היום</h3>
-              <ul>
+              <p className="hint">
+                Suggest→Approve→Act: שליחה לתיבת אישורי AI כמשימת מחלקה.
+              </p>
+              <ul className="action-list">
                 {section.suggestedActions.map((action) => (
-                  <li key={action}>{action}</li>
+                  <li key={action}>
+                    <span>{action}</span>
+                    <Button
+                      type="button"
+                      disabled={busyAction === action}
+                      onClick={() =>
+                        void onSuggestAction(action, "daily_briefing")
+                      }
+                    >
+                      {busyAction === action ? "שולח…" : "Suggest"}
+                    </Button>
+                  </li>
                 ))}
               </ul>
             </section>
@@ -164,7 +213,7 @@ export function DailyBriefingPanel({ hotelId }: Props) {
       <section className="smart-card">
         <h3>תדריך חכם לפי תפקיד (CIO + Gateway)</h3>
         <p className="hint">
-          סיכום AI מעל נתוני התפעול — המלצות בלבד, בלי ביצוע כספי.
+          סיכום AI מעל נתוני התפעול — המלצות בלבד; Suggest שולח לאישור לפני Act.
         </p>
         <div className="smart-row">
           <label>
@@ -192,9 +241,20 @@ export function DailyBriefingPanel({ hotelId }: Props) {
           <div className="smart-result">
             <p className="narrative">{smart.narrativeHe}</p>
             {smart.suggestedActionsHe.length > 0 ? (
-              <ul>
+              <ul className="action-list">
                 {smart.suggestedActionsHe.map((action) => (
-                  <li key={action}>{action}</li>
+                  <li key={action}>
+                    <span>{action}</span>
+                    <Button
+                      type="button"
+                      disabled={busyAction === action}
+                      onClick={() =>
+                        void onSuggestAction(action, "cio_digest")
+                      }
+                    >
+                      {busyAction === action ? "שולח…" : "Suggest"}
+                    </Button>
+                  </li>
                 ))}
               </ul>
             ) : null}
@@ -213,6 +273,7 @@ export function DailyBriefingPanel({ hotelId }: Props) {
         .generated { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
+        .state--ok { color:#0f6a5c; background:rgb(15 106 92 / 10%); padding:.75rem 1rem; border-radius:var(--radius-sm); }
         .briefing__body { display:grid; gap:var(--space-4); background:rgb(255 250 242 / 90%); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-md); padding:clamp(1.2rem,2.5vw,1.8rem); box-shadow:var(--shadow-soft); }
         .summary { margin:0; font-weight:600; font-size:1.05rem; }
         .metrics { margin:0; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:var(--space-3); }
@@ -225,6 +286,9 @@ export function DailyBriefingPanel({ hotelId }: Props) {
         .list-block--warn h3 { color:#b3541e; }
         .list-block--good h3 { color:var(--color-sea-deep); }
         .list-block--action h3 { color:var(--color-ink-soft); }
+        .action-list { list-style:none; padding:0; margin:0; display:grid; gap:.5rem; }
+        .action-list li { display:flex; justify-content:space-between; gap:.75rem; align-items:center; padding:.65rem .75rem; border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .action-list li span { flex:1; }
         .smart-card { display:grid; gap:var(--space-3); background:rgb(255 250 242 / 90%); border:1px dashed rgb(16 36 31 / 22%); border-radius:var(--radius-md); padding:clamp(1.2rem,2.5vw,1.8rem); }
         .smart-card h3 { margin:0; font-family:var(--font-display); }
         .hint { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); }
@@ -233,7 +297,6 @@ export function DailyBriefingPanel({ hotelId }: Props) {
         .smart-row select { font:inherit; padding:.45rem .6rem; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); }
         .smart-result { display:grid; gap:var(--space-2); }
         .narrative { margin:0; white-space:pre-wrap; line-height:1.55; }
-        .smart-result ul { margin:0; padding-inline-start:1.2rem; display:grid; gap:.35rem; }
         @media (max-width:900px){ .metrics{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
       `}</style>
     </div>

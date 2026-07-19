@@ -2369,6 +2369,106 @@ export async function suggestAutonomyDepartmentTask(input: {
   return { approvalId: payload.data.approval.id };
 }
 
+/** Map a deterministic/AI briefing action line to a department for HITL Suggest. */
+export function routeBriefingActionToDepartment(
+  actionHe: string,
+  roleHint?: CioRole,
+): {
+  readonly departmentCode: string;
+  readonly agentId: string;
+  readonly priority: "medium" | "high" | "urgent";
+} {
+  const text = actionHe.toLowerCase();
+  if (/ניקיון|dirty|housekeep|חדרים ממתינים/.test(text)) {
+    return {
+      departmentCode: "housekeeping",
+      agentId: "agent.housekeeping",
+      priority: "high",
+    };
+  }
+  if (/תחזוקה|maintenance|תיקון/.test(text)) {
+    return {
+      departmentCode: "maintenance",
+      agentId: "agent.maintenance",
+      priority: "urgent",
+    };
+  }
+  if (/רכש|מלאי|הזמנת רכש|procurement|stock/.test(text)) {
+    return {
+      departmentCode: "procurement",
+      agentId: "agent.procurement",
+      priority: "high",
+    };
+  }
+  if (/תמחור|שיווק|תפוסה נמוכה|revenue|adr/.test(text)) {
+    return {
+      departmentCode: "sales_marketing",
+      agentId: "agent.revenue",
+      priority: "medium",
+    };
+  }
+  if (/משוב|דירוג|אורח|feedback|guest/.test(text)) {
+    return {
+      departmentCode: "front_office",
+      agentId: "agent.guest",
+      priority: "high",
+    };
+  }
+  if (roleHint === "housekeeping") {
+    return {
+      departmentCode: "housekeeping",
+      agentId: "agent.housekeeping",
+      priority: "medium",
+    };
+  }
+  if (roleHint === "reception" || roleHint === "fb") {
+    return {
+      departmentCode: "front_office",
+      agentId: "agent.reception",
+      priority: "medium",
+    };
+  }
+  return {
+    departmentCode: "front_office",
+    agentId: "agent.cio",
+    priority: "medium",
+  };
+}
+
+/** Suggest a department-task Act from a briefing / CIO recommended action. */
+export async function suggestAutonomyBriefingAction(input: {
+  readonly hotelId: string;
+  readonly actionHe: string;
+  readonly roleHint?: CioRole;
+  readonly source?: "daily_briefing" | "cio_digest";
+}): Promise<{ readonly approvalId: string; readonly departmentCode: string }> {
+  const routed = routeBriefingActionToDepartment(
+    input.actionHe,
+    input.roleHint,
+  );
+  const source =
+    input.source === "cio_digest" ? "תדריך CIO" : "תדריך יומי";
+  const result = await suggestAutonomyDepartmentTask({
+    hotelId: input.hotelId,
+    departmentCode: routed.departmentCode,
+    taskType: "briefing_followup",
+    title: input.actionHe.slice(0, 160),
+    description: [
+      `פעולה מומלצת מ${source} — אחרי אישור AI (Suggest→Approve→Act).`,
+      input.actionHe,
+      "אין שינוי מחיר / תשלום / שליחה חיצונית אוטומטית.",
+    ].join("\n"),
+    priority: routed.priority,
+    agentId: routed.agentId,
+    summaryHe: `מתדריך: ${input.actionHe.slice(0, 200)}`,
+    reasonHe: "המלצת תדריך — נדרש אישור מפקח לפני פתיחת משימת מחלקה.",
+  });
+  return {
+    approvalId: result.approvalId,
+    departmentCode: routed.departmentCode,
+  };
+}
+
 export async function suggestAutonomyProcurementDraft(input: {
   readonly hotelId: string;
   readonly vendorId: string;
