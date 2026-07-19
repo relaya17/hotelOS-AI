@@ -8,11 +8,13 @@ import {
   listOrgCommsMessages,
   listTrustedSources,
   postOrgCommsMessage,
+  synthesizeCioDigest,
   type AiGatewayInvokeResultDto,
   type CioDigestDto,
   type CioRole,
   type OrgCommsChannelDto,
   type OrgCommsMessageDto,
+  type SynthesizedCioDigestDto,
   type TrustedSourceDto,
 } from "@hotelos/web-client";
 
@@ -43,12 +45,15 @@ export function CioDigestPage() {
     null,
   );
   const [gatewayProvider, setGatewayProvider] = useState<string>("…");
+  const [smart, setSmart] = useState<SynthesizedCioDigestDto | null>(null);
+  const [smartLoading, setSmartLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
       setError(undefined);
+      setSmart(null);
       try {
         const data = await fetchCioDigest(role);
         if (!cancelled) setDigest(data);
@@ -65,6 +70,23 @@ export function CioDigestPage() {
       cancelled = true;
     };
   }, [role]);
+
+  async function onSynthesize() {
+    setSmartLoading(true);
+    setError(undefined);
+    try {
+      const result = await synthesizeCioDigest(role);
+      setDigest(result.digest);
+      setSmart(result);
+      setGatewayProvider(result.provider);
+    } catch (synthError) {
+      setError(
+        synthError instanceof Error ? synthError.message : "סינתזת תדריך נכשלה",
+      );
+    } finally {
+      setSmartLoading(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -154,10 +176,47 @@ export function CioDigestPage() {
         <p className="eyebrow">ADR 0007 · ADR 0008 · AI Gateway</p>
         <h1>יועץ־על (CIO)</h1>
         <p className="sub">
-          תדריך יומי לפי תפקיד + שאלות דרך AI Gateway (ספק: {gatewayProvider}).
-          בלי מפתח — מצב דטרמיניסטי; עם AI_GATEWAY_API_KEY — LLM תואם OpenAI.
+          תדריך יומי לפי תפקיד + סיכום חכם דרך AI Gateway (ספק:{" "}
+          {gatewayProvider}). בלי מפתח — מצב דטרמיניסטי; עם AI_GATEWAY_API_KEY —
+          LLM תואם OpenAI.
         </p>
       </header>
+
+      <section className="card">
+        <h2>תדריך חכם (Gateway)</h2>
+        <p className="hint">
+          נתונים דטרמיניסטיים + סיכום והמלצות מ־agent.cio. אין ביצוע כספי
+          אוטונומי.
+        </p>
+        <Button
+          type="button"
+          onClick={() => void onSynthesize()}
+          disabled={smartLoading}
+        >
+          {smartLoading ? "מסכם…" : "סכם תדריך עם AI"}
+        </Button>
+        {smart ? (
+          <div className="smart-block">
+            <p className="narrative">{smart.narrativeHe}</p>
+            {smart.suggestedActionsHe.length > 0 ? (
+              <div>
+                <h3>מומלץ היום</h3>
+                <ul>
+                  {smart.suggestedActionsHe.map((action) => (
+                    <li key={action}>{action}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <p className="hint">
+              {smart.provider} · {smart.confidence} · {smart.latencyMs}ms
+              {smart.requiresHumanApproval
+                ? ` · דורש אישור אדם${smart.approvalReasonHe ? `: ${smart.approvalReasonHe}` : ""}`
+                : ""}
+            </p>
+          </div>
+        ) : null}
+      </section>
 
       <section className="card">
         <h2>שאל את ה־Gateway</h2>
@@ -331,6 +390,10 @@ export function CioDigestPage() {
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
         .hint { margin:0; color:var(--color-ink-soft); }
+        .smart-block { display:grid; gap:var(--space-3); border-top:1px solid rgb(16 36 31 / 10%); padding-top:var(--space-3); }
+        .narrative { margin:0; white-space:pre-wrap; line-height:1.55; }
+        .smart-block h3 { margin:0; font-size:var(--text-small); text-transform:uppercase; letter-spacing:.06em; }
+        .smart-block ul { margin:0; padding-inline-start:1.2rem; display:grid; gap:.35rem; }
         .sections { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
         .section { padding:var(--space-3); border-radius:var(--radius-sm); background:var(--color-paper-elevated); display:grid; gap:var(--space-2); }
         .section h3 { margin:0; display:flex; gap:var(--space-2); align-items:center; }

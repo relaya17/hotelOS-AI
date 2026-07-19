@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
+import type { AiGateway } from "@hotelos/ai-gateway";
 import type {
   AuditRepository,
+  CompanyKnowledgeRepository,
   FeedbackRepository,
   HotelRepository,
   KashrutRepository,
@@ -18,6 +20,7 @@ import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { buildCioDigest, CIO_ROLES } from "../../application/build-cio-digest.js";
 import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
+import { synthesizeCioDigest } from "../../application/synthesize-cio-digest.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -37,6 +40,8 @@ export type OpsRouteDeps = {
   readonly overview: OverviewRepository;
   readonly kashrut: KashrutRepository;
   readonly turbo: TurboRepository;
+  readonly gateway: AiGateway;
+  readonly companyKnowledge: CompanyKnowledgeRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -917,6 +922,66 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         return sendError(c, 404, "NO_DATA", "No overview data available yet");
       }
       return c.json({ data: digest });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /** Smart digest: deterministic facts + Gateway narrative for the selected role. */
+  routes.post("/cio-digest/synthesize", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = z
+        .object({ role: cioDigestRoleSchema.default("ceo") })
+        .parse(await c.req.json().catch(() => ({})));
+
+      const tenantHotels = await deps.hotels.listByTenant(principal.scope.tenantId);
+      const scopedHotelIds = (
+        principal.scope.hotelId
+          ? tenantHotels.filter((hotel) => hotel.id === principal.scope.hotelId)
+          : tenantHotels
+      ).map((hotel) => hotel.id);
+
+      const synthesized = await synthesizeCioDigest(
+        {
+          overview: deps.overview,
+          ops: deps.ops,
+          maintenance: deps.maintenance,
+          procurement: deps.procurement,
+          feedback: deps.feedback,
+          kashrut: deps.kashrut,
+          hotels: deps.hotels,
+          turbo: deps.turbo,
+          gateway: deps.gateway,
+          companyKnowledge: deps.companyKnowledge,
+        },
+        {
+          tenantId: principal.scope.tenantId,
+          userId: principal.userId,
+          hotelIds: scopedHotelIds,
+          role: body.role,
+        },
+      );
+      if (!synthesized) {
+        return sendError(c, 404, "NO_DATA", "No overview data available yet");
+      }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "cio.digest.synthesize",
+        resourceType: "cio_digest",
+        resourceId: body.role,
+        metadata: {
+          provider: synthesized.provider,
+          requiresHumanApproval: synthesized.requiresHumanApproval,
+          suggestedActions: synthesized.suggestedActionsHe.length,
+        },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({ data: synthesized });
     } catch (error) {
       return mapUnknownError(c, error);
     }

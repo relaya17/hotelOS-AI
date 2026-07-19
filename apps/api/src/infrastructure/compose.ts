@@ -193,6 +193,8 @@ export async function composeApp() {
       overview,
       kashrut,
       turbo,
+      gateway,
+      companyKnowledge,
       tokens,
     },
     orgComms: { orgComms, tokens },
@@ -222,6 +224,8 @@ export async function composeApp() {
         hotels,
         turbo,
         orgComms,
+        gateway,
+        companyKnowledge,
       },
     },
     simulator: {

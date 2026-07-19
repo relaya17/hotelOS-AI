@@ -1719,6 +1719,26 @@ export async function fetchCioDigest(role: CioRole): Promise<CioDigestDto> {
   return payload.data;
 }
 
+export type SynthesizedCioDigestDto = {
+  readonly digest: CioDigestDto;
+  readonly narrativeHe: string;
+  readonly suggestedActionsHe: readonly string[];
+  readonly provider: string;
+  readonly confidence: string;
+  readonly latencyMs: number;
+  readonly requiresHumanApproval: boolean;
+  readonly approvalReasonHe: string | null;
+};
+
+export async function synthesizeCioDigest(
+  role: CioRole = "ceo",
+): Promise<SynthesizedCioDigestDto> {
+  const payload = (await authPost("/v1/ops/cio-digest/synthesize", {
+    role,
+  })) as { data: SynthesizedCioDigestDto };
+  return payload.data;
+}
+
 export type OrgCommsChannelDto = {
   readonly id: string;
   readonly tenantId: string;

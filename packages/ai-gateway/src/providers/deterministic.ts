@@ -14,14 +14,26 @@ export function createDeterministicProvider(): LlmProvider {
       const agentMatch = /Agent:\s*(\S+)/.exec(system);
       const agentId = agentMatch?.[1] ?? "agent.cio";
 
-      const answerHe = [
-        `תשובת Gateway (${agentId}, מצב דטרמיניסטי):`,
-        question.length > 0
-          ? `קיבלתי: «${question.slice(0, 280)}»`
-          : "לא התקבלה שאלה.",
-        "כדי לקבל ניסוח LLM מלא הגדירו AI_GATEWAY_API_KEY (או Azure OpenAI) ב־.env.",
-        "בינתיים: השתמשו בתדריך CIO, Trusted Knowledge, וספי אישור אנושי (₪2,000 / 5%).",
-      ].join("\n");
+      const isDailyDigest = /תדריך יומי|המלצות להיום/i.test(question);
+      const answerHe = isDailyDigest
+        ? [
+            `תשובת Gateway (${agentId}, מצב דטרמיניסטי):`,
+            "סיכום יומי מבוסס נתוני תפעול מהקשר — בלי ביצוע כספי.",
+            "בדקו תפוסה, תחזוקה פתוחה, מלאי נמוך והזמנות רכש ממתינות.",
+            "המלצות להיום:",
+            "• לעבור על קריאות תחזוקה דחופות",
+            "• לאשר/לדחות הצעות מחיר ממתינות בתיבת AI",
+            "• להשלים מלאי מתחת לסף דרך Suggest רכש",
+            "כדי לקבל ניסוח LLM מלא הגדירו AI_GATEWAY_API_KEY ב־.env.",
+          ].join("\n")
+        : [
+            `תשובת Gateway (${agentId}, מצב דטרמיניסטי):`,
+            question.length > 0
+              ? `קיבלתי: «${question.slice(0, 280)}»`
+              : "לא התקבלה שאלה.",
+            "כדי לקבל ניסוח LLM מלא הגדירו AI_GATEWAY_API_KEY (או Azure OpenAI) ב־.env.",
+            "בינתיים: השתמשו בתדריך CIO, Trusted Knowledge, וספי אישור אנושי (₪2,000 / 5%).",
+          ].join("\n");
 
       return {
         text: answerHe,

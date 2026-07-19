@@ -1,15 +1,34 @@
 import { useEffect, useState } from "react";
-import { fetchDailyBriefing, type DailyBriefingHotelDto } from "@hotelos/web-client";
+import { Button } from "@hotelos/ui";
+import {
+  fetchDailyBriefing,
+  synthesizeCioDigest,
+  type CioRole,
+  type DailyBriefingHotelDto,
+  type SynthesizedCioDigestDto,
+} from "@hotelos/web-client";
 
 type Props = {
   readonly hotelId: string;
 };
+
+const ROLE_OPTIONS: readonly { value: CioRole; labelHe: string }[] = [
+  { value: "ceo", labelHe: "מנכ״ל" },
+  { value: "reception", labelHe: "קבלה" },
+  { value: "housekeeping", labelHe: "משק בית" },
+  { value: "fb", labelHe: "F&B" },
+  { value: "cfo", labelHe: "כספים" },
+  { value: "owner", labelHe: "בעלים" },
+];
 
 export function DailyBriefingPanel({ hotelId }: Props) {
   const [section, setSection] = useState<DailyBriefingHotelDto | undefined>();
   const [generatedAt, setGeneratedAt] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  const [role, setRole] = useState<CioRole>("ceo");
+  const [smart, setSmart] = useState<SynthesizedCioDigestDto | null>(null);
+  const [smartLoading, setSmartLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +55,20 @@ export function DailyBriefingPanel({ hotelId }: Props) {
       cancelled = true;
     };
   }, [hotelId]);
+
+  async function onSynthesize() {
+    setSmartLoading(true);
+    setError(undefined);
+    try {
+      setSmart(await synthesizeCioDigest(role));
+    } catch (synthError) {
+      setError(
+        synthError instanceof Error ? synthError.message : "סינתזת תדריך נכשלה",
+      );
+    } finally {
+      setSmartLoading(false);
+    }
+  }
 
   return (
     <div className="briefing">
@@ -128,6 +161,50 @@ export function DailyBriefingPanel({ hotelId }: Props) {
         </div>
       ) : null}
 
+      <section className="smart-card">
+        <h3>תדריך חכם לפי תפקיד (CIO + Gateway)</h3>
+        <p className="hint">
+          סיכום AI מעל נתוני התפעול — המלצות בלבד, בלי ביצוע כספי.
+        </p>
+        <div className="smart-row">
+          <label>
+            תפקיד
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as CioRole)}
+            >
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.labelHe}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button
+            type="button"
+            disabled={smartLoading}
+            onClick={() => void onSynthesize()}
+          >
+            {smartLoading ? "מסכם…" : "סכם עם AI"}
+          </Button>
+        </div>
+        {smart ? (
+          <div className="smart-result">
+            <p className="narrative">{smart.narrativeHe}</p>
+            {smart.suggestedActionsHe.length > 0 ? (
+              <ul>
+                {smart.suggestedActionsHe.map((action) => (
+                  <li key={action}>{action}</li>
+                ))}
+              </ul>
+            ) : null}
+            <p className="hint">
+              {smart.provider} · {smart.latencyMs}ms
+            </p>
+          </div>
+        ) : null}
+      </section>
+
       <style>{`
         .briefing { display:grid; gap:var(--space-4); }
         .briefing__header { display:flex; justify-content:space-between; align-items:flex-end; gap:var(--space-3); flex-wrap:wrap; }
@@ -148,6 +225,15 @@ export function DailyBriefingPanel({ hotelId }: Props) {
         .list-block--warn h3 { color:#b3541e; }
         .list-block--good h3 { color:var(--color-sea-deep); }
         .list-block--action h3 { color:var(--color-ink-soft); }
+        .smart-card { display:grid; gap:var(--space-3); background:rgb(255 250 242 / 90%); border:1px dashed rgb(16 36 31 / 22%); border-radius:var(--radius-md); padding:clamp(1.2rem,2.5vw,1.8rem); }
+        .smart-card h3 { margin:0; font-family:var(--font-display); }
+        .hint { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); }
+        .smart-row { display:flex; gap:var(--space-3); align-items:end; flex-wrap:wrap; }
+        .smart-row label { display:grid; gap:.35rem; font-size:var(--text-small); }
+        .smart-row select { font:inherit; padding:.45rem .6rem; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); }
+        .smart-result { display:grid; gap:var(--space-2); }
+        .narrative { margin:0; white-space:pre-wrap; line-height:1.55; }
+        .smart-result ul { margin:0; padding-inline-start:1.2rem; display:grid; gap:.35rem; }
         @media (max-width:900px){ .metrics{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
       `}</style>
     </div>
