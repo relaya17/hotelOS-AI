@@ -21,6 +21,10 @@ import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { buildCioDigest, CIO_ROLES } from "../../application/build-cio-digest.js";
 import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
+import {
+  mapSecurityWebhook,
+  type SecurityWebhookProvider,
+} from "../../application/map-security-webhook.js";
 import { listOpsAnomalies } from "../../application/run-anomaly-scan.js";
 import { synthesizeCioDigest } from "../../application/synthesize-cio-digest.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
@@ -853,64 +857,122 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
 
   // ---- Security events (generic webhook → department task; no VMS lock-in) ----
 
-  const securityEventSchema = z.object({
-    hotelId: z.string().uuid(),
-    title: z.string().trim().min(2).max(200),
-    description: z.string().trim().min(1).max(4000),
-    priority: z.enum(["low", "medium", "high", "urgent"]).default("high"),
-    source: z.string().trim().min(1).max(80).default("webhook"),
-  });
+  async function createSecurityTaskFromEvent(
+    c: OpsContext,
+    body: {
+      readonly hotelId: string;
+      readonly title: string;
+      readonly description: string;
+      readonly priority: "low" | "medium" | "high" | "urgent";
+      readonly source: string;
+      readonly externalEventId?: string;
+    },
+  ) {
+    const principal = c.get("principal");
+    const hotelId = Ids.hotel(body.hotelId);
+    if (!canAccessHotel(principal, hotelId)) {
+      return sendError(c, 403, "FORBIDDEN", "Hotel out of scope");
+    }
+    const now = new Date().toISOString();
+    await deps.ops.ensureStandardDepartments(
+      principal.scope.tenantId,
+      hotelId,
+      now,
+    );
+    const dept = await deps.ops.findDepartmentByCode(
+      principal.scope.tenantId,
+      hotelId,
+      "security",
+    );
+    if (!dept) {
+      return sendError(
+        c,
+        500,
+        "SECURITY_DEPT_MISSING",
+        "Security department not available",
+      );
+    }
+    const external =
+      body.externalEventId !== undefined
+        ? ` event=${body.externalEventId}`
+        : "";
+    const created = await deps.ops.createTask({
+      id: randomUUID(),
+      tenantId: principal.scope.tenantId,
+      hotelId,
+      departmentId: dept.id,
+      taskType: "security_event",
+      title: body.title,
+      description: `[${body.source}] ${body.description}${external}`,
+      priority: body.priority,
+      createdByUserId: principal.userId,
+      createdAt: now,
+    });
+    await deps.audit.append({
+      id: randomUUID(),
+      tenantId: principal.scope.tenantId,
+      actorUserId: principal.userId,
+      action: "ops.security_event.create",
+      resourceType: "department_task",
+      resourceId: created.id,
+      metadata: {
+        source: body.source,
+        hotelId: body.hotelId,
+        ...(body.externalEventId !== undefined
+          ? { externalEventId: body.externalEventId }
+          : {}),
+      },
+      createdAt: now,
+    });
+    return c.json({ data: created }, 201);
+  }
 
   routes.post("/security-events", async (c) => {
     try {
-      const principal = c.get("principal");
-      const body = securityEventSchema.parse(await c.req.json());
-      const hotelId = Ids.hotel(body.hotelId);
-      if (!canAccessHotel(principal, hotelId)) {
-        return sendError(c, 403, "FORBIDDEN", "Hotel out of scope");
-      }
-      const now = new Date().toISOString();
-      await deps.ops.ensureStandardDepartments(
-        principal.scope.tenantId,
-        hotelId,
-        now,
-      );
-      const dept = await deps.ops.findDepartmentByCode(
-        principal.scope.tenantId,
-        hotelId,
-        "security",
-      );
-      if (!dept) {
+      const body = mapSecurityWebhook("generic", await c.req.json());
+      return await createSecurityTaskFromEvent(c, {
+        hotelId: body.hotelId,
+        title: body.title,
+        description: body.description,
+        priority: body.priority,
+        source: body.source,
+        ...(body.externalEventId !== undefined
+          ? { externalEventId: body.externalEventId }
+          : {}),
+      });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /** Vendor adapter entry — e.g. POST /security-events/ingest/example_vms */
+  routes.post("/security-events/ingest/:provider", async (c) => {
+    try {
+      const providerParsed = z
+        .enum(["generic", "example_vms"])
+        .safeParse(c.req.param("provider"));
+      if (!providerParsed.success) {
         return sendError(
           c,
-          500,
-          "SECURITY_DEPT_MISSING",
-          "Security department not available",
+          400,
+          "UNKNOWN_PROVIDER",
+          "Supported providers: generic, example_vms",
         );
       }
-      const created = await deps.ops.createTask({
-        id: randomUUID(),
-        tenantId: principal.scope.tenantId,
-        hotelId,
-        departmentId: dept.id,
-        taskType: "security_event",
+      const body = mapSecurityWebhook(
+        providerParsed.data as SecurityWebhookProvider,
+        await c.req.json(),
+      );
+      return await createSecurityTaskFromEvent(c, {
+        hotelId: body.hotelId,
         title: body.title,
-        description: `[${body.source}] ${body.description}`,
+        description: body.description,
         priority: body.priority,
-        createdByUserId: principal.userId,
-        createdAt: now,
+        source: body.source,
+        ...(body.externalEventId !== undefined
+          ? { externalEventId: body.externalEventId }
+          : {}),
       });
-      await deps.audit.append({
-        id: randomUUID(),
-        tenantId: principal.scope.tenantId,
-        actorUserId: principal.userId,
-        action: "ops.security_event.create",
-        resourceType: "department_task",
-        resourceId: created.id,
-        metadata: { source: body.source, hotelId: body.hotelId },
-        createdAt: now,
-      });
-      return c.json({ data: created }, 201);
     } catch (error) {
       return mapUnknownError(c, error);
     }

@@ -2683,6 +2683,17 @@ export async function postSecurityEvent(input: {
   return authPost("/v1/ops/security-events", input);
 }
 
+/** Vendor webhook ingest — `generic` or `example_vms` until pilot VMS is wired. */
+export async function postSecurityWebhookIngest(
+  provider: "generic" | "example_vms",
+  body: unknown,
+): Promise<unknown> {
+  return authPost(
+    `/v1/ops/security-events/ingest/${encodeURIComponent(provider)}`,
+    body,
+  );
+}
+
 export async function postErrorEvent(input: {
   readonly hotelId?: string;
   readonly title: string;
