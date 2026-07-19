@@ -65,8 +65,8 @@ export function KnowledgePanel() {
     <section>
       <h2>Company Knowledge</h2>
       <p className="muted">
-        מסמכים פנימיים לאישור לפני שימוש כציטוט ע״י סוכנים (חיפוש מילות מפתח;
-        ללא RAG עדיין).
+        מסמכים פנימיים לאישור לפני שימוש כציטוט ע״י סוכנים (מילות מפתח →
+        Gateway; בלי embeddings עדיין).
       </p>
       {error ? <p className="error">{error}</p> : null}
 

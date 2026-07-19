@@ -1,7 +1,12 @@
 import type { AiGateway } from "@hotelos/ai-gateway";
-import type { CompanyKnowledgeRepository } from "@hotelos/database";
+import type {
+  CompanyKnowledgeRepository,
+  TrustedSourcesRepository,
+} from "@hotelos/database";
 import type { HotelId, TenantId, UserId } from "@hotelos/shared";
 import { buildKnowledgeContextPack } from "./build-knowledge-context-pack.js";
+import { buildTrustedSourcesContextPack } from "./build-trusted-sources-context-pack.js";
+import { mergeContextPacks } from "./merge-context-packs.js";
 import {
   buildCioDigest,
   type CioDigest,
@@ -28,6 +33,7 @@ export async function synthesizeCioDigest(
   deps: CioDigestDeps & {
     readonly gateway: AiGateway;
     readonly companyKnowledge: CompanyKnowledgeRepository;
+    readonly trustedSources: TrustedSourcesRepository;
   },
   input: {
     readonly tenantId: TenantId;
@@ -51,14 +57,21 @@ export async function synthesizeCioDigest(
     'בסוף הוסף סעיף בשורה נפרדת בדיוק: "המלצות להיום:" ואחריו 3–5 נקודות קצרות.',
     "אל תבצע שינוי כספי/מדיניות. אם נדרש אישור אדם — ציין זאת במפורש.",
   ].join("\n");
-  const knowledgePack = await buildKnowledgeContextPack(
-    deps.companyKnowledge,
-    input.tenantId,
-    `${digest.headlineHe}\n${digestPack}`,
-  );
-  const contextPack = knowledgePack
-    ? `${digestPack}\n\n${knowledgePack}`
-    : digestPack;
+  const searchBlob = `${digest.headlineHe}\n${digestPack}`;
+  const [knowledgePack, trustedPack] = await Promise.all([
+    buildKnowledgeContextPack(
+      deps.companyKnowledge,
+      input.tenantId,
+      searchBlob,
+    ),
+    buildTrustedSourcesContextPack(
+      deps.trustedSources,
+      input.tenantId,
+      searchBlob,
+    ),
+  ]);
+  const contextPack =
+    mergeContextPacks(digestPack, knowledgePack, trustedPack) ?? digestPack;
 
   const ai = await deps.gateway.invoke({
     agentId: "agent.cio",

@@ -4,10 +4,13 @@ import type { JwtTokenService } from "@hotelos/auth";
 import type {
   CompanyKnowledgeRepository,
   OverviewRepository,
+  TrustedSourcesRepository,
 } from "@hotelos/database";
 import { z } from "@hotelos/validation";
 import { buildKnowledgeContextPack } from "../../application/build-knowledge-context-pack.js";
 import { buildOpsContextPack } from "../../application/build-ops-context-pack.js";
+import { buildTrustedSourcesContextPack } from "../../application/build-trusted-sources-context-pack.js";
+import { mergeContextPacks } from "../../application/merge-context-packs.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -23,12 +26,14 @@ const KNOWLEDGE_AUTO_PACK_AGENTS = new Set([
   "agent.correspondence",
   "agent.cio",
   "agent.kashrut",
+  "agent.cfo",
 ]);
 
 export type AiGatewayRouteDeps = {
   readonly gateway: AiGateway;
   readonly overview: OverviewRepository;
   readonly companyKnowledge: CompanyKnowledgeRepository;
+  readonly trustedSources: TrustedSourcesRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -75,20 +80,23 @@ export function createAiGatewayRoutes(deps: AiGatewayRouteDeps): Hono<{
         );
       }
       if (KNOWLEDGE_AUTO_PACK_AGENTS.has(parsed.data.agentId)) {
-        const knowledgePack = await buildKnowledgeContextPack(
-          deps.companyKnowledge,
-          principal.scope.tenantId,
-          parsed.data.message,
+        const [knowledgePack, trustedPack] = await Promise.all([
+          buildKnowledgeContextPack(
+            deps.companyKnowledge,
+            principal.scope.tenantId,
+            parsed.data.message,
+          ),
+          buildTrustedSourcesContextPack(
+            deps.trustedSources,
+            principal.scope.tenantId,
+            parsed.data.message,
+          ),
+        ]);
+        contextPack = mergeContextPacks(
+          contextPack,
+          knowledgePack,
+          trustedPack,
         );
-        if (knowledgePack !== undefined) {
-          contextPack =
-            contextPack !== undefined
-              ? `${contextPack}\n\n${knowledgePack}`
-              : knowledgePack;
-          if (contextPack.length > 12000) {
-            contextPack = `${contextPack.slice(0, 12000)}…`;
-          }
-        }
       }
       const result = await deps.gateway.invoke({
         agentId: parsed.data.agentId,

@@ -12,6 +12,7 @@ import type {
   OverviewRepository,
   ProcurementRepository,
   RecruitingRepository,
+  TrustedSourcesRepository,
   TurboRepository,
 } from "@hotelos/database";
 import { canAccessHotel, type JwtTokenService } from "@hotelos/auth";
@@ -42,6 +43,7 @@ export type OpsRouteDeps = {
   readonly turbo: TurboRepository;
   readonly gateway: AiGateway;
   readonly companyKnowledge: CompanyKnowledgeRepository;
+  readonly trustedSources: TrustedSourcesRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -1090,6 +1092,7 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
           turbo: deps.turbo,
           gateway: deps.gateway,
           companyKnowledge: deps.companyKnowledge,
+          trustedSources: deps.trustedSources,
         },
         {
           tenantId: principal.scope.tenantId,

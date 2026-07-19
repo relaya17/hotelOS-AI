@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, TextField } from "@hotelos/ui";
 import {
+  createTrustedSource,
   fetchAiGatewayStatus,
   fetchCioDigest,
   invokeAiGateway,
@@ -16,8 +17,21 @@ import {
   type OrgCommsChannelDto,
   type OrgCommsMessageDto,
   type SynthesizedCioDigestDto,
+  type TrustedSourceCategory,
   type TrustedSourceDto,
 } from "@hotelos/web-client";
+
+const TRUSTED_CATEGORIES: readonly {
+  value: TrustedSourceCategory;
+  labelHe: string;
+}[] = [
+  { value: "regulator", labelHe: "רגולטור" },
+  { value: "university", labelHe: "אוניברסיטה / מחקר" },
+  { value: "market_data", labelHe: "נתוני שוק" },
+  { value: "accounting_standard", labelHe: "תקן חשבונאות" },
+  { value: "kashrut_authority", labelHe: "רשות כשרות" },
+  { value: "other", labelHe: "אחר" },
+];
 
 const ROLE_OPTIONS: readonly { value: CioRole; labelHe: string }[] = [
   { value: "owner", labelHe: "בעל מלון / רשת" },
@@ -39,6 +53,11 @@ export function CioDigestPage() {
   const [messages, setMessages] = useState<readonly OrgCommsMessageDto[]>([]);
   const [draft, setDraft] = useState("");
   const [sources, setSources] = useState<readonly TrustedSourceDto[]>([]);
+  const [sourceTitle, setSourceTitle] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [sourceCategory, setSourceCategory] =
+    useState<TrustedSourceCategory>("regulator");
+  const [creatingSource, setCreatingSource] = useState(false);
   const [ask, setAsk] = useState("מה דורש תשומת לב ברשת היום?");
   const [askLoading, setAskLoading] = useState(false);
   const [askError, setAskError] = useState<string | undefined>();
@@ -88,6 +107,36 @@ export function CioDigestPage() {
       );
     } finally {
       setSmartLoading(false);
+    }
+  }
+
+  async function onCreateTrustedSource() {
+    if (!sourceTitle.trim() || !sourceUrl.trim()) {
+      setError("מלאו כותרת וכתובת URL למקור Trusted");
+      return;
+    }
+    setCreatingSource(true);
+    setError(undefined);
+    setNotice(undefined);
+    try {
+      const created = await createTrustedSource({
+        title: sourceTitle.trim(),
+        url: sourceUrl.trim(),
+        category: sourceCategory,
+      });
+      setSources((prev) => [...prev, created]);
+      setSourceTitle("");
+      setSourceUrl("");
+      setSourceCategory("regulator");
+      setNotice("מקור Trusted נוסף — ייכנס ל־context pack ב־Gateway.");
+    } catch (createError) {
+      setError(
+        createError instanceof Error
+          ? createError.message
+          : "הוספת מקור Trusted נכשלה",
+      );
+    } finally {
+      setCreatingSource(false);
     }
   }
 
@@ -408,8 +457,45 @@ export function CioDigestPage() {
       <section className="card">
         <h2>מקורות Trusted (מודיעין חיצוני מאושר)</h2>
         <p className="hint">
-          רק מקורות מאושרים ברשימה זו יכולים לבסס המלצה חיצונית — חיפוש פתוח לגילוי בלבד.
+          רק מקורות מאושרים ברשימה זו נכנסים ל־context pack של Gateway (CIO / CFO /
+          כשרות / משפטי) — אין חיפוש פתוח ברשת.
         </p>
+        <div className="compose trusted-form">
+          <TextField
+            label="כותרת מקור"
+            name="trustedTitle"
+            value={sourceTitle}
+            onChange={(event) => setSourceTitle(event.target.value)}
+          />
+          <TextField
+            label="URL"
+            name="trustedUrl"
+            value={sourceUrl}
+            onChange={(event) => setSourceUrl(event.target.value)}
+          />
+          <label className="role-row">
+            קטגוריה
+            <select
+              value={sourceCategory}
+              onChange={(event) =>
+                setSourceCategory(event.target.value as TrustedSourceCategory)
+              }
+            >
+              {TRUSTED_CATEGORIES.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.labelHe}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button
+            type="button"
+            onClick={() => void onCreateTrustedSource()}
+            disabled={creatingSource}
+          >
+            {creatingSource ? "מוסיף…" : "הוסף מקור Trusted"}
+          </Button>
+        </div>
         <ul className="sources">
           {sources.map((source) => (
             <li key={source.id}>

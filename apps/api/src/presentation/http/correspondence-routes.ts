@@ -5,11 +5,14 @@ import type {
   AuditRepository,
   CompanyKnowledgeRepository,
   CorrespondenceRepository,
+  TrustedSourcesRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
 import { buildKnowledgeContextPack } from "../../application/build-knowledge-context-pack.js";
+import { buildTrustedSourcesContextPack } from "../../application/build-trusted-sources-context-pack.js";
+import { mergeContextPacks } from "../../application/merge-context-packs.js";
 import {
   evaluateLegalChecklist,
   missingLegalAcks,
@@ -20,6 +23,7 @@ import { mapUnknownError, sendError } from "./errors.js";
 export type CorrespondenceRouteDeps = {
   readonly correspondence: CorrespondenceRepository;
   readonly companyKnowledge: CompanyKnowledgeRepository;
+  readonly trustedSources: TrustedSourcesRepository;
   readonly gateway: AiGateway;
   readonly audit: AuditRepository;
   readonly tokens: JwtTokenService;
@@ -64,17 +68,23 @@ export function createCorrespondenceRoutes(deps: CorrespondenceRouteDeps): Hono<
             ? "הזמנת רכש בכתב"
             : "נאום / דברי פתיחה";
 
-      const knowledgePack = await buildKnowledgeContextPack(
-        deps.companyKnowledge,
-        principal.scope.tenantId,
-        [body.subject, body.contextNotes ?? ""].join(" "),
-      );
+      const searchBlob = [body.subject, body.contextNotes ?? ""].join(" ");
+      const [knowledgePack, trustedPack] = await Promise.all([
+        buildKnowledgeContextPack(
+          deps.companyKnowledge,
+          principal.scope.tenantId,
+          searchBlob,
+        ),
+        buildTrustedSourcesContextPack(
+          deps.trustedSources,
+          principal.scope.tenantId,
+          searchBlob,
+        ),
+      ]);
       const basePack =
         "תבנית מכתב רשמי HotelOS · טיוטה לבדיקה בלבד · אין שליחה אוטומטית";
       const contextPack =
-        knowledgePack !== undefined
-          ? `${basePack}\n\n${knowledgePack}`.slice(0, 12000)
-          : basePack;
+        mergeContextPacks(basePack, knowledgePack, trustedPack) ?? basePack;
 
       const ai = await deps.gateway.invoke({
         agentId: "agent.correspondence",

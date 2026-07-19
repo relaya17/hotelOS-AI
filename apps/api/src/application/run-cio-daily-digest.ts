@@ -3,6 +3,7 @@ import type {
   CompanyKnowledgeRepository,
   HotelRepository,
   OrgCommsRepository,
+  TrustedSourcesRepository,
 } from "@hotelos/database";
 import { DEMO_CHAIN_ID, DEMO_TENANT_ID } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
@@ -24,6 +25,7 @@ export type RunCioDailyDigestDeps = CioDigestDeps & {
   readonly orgComms: OrgCommsRepository;
   readonly gateway?: AiGateway;
   readonly companyKnowledge?: CompanyKnowledgeRepository;
+  readonly trustedSources?: TrustedSourcesRepository;
 };
 
 export type CioDailyDigestResult = {
@@ -57,7 +59,7 @@ export async function runCioDailyDigest(
   let narrativeIncluded = false;
   let provider: string | null = null;
 
-  if (deps.gateway && deps.companyKnowledge) {
+  if (deps.gateway && deps.companyKnowledge && deps.trustedSources) {
     const synthesized = await synthesizeCioDigest(
       {
         overview: deps.overview,
@@ -70,6 +72,7 @@ export async function runCioDailyDigest(
         turbo: deps.turbo,
         gateway: deps.gateway,
         companyKnowledge: deps.companyKnowledge,
+        trustedSources: deps.trustedSources,
       },
       {
         tenantId,
