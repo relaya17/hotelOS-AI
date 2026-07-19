@@ -221,6 +221,7 @@ export async function composeApp() {
       overview,
       companyKnowledge,
       trustedSources,
+      turbo,
       tokens,
     },
     hr: { hr, assessments, audit, tokens },

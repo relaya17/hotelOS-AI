@@ -506,6 +506,18 @@ async function ensureCioDemoData(
         url: "https://social-sciences.technion.ac.il",
         category: "university",
       },
+      {
+        id: "94000000-0000-4000-8000-000000000004",
+        title: "IFRS Foundation — International Financial Reporting Standards",
+        url: "https://www.ifrs.org",
+        category: "accounting_standard",
+      },
+      {
+        id: "94000000-0000-4000-8000-000000000005",
+        title: "רשות המסים — מדריכים וטפסים (מע״מ / ניכויים)",
+        url: "https://www.gov.il/he/departments/israel_tax_authority/govil-landing-page",
+        category: "accounting_standard",
+      },
     ];
     for (const source of seedSources) {
       await trustedSources.create({
@@ -514,6 +526,37 @@ async function ensureCioDemoData(
         title: source.title,
         url: source.url,
         category: source.category,
+        approvedByUserId: userId,
+        createdAt: now,
+      });
+    }
+  } else if (
+    !existingSources.some((source) => source.category === "accounting_standard")
+  ) {
+    // Idempotent upgrade for tenants seeded before stage ז׳ allowlist.
+    const accountingSources: readonly {
+      id: string;
+      title: string;
+      url: string;
+    }[] = [
+      {
+        id: "94000000-0000-4000-8000-000000000004",
+        title: "IFRS Foundation — International Financial Reporting Standards",
+        url: "https://www.ifrs.org",
+      },
+      {
+        id: "94000000-0000-4000-8000-000000000005",
+        title: "רשות המסים — מדריכים וטפסים (מע״מ / ניכויים)",
+        url: "https://www.gov.il/he/departments/israel_tax_authority/govil-landing-page",
+      },
+    ];
+    for (const source of accountingSources) {
+      await trustedSources.create({
+        id: source.id,
+        tenantId,
+        title: source.title,
+        url: source.url,
+        category: "accounting_standard",
         approvedByUserId: userId,
         createdAt: now,
       });

@@ -5,8 +5,10 @@ import type {
   CompanyKnowledgeRepository,
   OverviewRepository,
   TrustedSourcesRepository,
+  TurboRepository,
 } from "@hotelos/database";
 import { z } from "@hotelos/validation";
+import { buildAccountingContextPack } from "../../application/build-accounting-context-pack.js";
 import { buildKnowledgeContextPack } from "../../application/build-knowledge-context-pack.js";
 import { buildOpsContextPack } from "../../application/build-ops-context-pack.js";
 import { buildTrustedSourcesContextPack } from "../../application/build-trusted-sources-context-pack.js";
@@ -29,11 +31,14 @@ const KNOWLEDGE_AUTO_PACK_AGENTS = new Set([
   "agent.cfo",
 ]);
 
+const ACCOUNTING_AUTO_PACK_AGENTS = new Set(["agent.cfo"]);
+
 export type AiGatewayRouteDeps = {
   readonly gateway: AiGateway;
   readonly overview: OverviewRepository;
   readonly companyKnowledge: CompanyKnowledgeRepository;
   readonly trustedSources: TrustedSourcesRepository;
+  readonly turbo: TurboRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -98,6 +103,13 @@ export function createAiGatewayRoutes(deps: AiGatewayRouteDeps): Hono<{
           knowledgePack,
           trustedPack,
         );
+      }
+      if (ACCOUNTING_AUTO_PACK_AGENTS.has(parsed.data.agentId)) {
+        const accountingPack = await buildAccountingContextPack(
+          deps.turbo,
+          principal.scope.tenantId,
+        );
+        contextPack = mergeContextPacks(contextPack, accountingPack);
       }
       const result = await deps.gateway.invoke({
         agentId: parsed.data.agentId,
