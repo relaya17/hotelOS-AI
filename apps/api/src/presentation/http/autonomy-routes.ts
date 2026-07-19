@@ -4,6 +4,7 @@ import type {
   ApprovalRepository,
   AuditRepository,
   BookingRepository,
+  FeedbackRepository,
   MaintenanceRepository,
   OpsRepository,
   ProcurementRepository,
@@ -30,6 +31,7 @@ export type AutonomyRouteDeps = {
   readonly rooms: RoomRepository;
   readonly bookings: BookingRepository;
   readonly recruiting: RecruitingRepository;
+  readonly feedback: FeedbackRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -108,6 +110,24 @@ const suggestRecruitingStageSchema = z.object({
   stage: z.enum(["offer", "hired"]),
   agentId: z.string().trim().min(3).max(80).default("agent.hr"),
 });
+
+const suggestFeedbackFollowupSchema = z.object({
+  hotelId: z.string().uuid(),
+  feedbackId: z.string().uuid(),
+  agentId: z.string().trim().min(3).max(80).default("agent.guest"),
+});
+
+function departmentForFeedbackCategories(
+  categories: readonly string[],
+): string {
+  const joined = categories.join(" ").toLowerCase();
+  if (/ניקיון|clean|housekeep|מגבת|מצע/.test(joined)) return "housekeeping";
+  if (/תחזוקה|maintenance|מזגן|חשמל|אינסטל|תיקון/.test(joined)) {
+    return "maintenance";
+  }
+  if (/אוכל|מזון|מסעדה|food|f&b|ארוח/.test(joined)) return "front_office";
+  return "front_office";
+}
 
 const suggestMaintenanceQuoteAcceptSchema = z.object({
   kind: z.literal("maintenance_quote_accept"),
@@ -897,6 +917,104 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
             arrivals: arrivalPayload,
             nextStepHe:
               "Approve בתיבת אישורי AI → Act ייפתח משימות הכנה בקבלה (ללא צ'ק-אין אוטומטי)",
+          },
+        },
+        201,
+      );
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /** Suggest ops follow-up task for a guest feedback item (HITL; reuses department_task Act). */
+  routes.post("/suggest-feedback-followup", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = suggestFeedbackFollowupSchema.parse(await c.req.json());
+      const hotelId = Ids.hotel(body.hotelId);
+      const now = new Date().toISOString();
+
+      const item = await deps.feedback.findByIdInHotel(
+        principal.scope.tenantId,
+        hotelId,
+        body.feedbackId,
+      );
+      if (!item) {
+        return sendError(c, 404, "FEEDBACK_NOT_FOUND", "Feedback not found");
+      }
+
+      const departmentCode = departmentForFeedbackCategories(item.categories);
+      const priority =
+        item.rating <= 2 ? "urgent" : item.rating <= 3 ? "high" : "medium";
+      const categoriesLabel =
+        item.categories.length > 0 ? item.categories.join(", ") : "כללי";
+      const commentLine = item.comment?.trim()
+        ? item.comment.trim()
+        : "(ללא הערה)";
+
+      const title = `מעקב משוב אורח — דירוג ${item.rating}/5`;
+      const description = [
+        "מעקב אחרי משוב אורח (Suggest→Approve→Act).",
+        `דירוג: ${item.rating}/5`,
+        `קטגוריות: ${categoriesLabel}`,
+        `הערה: ${commentLine}`,
+        `מקור: ${item.source}`,
+        `מזהה משוב: ${item.id}`,
+        item.bookingId ? `הזמנה: ${item.bookingId}` : "ללא קישור להזמנה",
+        "אין שליחת הודעה אוטומטית לאורח.",
+      ].join("\n");
+
+      const created = await deps.approvals.create({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId,
+        agentId: body.agentId,
+        requestedByUserId: principal.userId,
+        summaryHe: `${title} · ${departmentCode}`,
+        reasonHe:
+          item.rating <= 3
+            ? "דירוג נמוך — נדרש אישור מפקח לפני פתיחת משימת מעקב במחלקה."
+            : "הצעת מעקב למשוב — נדרש אישור מפקח לפני פתיחת משימה.",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.department_task",
+          hotelId: body.hotelId,
+          departmentCode,
+          taskType: "guest_feedback_followup",
+          title,
+          description,
+          priority,
+          feedbackId: item.id,
+          rating: item.rating,
+        }),
+        createdAt: now,
+      });
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "autonomy.suggest_feedback_followup",
+        resourceType: "ai_approval_request",
+        resourceId: created.id,
+        metadata: {
+          feedbackId: item.id,
+          rating: item.rating,
+          departmentCode,
+          agentId: body.agentId,
+        },
+        createdAt: now,
+      });
+
+      return c.json(
+        {
+          data: {
+            approval: created,
+            autonomyStep: "suggest",
+            feedbackId: item.id,
+            departmentCode,
+            rating: item.rating,
+            nextStepHe:
+              "Approve בתיבת אישורי AI → Act ייפתח משימת מעקב במחלקה (ללא הודעה לאורח)",
           },
         },
         201,

@@ -47,6 +47,11 @@ export type FeedbackRepository = {
     tenantId: TenantId,
     hotelId: HotelId,
   ) => Promise<readonly PersistedGuestFeedback[]>;
+  findByIdInHotel: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    feedbackId: string,
+  ) => Promise<PersistedGuestFeedback | null>;
   averageRating: (tenantId: TenantId, hotelId: HotelId) => Promise<number | null>;
 };
 
@@ -82,6 +87,21 @@ export function createFeedbackRepository(db: HotelOsDb): FeedbackRepository {
         .orderBy(desc(guestFeedback.submittedAt))
         .all();
       return rows.map(mapFeedback);
+    },
+
+    async findByIdInHotel(tenantId, hotelId, feedbackId) {
+      const row = await db
+        .select()
+        .from(guestFeedback)
+        .where(
+          and(
+            eq(guestFeedback.id, feedbackId),
+            eq(guestFeedback.tenantId, tenantId),
+            eq(guestFeedback.hotelId, hotelId),
+          ),
+        )
+        .get();
+      return row ? mapFeedback(row) : null;
     },
 
     async averageRating(tenantId, hotelId) {

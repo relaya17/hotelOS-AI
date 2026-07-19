@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { fetchOpsFeedback, type GuestFeedbackDto } from "@hotelos/web-client";
+import { Button } from "@hotelos/ui";
+import {
+  fetchOpsFeedback,
+  suggestAutonomyFeedbackFollowup,
+  type GuestFeedbackDto,
+} from "@hotelos/web-client";
 
 export type FeedbackPanelProps = {
   readonly hotelId: string;
@@ -10,6 +15,8 @@ export function FeedbackPanel({ hotelId }: FeedbackPanelProps) {
   const [average, setAverage] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  const [notice, setNotice] = useState<string | undefined>();
+  const [busyId, setBusyId] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -38,12 +45,39 @@ export function FeedbackPanel({ hotelId }: FeedbackPanelProps) {
     };
   }, [hotelId]);
 
+  async function onSuggest(feedbackId: string) {
+    setBusyId(feedbackId);
+    setError(undefined);
+    try {
+      const result = await suggestAutonomyFeedbackFollowup({
+        hotelId,
+        feedbackId,
+      });
+      setNotice(
+        `Suggest נשלח לאישורי AI: דירוג ${result.rating}/5 → מחלקה ${result.departmentCode}. אשרו → Act ייפתח משימת מעקב.`,
+      );
+    } catch (suggestError) {
+      setError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "הצעת מעקב נכשלה",
+      );
+    } finally {
+      setBusyId(undefined);
+    }
+  }
+
   return (
     <div className="panel">
       {loading ? <p className="state">טוען משוב אורחים…</p> : null}
       {error !== undefined ? (
         <p className="state state--error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {notice !== undefined ? (
+        <p className="state state--ok" role="status">
+          {notice}
         </p>
       ) : null}
 
@@ -57,7 +91,8 @@ export function FeedbackPanel({ hotelId }: FeedbackPanelProps) {
           ) : null}
         </div>
         <p className="hint">
-          נאסף דרך סקר שביעות רצון באפליקציית האורח (Guest App) בסיום השהייה.
+          נאסף דרך סקר Guest App. Suggest→Approve→Act פותח משימת מעקב במחלקה
+          (ללא הודעה אוטומטית לאורח).
         </p>
         {!loading && items.length === 0 ? (
           <p className="hint">עדיין לא התקבל משוב עבור מלון זה.</p>
@@ -72,7 +107,20 @@ export function FeedbackPanel({ hotelId }: FeedbackPanelProps) {
                   <p className="meta">{item.categories.join(" · ")}</p>
                 ) : null}
               </div>
-              <span className="meta">{item.submittedAt.slice(0, 10)}</span>
+              <div className="row__actions">
+                <span className="meta">{item.submittedAt.slice(0, 10)}</span>
+                <Button
+                  type="button"
+                  disabled={busyId === item.id}
+                  onClick={() => void onSuggest(item.id)}
+                >
+                  {busyId === item.id
+                    ? "שולח…"
+                    : item.rating <= 3
+                      ? "הצע מעקב (Suggest)"
+                      : "הצע מעקב"}
+                </Button>
+              </div>
             </li>
           ))}
         </ul>
@@ -90,9 +138,11 @@ export function FeedbackPanel({ hotelId }: FeedbackPanelProps) {
         .row { display:flex; justify-content:space-between; gap:var(--space-3); align-items:flex-start; padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
         .row h3 { margin:0; font-family:var(--font-display); font-size:1.05rem; }
         .row p { margin:var(--space-1) 0 0; color:var(--color-ink-soft); font-size:var(--text-small); }
+        .row__actions { display:flex; flex-direction:column; gap:var(--space-2); align-items:flex-end; }
         .meta { color:var(--color-ink-soft); font-size:var(--text-small); }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
+        .state--ok { color:#0f6a5c; background:rgb(15 106 92 / 10%); padding:.75rem 1rem; border-radius:var(--radius-sm); }
       `}</style>
     </div>
   );

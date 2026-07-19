@@ -1697,6 +1697,35 @@ export async function suggestAutonomyRecruitingStage(input: {
   };
 }
 
+export async function suggestAutonomyFeedbackFollowup(input: {
+  readonly hotelId: string;
+  readonly feedbackId: string;
+  readonly agentId?: string;
+}): Promise<{
+  readonly approvalId: string;
+  readonly feedbackId: string;
+  readonly departmentCode: string;
+  readonly rating: number;
+}> {
+  const payload = (await authPost(
+    "/v1/autonomy/suggest-feedback-followup",
+    input,
+  )) as {
+    data: {
+      approval: { id: string };
+      feedbackId: string;
+      departmentCode: string;
+      rating: number;
+    };
+  };
+  return {
+    approvalId: payload.data.approval.id,
+    feedbackId: payload.data.feedbackId,
+    departmentCode: payload.data.departmentCode,
+    rating: payload.data.rating,
+  };
+}
+
 export async function fetchOpsDashboard(): Promise<{
   readonly hotels: readonly OpsDashboardHotelDto[];
 }> {
