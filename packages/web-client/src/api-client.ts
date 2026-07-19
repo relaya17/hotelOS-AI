@@ -2111,7 +2111,7 @@ export async function completePublicHrInvite(
 
 export type LetterDraftDto = {
   readonly id: string;
-  readonly kind: string;
+  readonly kind: "formal_letter" | "purchase_note" | "speech" | string;
   readonly subject: string;
   readonly recipientLabel: string;
   readonly body: string;
@@ -2142,13 +2142,48 @@ export async function createLetterDraft(input: {
   return payload.data;
 }
 
+export type LegalChecklistItemDto = {
+  readonly id: string;
+  readonly labelHe: string;
+  readonly required: boolean;
+  readonly status: "pass" | "fail" | "needs_ack";
+  readonly detailHe: string;
+};
+
+export type LegalChecklistDto = {
+  readonly draftId: string;
+  readonly kind: string;
+  readonly applies: boolean;
+  readonly gateHe: string;
+  readonly items: readonly LegalChecklistItemDto[];
+  readonly requiredItemIds: readonly string[];
+  readonly autoPassedItemIds: readonly string[];
+  readonly blockingItemIds: readonly string[];
+  readonly canApproveWithoutAck: boolean;
+};
+
+export async function fetchLetterLegalChecklist(
+  draftId: string,
+): Promise<LegalChecklistDto> {
+  const payload = (await authGet(
+    `/v1/correspondence/drafts/${draftId}/legal-checklist`,
+  )) as { data: LegalChecklistDto };
+  return payload.data;
+}
+
 export async function updateLetterDraftStatus(
   draftId: string,
   status: "draft" | "approved" | "discarded",
+  options?: { readonly acknowledgedItemIds?: readonly string[] },
 ): Promise<LetterDraftDto> {
   const payload = (await authPost(
     `/v1/correspondence/drafts/${draftId}/status`,
-    { status },
+    {
+      status,
+      ...(options?.acknowledgedItemIds
+        ? { acknowledgedItemIds: options.acknowledgedItemIds }
+        : {}),
+    },
   )) as { data: LetterDraftDto };
   return payload.data;
 }

@@ -6,6 +6,7 @@ import {
   createLetterDraft,
   fetchAssessmentDetail,
   fetchHrEmployee,
+  fetchLetterLegalChecklist,
   listAssessmentTemplates,
   listEmployeeAssessments,
   listHrEmployees,
@@ -20,6 +21,7 @@ import {
   type HrDocumentDto,
   type HrEmployeeDto,
   type HrInviteDto,
+  type LegalChecklistDto,
   type LetterDraftDto,
 } from "@hotelos/web-client";
 
@@ -62,6 +64,10 @@ export function HrPanel({ hotelId }: HrPanelProps) {
   >("criminal_record_clearance");
   const [docHash, setDocHash] = useState("");
   const [docAuthority, setDocAuthority] = useState("");
+  const [checklistDraftId, setChecklistDraftId] = useState<string | undefined>();
+  const [checklist, setChecklist] = useState<LegalChecklistDto | null>(null);
+  const [ackIds, setAckIds] = useState<ReadonlySet<string>>(new Set());
+  const [approving, setApproving] = useState(false);
 
   async function reload() {
     setLoading(true);
@@ -166,6 +172,67 @@ export function HrPanel({ hotelId }: HrPanelProps) {
       setError(
         draftError instanceof Error ? draftError.message : "יצירת טיוטה נכשלה",
       );
+    }
+  }
+
+  async function openLegalChecklist(draft: LetterDraftDto) {
+    setError(undefined);
+    try {
+      const data = await fetchLetterLegalChecklist(draft.id);
+      setChecklistDraftId(draft.id);
+      setChecklist(data);
+      setAckIds(new Set(data.autoPassedItemIds));
+    } catch (checklistError) {
+      setError(
+        checklistError instanceof Error
+          ? checklistError.message
+          : "טעינת צ׳קליסט Legal נכשלה",
+      );
+    }
+  }
+
+  function toggleAck(itemId: string) {
+    setAckIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
+  async function confirmApprove(draftId: string) {
+    if (!checklist) return;
+    setApproving(true);
+    setError(undefined);
+    try {
+      const acknowledgedItemIds = checklist.applies
+        ? checklist.blockingItemIds.filter((id) => ackIds.has(id))
+        : [];
+      if (
+        checklist.applies &&
+        acknowledgedItemIds.length < checklist.blockingItemIds.length
+      ) {
+        setError("יש לסמן את כל פריטי הצ׳קליסט החסרים לפני אישור.");
+        return;
+      }
+      await updateLetterDraftStatus(draftId, "approved", {
+        acknowledgedItemIds: [
+          ...checklist.autoPassedItemIds,
+          ...acknowledgedItemIds,
+        ],
+      });
+      setChecklistDraftId(undefined);
+      setChecklist(null);
+      setAckIds(new Set());
+      await reload();
+    } catch (statusError) {
+      setError(
+        statusError instanceof Error
+          ? statusError.message
+          : "אישור טיוטה נכשל",
+      );
+    } finally {
+      setApproving(false);
     }
   }
 
@@ -500,25 +567,15 @@ export function HrPanel({ hotelId }: HrPanelProps) {
         {drafts.map((draft) => (
           <li key={draft.id}>
             <strong>{draft.subject}</strong> → {draft.recipientLabel} ·{" "}
-            {draft.status}
+            {draft.status} · {draft.kind}
             <pre className="draft-body">{draft.body}</pre>
             {draft.status === "draft" ? (
               <span className="doc-actions">
                 <Button
                   type="button"
-                  onClick={() =>
-                    void updateLetterDraftStatus(draft.id, "approved")
-                      .then(reload)
-                      .catch((statusError: unknown) => {
-                        setError(
-                          statusError instanceof Error
-                            ? statusError.message
-                            : "אישור טיוטה נכשל",
-                        );
-                      })
-                  }
+                  onClick={() => void openLegalChecklist(draft)}
                 >
-                  אשר טיוטה
+                  אשר (צ׳קליסט Legal)
                 </Button>
                 <Button
                   type="button"
@@ -539,6 +596,65 @@ export function HrPanel({ hotelId }: HrPanelProps) {
                 </Button>
               </span>
             ) : null}
+            {checklistDraftId === draft.id && checklist ? (
+              <div className="legal-gate">
+                <p className="legal-gate__title">{checklist.gateHe}</p>
+                {!checklist.applies ? (
+                  <p className="hint">אין צורך בצ׳קליסט — ניתן לאשר.</p>
+                ) : (
+                  <ul className="legal-items">
+                    {checklist.items.map((item) => {
+                      const lockedPass = item.status === "pass";
+                      const checked = lockedPass || ackIds.has(item.id);
+                      return (
+                        <li key={item.id}>
+                          <label className="option">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={lockedPass || approving}
+                              onChange={() => toggleAck(item.id)}
+                            />
+                            <span>
+                              <strong>{item.labelHe}</strong>
+                              <span className={`chip chip--${item.status}`}>
+                                {item.status === "pass"
+                                  ? "עבר"
+                                  : item.status === "fail"
+                                    ? "חסר"
+                                    : "לאישור"}
+                              </span>
+                              <br />
+                              <span className="muted">{item.detailHe}</span>
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <div className="doc-actions">
+                  <Button
+                    type="button"
+                    disabled={approving}
+                    onClick={() => void confirmApprove(draft.id)}
+                  >
+                    {approving ? "מאשר…" : "אשר אחרי צ׳קליסט"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setChecklistDraftId(undefined);
+                      setChecklist(null);
+                      setAckIds(new Set());
+                    }}
+                  >
+                    סגור
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -548,9 +664,17 @@ export function HrPanel({ hotelId }: HrPanelProps) {
         .hr-panel .hint{background:rgb(16 36 31 / 6%);padding:.75rem;border-radius:8px;word-break:break-all}
         .hr-panel .draft-body{white-space:pre-wrap;font:inherit;background:rgb(255 250 242);padding:.75rem;border-radius:8px}
         .hr-panel .error{color:#8b1e1e}
-        .hr-panel .option{display:flex;gap:.5rem;align-items:center;margin-block:.25rem}
+        .hr-panel .option{display:flex;gap:.5rem;align-items:flex-start;margin-block:.25rem}
         .hr-panel fieldset{border:1px solid rgb(16 36 31 / 12%);border-radius:8px;padding:.75rem}
-        .hr-panel .doc-actions{display:inline-flex;gap:.35rem;margin-inline-start:.5rem}
+        .hr-panel .doc-actions{display:inline-flex;gap:.35rem;margin-inline-start:.5rem;margin-top:.5rem}
+        .hr-panel .legal-gate{margin-top:.75rem;padding:1rem;border:1px dashed rgb(16 36 31 / 22%);border-radius:8px;display:grid;gap:.65rem;max-width:36rem}
+        .hr-panel .legal-gate__title{margin:0;font-weight:700}
+        .hr-panel .legal-items{list-style:none;padding:0;margin:0;display:grid;gap:.5rem}
+        .hr-panel .muted{opacity:.75;font-size:.9rem}
+        .hr-panel .chip{display:inline-block;margin-inline-start:.35rem;font-size:.75rem;font-weight:700;padding:.1rem .4rem;border-radius:999px}
+        .hr-panel .chip--pass{color:#0f6a5c;background:rgb(15 106 92 / 12%)}
+        .hr-panel .chip--fail{color:#9b2c2c;background:rgb(155 44 44 / 12%)}
+        .hr-panel .chip--needs_ack{color:#8a5a12;background:rgb(138 90 18 / 12%)}
       `}</style>
     </section>
   );

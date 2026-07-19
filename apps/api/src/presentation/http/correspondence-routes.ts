@@ -10,6 +10,10 @@ import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
 import { buildKnowledgeContextPack } from "../../application/build-knowledge-context-pack.js";
+import {
+  evaluateLegalChecklist,
+  missingLegalAcks,
+} from "../../application/evaluate-legal-checklist.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -134,17 +138,63 @@ export function createCorrespondenceRoutes(deps: CorrespondenceRouteDeps): Hono<
     }
   });
 
+  routes.get("/drafts/:id/legal-checklist", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const draft = await deps.correspondence.getDraft(
+        principal.scope.tenantId,
+        c.req.param("id"),
+      );
+      if (!draft) {
+        return sendError(c, 404, "DRAFT_NOT_FOUND", "Draft not found");
+      }
+      return c.json({ data: evaluateLegalChecklist(draft) });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
   routes.post("/drafts/:id/status", async (c) => {
     try {
       const principal = c.get("principal");
       const statusSchema = z.object({
         status: z.enum(["draft", "approved", "discarded"]),
+        acknowledgedItemIds: z.array(z.string().trim().min(1).max(80)).max(40).optional(),
       });
       const body = statusSchema.parse(await c.req.json());
+      const draftId = c.req.param("id");
+      const existing = await deps.correspondence.getDraft(
+        principal.scope.tenantId,
+        draftId,
+      );
+      if (!existing) {
+        return sendError(c, 404, "DRAFT_NOT_FOUND", "Draft not found");
+      }
+
+      if (body.status === "approved") {
+        const checklist = evaluateLegalChecklist(existing);
+        const missing = missingLegalAcks(
+          checklist,
+          body.acknowledgedItemIds ?? [],
+        );
+        if (missing.length > 0) {
+          return sendError(
+            c,
+            409,
+            "LEGAL_CHECKLIST_REQUIRED",
+            "Legal checklist must be acknowledged before approving this draft",
+            {
+              checklist,
+              missingItemIds: missing,
+            },
+          );
+        }
+      }
+
       const now = new Date().toISOString();
       const updated = await deps.correspondence.updateStatus(
         principal.scope.tenantId,
-        c.req.param("id"),
+        draftId,
         body.status,
         now,
       );
@@ -158,10 +208,23 @@ export function createCorrespondenceRoutes(deps: CorrespondenceRouteDeps): Hono<
         action: `correspondence.draft.${body.status}`,
         resourceType: "letter_draft",
         resourceId: updated.id,
-        metadata: { status: body.status },
+        metadata: {
+          status: body.status,
+          ...(body.status === "approved"
+            ? {
+                legalChecklistAck: (body.acknowledgedItemIds ?? []).join(","),
+                legalGate: evaluateLegalChecklist(updated).applies,
+              }
+            : {}),
+        },
         createdAt: now,
       });
-      return c.json({ data: updated });
+      return c.json({
+        data: updated,
+        ...(body.status === "approved"
+          ? { legalChecklist: evaluateLegalChecklist(updated) }
+          : {}),
+      });
     } catch (error) {
       return mapUnknownError(c, error);
     }
