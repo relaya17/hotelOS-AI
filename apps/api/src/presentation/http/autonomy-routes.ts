@@ -6,6 +6,7 @@ import type {
   MaintenanceRepository,
   OpsRepository,
   ProcurementRepository,
+  RoomRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
@@ -23,6 +24,7 @@ export type AutonomyRouteDeps = {
   readonly ops: OpsRepository;
   readonly procurement: ProcurementRepository;
   readonly maintenance: MaintenanceRepository;
+  readonly rooms: RoomRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -68,6 +70,13 @@ const suggestLowStockSchema = z.object({
   /** Default unit price (₪) when item has no quote — MVP placeholder. */
   defaultUnitPrice: z.number().int().min(0).default(25),
   agentId: z.string().trim().min(3).max(80).default("agent.procurement"),
+});
+
+const suggestDirtyRoomsSchema = z.object({
+  hotelId: z.string().uuid(),
+  /** Optional subset; default = all dirty rooms in hotel. */
+  roomIds: z.array(z.string().uuid()).max(80).optional(),
+  agentId: z.string().trim().min(3).max(80).default("agent.housekeeping"),
 });
 
 const suggestMaintenanceQuoteAcceptSchema = z.object({
@@ -420,6 +429,99 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
             estimatedTotal: total,
             nextStepHe:
               "Approve בתיבת אישורי AI → Act ייצור טיוטת PO (לא נשלחת לספק)",
+          },
+        },
+        201,
+      );
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /** Suggest housekeeping clean tasks for dirty rooms (HITL before Act). */
+  routes.post("/suggest-dirty-rooms", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = suggestDirtyRoomsSchema.parse(await c.req.json());
+      const hotelId = Ids.hotel(body.hotelId);
+      const now = new Date().toISOString();
+
+      const belongs = await deps.rooms.hotelBelongsToTenant(
+        principal.scope.tenantId,
+        hotelId,
+      );
+      if (!belongs) {
+        return sendError(c, 404, "HOTEL_NOT_FOUND", "Hotel not found");
+      }
+
+      const allRooms = await deps.rooms.listByHotel(
+        principal.scope.tenantId,
+        hotelId,
+      );
+      const idFilter = body.roomIds ? new Set(body.roomIds) : null;
+      const dirty = allRooms.filter(
+        (room) =>
+          room.status === "dirty" &&
+          (idFilter === null || idFilter.has(String(room.id))),
+      );
+      if (dirty.length === 0) {
+        return sendError(
+          c,
+          404,
+          "NO_DIRTY_ROOMS",
+          "No dirty rooms match the request",
+        );
+      }
+
+      const roomPayload = dirty.map((room) => ({
+        roomId: String(room.id),
+        number: room.number,
+        floor: room.floor,
+        roomType: room.roomType,
+      }));
+      const numbers = roomPayload.map((r) => r.number).join(", ");
+
+      const created = await deps.approvals.create({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId,
+        agentId: body.agentId,
+        requestedByUserId: principal.userId,
+        summaryHe: `שיבוץ ניקיון: ${dirty.length} חדרים (${numbers})`,
+        reasonHe:
+          "הצעת agent.housekeeping — נדרש אישור מפקח לפני פתיחת משימות ניקיון במחלקה.",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.housekeeping_clean_batch",
+          hotelId: body.hotelId,
+          rooms: roomPayload,
+          markVacantOnAct: false,
+        }),
+        createdAt: now,
+      });
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "autonomy.suggest_dirty_rooms",
+        resourceType: "ai_approval_request",
+        resourceId: created.id,
+        metadata: {
+          roomCount: dirty.length,
+          agentId: body.agentId,
+        },
+        createdAt: now,
+      });
+
+      return c.json(
+        {
+          data: {
+            approval: created,
+            autonomyStep: "suggest",
+            dirtyRoomCount: dirty.length,
+            rooms: roomPayload,
+            nextStepHe:
+              "Approve בתיבת אישורי AI → Act ייפתח משימות ניקיון (חדרים נשארים dirty)",
           },
         },
         201,

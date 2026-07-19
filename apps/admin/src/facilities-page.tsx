@@ -4,6 +4,7 @@ import { ApprovalsPanel } from "./facilities/approvals-panel.js";
 import { DailyBriefingPanel } from "./facilities/daily-briefing-panel.js";
 import { DepartmentsPanel } from "./facilities/departments-panel.js";
 import { FeedbackPanel } from "./facilities/feedback-panel.js";
+import { HousekeepingPanel } from "./facilities/housekeeping-panel.js";
 import { HrPanel } from "./facilities/hr-panel.js";
 import { KnowledgePanel } from "./facilities/knowledge-panel.js";
 import { MaintenancePanel } from "./facilities/maintenance-panel.js";
@@ -15,6 +16,7 @@ import { TwinPanel } from "./facilities/twin-panel.js";
 type SubView =
   | "briefing"
   | "departments"
+  | "housekeeping"
   | "maintenance"
   | "procurement"
   | "feedback"
@@ -28,6 +30,7 @@ type SubView =
 const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "briefing", label: "תדריך יומי" },
   { key: "departments", label: "מחלקות ומשימות" },
+  { key: "housekeeping", label: "משק בית" },
   { key: "maintenance", label: "תחזוקה, תיקונים ושיפוצים" },
   { key: "procurement", label: "רכש ומלאי" },
   { key: "feedback", label: "משוב אורחים" },
@@ -138,6 +141,9 @@ export function FacilitiesPage() {
           ) : null}
           {view === "departments" ? (
             <DepartmentsPanel hotelId={selectedHotelId} />
+          ) : null}
+          {view === "housekeeping" ? (
+            <HousekeepingPanel hotelId={selectedHotelId} />
           ) : null}
           {view === "maintenance" ? (
             <MaintenancePanel hotelId={selectedHotelId} />

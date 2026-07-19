@@ -2329,6 +2329,39 @@ export async function suggestAutonomyMaintenanceQuoteAccept(input: {
   };
 }
 
+export async function suggestAutonomyDirtyRooms(input: {
+  readonly hotelId: string;
+  readonly roomIds?: readonly string[];
+  readonly agentId?: string;
+}): Promise<{
+  readonly approvalId: string;
+  readonly dirtyRoomCount: number;
+  readonly rooms: readonly {
+    readonly roomId: string;
+    readonly number: string;
+    readonly floor: string;
+    readonly roomType: string;
+  }[];
+}> {
+  const payload = (await authPost("/v1/autonomy/suggest-dirty-rooms", input)) as {
+    data: {
+      approval: { id: string };
+      dirtyRoomCount: number;
+      rooms: readonly {
+        readonly roomId: string;
+        readonly number: string;
+        readonly floor: string;
+        readonly roomType: string;
+      }[];
+    };
+  };
+  return {
+    approvalId: payload.data.approval.id,
+    dirtyRoomCount: payload.data.dirtyRoomCount,
+    rooms: payload.data.rooms,
+  };
+}
+
 export async function postSecurityEvent(input: {
   readonly hotelId: string;
   readonly title: string;

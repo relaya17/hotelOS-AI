@@ -24,9 +24,12 @@ describe("executeApprovalAct", () => {
       _hotelId: unknown,
       code: string,
     ) =>
-      ["sales_marketing", "housekeeping", "procurement", "maintenance"].includes(
-        code,
-      )
+      [
+        "sales_marketing",
+        "housekeeping",
+        "procurement",
+        "maintenance",
+      ].includes(code)
         ? { id: `dept-${code}`, hotelId: "h1", code, name: code }
         : null,
     createTask: async (input: {
@@ -258,5 +261,42 @@ describe("executeApprovalAct", () => {
     assert.equal(result.action, "accept_maintenance_quote");
     assert.equal(result.quote?.status, "accepted");
     assert.ok(createdTasks.some((t) => t.departmentId === "dept-maintenance"));
+  });
+
+  it("creates housekeeping clean tasks for dirty-room batch", async () => {
+    createdTasks.length = 0;
+    const result = await executeApprovalAct(
+      deps,
+      {
+        ...baseApproval,
+        agentId: "agent.housekeeping",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.housekeeping_clean_batch",
+          hotelId: "00000000-0000-4000-8000-000000000010",
+          rooms: [
+            {
+              roomId: "00000000-0000-4000-8000-000000000041",
+              number: "214",
+              floor: "2",
+              roomType: "deluxe",
+            },
+            {
+              roomId: "00000000-0000-4000-8000-000000000042",
+              number: "215",
+              floor: "2",
+              roomType: "standard",
+            },
+          ],
+        }),
+      },
+      Ids.user("00000000-0000-4000-8000-000000000099"),
+      "2026-07-19T01:00:00.000Z",
+    );
+    assert.equal(result.status, "executed");
+    if (result.status !== "executed") return;
+    assert.equal(result.action, "create_housekeeping_clean_tasks");
+    assert.equal(result.taskCount, 2);
+    assert.equal(createdTasks.length, 2);
+    assert.ok(createdTasks.every((t) => t.taskType === "room_clean"));
   });
 });

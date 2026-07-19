@@ -28,16 +28,19 @@ export type ApprovalActResult =
       readonly action:
         | "create_department_task"
         | "create_purchase_order_draft"
-        | "accept_maintenance_quote";
+        | "accept_maintenance_quote"
+        | "create_housekeeping_clean_tasks";
       readonly resourceType:
         | "department_task"
         | "purchase_order"
-        | "vendor_quote";
+        | "vendor_quote"
+        | "housekeeping_batch";
       readonly resourceId: string;
       readonly summaryHe: string;
       readonly task?: PersistedDepartmentTask;
       readonly purchaseOrder?: PersistedPurchaseOrder;
       readonly quote?: PersistedVendorQuote;
+      readonly taskCount?: number;
     }
   | {
       readonly status: "failed";
@@ -97,6 +100,17 @@ type AutonomyMaintenanceQuoteAcceptPayload = {
   readonly amount: number;
   readonly currency: string;
   readonly requestTitle?: string;
+};
+
+type AutonomyHousekeepingCleanBatchPayload = {
+  readonly kind: "autonomy.housekeeping_clean_batch";
+  readonly hotelId: string;
+  readonly rooms: readonly {
+    readonly roomId: string;
+    readonly number: string;
+    readonly floor: string;
+    readonly roomType: string;
+  }[];
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -222,6 +236,44 @@ function asMaintenanceQuoteAcceptPayload(
     ...(typeof value["requestTitle"] === "string"
       ? { requestTitle: value["requestTitle"] }
       : {}),
+  };
+}
+
+function asHousekeepingCleanBatchPayload(
+  value: unknown,
+): AutonomyHousekeepingCleanBatchPayload | null {
+  if (
+    !isRecord(value) ||
+    value["kind"] !== "autonomy.housekeeping_clean_batch"
+  ) {
+    return null;
+  }
+  if (typeof value["hotelId"] !== "string" || !Array.isArray(value["rooms"])) {
+    return null;
+  }
+  const rooms: AutonomyHousekeepingCleanBatchPayload["rooms"][number][] = [];
+  for (const room of value["rooms"]) {
+    if (!isRecord(room)) return null;
+    if (
+      typeof room["roomId"] !== "string" ||
+      typeof room["number"] !== "string" ||
+      typeof room["floor"] !== "string" ||
+      typeof room["roomType"] !== "string"
+    ) {
+      return null;
+    }
+    rooms.push({
+      roomId: room["roomId"],
+      number: room["number"],
+      floor: room["floor"],
+      roomType: room["roomType"],
+    });
+  }
+  if (rooms.length === 0) return null;
+  return {
+    kind: "autonomy.housekeeping_clean_batch",
+    hotelId: value["hotelId"],
+    rooms,
   };
 }
 
@@ -470,6 +522,47 @@ export async function executeApprovalAct(
       resourceId: quote.id,
       summaryHe: `בוצע Act — הצעת מחיר אושרה (₪${quoteAccept.amount}). הקריאה עברה ל-approved.`,
       quote,
+    };
+  }
+
+  const cleanBatch = asHousekeepingCleanBatchPayload(payload);
+  if (cleanBatch) {
+    const createdTasks: PersistedDepartmentTask[] = [];
+    for (const room of cleanBatch.rooms) {
+      const task = await createTaskForDepartment(deps.ops, {
+        tenantId: Ids.tenant(approval.tenantId),
+        hotelId: Ids.hotel(cleanBatch.hotelId),
+        departmentCode: "housekeeping",
+        taskType: "room_clean",
+        title: `ניקוי חדר ${room.number}`,
+        description: [
+          "שיבוץ ניקיון אחרי אישור AI (Suggest→Approve→Act).",
+          `קומה ${room.floor} · סוג ${room.roomType}.`,
+          `מזהה חדר: ${room.roomId}`,
+          "סטטוס החדר נשאר dirty עד סימון ידני אחרי ניקיון בפועל.",
+          `מזהה אישור: ${approval.id}`,
+        ].join("\n"),
+        priority: "high",
+        createdByUserId: decidedByUserId,
+        now,
+      });
+      if (task) createdTasks.push(task);
+    }
+    if (createdTasks.length === 0) {
+      return {
+        status: "failed",
+        reasonHe: "לא נוצרו משימות משק בית — Act נכשל.",
+      };
+    }
+    const first = createdTasks[0]!;
+    return {
+      status: "executed",
+      action: "create_housekeeping_clean_tasks",
+      resourceType: "housekeeping_batch",
+      resourceId: first.id,
+      summaryHe: `בוצע Act — נפתחו ${createdTasks.length} משימות ניקיון במשק בית (חדרים נשארים dirty).`,
+      task: first,
+      taskCount: createdTasks.length,
     };
   }
 
