@@ -8,6 +8,7 @@ import {
   listVendors,
   receivePurchaseOrder,
   suggestAutonomyLowStockReorder,
+  suggestAutonomyProcurementDraft,
   suggestAutonomySendPurchaseOrder,
   type InventoryCategory,
   type InventoryItemDto,
@@ -46,6 +47,7 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
   const [error, setError] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
   const [suggesting, setSuggesting] = useState(false);
+  const [suggestingDraft, setSuggestingDraft] = useState(false);
   const [sendingPoId, setSendingPoId] = useState<string | undefined>();
 
   const [itemCategory, setItemCategory] = useState<InventoryCategory>("towels");
@@ -121,18 +123,31 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
     }
   }
 
-  async function onCreateOrder(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function parsePoLine():
+    | { readonly description: string; readonly quantity: number; readonly unitPrice: number }
+    | undefined {
     const quantity = Number.parseInt(poQuantity, 10);
     const unitPrice = Number.parseInt(poUnitPrice, 10);
     if (!poVendorId || !poDescription.trim() || quantity <= 0 || unitPrice < 0) {
-      return;
+      return undefined;
     }
+    return {
+      description: poDescription.trim(),
+      quantity,
+      unitPrice,
+    };
+  }
+
+  async function onCreateOrder(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const line = parsePoLine();
+    if (!line || !poVendorId) return;
     setCreatingOrder(true);
+    setError(undefined);
     try {
       const created = await createPurchaseOrder(hotelId, {
         vendorId: poVendorId,
-        items: [{ description: poDescription, quantity, unitPrice }],
+        items: [line],
       });
       setOrders((prev) => [created, ...prev]);
       setPoDescription("");
@@ -144,6 +159,45 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
       );
     } finally {
       setCreatingOrder(false);
+    }
+  }
+
+  async function onSuggestDraftOrder() {
+    const line = parsePoLine();
+    if (!line || !poVendorId) {
+      setError("מלאו ספק, תיאור, כמות ומחיר לפני Suggest");
+      return;
+    }
+    setSuggestingDraft(true);
+    setError(undefined);
+    setNotice(undefined);
+    try {
+      const estimated = line.quantity * line.unitPrice;
+      const result = await suggestAutonomyProcurementDraft({
+        hotelId,
+        vendorId: poVendorId,
+        currency: "ILS",
+        notes: `טיוטת רכש ידנית: ${line.description}`,
+        items: [line],
+        agentId: "agent.procurement",
+        summaryHe: `הצעת טיוטת PO · ${line.description} · ₪${estimated}`,
+        reasonHe:
+          "הצעת טיוטת הזמנת רכש — נדרש אישור מפקח לפני Act (יצירת draft בלבד, ללא שליחה לספק).",
+      });
+      setNotice(
+        `Suggest טיוטת PO נשלח לאישורי AI (₪${result.estimatedTotal ?? estimated}). אשרו → Act ייצור draft בלבד.`,
+      );
+      setPoDescription("");
+      setPoQuantity("1");
+      setPoUnitPrice("0");
+    } catch (suggestError) {
+      setError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "הצעת טיוטת PO נכשלה",
+      );
+    } finally {
+      setSuggestingDraft(false);
     }
   }
 
@@ -375,6 +429,10 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
 
         <form className="create-form" onSubmit={onCreateOrder} noValidate>
           <h3>הזמנת רכש חדשה</h3>
+          <p className="form-hint">
+            יצירה מיידית כטיוטה — או Suggest→Approve→Act לתיבת אישורי AI לפני
+            יצירת draft (ללא שליחה לספק).
+          </p>
           <label className="select-field">
             <span>ספק</span>
             <select
@@ -417,9 +475,18 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
             onChange={(e) => setPoUnitPrice(e.target.value)}
             required
           />
-          <Button type="submit" disabled={creatingOrder || !poVendorId}>
-            {creatingOrder ? "יוצר…" : "צור הזמנת רכש"}
-          </Button>
+          <div className="form-actions">
+            <Button type="submit" disabled={creatingOrder || suggestingDraft || !poVendorId}>
+              {creatingOrder ? "יוצר…" : "צור הזמנת רכש"}
+            </Button>
+            <Button
+              type="button"
+              disabled={creatingOrder || suggestingDraft || !poVendorId}
+              onClick={() => void onSuggestDraftOrder()}
+            >
+              {suggestingDraft ? "שולח הצעה…" : "הצע טיוטה (Suggest)"}
+            </Button>
+          </div>
         </form>
       </section>
 
@@ -438,6 +505,8 @@ export function ProcurementPanel({ hotelId }: ProcurementPanelProps) {
         .mini-btn { font:inherit; font-size:var(--text-small); border:1px solid rgb(16 36 31 / 18%); background:transparent; border-radius:var(--radius-sm); padding:.3rem .6rem; cursor:pointer; font-weight:600; }
         .create-form { display:grid; gap:var(--space-3); border-top:1px solid rgb(16 36 31 / 10%); padding-top:var(--space-4); }
         .create-form h3 { margin:0; font-family:var(--font-display); }
+        .form-hint { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); }
+        .form-actions { display:flex; flex-wrap:wrap; gap:var(--space-2); }
         .select-field { display:grid; gap:var(--space-2); }
         .select-field span { font-size:var(--text-small); font-weight:600; color:var(--color-ink-soft); }
         .select-field select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); }
