@@ -2111,7 +2111,7 @@ export async function completePublicHrInvite(
 
 export type LetterDraftDto = {
   readonly id: string;
-  readonly kind: "formal_letter" | "purchase_note" | "speech" | string;
+  readonly kind: "formal_letter" | "purchase_note" | "speech";
   readonly subject: string;
   readonly recipientLabel: string;
   readonly body: string;
