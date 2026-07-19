@@ -89,12 +89,30 @@ export type RecruitingRepository = {
     tenantId: TenantId,
     hotelId: HotelId,
   ) => Promise<readonly PersistedJobPosting[]>;
+  findPostingInHotel: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    postingId: string,
+  ) => Promise<PersistedJobPosting | null>;
   createPosting: (input: CreateJobPostingInput) => Promise<PersistedJobPosting>;
-  closePosting: (postingId: string, closedAt: string) => Promise<void>;
+  closePosting: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    postingId: string,
+    closedAt: string,
+  ) => Promise<PersistedJobPosting | null>;
   addCandidate: (input: AddCandidateInput) => Promise<PersistedJobCandidate>;
   listCandidates: (
     jobPostingId: string,
   ) => Promise<readonly PersistedJobCandidate[]>;
+  findCandidateInHotel: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    candidateId: string,
+  ) => Promise<{
+    readonly candidate: PersistedJobCandidate;
+    readonly posting: PersistedJobPosting;
+  } | null>;
   updateCandidateStage: (
     candidateId: string,
     stage: CandidateStage,
@@ -115,6 +133,21 @@ export function createRecruitingRepository(db: HotelOsDb): RecruitingRepository 
       return rows.map(mapPosting);
     },
 
+    async findPostingInHotel(tenantId, hotelId, postingId) {
+      const row = await db
+        .select()
+        .from(jobPostings)
+        .where(
+          and(
+            eq(jobPostings.id, postingId),
+            eq(jobPostings.tenantId, tenantId),
+            eq(jobPostings.hotelId, hotelId),
+          ),
+        )
+        .get();
+      return row ? mapPosting(row) : null;
+    },
+
     async createPosting(input) {
       const row = {
         id: input.id,
@@ -133,11 +166,25 @@ export function createRecruitingRepository(db: HotelOsDb): RecruitingRepository 
       return mapPosting(row);
     },
 
-    async closePosting(postingId, closedAt) {
-      await db.update(jobPostings)
+    async closePosting(tenantId, hotelId, postingId, closedAt) {
+      const existing = await db
+        .select()
+        .from(jobPostings)
+        .where(
+          and(
+            eq(jobPostings.id, postingId),
+            eq(jobPostings.tenantId, tenantId),
+            eq(jobPostings.hotelId, hotelId),
+          ),
+        )
+        .get();
+      if (!existing) return null;
+      await db
+        .update(jobPostings)
         .set({ status: "closed", closedAt })
         .where(eq(jobPostings.id, postingId))
         .run();
+      return mapPosting({ ...existing, status: "closed", closedAt });
     },
 
     async addCandidate(input) {
@@ -163,6 +210,32 @@ export function createRecruitingRepository(db: HotelOsDb): RecruitingRepository 
         .where(eq(jobCandidates.jobPostingId, jobPostingId))
         .all();
       return rows.map(mapCandidate);
+    },
+
+    async findCandidateInHotel(tenantId, hotelId, candidateId) {
+      const row = await db
+        .select({
+          candidate: jobCandidates,
+          posting: jobPostings,
+        })
+        .from(jobCandidates)
+        .innerJoin(
+          jobPostings,
+          eq(jobCandidates.jobPostingId, jobPostings.id),
+        )
+        .where(
+          and(
+            eq(jobCandidates.id, candidateId),
+            eq(jobPostings.tenantId, tenantId),
+            eq(jobPostings.hotelId, hotelId),
+          ),
+        )
+        .get();
+      if (!row) return null;
+      return {
+        candidate: mapCandidate(row.candidate),
+        posting: mapPosting(row.posting),
+      };
     },
 
     async updateCandidateStage(candidateId, stage) {

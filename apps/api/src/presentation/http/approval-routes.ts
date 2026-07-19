@@ -8,6 +8,7 @@ import type {
   MaintenanceRepository,
   OpsRepository,
   ProcurementRepository,
+  RecruitingRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
@@ -26,6 +27,7 @@ export type ApprovalRouteDeps = {
   readonly ops: OpsRepository;
   readonly procurement: ProcurementRepository;
   readonly maintenance: MaintenanceRepository;
+  readonly recruiting: RecruitingRepository;
   readonly hotels: HotelRepository;
   readonly kashrut: KashrutRepository;
   readonly tokens: JwtTokenService;
@@ -138,6 +140,7 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
                 ops: deps.ops,
                 procurement: deps.procurement,
                 maintenance: deps.maintenance,
+                recruiting: deps.recruiting,
               },
               updated,
               principal.userId,

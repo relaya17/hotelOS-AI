@@ -145,6 +145,17 @@ const addCandidateSchema = z.object({
   source: z.string().trim().min(1).max(80),
 });
 
+const DIRECT_CANDIDATE_STAGES = [
+  "applied",
+  "screening",
+  "interview",
+  "rejected",
+] as const;
+
+const updateCandidateStageSchema = z.object({
+  stage: z.enum(DIRECT_CANDIDATE_STAGES),
+});
+
 export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
   Variables: AuthVariables;
 }> {
@@ -672,7 +683,25 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
   routes.post("/recruiting/postings/:id/candidates", async (c) => {
     try {
       const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
       const postingId = c.req.param("id");
+      const posting = await deps.recruiting.findPostingInHotel(
+        principal.scope.tenantId,
+        resolved.hotelId,
+        postingId,
+      );
+      if (!posting) {
+        return sendError(c, 404, "POSTING_NOT_FOUND", "Job posting not found");
+      }
+      if (posting.status === "closed") {
+        return sendError(
+          c,
+          409,
+          "POSTING_CLOSED",
+          "Cannot add candidates to a closed posting",
+        );
+      }
       const body = addCandidateSchema.parse(await c.req.json());
       const created = await deps.recruiting.addCandidate({
         id: randomUUID(),
@@ -686,6 +715,7 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
       await deps.audit.append({
         id: randomUUID(),
         tenantId: principal.scope.tenantId,
+        hotelId: resolved.hotelId,
         actorUserId: principal.userId,
         action: "recruiting.candidate.create",
         resourceType: "job_candidate",
@@ -705,9 +735,114 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
 
   routes.get("/recruiting/postings/:id/candidates", async (c) => {
     try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
       const postingId = c.req.param("id");
+      const posting = await deps.recruiting.findPostingInHotel(
+        principal.scope.tenantId,
+        resolved.hotelId,
+        postingId,
+      );
+      if (!posting) {
+        return sendError(c, 404, "POSTING_NOT_FOUND", "Job posting not found");
+      }
       const list = await deps.recruiting.listCandidates(postingId);
       return c.json({ data: list });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/recruiting/postings/:id/close", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
+      const postingId = c.req.param("id");
+      const now = new Date().toISOString();
+      const closed = await deps.recruiting.closePosting(
+        principal.scope.tenantId,
+        resolved.hotelId,
+        postingId,
+        now,
+      );
+      if (!closed) {
+        return sendError(c, 404, "POSTING_NOT_FOUND", "Job posting not found");
+      }
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: resolved.hotelId,
+        actorUserId: principal.userId,
+        action: "recruiting.posting.close",
+        resourceType: "job_posting",
+        resourceId: closed.id,
+        metadata: { title: closed.title, status: closed.status },
+        createdAt: now,
+      });
+      return c.json({ data: closed });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.patch("/recruiting/candidates/:candidateId/stage", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
+      const body = updateCandidateStageSchema.parse(await c.req.json());
+      const found = await deps.recruiting.findCandidateInHotel(
+        principal.scope.tenantId,
+        resolved.hotelId,
+        c.req.param("candidateId"),
+      );
+      if (!found) {
+        return sendError(
+          c,
+          404,
+          "CANDIDATE_NOT_FOUND",
+          "Candidate not found",
+        );
+      }
+      if (found.posting.status === "closed") {
+        return sendError(
+          c,
+          409,
+          "POSTING_CLOSED",
+          "Cannot update candidates on a closed posting",
+        );
+      }
+      const updated = await deps.recruiting.updateCandidateStage(
+        found.candidate.id,
+        body.stage,
+      );
+      if (!updated) {
+        return sendError(
+          c,
+          404,
+          "CANDIDATE_NOT_FOUND",
+          "Candidate not found",
+        );
+      }
+      const now = new Date().toISOString();
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: resolved.hotelId,
+        actorUserId: principal.userId,
+        action: "recruiting.candidate.stage",
+        resourceType: "job_candidate",
+        resourceId: updated.id,
+        metadata: {
+          jobPostingId: updated.jobPostingId,
+          from: found.candidate.stage,
+          to: updated.stage,
+        },
+        createdAt: now,
+      });
+      return c.json({ data: updated });
     } catch (error) {
       return mapUnknownError(c, error);
     }

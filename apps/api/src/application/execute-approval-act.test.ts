@@ -5,9 +5,11 @@ import type {
   OpsRepository,
   PersistedApprovalRequest,
   PersistedDepartmentTask,
+  PersistedJobCandidate,
   PersistedPurchaseOrder,
   PersistedVendorQuote,
   ProcurementRepository,
+  RecruitingRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { executeApprovalAct } from "./execute-approval-act.js";
@@ -30,6 +32,7 @@ describe("executeApprovalAct", () => {
         "procurement",
         "maintenance",
         "front_office",
+        "hr",
       ].includes(code)
         ? { id: `dept-${code}`, hotelId: "h1", code, name: code }
         : null,
@@ -140,7 +143,41 @@ describe("executeApprovalAct", () => {
     },
   } as unknown as MaintenanceRepository;
 
-  const deps = { ops, procurement, maintenance };
+  const candidates: PersistedJobCandidate[] = [];
+  const recruiting = {
+    findCandidateInHotel: async (
+      _tenantId: unknown,
+      _hotelId: unknown,
+      candidateId: string,
+    ) => {
+      const candidate = candidates.find((row) => row.id === candidateId);
+      if (!candidate) return null;
+      return {
+        candidate,
+        posting: {
+          id: candidate.jobPostingId,
+          hotelId: "00000000-0000-4000-8000-000000000010",
+          title: "קופאי/ת",
+          boardName: "Yad2",
+          externalUrl: null,
+          status: "open" as const,
+          createdAt: "2026-07-19T00:00:00.000Z",
+        },
+      };
+    },
+    updateCandidateStage: async (
+      candidateId: string,
+      stage: PersistedJobCandidate["stage"],
+    ) => {
+      const index = candidates.findIndex((row) => row.id === candidateId);
+      if (index < 0) return null;
+      const updated = { ...candidates[index]!, stage };
+      candidates[index] = updated;
+      return updated;
+    },
+  } as unknown as RecruitingRepository;
+
+  const deps = { ops, procurement, maintenance, recruiting };
 
   const baseApproval: PersistedApprovalRequest = {
     id: "appr-1",
@@ -355,6 +392,45 @@ describe("executeApprovalAct", () => {
     assert.equal(result.action, "send_purchase_order");
     assert.equal(result.purchaseOrder?.status, "sent");
     assert.ok(createdTasks.some((t) => t.taskType === "po_sent_followup"));
+  });
+
+  it("updates recruiting stage to hired and opens HR follow-up", async () => {
+    createdTasks.length = 0;
+    candidates.length = 0;
+    const candidateId = "00000000-0000-4000-8000-000000000070";
+    candidates.push({
+      id: candidateId,
+      jobPostingId: "00000000-0000-4000-8000-000000000071",
+      fullName: "נועה אברהם",
+      phone: null,
+      email: null,
+      source: "Yad2",
+      stage: "interview",
+    });
+    const result = await executeApprovalAct(
+      deps,
+      {
+        ...baseApproval,
+        agentId: "agent.hr",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.recruiting_stage",
+          hotelId: "00000000-0000-4000-8000-000000000010",
+          candidateId,
+          jobPostingId: "00000000-0000-4000-8000-000000000071",
+          postingTitle: "קופאי/ת",
+          candidateName: "נועה אברהם",
+          fromStage: "interview",
+          stage: "hired",
+        }),
+      },
+      Ids.user("00000000-0000-4000-8000-000000000099"),
+      "2026-07-19T01:00:00.000Z",
+    );
+    assert.equal(result.status, "executed");
+    if (result.status !== "executed") return;
+    assert.equal(result.action, "update_recruiting_stage");
+    assert.equal(result.candidate?.stage, "hired");
+    assert.ok(createdTasks.some((t) => t.taskType === "onboarding_followup"));
   });
 
   it("creates reception arrival-prep tasks for confirmed arrivals", async () => {

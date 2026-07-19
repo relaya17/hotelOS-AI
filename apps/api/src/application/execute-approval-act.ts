@@ -1,12 +1,15 @@
 import { randomUUID } from "node:crypto";
 import type {
+  CandidateStage,
   MaintenanceRepository,
   OpsRepository,
   PersistedApprovalRequest,
   PersistedDepartmentTask,
+  PersistedJobCandidate,
   PersistedPurchaseOrder,
   PersistedVendorQuote,
   ProcurementRepository,
+  RecruitingRepository,
   TaskPriority,
 } from "@hotelos/database";
 import type { HotelId, TenantId, UserId } from "@hotelos/shared";
@@ -16,6 +19,7 @@ export type ExecuteApprovalActDeps = {
   readonly ops: OpsRepository;
   readonly procurement: ProcurementRepository;
   readonly maintenance: MaintenanceRepository;
+  readonly recruiting: RecruitingRepository;
 };
 
 export type ApprovalActResult =
@@ -31,18 +35,21 @@ export type ApprovalActResult =
         | "send_purchase_order"
         | "accept_maintenance_quote"
         | "create_housekeeping_clean_tasks"
-        | "create_reception_arrival_tasks";
+        | "create_reception_arrival_tasks"
+        | "update_recruiting_stage";
       readonly resourceType:
         | "department_task"
         | "purchase_order"
         | "vendor_quote"
         | "housekeeping_batch"
-        | "reception_arrival_batch";
+        | "reception_arrival_batch"
+        | "job_candidate";
       readonly resourceId: string;
       readonly summaryHe: string;
       readonly task?: PersistedDepartmentTask;
       readonly purchaseOrder?: PersistedPurchaseOrder;
       readonly quote?: PersistedVendorQuote;
+      readonly candidate?: PersistedJobCandidate;
       readonly taskCount?: number;
     }
   | {
@@ -136,6 +143,17 @@ type AutonomyProcurementSendPayload = {
   readonly vendorId: string;
   readonly totalAmount: number;
   readonly currency: string;
+};
+
+type AutonomyRecruitingStagePayload = {
+  readonly kind: "autonomy.recruiting_stage";
+  readonly hotelId: string;
+  readonly candidateId: string;
+  readonly jobPostingId: string;
+  readonly postingTitle: string;
+  readonly candidateName: string;
+  readonly fromStage: string;
+  readonly stage: "offer" | "hired";
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -370,6 +388,35 @@ function asProcurementSendPayload(
     vendorId: value["vendorId"],
     totalAmount: value["totalAmount"],
     currency: value["currency"],
+  };
+}
+
+function asRecruitingStagePayload(
+  value: unknown,
+): AutonomyRecruitingStagePayload | null {
+  if (!isRecord(value) || value["kind"] !== "autonomy.recruiting_stage") {
+    return null;
+  }
+  if (
+    typeof value["hotelId"] !== "string" ||
+    typeof value["candidateId"] !== "string" ||
+    typeof value["jobPostingId"] !== "string" ||
+    typeof value["postingTitle"] !== "string" ||
+    typeof value["candidateName"] !== "string" ||
+    typeof value["fromStage"] !== "string" ||
+    (value["stage"] !== "offer" && value["stage"] !== "hired")
+  ) {
+    return null;
+  }
+  return {
+    kind: "autonomy.recruiting_stage",
+    hotelId: value["hotelId"],
+    candidateId: value["candidateId"],
+    jobPostingId: value["jobPostingId"],
+    postingTitle: value["postingTitle"],
+    candidateName: value["candidateName"],
+    fromStage: value["fromStage"],
+    stage: value["stage"],
   };
 }
 
@@ -762,6 +809,62 @@ export async function executeApprovalAct(
       summaryHe: `בוצע Act — נפתחו ${createdTasks.length} משימות הכנת הגעה בקבלה (ללא צ'ק-אין אוטומטי).`,
       task: first,
       taskCount: createdTasks.length,
+    };
+  }
+
+  const recruitingStage = asRecruitingStagePayload(payload);
+  if (recruitingStage) {
+    const found = await deps.recruiting.findCandidateInHotel(
+      Ids.tenant(approval.tenantId),
+      Ids.hotel(recruitingStage.hotelId),
+      recruitingStage.candidateId,
+    );
+    if (!found) {
+      return { status: "failed", reasonHe: "מועמד לא נמצא — Act נכשל." };
+    }
+    if (found.posting.status === "closed") {
+      return {
+        status: "failed",
+        reasonHe: "המשרה סגורה — לא ניתן לעדכן שלב מועמד.",
+      };
+    }
+
+    const stage = recruitingStage.stage as CandidateStage;
+    const candidate = await deps.recruiting.updateCandidateStage(
+      recruitingStage.candidateId,
+      stage,
+    );
+    if (!candidate) {
+      return { status: "failed", reasonHe: "עדכון שלב מועמד נכשל." };
+    }
+
+    const stageHe = stage === "hired" ? "התקבל/ה" : "הצעה נשלחה";
+    await createTaskForDepartment(deps.ops, {
+      tenantId: Ids.tenant(approval.tenantId),
+      hotelId: Ids.hotel(recruitingStage.hotelId),
+      departmentCode: "hr",
+      taskType: stage === "hired" ? "onboarding_followup" : "offer_followup",
+      title: `${stageHe} — ${recruitingStage.candidateName}`,
+      description: [
+        "עודכן אחרי אישור AI (Suggest→Approve→Act).",
+        `משרה: ${recruitingStage.postingTitle}`,
+        `שלב קודם: ${recruitingStage.fromStage} → ${stage}`,
+        "אין יצירת משתמש/חוזה/שכר אוטומטית — מעקב HR ידני.",
+        `מזהה מועמד: ${candidate.id}`,
+        `מזהה אישור: ${approval.id}`,
+      ].join("\n"),
+      priority: stage === "hired" ? "high" : "medium",
+      createdByUserId: decidedByUserId,
+      now,
+    });
+
+    return {
+      status: "executed",
+      action: "update_recruiting_stage",
+      resourceType: "job_candidate",
+      resourceId: candidate.id,
+      summaryHe: `בוצע Act — ${recruitingStage.candidateName} סומן/ה כ«${stageHe}» (+ משימת HR).`,
+      candidate,
     };
   }
 

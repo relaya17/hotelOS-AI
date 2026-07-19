@@ -1626,23 +1626,75 @@ export async function createJobPosting(
 }
 
 export async function listJobCandidates(
+  hotelId: string,
   postingId: string,
 ): Promise<readonly JobCandidateDto[]> {
   const payload = (await authGet(
-    `/v1/ops/recruiting/postings/${postingId}/candidates`,
+    `/v1/ops/recruiting/postings/${postingId}/candidates?${hotelQuery(hotelId)}`,
   )) as { data: JobCandidateDto[] };
   return payload.data;
 }
 
 export async function addJobCandidate(
+  hotelId: string,
   postingId: string,
   input: { fullName: string; phone?: string; email?: string; source: string },
 ): Promise<JobCandidateDto> {
   const payload = (await authPost(
-    `/v1/ops/recruiting/postings/${postingId}/candidates`,
+    `/v1/ops/recruiting/postings/${postingId}/candidates?${hotelQuery(hotelId)}`,
     input,
   )) as { data: JobCandidateDto };
   return payload.data;
+}
+
+export async function closeJobPosting(
+  hotelId: string,
+  postingId: string,
+): Promise<JobPostingDto> {
+  const payload = (await authPost(
+    `/v1/ops/recruiting/postings/${postingId}/close?${hotelQuery(hotelId)}`,
+    {},
+  )) as { data: JobPostingDto };
+  return payload.data;
+}
+
+export async function updateJobCandidateStage(
+  hotelId: string,
+  candidateId: string,
+  stage: Exclude<CandidateStage, "offer" | "hired">,
+): Promise<JobCandidateDto> {
+  const payload = (await authPatch(
+    `/v1/ops/recruiting/candidates/${candidateId}/stage?${hotelQuery(hotelId)}`,
+    { stage },
+  )) as { data: JobCandidateDto };
+  return payload.data;
+}
+
+export async function suggestAutonomyRecruitingStage(input: {
+  readonly hotelId: string;
+  readonly candidateId: string;
+  readonly stage: "offer" | "hired";
+  readonly agentId?: string;
+}): Promise<{
+  readonly approvalId: string;
+  readonly candidateId: string;
+  readonly stage: "offer" | "hired";
+}> {
+  const payload = (await authPost(
+    "/v1/autonomy/suggest-recruiting-stage",
+    input,
+  )) as {
+    data: {
+      approval: { id: string };
+      candidateId: string;
+      stage: "offer" | "hired";
+    };
+  };
+  return {
+    approvalId: payload.data.approval.id,
+    candidateId: payload.data.candidateId,
+    stage: payload.data.stage,
+  };
 }
 
 export async function fetchOpsDashboard(): Promise<{
