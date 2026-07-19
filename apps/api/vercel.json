@@ -8,6 +8,10 @@
     {
       "path": "/v1/cron/cio-daily",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/v1/cron/anomaly-scan",
+      "schedule": "30 */6 * * *"
     }
   ]
 }

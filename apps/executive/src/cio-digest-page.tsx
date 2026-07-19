@@ -4,6 +4,7 @@ import {
   createTrustedSource,
   fetchAiGatewayStatus,
   fetchCioDigest,
+  fetchOpsAnomalies,
   invokeAiGateway,
   listOrgCommsChannels,
   listOrgCommsMessages,
@@ -14,6 +15,7 @@ import {
   type AiGatewayInvokeResultDto,
   type CioDigestDto,
   type CioRole,
+  type OpsAnomalyDto,
   type OrgCommsChannelDto,
   type OrgCommsMessageDto,
   type SynthesizedCioDigestDto,
@@ -69,6 +71,7 @@ export function CioDigestPage() {
   const [smartLoading, setSmartLoading] = useState(false);
   const [notice, setNotice] = useState<string | undefined>();
   const [busyAction, setBusyAction] = useState<string | undefined>();
+  const [anomalies, setAnomalies] = useState<readonly OpsAnomalyDto[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,7 +80,11 @@ export function CioDigestPage() {
       setError(undefined);
       setSmart(null);
       try {
-        const data = await fetchCioDigest(role);
+        const [data, anomalyRows] = await Promise.all([
+          fetchCioDigest(role),
+          fetchOpsAnomalies(),
+        ]);
+        if (!cancelled) setAnomalies(anomalyRows);
         if (!cancelled) setDigest(data);
       } catch (loadError) {
         if (!cancelled) {
@@ -262,6 +269,28 @@ export function CioDigestPage() {
           LLM תואם OpenAI.
         </p>
       </header>
+
+      <section className="card">
+        <h2>אנומליות לסף (כללים)</h2>
+        <p className="hint">
+          מלאי נמוך, תחזוקה דחופה חורגת SLA, רכש/יומן מעל ₪2,000, וסגירות מהירות
+          ללא תיעוד — בלי ביצוע כספי אוטונומי.
+        </p>
+        {anomalies.length === 0 ? (
+          <p className="hint">לא זוהו אנומליות לפי כללי הסף כרגע.</p>
+        ) : (
+          <ul className="anomaly-list">
+            {anomalies.map((row) => (
+              <li key={row.fingerprint}>
+                <strong>
+                  [{row.severity}] {row.titleHe}
+                </strong>
+                <span>{row.evidenceHe}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="card">
         <h2>תדריך חכם (Gateway)</h2>
@@ -546,6 +575,9 @@ export function CioDigestPage() {
         .compose > :first-child { flex:1; min-width:200px; }
         .sources { list-style:none; margin:0; padding:0; display:grid; gap:.4rem; }
         .sources li { display:flex; justify-content:space-between; gap:var(--space-2); padding:.5rem .7rem; border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .anomaly-list { list-style:none; margin:0; padding:0; display:grid; gap:.45rem; }
+        .anomaly-list li { display:grid; gap:.15rem; padding:.55rem .7rem; border-radius:var(--radius-sm); background:var(--color-paper-elevated); border:1px solid rgb(16 36 31 / 10%); }
+        .anomaly-list span { color:var(--color-ink-soft); font-size:var(--text-small); }
         .category { font-size:var(--text-small); color:var(--color-ink-soft); }
         .gateway-answer { padding:var(--space-3); border-radius:var(--radius-sm); background:var(--color-paper-elevated); display:grid; gap:var(--space-2); white-space:pre-wrap; }
         @media (max-width:768px){ .comms{ grid-template-columns:1fr; } }

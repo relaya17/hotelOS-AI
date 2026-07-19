@@ -9,6 +9,7 @@ import type {
   TurboRepository,
 } from "@hotelos/database";
 import type { HotelId, TenantId } from "@hotelos/shared";
+import { detectOpsAnomalies } from "./detect-ops-anomalies.js";
 
 export const CIO_ROLES = [
   "owner",
@@ -130,6 +131,23 @@ export async function buildCioDigest(
         (note) => note.status === "warn" || note.status === "block",
       );
 
+      const isFirstHotel = hotel.id === scopedHotels[0]?.id;
+      const anomalies = detectOpsAnomalies({
+        hotels: [
+          {
+            hotelId: hotel.id,
+            hotelName: hotel.name,
+            inventory,
+            maintenance: requests,
+            purchaseOrders: orders,
+          },
+        ],
+        journal: isFirstHotel ? journal : [],
+      });
+      const anomalyBulletsHe = anomalies
+        .slice(0, 4)
+        .map((row) => `אנומליה: ${row.titleHe} — ${row.evidenceHe}`);
+
       const bulletsHe = buildRoleBullets(role, {
         hotelName: hotel.name,
         occupancyPercent,
@@ -147,6 +165,7 @@ export async function buildCioDigest(
         blockingKashrutCount: blockingKashrut.length,
         accounts,
         journalCount: journal.length,
+        anomalyBulletsHe,
       });
 
       return {
@@ -214,6 +233,7 @@ type RoleBulletInput = {
   readonly blockingKashrutCount: number;
   readonly accounts: readonly { readonly balanceMinor: number; readonly currency: string }[];
   readonly journalCount: number;
+  readonly anomalyBulletsHe: readonly string[];
 };
 
 function buildRoleBullets(role: CioRole, input: RoleBulletInput): readonly string[] {
@@ -252,6 +272,11 @@ function buildRoleBullets(role: CioRole, input: RoleBulletInput): readonly strin
           ? `Backlog תחזוקה/HK: ${input.openMaintenanceRequests} קריאות פתוחות (${input.urgentMaintenanceRequests} דחופות), ${input.dirtyRooms} חדרים לניקיון.`
           : `Backlog תחזוקה/HK: פנוי, ${input.dirtyRooms} חדרים לניקיון.`,
       );
+      if (input.anomalyBulletsHe.length > 0) {
+        bullets.push(
+          `אנומליות לסף: ${input.anomalyBulletsHe.length} ממצאים (ראו תדריך CFO / משימות מחלקה).`,
+        );
+      }
       if (input.kashrutEnabled) {
         bullets.push(
           input.blockingKashrutCount > 0
@@ -274,7 +299,13 @@ function buildRoleBullets(role: CioRole, input: RoleBulletInput): readonly strin
           ? `רכש פתוח: ${input.openPurchaseOrders} הזמנות ב${input.hotelName}, שווי מצטבר ${(input.openOrdersValue / 100).toLocaleString("he-IL")}.`
           : "רכש: אין הזמנות פתוחות ממתינות לתשלום.",
       );
-      bullets.push("לא זוהו חשדות הונאה או אי־דיווח על בסיס הנתונים הפנימיים הזמינים.");
+      if (input.anomalyBulletsHe.length > 0) {
+        bullets.push(...input.anomalyBulletsHe);
+      } else {
+        bullets.push(
+          "לא זוהו חשדות הונאה או אי־דיווח על בסיס כללי הסף הפנימיים הזמינים.",
+        );
+      }
       break;
     }
     case "reception": {

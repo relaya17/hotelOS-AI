@@ -1801,6 +1801,26 @@ export async function fetchCioDigest(role: CioRole): Promise<CioDigestDto> {
   return payload.data;
 }
 
+export type OpsAnomalyDto = {
+  readonly fingerprint: string;
+  readonly type: string;
+  readonly severity: "low" | "medium" | "high" | "urgent";
+  readonly hotelId: string | null;
+  readonly titleHe: string;
+  readonly evidenceHe: string;
+  readonly detectedAt: string;
+  readonly amountMinor?: number;
+  readonly resourceType?: string;
+  readonly resourceId?: string;
+};
+
+export async function fetchOpsAnomalies(): Promise<readonly OpsAnomalyDto[]> {
+  const payload = (await authGet("/v1/ops/anomalies")) as {
+    data: readonly OpsAnomalyDto[];
+  };
+  return payload.data;
+}
+
 export type SynthesizedCioDigestDto = {
   readonly digest: CioDigestDto;
   readonly narrativeHe: string;

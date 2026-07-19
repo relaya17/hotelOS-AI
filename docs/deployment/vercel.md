@@ -65,7 +65,7 @@ each `vercel.json` already assume this.
 | `WEBAUTHN_RP_ID` | your API's domain (WebAuthn ties credentials to a specific RP ID) |
 | `RECORDINGS_PATH` | local/dev path only; on Vercel prefer Blob (below) |
 | `BLOB_READ_WRITE_TOKEN` | optional — Vercel Blob read/write token; when set, Meet recordings persist via Blob instead of ephemeral disk |
-| `CRON_SECRET` | optional — enables `GET/POST /v1/cron/cio-daily` (Vercel Cron sends `Authorization: Bearer …`) |
+| `CRON_SECRET` | optional — enables `GET/POST /v1/cron/*` (Vercel Cron sends `Authorization: Bearer …`) |
 | `SENTRY_DSN` | optional — Sentry/GlitchTip DSN for API server errors |
 | `SENTRY_ENVIRONMENT` | optional — defaults to `NODE_ENV` |
 | `PMS_PROVIDER` | optional — `demo` (default) or `mews_stub` for Digital Twin PMS merge |
@@ -103,10 +103,12 @@ Emergency override without rebuild: open
 
 ## Scheduled CIO daily digest
 
-`apps/api/vercel.json` defines a daily cron (`0 5 * * *` UTC) →
-`/v1/cron/cio-daily`. Set matching `CRON_SECRET` in the API project env.
-The job builds the deterministic CEO digest and posts it to org-comms channel
-`cio_daily` (demo tenant MVP). Without `CRON_SECRET` the endpoint returns 503.
+`apps/api/vercel.json` defines:
+
+- daily `0 5 * * *` UTC → `/v1/cron/cio-daily` (CEO digest → org-comms `cio_daily`)
+- every 6 hours `30 */6 * * *` UTC → `/v1/cron/anomaly-scan` (threshold anomalies → department tasks)
+
+Set matching `CRON_SECRET` in the API project env. Without it, cron endpoints return 503.
 
 ## Error monitoring
 

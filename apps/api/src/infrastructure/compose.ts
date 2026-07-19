@@ -258,6 +258,13 @@ export async function composeApp() {
         companyKnowledge,
         trustedSources,
       },
+      anomalyScan: {
+        hotels,
+        maintenance,
+        procurement,
+        turbo,
+        ops,
+      },
     },
     simulator: {
       overview,

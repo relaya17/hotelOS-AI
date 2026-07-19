@@ -21,6 +21,7 @@ import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { buildCioDigest, CIO_ROLES } from "../../application/build-cio-digest.js";
 import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
+import { listOpsAnomalies } from "../../application/run-anomaly-scan.js";
 import { synthesizeCioDigest } from "../../application/synthesize-cio-digest.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
@@ -987,6 +988,38 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         createdAt: now,
       });
       return c.json({ data: created }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  // ---- Ops / financial threshold anomalies (Stage ה' MVP) ----
+
+  routes.get("/anomalies", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const tenantHotels = await deps.hotels.listByTenant(
+        principal.scope.tenantId,
+      );
+      const scopedHotelIds = (
+        principal.scope.hotelId
+          ? tenantHotels.filter((hotel) => hotel.id === principal.scope.hotelId)
+          : tenantHotels
+      ).map((hotel) => hotel.id);
+
+      const anomalies = await listOpsAnomalies(
+        {
+          hotels: deps.hotels,
+          maintenance: deps.maintenance,
+          procurement: deps.procurement,
+          turbo: deps.turbo,
+        },
+        {
+          tenantId: principal.scope.tenantId,
+          hotelIds: scopedHotelIds,
+        },
+      );
+      return c.json({ data: anomalies });
     } catch (error) {
       return mapUnknownError(c, error);
     }
