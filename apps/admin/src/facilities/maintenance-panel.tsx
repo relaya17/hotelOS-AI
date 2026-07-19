@@ -8,6 +8,7 @@ import {
   listMaintenanceRequests,
   listQuotesForRequest,
   listVendors,
+  suggestAutonomyMaintenanceQuoteAccept,
   updateMaintenanceRequestStatus,
   type MaintenanceCategory,
   type MaintenanceRequestDto,
@@ -66,6 +67,8 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
   const [vendors, setVendors] = useState<readonly VendorDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  const [notice, setNotice] = useState<string | undefined>();
+  const [suggestingQuoteId, setSuggestingQuoteId] = useState<string | undefined>();
 
   const [category, setCategory] = useState<MaintenanceCategory>("repair");
   const [title, setTitle] = useState("");
@@ -242,12 +245,43 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
     }
   }
 
+  async function onSuggestQuoteAccept(quote: VendorQuoteDto) {
+    if (!selectedRequestId) return;
+    const request = requests.find((r) => r.id === selectedRequestId);
+    setSuggestingQuoteId(quote.id);
+    setError(undefined);
+    try {
+      const result = await suggestAutonomyMaintenanceQuoteAccept({
+        hotelId,
+        maintenanceRequestId: selectedRequestId,
+        quoteId: quote.id,
+        ...(request?.title ? { requestTitle: request.title } : {}),
+      });
+      setNotice(
+        `Suggest נשלח לאישורי AI (₪${result.amount ?? quote.amount}). אשרו בתיבת האישורים → Act יקבל את ההצעה.`,
+      );
+    } catch (suggestError) {
+      setError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "שליחת הצעת אישור AI נכשלה",
+      );
+    } finally {
+      setSuggestingQuoteId(undefined);
+    }
+  }
+
   return (
     <div className="panel">
       {loading ? <p className="state">טוען…</p> : null}
       {error !== undefined ? (
         <p className="state state--error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {notice !== undefined ? (
+        <p className="state state--ok" role="status">
+          {notice}
         </p>
       ) : null}
 
@@ -385,9 +419,19 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
                         <button
                           type="button"
                           className="mini-btn"
+                          disabled={suggestingQuoteId === quote.id}
+                          onClick={() => void onSuggestQuoteAccept(quote)}
+                        >
+                          {suggestingQuoteId === quote.id
+                            ? "שולח…"
+                            : "הצע אישור AI"}
+                        </button>
+                        <button
+                          type="button"
+                          className="mini-btn"
                           onClick={() => void onDecideQuote(quote.id, "accepted")}
                         >
-                          אשר
+                          אשר ישירות
                         </button>
                         <button
                           type="button"
@@ -521,6 +565,7 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
         .select-field select, .select-field textarea { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); resize:vertical; }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
+        .state--ok { color:#0f6a5c; background:rgb(15 106 92 / 10%); padding:.75rem 1rem; border-radius:var(--radius-sm); }
       `}</style>
     </div>
   );

@@ -178,6 +178,10 @@ export type MaintenanceRepository = {
   listQuotesForRequest: (
     maintenanceRequestId: string,
   ) => Promise<readonly PersistedVendorQuote[]>;
+  findQuoteById: (
+    tenantId: TenantId,
+    quoteId: string,
+  ) => Promise<PersistedVendorQuote | null>;
   decideQuote: (
     quoteId: string,
     status: "accepted" | "rejected",
@@ -334,6 +338,20 @@ export function createMaintenanceRepository(db: HotelOsDb): MaintenanceRepositor
         .orderBy(desc(vendorQuotes.submittedAt))
         .all();
       return rows.map(mapQuote);
+    },
+
+    async findQuoteById(tenantId, quoteId) {
+      const row = await db
+        .select()
+        .from(vendorQuotes)
+        .where(
+          and(
+            eq(vendorQuotes.tenantId, tenantId),
+            eq(vendorQuotes.id, quoteId),
+          ),
+        )
+        .get();
+      return row ? mapQuote(row) : null;
     },
 
     async decideQuote(quoteId, status, decidedByUserId, decidedAt) {

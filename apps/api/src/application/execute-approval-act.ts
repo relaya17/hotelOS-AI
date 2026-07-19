@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type {
+  MaintenanceRepository,
   OpsRepository,
   PersistedApprovalRequest,
   PersistedDepartmentTask,
   PersistedPurchaseOrder,
+  PersistedVendorQuote,
   ProcurementRepository,
   TaskPriority,
 } from "@hotelos/database";
@@ -13,6 +15,7 @@ import { Ids } from "@hotelos/shared";
 export type ExecuteApprovalActDeps = {
   readonly ops: OpsRepository;
   readonly procurement: ProcurementRepository;
+  readonly maintenance: MaintenanceRepository;
 };
 
 export type ApprovalActResult =
@@ -22,12 +25,19 @@ export type ApprovalActResult =
     }
   | {
       readonly status: "executed";
-      readonly action: "create_department_task" | "create_purchase_order_draft";
-      readonly resourceType: "department_task" | "purchase_order";
+      readonly action:
+        | "create_department_task"
+        | "create_purchase_order_draft"
+        | "accept_maintenance_quote";
+      readonly resourceType:
+        | "department_task"
+        | "purchase_order"
+        | "vendor_quote";
       readonly resourceId: string;
       readonly summaryHe: string;
       readonly task?: PersistedDepartmentTask;
       readonly purchaseOrder?: PersistedPurchaseOrder;
+      readonly quote?: PersistedVendorQuote;
     }
   | {
       readonly status: "failed";
@@ -76,6 +86,17 @@ type AutonomyProcurementDraftPayload = {
     readonly quantity: number;
     readonly unitPrice: number;
   }[];
+};
+
+type AutonomyMaintenanceQuoteAcceptPayload = {
+  readonly kind: "autonomy.maintenance_quote_accept";
+  readonly hotelId: string;
+  readonly quoteId: string;
+  readonly maintenanceRequestId: string;
+  readonly vendorId: string;
+  readonly amount: number;
+  readonly currency: string;
+  readonly requestTitle?: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -168,6 +189,39 @@ function asProcurementDraftPayload(
     currency: value["currency"],
     ...(typeof value["notes"] === "string" ? { notes: value["notes"] } : {}),
     items,
+  };
+}
+
+function asMaintenanceQuoteAcceptPayload(
+  value: unknown,
+): AutonomyMaintenanceQuoteAcceptPayload | null {
+  if (
+    !isRecord(value) ||
+    value["kind"] !== "autonomy.maintenance_quote_accept"
+  ) {
+    return null;
+  }
+  if (
+    typeof value["hotelId"] !== "string" ||
+    typeof value["quoteId"] !== "string" ||
+    typeof value["maintenanceRequestId"] !== "string" ||
+    typeof value["vendorId"] !== "string" ||
+    typeof value["amount"] !== "number" ||
+    typeof value["currency"] !== "string"
+  ) {
+    return null;
+  }
+  return {
+    kind: "autonomy.maintenance_quote_accept",
+    hotelId: value["hotelId"],
+    quoteId: value["quoteId"],
+    maintenanceRequestId: value["maintenanceRequestId"],
+    vendorId: value["vendorId"],
+    amount: value["amount"],
+    currency: value["currency"],
+    ...(typeof value["requestTitle"] === "string"
+      ? { requestTitle: value["requestTitle"] }
+      : {}),
   };
 }
 
@@ -356,6 +410,66 @@ export async function executeApprovalAct(
       resourceId: order.id,
       summaryHe: `בוצע Act — נוצרה טיוטת PO בסך ₪${total} (לא נשלחה).`,
       purchaseOrder: order,
+    };
+  }
+
+  const quoteAccept = asMaintenanceQuoteAcceptPayload(payload);
+  if (quoteAccept) {
+    const existing = await deps.maintenance.findQuoteById(
+      Ids.tenant(approval.tenantId),
+      quoteAccept.quoteId,
+    );
+    if (!existing) {
+      return { status: "failed", reasonHe: "הצעת מחיר לא נמצאה — Act נכשל." };
+    }
+    if (existing.status !== "pending") {
+      return {
+        status: "failed",
+        reasonHe: `הצעת מחיר כבר במצב ${existing.status} — Act נכשל.`,
+      };
+    }
+
+    const quote = await deps.maintenance.decideQuote(
+      quoteAccept.quoteId,
+      "accepted",
+      decidedByUserId,
+      now,
+    );
+    if (!quote) {
+      return { status: "failed", reasonHe: "אישור הצעת מחיר נכשל." };
+    }
+
+    const titleHint = quoteAccept.requestTitle ?? "קריאת תחזוקה";
+    await createTaskForDepartment(deps.ops, {
+      tenantId: Ids.tenant(approval.tenantId),
+      hotelId: Ids.hotel(quoteAccept.hotelId),
+      departmentCode: "maintenance",
+      taskType: "quote_accepted_followup",
+      title: `לתאם קבלן — ${titleHint}`,
+      description: [
+        "הצעת מחיר אושרה אחרי HITL (Suggest→Approve→Act).",
+        `סכום: ₪${quoteAccept.amount} ${quoteAccept.currency}.`,
+        `מזהה הצעה: ${quote.id}`,
+        `מזהה קריאה: ${quoteAccept.maintenanceRequestId}`,
+        "אין שליחה אוטומטית לקבלן / תשלום.",
+      ].join("\n"),
+      priority:
+        quoteAccept.amount >= PROCUREMENT_CHAIN_APPROVAL_ILS
+          ? "urgent"
+          : quoteAccept.amount >= PROCUREMENT_HOTEL_APPROVAL_ILS
+            ? "high"
+            : "medium",
+      createdByUserId: decidedByUserId,
+      now,
+    });
+
+    return {
+      status: "executed",
+      action: "accept_maintenance_quote",
+      resourceType: "vendor_quote",
+      resourceId: quote.id,
+      summaryHe: `בוצע Act — הצעת מחיר אושרה (₪${quoteAccept.amount}). הקריאה עברה ל-approved.`,
+      quote,
     };
   }
 

@@ -3,6 +3,7 @@ import type { JwtTokenService } from "@hotelos/auth";
 import type {
   ApprovalRepository,
   AuditRepository,
+  MaintenanceRepository,
   OpsRepository,
   ProcurementRepository,
 } from "@hotelos/database";
@@ -17,6 +18,7 @@ export type ApprovalRouteDeps = {
   readonly audit: AuditRepository;
   readonly ops: OpsRepository;
   readonly procurement: ProcurementRepository;
+  readonly maintenance: MaintenanceRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -64,7 +66,11 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
       const act =
         body.status === "approved"
           ? await executeApprovalAct(
-              { ops: deps.ops, procurement: deps.procurement },
+              {
+                ops: deps.ops,
+                procurement: deps.procurement,
+                maintenance: deps.maintenance,
+              },
               updated,
               principal.userId,
               now,

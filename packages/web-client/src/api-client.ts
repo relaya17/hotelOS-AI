@@ -2251,6 +2251,29 @@ export async function suggestAutonomyLowStockReorder(input: {
   };
 }
 
+export async function suggestAutonomyMaintenanceQuoteAccept(input: {
+  readonly hotelId: string;
+  readonly maintenanceRequestId: string;
+  readonly quoteId: string;
+  readonly requestTitle?: string;
+  readonly agentId?: string;
+  readonly summaryHe?: string;
+  readonly reasonHe?: string;
+}): Promise<{ readonly approvalId: string; readonly amount?: number }> {
+  const payload = (await authPost("/v1/autonomy/suggest", {
+    kind: "maintenance_quote_accept",
+    ...input,
+  })) as {
+    data: { approval: { id: string }; amount?: number };
+  };
+  return {
+    approvalId: payload.data.approval.id,
+    ...(payload.data.amount !== undefined
+      ? { amount: payload.data.amount }
+      : {}),
+  };
+}
+
 export async function postSecurityEvent(input: {
   readonly hotelId: string;
   readonly title: string;
