@@ -104,6 +104,7 @@ const createInventoryItemSchema = z.object({
     "pool_chemicals",
     "cleaning",
     "amenities",
+    "food",
     "other",
   ]),
   name: z.string().trim().min(1).max(120),

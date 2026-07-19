@@ -209,7 +209,16 @@ export async function composeApp() {
       audit,
       tokens,
     },
-    approvals: { approvals, audit, ops, procurement, maintenance, tokens },
+    approvals: {
+      approvals,
+      audit,
+      ops,
+      procurement,
+      maintenance,
+      hotels,
+      kashrut,
+      tokens,
+    },
     autonomy: {
       approvals,
       audit,

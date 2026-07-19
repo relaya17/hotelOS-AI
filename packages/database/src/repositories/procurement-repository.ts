@@ -14,6 +14,7 @@ export type InventoryCategory =
   | "pool_chemicals"
   | "cleaning"
   | "amenities"
+  | "food"
   | "other";
 export type PurchaseOrderStatus =
   | "draft"

@@ -1283,6 +1283,7 @@ export type InventoryCategory =
   | "pool_chemicals"
   | "cleaning"
   | "amenities"
+  | "food"
   | "other";
 export type InventoryItemDto = {
   readonly id: string;
@@ -2190,6 +2191,7 @@ export async function updateLetterDraftStatus(
 
 export type AiApprovalDto = {
   readonly id: string;
+  readonly hotelId?: string | null;
   readonly agentId: string;
   readonly summaryHe: string;
   readonly reasonHe: string;
@@ -2222,12 +2224,44 @@ export async function listPendingAiApprovals(): Promise<
   return payload.data;
 }
 
+export type KashrutProcurementGateDto = {
+  readonly approvalId: string;
+  readonly applies: boolean;
+  readonly foodRelated: boolean;
+  readonly kashrutEnabled: boolean;
+  readonly latestStatus: "ok" | "note" | "warn" | "block" | null;
+  readonly latestMessageHe: string | null;
+  readonly canApprove: boolean;
+  readonly requiresAck: boolean;
+  readonly requiresOverrideBlock: boolean;
+  readonly gateHe: string;
+};
+
+export async function fetchApprovalKashrutGate(
+  approvalId: string,
+): Promise<KashrutProcurementGateDto> {
+  const payload = (await authGet(
+    `/v1/ai/approvals/${approvalId}/kashrut-gate`,
+  )) as { data: KashrutProcurementGateDto };
+  return payload.data;
+}
+
 export async function decideAiApproval(
   id: string,
   status: "approved" | "rejected",
+  options?: {
+    readonly kashrutAcknowledged?: boolean;
+    readonly kashrutOverrideBlock?: boolean;
+  },
 ): Promise<DecideAiApprovalResult> {
   const payload = (await authPost(`/v1/ai/approvals/${id}/decide`, {
     status,
+    ...(options?.kashrutAcknowledged !== undefined
+      ? { kashrutAcknowledged: options.kashrutAcknowledged }
+      : {}),
+    ...(options?.kashrutOverrideBlock !== undefined
+      ? { kashrutOverrideBlock: options.kashrutOverrideBlock }
+      : {}),
   })) as { data: AiApprovalDto; act: ApprovalActDto };
   return { approval: payload.data, act: payload.act };
 }

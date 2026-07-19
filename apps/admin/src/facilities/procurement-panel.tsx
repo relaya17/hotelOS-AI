@@ -24,6 +24,7 @@ const categoryLabel: Record<InventoryCategory, string> = {
   pool_chemicals: "כימיקלים לבריכה",
   cleaning: "ניקיון",
   amenities: "מוצרי פינוק",
+  food: "מזון / F&B",
   other: "אחר",
 };
 

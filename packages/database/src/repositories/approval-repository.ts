@@ -33,6 +33,10 @@ export type ApprovalRepository = {
     readonly createdAt: string;
   }) => Promise<PersistedApprovalRequest>;
   listPending: (tenantId: TenantId) => Promise<readonly PersistedApprovalRequest[]>;
+  getById: (
+    tenantId: TenantId,
+    id: string,
+  ) => Promise<PersistedApprovalRequest | null>;
   decide: (
     tenantId: TenantId,
     id: string,
@@ -103,6 +107,20 @@ export function createApprovalRepository(db: HotelOsDb): ApprovalRepository {
         .orderBy(desc(aiApprovalRequests.createdAt))
         .all();
       return rows.map(mapRow);
+    },
+
+    async getById(tenantId, id) {
+      const row = await db
+        .select()
+        .from(aiApprovalRequests)
+        .where(
+          and(
+            eq(aiApprovalRequests.tenantId, tenantId),
+            eq(aiApprovalRequests.id, id),
+          ),
+        )
+        .get();
+      return row ? mapRow(row) : null;
     },
 
     async decide(tenantId, id, status, decidedByUserId, decidedAt) {

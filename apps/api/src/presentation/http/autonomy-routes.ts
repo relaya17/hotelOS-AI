@@ -15,6 +15,7 @@ import {
   PROCUREMENT_CHAIN_APPROVAL_ILS,
   PROCUREMENT_HOTEL_APPROVAL_ILS,
 } from "../../application/execute-approval-act.js";
+import { detectFoodRelatedProcurement } from "../../application/evaluate-kashrut-procurement-gate.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -206,11 +207,30 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
           (sum, item) => sum + item.quantity * item.unitPrice,
           0,
         );
+        const draftPayload = {
+          kind: "autonomy.procurement_draft" as const,
+          hotelId: body.hotelId,
+          vendorId: body.vendorId,
+          currency: body.currency,
+          ...(body.notes ? { notes: body.notes } : {}),
+          items: body.items,
+          estimatedTotal: total,
+          executesSend: false,
+        };
+        const foodRelated = detectFoodRelatedProcurement(draftPayload);
         const summaryHe =
           body.summaryHe ??
           `הצעת טיוטת רכש: ${body.items.length} פריטים · ₪${total}`;
         const reasonHe =
-          body.reasonHe ?? approvalReasonForTotal(total, "po");
+          body.reasonHe ??
+          [
+            approvalReasonForTotal(total, "po"),
+            foodRelated
+              ? "רכש מזון/F&B — שער Kashrut לפני Approve→Act."
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" ");
 
         const created = await deps.approvals.create({
           id: randomUUID(),
@@ -221,14 +241,8 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
           summaryHe,
           reasonHe,
           payloadJson: JSON.stringify({
-            kind: "autonomy.procurement_draft",
-            hotelId: body.hotelId,
-            vendorId: body.vendorId,
-            currency: body.currency,
-            ...(body.notes ? { notes: body.notes } : {}),
-            items: body.items,
-            estimatedTotal: total,
-            executesSend: false,
+            ...draftPayload,
+            foodRelated,
           }),
           createdAt: now,
         });
@@ -375,6 +389,7 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
         return {
           inventoryItemId: item.id,
           description: `${item.name} (${item.unit})`,
+          category: item.category,
           quantity,
           unitPrice: body.defaultUnitPrice,
         };
@@ -383,6 +398,17 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
         (sum, item) => sum + item.quantity * item.unitPrice,
         0,
       );
+      const draftPayload = {
+        kind: "autonomy.procurement_draft" as const,
+        hotelId: body.hotelId,
+        vendorId: body.vendorId,
+        currency: body.currency,
+        notes: "הצעה אוטומטית ממלאי מתחת ל-par level",
+        items,
+        estimatedTotal: total,
+        executesSend: false,
+      };
+      const foodRelated = detectFoodRelatedProcurement(draftPayload);
 
       const created = await deps.approvals.create({
         id: randomUUID(),
@@ -391,16 +417,15 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
         agentId: body.agentId,
         requestedByUserId: principal.userId,
         summaryHe: `השלמת מלאי נמוך: ${items.length} פריטים · ₪${total}`,
-        reasonHe: approvalReasonForTotal(total, "po"),
+        reasonHe: [
+          approvalReasonForTotal(total, "po"),
+          foodRelated ? "רכש מזון/F&B — שער Kashrut לפני Approve→Act." : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
         payloadJson: JSON.stringify({
-          kind: "autonomy.procurement_draft",
-          hotelId: body.hotelId,
-          vendorId: body.vendorId,
-          currency: body.currency,
-          notes: "הצעה אוטומטית ממלאי מתחת ל-par level",
-          items,
-          estimatedTotal: total,
-          executesSend: false,
+          ...draftPayload,
+          foodRelated,
         }),
         createdAt: now,
       });
