@@ -1977,6 +1977,8 @@ export type HrDocumentDto = {
 
 export type HrEmployeeDetailDto = HrEmployeeDto & {
   readonly documents: readonly HrDocumentDto[];
+  /** Server-derived: principal has dedicated `hr` role for תעודת יושר. */
+  readonly viewerCanReviewCriminalRecord?: boolean;
 };
 
 export async function fetchHrEmployee(

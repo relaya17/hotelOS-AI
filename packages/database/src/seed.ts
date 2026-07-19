@@ -172,10 +172,20 @@ export async function seedDemoTenant(
         email: DEMO_USER_EMAIL,
         displayName: "Demo Admin",
         passwordHash,
-        rolesJson: JSON.stringify(["admin", "executive"]),
+        // Includes dedicated `hr` so local demo can review תעודת יושר (PO: not admin alone).
+        rolesJson: JSON.stringify(["admin", "executive", "hr"]),
         createdAt: now,
       })
       .run();
+  } else {
+    const roles = parseRolesJson(existingUser.rolesJson);
+    if (!roles.includes("hr")) {
+      await db
+        .update(users)
+        .set({ rolesJson: JSON.stringify([...roles, "hr"]) })
+        .where(eq(users.id, userId))
+        .run();
+    }
   }
 
   const agents = createAgentRepository(db);
@@ -524,5 +534,15 @@ async function ensureCioDemoData(
       createdByUserId: userId,
       createdAt: now,
     });
+  }
+}
+
+function parseRolesJson(raw: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((role): role is string => typeof role === "string");
+  } catch {
+    return [];
   }
 }

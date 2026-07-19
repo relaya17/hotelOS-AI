@@ -12,6 +12,7 @@ import {
   listHrEmployees,
   listHrInvites,
   listLetterDrafts,
+  readStoredUser,
   registerHrDocumentFlag,
   reviewHrDocument,
   submitAssessment,
@@ -30,6 +31,8 @@ export type HrPanelProps = {
 };
 
 export function HrPanel({ hotelId }: HrPanelProps) {
+  const viewerRoles = readStoredUser()?.roles ?? [];
+  const canReviewCriminalRecord = viewerRoles.includes("hr");
   const [employees, setEmployees] = useState<readonly HrEmployeeDto[]>([]);
   const [invites, setInvites] = useState<readonly HrInviteDto[]>([]);
   const [drafts, setDrafts] = useState<readonly LetterDraftDto[]>([]);
@@ -55,6 +58,9 @@ export function HrPanel({ hotelId }: HrPanelProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [lastScore, setLastScore] = useState<string | undefined>();
   const [documents, setDocuments] = useState<readonly HrDocumentDto[]>([]);
+  const [serverAllowsCriminalReview, setServerAllowsCriminalReview] = useState(
+    canReviewCriminalRecord,
+  );
   const [docType, setDocType] = useState<
     | "criminal_record_clearance"
     | "id_card"
@@ -68,6 +74,9 @@ export function HrPanel({ hotelId }: HrPanelProps) {
   const [checklist, setChecklist] = useState<LegalChecklistDto | null>(null);
   const [ackIds, setAckIds] = useState<ReadonlySet<string>>(new Set());
   const [approving, setApproving] = useState(false);
+
+  const mayReviewCriminal =
+    canReviewCriminalRecord || serverAllowsCriminalReview;
 
   async function reload() {
     setLoading(true);
@@ -115,6 +124,9 @@ export function HrPanel({ hotelId }: HrPanelProps) {
         if (cancelled) return;
         setEmployeeAssessments(rows);
         setDocuments(detail.documents);
+        setServerAllowsCriminalReview(
+          detail.viewerCanReviewCriminalRecord ?? false,
+        );
       })
       .catch(() => {
         if (cancelled) return;
@@ -130,6 +142,9 @@ export function HrPanel({ hotelId }: HrPanelProps) {
     if (!selectedEmployeeId) return;
     const detail = await fetchHrEmployee(selectedEmployeeId);
     setDocuments(detail.documents);
+    setServerAllowsCriminalReview(
+      detail.viewerCanReviewCriminalRecord ?? false,
+    );
   }
 
   async function onInvite(event: FormEvent<HTMLFormElement>) {
@@ -366,50 +381,65 @@ export function HrPanel({ hotelId }: HrPanelProps) {
         />
         <Button type="submit">רשום לבדיקה</Button>
       </form>
+      {!mayReviewCriminal ? (
+        <p className="hint">
+          תעודת יושר: סטטוס בלבד. אישור/דחייה ו־hash דורשים תפקיד HR ייעודי.
+        </p>
+      ) : null}
       <ul>
-        {documents.map((doc) => (
-          <li key={doc.id}>
-            {doc.docType} · {doc.status}
-            {doc.contentHash ? ` · hash ${doc.contentHash.slice(0, 12)}…` : ""}
-            {doc.status === "pending_review" ? (
-              <span className="doc-actions">
-                <Button
-                  type="button"
-                  onClick={() =>
-                    void reviewHrDocument(doc.id, { status: "approved" })
-                      .then(reloadDocuments)
-                      .catch((reviewError: unknown) => {
-                        setError(
-                          reviewError instanceof Error
-                            ? reviewError.message
-                            : "אישור נכשל",
-                        );
-                      })
-                  }
-                >
-                  אשר
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() =>
-                    void reviewHrDocument(doc.id, { status: "rejected" })
-                      .then(reloadDocuments)
-                      .catch((reviewError: unknown) => {
-                        setError(
-                          reviewError instanceof Error
-                            ? reviewError.message
-                            : "דחייה נכשלה",
-                        );
-                      })
-                  }
-                >
-                  דחה
-                </Button>
-              </span>
-            ) : null}
-          </li>
-        ))}
+        {documents.map((doc) => {
+          const isCriminal = doc.docType === "criminal_record_clearance";
+          const canReviewThis =
+            doc.status === "pending_review" &&
+            (!isCriminal || mayReviewCriminal);
+          return (
+            <li key={doc.id}>
+              {doc.docType} · {doc.status}
+              {doc.contentHash
+                ? ` · hash ${doc.contentHash.slice(0, 12)}…`
+                : isCriminal && !mayReviewCriminal
+                  ? " · hash מוסתר"
+                  : ""}
+              {canReviewThis ? (
+                <span className="doc-actions">
+                  <Button
+                    type="button"
+                    onClick={() =>
+                      void reviewHrDocument(doc.id, { status: "approved" })
+                        .then(reloadDocuments)
+                        .catch((reviewError: unknown) => {
+                          setError(
+                            reviewError instanceof Error
+                              ? reviewError.message
+                              : "אישור נכשל",
+                          );
+                        })
+                    }
+                  >
+                    אשר
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() =>
+                      void reviewHrDocument(doc.id, { status: "rejected" })
+                        .then(reloadDocuments)
+                        .catch((reviewError: unknown) => {
+                          setError(
+                            reviewError instanceof Error
+                              ? reviewError.message
+                              : "דחייה נכשלה",
+                          );
+                        })
+                    }
+                  >
+                    דחה
+                  </Button>
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
 
       <form

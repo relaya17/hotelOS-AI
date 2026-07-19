@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import type { JwtTokenService } from "@hotelos/auth";
-import { hashPassword } from "@hotelos/auth";
+import {
+  canAccessSensitiveHrDocuments,
+  hashPassword,
+} from "@hotelos/auth";
 import type {
   AssessmentRepository,
   AuditRepository,
@@ -9,6 +12,10 @@ import type {
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
+import {
+  isCriminalRecordDocument,
+  redactHrDocumentsForViewer,
+} from "../../application/redact-hr-documents.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -77,7 +84,14 @@ export function createHrRoutes(deps: HrRouteDeps): Hono<{
         principal.scope.tenantId,
         employee.id,
       );
-      return c.json({ data: { ...employee, documents } });
+      const canSeeSensitive = canAccessSensitiveHrDocuments(principal);
+      return c.json({
+        data: {
+          ...employee,
+          documents: redactHrDocumentsForViewer(documents, canSeeSensitive),
+          viewerCanReviewCriminalRecord: canSeeSensitive,
+        },
+      });
     } catch (error) {
       return mapUnknownError(c, error);
     }
@@ -138,10 +152,29 @@ export function createHrRoutes(deps: HrRouteDeps): Hono<{
           notes: z.string().trim().max(1000).optional(),
         })
         .parse(await c.req.json());
+      const documentId = c.req.param("documentId");
+      const existing = await deps.hr.findDocument(
+        principal.scope.tenantId,
+        documentId,
+      );
+      if (!existing) {
+        return sendError(c, 404, "DOCUMENT_NOT_FOUND", "Document not found");
+      }
+      if (
+        isCriminalRecordDocument(existing.docType) &&
+        !canAccessSensitiveHrDocuments(principal)
+      ) {
+        return sendError(
+          c,
+          403,
+          "HR_ROLE_REQUIRED",
+          "Criminal-record clearance review requires the dedicated hr role",
+        );
+      }
       const now = new Date().toISOString();
       const result = await deps.hr.reviewDocument({
         tenantId: principal.scope.tenantId,
-        documentId: c.req.param("documentId"),
+        documentId,
         status: body.status,
         reviewedByUserId: principal.userId,
         reviewedAt: now,
@@ -157,7 +190,11 @@ export function createHrRoutes(deps: HrRouteDeps): Hono<{
         action: `hr.document.${body.status}`,
         resourceType: "employee_document",
         resourceId: result.id,
-        metadata: { status: body.status },
+        metadata: {
+          status: body.status,
+          docType: existing.docType,
+          sensitiveHr: isCriminalRecordDocument(existing.docType),
+        },
         createdAt: now,
       });
       return c.json({ data: result });

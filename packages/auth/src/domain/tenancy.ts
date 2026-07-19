@@ -42,3 +42,21 @@ export function canAccessHotel(
   }
   return principal.scope.hotelId === hotelId;
 }
+
+/** True when the principal holds at least one of the given roles. */
+export function hasAnyRole(
+  principal: AuthPrincipal,
+  roles: readonly string[],
+): boolean {
+  return roles.some((role) => principal.roles.includes(role));
+}
+
+/**
+ * Dedicated HR role for sensitive employee docs (תעודת יושר).
+ * Per employee-hr-module PO: not admin/GM by default — `hr` only.
+ */
+export function canAccessSensitiveHrDocuments(
+  principal: AuthPrincipal,
+): boolean {
+  return hasAnyRole(principal, ["hr"]);
+}

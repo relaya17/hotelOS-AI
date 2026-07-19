@@ -113,6 +113,16 @@ export type HrRepository = {
       readonly uploadedAt: string;
     }[]
   >;
+  findDocument: (
+    tenantId: TenantId,
+    documentId: string,
+  ) => Promise<{
+    readonly id: string;
+    readonly employeeId: string;
+    readonly docType: string;
+    readonly status: string;
+    readonly contentHash: string | null;
+  } | null>;
   reviewDocument: (input: {
     readonly tenantId: TenantId;
     readonly documentId: string;
@@ -395,6 +405,27 @@ export function createHrRepository(db: HotelOsDb): HrRepository {
         expiresAt: row.expiresAt ?? null,
         uploadedAt: row.uploadedAt,
       }));
+    },
+
+    async findDocument(tenantId, documentId) {
+      const row = await db
+        .select()
+        .from(employeeDocuments)
+        .where(
+          and(
+            eq(employeeDocuments.tenantId, tenantId),
+            eq(employeeDocuments.id, documentId),
+          ),
+        )
+        .get();
+      if (!row) return null;
+      return {
+        id: row.id,
+        employeeId: row.employeeId,
+        docType: row.docType,
+        status: row.status,
+        contentHash: row.contentHash ?? null,
+      };
     },
 
     async reviewDocument(input) {
