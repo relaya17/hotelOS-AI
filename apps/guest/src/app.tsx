@@ -12,8 +12,9 @@ import {
 import { BookFlow } from "./book-flow.js";
 import { LandingPage } from "./landing-page.js";
 import { StayHub } from "./stay-hub.js";
+import { VoiceBookAssistant } from "./voice-book-assistant.js";
 
-type GuestView = "landing" | "find-stay" | "book";
+type GuestView = "landing" | "find-stay" | "book" | "voice-book";
 
 function GuestCookieBanner() {
   return (
@@ -149,6 +150,11 @@ export function App() {
   }
 
   function goBookIntent() {
+    setView("voice-book");
+    setError(undefined);
+  }
+
+  function goFormBook() {
     setView("book");
     setError(undefined);
   }
@@ -243,6 +249,39 @@ export function App() {
     );
   }
 
+  if (view === "voice-book") {
+    return (
+      <>
+        <SkipLink />
+        <main id="main-content" className="shell shell--find" tabIndex={-1}>
+          <section className="panel hotelos-surface">
+            <VoiceBookAssistant
+              onCancel={() => {
+                setView("landing");
+                setError(undefined);
+              }}
+              onBooked={handleBooked}
+            />
+            <p className="voice-alt">
+              <button type="button" onClick={goFormBook}>
+                מעדיפים טופס רגיל?
+              </button>
+            </p>
+          </section>
+          <SiteFooter />
+          <GuestCookieBanner />
+          <style>{`${stayShellStyles}
+            .voice-alt { margin: var(--space-3) 0 0; text-align: center; }
+            .voice-alt button {
+              border: 0; background: transparent; color: var(--color-ink-soft);
+              font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer;
+            }
+          `}</style>
+        </main>
+      </>
+    );
+  }
+
   if (view === "book") {
     return (
       <>
@@ -251,7 +290,7 @@ export function App() {
           <section className="panel hotelos-surface">
             <BookFlow
               onCancel={() => {
-                setView("landing");
+                setView("voice-book");
                 setError(undefined);
               }}
               onBooked={handleBooked}

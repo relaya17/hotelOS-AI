@@ -729,6 +729,65 @@ export async function createPublicBooking(input: {
   return body.data;
 }
 
+export type PublicBookDraftDto = {
+  readonly hotelId?: string;
+  readonly checkInDate?: string;
+  readonly checkOutDate?: string;
+  readonly roomType?: string;
+  readonly guestName?: string;
+  readonly guestEmail?: string;
+  readonly guestPhone?: string;
+};
+
+export type PublicBookAssistantResultDto = {
+  readonly replyHe: string;
+  readonly draft: PublicBookDraftDto;
+  readonly missing: readonly string[];
+  readonly readyToConfirm: boolean;
+  readonly offers: readonly {
+    readonly roomType: string;
+    readonly labelHe: string;
+    readonly availableCount: number;
+    readonly total: number;
+    readonly currency: string;
+  }[];
+  readonly booked?: {
+    readonly bookingId: string;
+    readonly guestEmail: string;
+    readonly hotelName: string;
+    readonly checkInDate: string;
+    readonly checkOutDate: string;
+    readonly roomType: string;
+    readonly total: number;
+    readonly currency: string;
+  };
+};
+
+export async function invokePublicBookAssistant(input: {
+  readonly message: string;
+  readonly confirm?: boolean;
+  readonly draft?: PublicBookDraftDto;
+}): Promise<PublicBookAssistantResultDto> {
+  const response = await fetch(`${getApiBase()}/v1/public/book-assistant`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: input.message,
+      ...(input.confirm !== undefined ? { confirm: input.confirm } : {}),
+      ...(input.draft !== undefined ? { draft: input.draft } : {}),
+    }),
+  });
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Book assistant failed"));
+  }
+  const body = payload as { data?: PublicBookAssistantResultDto };
+  if (!body.data) {
+    throw new Error("Invalid book assistant response");
+  }
+  return body.data;
+}
+
 export async function lookupGuestStay(email: string): Promise<readonly GuestStayDto[]> {
   const response = await fetch(`${getApiBase()}/v1/public/stays/lookup`, {
     method: "POST",

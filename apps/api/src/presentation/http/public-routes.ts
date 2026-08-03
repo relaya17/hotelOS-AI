@@ -11,6 +11,7 @@ import type {
   OpsRepository,
   RoomRepository,
   TrustRepository,
+  TurboRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
@@ -20,8 +21,10 @@ import {
 } from "./hr-routes.js";
 import { buildGuestFolio } from "../../application/build-guest-folio.js";
 import { createPublicBooking } from "../../application/create-public-booking.js";
+import { fireAutomationTrigger } from "../../application/fire-automation-trigger.js";
 import { listPublicAvailability } from "../../application/public-availability.js";
 import { quoteRoomStay } from "../../application/room-rates.js";
+import { runPublicBookAssistant } from "../../application/run-public-book-assistant.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type PublicRouteDeps = {
@@ -35,6 +38,7 @@ export type PublicRouteDeps = {
   readonly bookings: BookingRepository;
   readonly audit: AuditRepository;
   readonly trust: TrustRepository;
+  readonly turbo: TurboRepository;
 };
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -99,8 +103,75 @@ const serviceRequestSchema = z.object({
   note: z.string().trim().max(1000).optional(),
 });
 
+const bookAssistantSchema = z.object({
+  message: z.string().trim().max(2000).default(""),
+  confirm: z.boolean().optional(),
+  draft: z
+    .object({
+      hotelId: z.string().uuid().optional(),
+      checkInDate: dateSchema.optional(),
+      checkOutDate: dateSchema.optional(),
+      roomType: z.string().trim().min(2).max(40).optional(),
+      guestName: z.string().trim().min(2).max(120).optional(),
+      guestEmail: z.string().email().max(200).optional(),
+      guestPhone: z.string().trim().min(6).max(40).optional(),
+    })
+    .optional(),
+});
+
 export function createPublicRoutes(deps: PublicRouteDeps): Hono {
   const routes = new Hono();
+
+  routes.post("/book-assistant", async (c) => {
+    try {
+      const body = bookAssistantSchema.parse(await c.req.json());
+      const draft = body.draft
+        ? {
+            ...(body.draft.hotelId !== undefined
+              ? { hotelId: body.draft.hotelId }
+              : {}),
+            ...(body.draft.checkInDate !== undefined
+              ? { checkInDate: body.draft.checkInDate }
+              : {}),
+            ...(body.draft.checkOutDate !== undefined
+              ? { checkOutDate: body.draft.checkOutDate }
+              : {}),
+            ...(body.draft.roomType !== undefined
+              ? { roomType: body.draft.roomType }
+              : {}),
+            ...(body.draft.guestName !== undefined
+              ? { guestName: body.draft.guestName }
+              : {}),
+            ...(body.draft.guestEmail !== undefined
+              ? { guestEmail: body.draft.guestEmail }
+              : {}),
+            ...(body.draft.guestPhone !== undefined
+              ? { guestPhone: body.draft.guestPhone }
+              : {}),
+          }
+        : undefined;
+      const data = await runPublicBookAssistant(
+        {
+          hotels: deps.hotels,
+          rooms: deps.rooms,
+          bookings: deps.bookings,
+          audit: deps.audit,
+          trust: deps.trust,
+          turbo: deps.turbo,
+          ops: deps.ops,
+          ...(deps.guestProfiles ? { guestProfiles: deps.guestProfiles } : {}),
+        },
+        {
+          message: body.message,
+          ...(body.confirm !== undefined ? { confirm: body.confirm } : {}),
+          ...(draft !== undefined ? { draft } : {}),
+        },
+      );
+      return c.json({ data });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
 
   routes.get("/hotels", async (c) => {
     try {
@@ -256,6 +327,17 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
                 : 400;
         return sendError(c, status, result.error.code, result.error.message);
       }
+      await fireAutomationTrigger(
+        { turbo: deps.turbo, ops: deps.ops },
+        {
+          tenantId: result.value.booking.tenantId,
+          hotelId: result.value.booking.hotelId,
+          triggerKey: "booking.created",
+          detail: `הזמנה ${result.value.booking.id} · ${result.value.booking.guestName} · ${result.value.booking.checkInDate}`,
+          bookingId: result.value.booking.id,
+          guestName: result.value.booking.guestName,
+        },
+      );
       return c.json(
         {
           data: {

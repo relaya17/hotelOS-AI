@@ -38,11 +38,11 @@ export function LandingPage({ onBookIntent, onFindStay }: LandingPageProps) {
           <p className="landing-hero__brand">HotelOS</p>
           <h1 id="landing-hero-title">לינה חכמה. חדר מוכן. בלי לחכות.</h1>
           <p className="landing-hero__lede">
-            בחרו תאריכים — אחרי התשלום נכנסים לאזור האישי של האורח.
+            דברו או כתבו לסוכן — הוא ממלא הכל. בלי ניירת ובלי תור.
           </p>
           <div className="landing-hero__cta">
             <Button type="button" onClick={onBookIntent}>
-              הזמנה עכשיו
+              הזמנה בקול / שיחה
             </Button>
             <Button type="button" variant="ghost" onClick={onFindStay}>
               כבר יש לי הזמנה
@@ -56,13 +56,14 @@ export function LandingPage({ onBookIntent, onFindStay }: LandingPageProps) {
         className="landing-section"
         aria-labelledby="book-intent-title"
       >
-        <h2 id="book-intent-title">הזמנה דיגיטלית</h2>
+        <h2 id="book-intent-title">הזמנה בלי טפסים</h2>
         <p className="landing-section__lede">
-          בחרו תאריכים וסוג חדר, שלמו בהדגמה מאובטחת, ועברו מיד לאזור האישי.
+          סוכן ההזמנות ממלא תאריכים, חדר ופרטי קשר משיחה או קול — אתם רק מאשרים
+          לפני התשלום ועוברים לאזור האישי.
         </p>
         <div className="landing-section__actions">
           <Button type="button" onClick={onBookIntent}>
-            בחירת תאריכים
+            התחילו עם הסוכן
           </Button>
           <Button type="button" variant="ghost" onClick={onFindStay}>
             כניסה לשהייה קיימת

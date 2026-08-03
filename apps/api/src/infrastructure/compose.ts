@@ -215,6 +215,7 @@ export async function composeApp() {
       bookings,
       audit,
       trust,
+      turbo,
     },
     agents: { agents, tokens },
     briefing: {
