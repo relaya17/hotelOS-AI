@@ -12,6 +12,7 @@ export type UiMessageKey =
   | "nav.attendance"
   | "nav.trust"
   | "nav.ops"
+  | "nav.knowledge"
   | "nav.cio"
   | "nav.finance"
   | "nav.approvals"
@@ -48,6 +49,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.attendance": "נוכחות",
     "nav.trust": "Trust · תשלומים",
     "nav.ops": "לוח תפעולי מאוחד",
+    "nav.knowledge": "פיקוד ידע",
     "nav.cio": "יועץ־על (CIO)",
     "nav.finance": "סוכן כספים",
     "nav.approvals": "אישורי AI",
@@ -77,6 +79,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.attendance": "Attendance",
     "nav.trust": "Trust · Payments",
     "nav.ops": "Unified ops dashboard",
+    "nav.knowledge": "Knowledge command",
     "nav.cio": "CIO Advisor",
     "nav.finance": "Finance Doctor",
     "nav.approvals": "AI approvals",
@@ -106,6 +109,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.attendance": "الحضور",
     "nav.trust": "الثقة · المدفوعات",
     "nav.ops": "لوحة التشغيل الموحدة",
+    "nav.knowledge": "قيادة المعرفة",
     "nav.cio": "المستشار الأعلى (CIO)",
     "nav.finance": "وكيل الماليات",
     "nav.approvals": "موافقات الذكاء الاصطناعي",
@@ -135,6 +139,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.attendance": "Посещаемость",
     "nav.trust": "Trust · Платежи",
     "nav.ops": "Единая панель операций",
+    "nav.knowledge": "Командный центр знаний",
     "nav.cio": "CIO-советник",
     "nav.finance": "Финансовый агент",
     "nav.approvals": "Одобрения ИИ",
@@ -164,6 +169,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.attendance": "Asistencia",
     "nav.trust": "Trust · Pagos",
     "nav.ops": "Panel operativo unificado",
+    "nav.knowledge": "Centro de conocimiento",
     "nav.cio": "Asesor CIO",
     "nav.finance": "Agente financiero",
     "nav.approvals": "Aprobaciones de IA",
@@ -193,6 +199,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.attendance": "การลงเวลา",
     "nav.trust": "Trust · การชำระเงิน",
     "nav.ops": "แดชบอร์ดปฏิบัติการรวม",
+    "nav.knowledge": "ศูนย์บัญชาการความรู้",
     "nav.cio": "ที่ปรึกษา CIO",
     "nav.finance": "ที่ปรึกษาการเงิน",
     "nav.approvals": "การอนุมัติ AI",
@@ -222,6 +229,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.attendance": "考勤",
     "nav.trust": "Trust · 支付",
     "nav.ops": "统一运营看板",
+    "nav.knowledge": "知识指挥中心",
     "nav.cio": "CIO 顾问",
     "nav.finance": "财务智能体",
     "nav.approvals": "AI 审批",
@@ -251,6 +259,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.attendance": "उपस्थिति",
     "nav.trust": "Trust · भुगतान",
     "nav.ops": "एकीकृत संचालन डैशबोर्ड",
+    "nav.knowledge": "ज्ञान कमांड",
     "nav.cio": "CIO सलाहकार",
     "nav.finance": "वित्त एजेंट",
     "nav.approvals": "AI अनुमोदन",
@@ -280,6 +289,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.attendance": "Yoklama",
     "nav.trust": "Trust · Ödemeler",
     "nav.ops": "Birleşik operasyon paneli",
+    "nav.knowledge": "Bilgi komuta",
     "nav.cio": "CIO Danışmanı",
     "nav.finance": "Finans ajanı",
     "nav.approvals": "AI onayları",
@@ -309,6 +319,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.attendance": "Παρουσία",
     "nav.trust": "Trust · Πληρωμές",
     "nav.ops": "Ενοποιημένος πίνακας λειτουργιών",
+    "nav.knowledge": "Κέντρο γνώσης",
     "nav.cio": "Σύμβουλος CIO",
     "nav.finance": "Χρηματοοικονομικός πράκτορας",
     "nav.approvals": "Εγκρίσεις AI",

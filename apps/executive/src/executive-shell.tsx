@@ -20,6 +20,7 @@ import { BriefingRoomsPage } from "./briefing-rooms-page.js";
 import { ChainDashboard } from "./chain-dashboard.js";
 import { CioDigestPage } from "./cio-digest-page.js";
 import { FinanceDoctorPage } from "./finance-doctor-page.js";
+import { KnowledgeCommandPage } from "./knowledge-command-page.js";
 import { OpsDashboardPage } from "./ops-dashboard-page.js";
 import { TrustPaymentsPage } from "./trust-payments-page.js";
 import { TurboAccountingPage } from "./turbo-accounting-page.js";
@@ -45,7 +46,8 @@ type View =
   | { readonly kind: "ops" }
   | { readonly kind: "cio" }
   | { readonly kind: "finance" }
-  | { readonly kind: "approvals" };
+  | { readonly kind: "approvals" }
+  | { readonly kind: "knowledge" };
 
 const LOCALE_KEY = "hotelos.locale";
 
@@ -75,6 +77,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
   const navItems = [
     ["portfolio", tUi(locale, "nav.portfolio")],
     ["ops", tUi(locale, "nav.ops")],
+    ["knowledge", tUi(locale, "nav.knowledge")],
     ["cio", tUi(locale, "nav.cio")],
     ["finance", tUi(locale, "nav.finance")],
     ["approvals", tUi(locale, "nav.approvals")],
@@ -170,6 +173,13 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
           />
         ) : null}
         {view.kind === "ops" ? <OpsDashboardPage /> : null}
+        {view.kind === "knowledge" ? (
+          <KnowledgeCommandPage
+            onOpenCio={() => setView({ kind: "cio" })}
+            onOpenFinance={() => setView({ kind: "finance" })}
+            onOpenApprovals={() => setView({ kind: "approvals" })}
+          />
+        ) : null}
         {view.kind === "cio" ? <CioDigestPage /> : null}
         {view.kind === "finance" ? <FinanceDoctorPage /> : null}
         {view.kind === "approvals" ? <AiApprovalsPage /> : null}
