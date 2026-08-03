@@ -149,7 +149,7 @@ export function App() {
     setError(undefined);
   }
 
-  function goBookIntent() {
+  function goVoiceBook() {
     setView("voice-book");
     setError(undefined);
   }
@@ -262,19 +262,20 @@ export function App() {
               }}
               onBooked={handleBooked}
             />
-            <p className="voice-alt">
-              <button type="button" onClick={goFormBook}>
-                מעדיפים טופס רגיל?
-              </button>
-            </p>
+            <div className="book-switch">
+              <span>או</span>
+              <Button type="button" variant="ghost" onClick={goFormBook}>
+                הזמנה בטופס
+              </Button>
+            </div>
           </section>
           <SiteFooter />
           <GuestCookieBanner />
           <style>{`${stayShellStyles}
-            .voice-alt { margin: var(--space-3) 0 0; text-align: center; }
-            .voice-alt button {
-              border: 0; background: transparent; color: var(--color-ink-soft);
-              font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer;
+            .book-switch {
+              margin-top: var(--space-4);
+              display: flex; gap: var(--space-2); align-items: center; justify-content: center;
+              color: var(--color-ink-soft); font-weight: 600;
             }
           `}</style>
         </main>
@@ -290,15 +291,27 @@ export function App() {
           <section className="panel hotelos-surface">
             <BookFlow
               onCancel={() => {
-                setView("voice-book");
+                setView("landing");
                 setError(undefined);
               }}
               onBooked={handleBooked}
             />
+            <div className="book-switch">
+              <span>או</span>
+              <Button type="button" variant="ghost" onClick={goVoiceBook}>
+                הזמנה בקול / שיחה
+              </Button>
+            </div>
           </section>
           <SiteFooter />
           <GuestCookieBanner />
-          <style>{stayShellStyles}</style>
+          <style>{`${stayShellStyles}
+            .book-switch {
+              margin-top: var(--space-4);
+              display: flex; gap: var(--space-2); align-items: center; justify-content: center;
+              color: var(--color-ink-soft); font-weight: 600;
+            }
+          `}</style>
         </main>
       </>
     );
@@ -355,7 +368,11 @@ export function App() {
     <>
       <SkipLink />
       <main id="main-content" tabIndex={-1}>
-        <LandingPage onBookIntent={goBookIntent} onFindStay={goFindStay} />
+        <LandingPage
+          onVoiceBook={goVoiceBook}
+          onFormBook={goFormBook}
+          onFindStay={goFindStay}
+        />
         <GuestCookieBanner />
       </main>
     </>

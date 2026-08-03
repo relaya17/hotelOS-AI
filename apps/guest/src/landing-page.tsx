@@ -2,15 +2,20 @@ import { Button } from "@hotelos/ui";
 import { APP_URLS } from "@hotelos/web-client";
 
 export type LandingPageProps = {
-  readonly onBookIntent: () => void;
+  readonly onVoiceBook: () => void;
+  readonly onFormBook: () => void;
   readonly onFindStay: () => void;
 };
 
 /**
  * Public marketing surface (book.*) — hero first, then one-job sections.
- * Booking CTA opens the public book funnel (dates → room → demo pay).
+ * Two equal booking paths: conversational agent and classic form.
  */
-export function LandingPage({ onBookIntent, onFindStay }: LandingPageProps) {
+export function LandingPage({
+  onVoiceBook,
+  onFormBook,
+  onFindStay,
+}: LandingPageProps) {
   return (
     <div className="landing">
       <header className="landing-top">
@@ -38,14 +43,14 @@ export function LandingPage({ onBookIntent, onFindStay }: LandingPageProps) {
           <p className="landing-hero__brand">HotelOS</p>
           <h1 id="landing-hero-title">לינה חכמה. חדר מוכן. בלי לחכות.</h1>
           <p className="landing-hero__lede">
-            דברו או כתבו לסוכן — הוא ממלא הכל. בלי ניירת ובלי תור.
+            הזמינו עם סוכן קולי — או בטופס הרגיל. אחר כך נכנסים לאזור האישי.
           </p>
           <div className="landing-hero__cta">
-            <Button type="button" onClick={onBookIntent}>
+            <Button type="button" onClick={onVoiceBook}>
               הזמנה בקול / שיחה
             </Button>
-            <Button type="button" variant="ghost" onClick={onFindStay}>
-              כבר יש לי הזמנה
+            <Button type="button" variant="ghost" onClick={onFormBook}>
+              הזמנה בטופס
             </Button>
           </div>
         </div>
@@ -56,17 +61,20 @@ export function LandingPage({ onBookIntent, onFindStay }: LandingPageProps) {
         className="landing-section"
         aria-labelledby="book-intent-title"
       >
-        <h2 id="book-intent-title">הזמנה בלי טפסים</h2>
+        <h2 id="book-intent-title">שתי דרכים להזמין</h2>
         <p className="landing-section__lede">
-          סוכן ההזמנות ממלא תאריכים, חדר ופרטי קשר משיחה או קול — אתם רק מאשרים
-          לפני התשלום ועוברים לאזור האישי.
+          בחרו מה נוח לכם — שתי האפשרויות מגיעות לאותו אישור ותשלום דמו, ואז
+          לאזור האישי.
         </p>
         <div className="landing-section__actions">
-          <Button type="button" onClick={onBookIntent}>
-            התחילו עם הסוכן
+          <Button type="button" onClick={onVoiceBook}>
+            סוכן קול / שיחה
+          </Button>
+          <Button type="button" variant="ghost" onClick={onFormBook}>
+            טופס תאריכים וחדר
           </Button>
           <Button type="button" variant="ghost" onClick={onFindStay}>
-            כניסה לשהייה קיימת
+            כבר יש לי הזמנה
           </Button>
         </div>
       </section>
