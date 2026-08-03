@@ -91,7 +91,8 @@ export function TurboVoicePage({ locale }: TurboVoicePageProps) {
         <p className="eyebrow">Turbo OS · Agent</p>
         <h1>{tUi(locale, "voice.title")}</h1>
         <p className="sub">
-          זיהוי קול → כוונה → אוטומציה מלאה (כספים / ניקיון / תרגום / חשבונאות)
+          זיהוי קול → כוונה → אוטומציה אמיתית (כספים / ניקיון / קבלה / תרגום /
+          חשבונאות) כולל משימות במחלקות
         </p>
       </header>
 
@@ -142,6 +143,14 @@ export function TurboVoicePage({ locale }: TurboVoicePageProps) {
             <div>
               <dt>Run</dt>
               <dd>{result.runId ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>Effect</dt>
+              <dd>{result.effect ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>Task</dt>
+              <dd>{result.taskId ?? "—"}</dd>
             </div>
           </dl>
         </section>

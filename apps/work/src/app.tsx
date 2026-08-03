@@ -11,11 +11,12 @@ import {
   saveCookieConsent,
   type StoredUser,
 } from "@hotelos/web-client";
+import { DocsPanel } from "./docs-panel.js";
 import { HrAgentPanel } from "./hr-agent-panel.js";
 import { InvitePage } from "./invite-page.js";
 import { LoginPage } from "./login-page.js";
 
-type WorkTab = "attendance" | "agent";
+type WorkTab = "attendance" | "agent" | "docs";
 
 function readInviteToken(): string | null {
   const params = new URLSearchParams(window.location.search);
@@ -151,6 +152,18 @@ export function App() {
             >
               סוכן HR
             </button>
+            <button
+              type="button"
+              className={
+                tab === "docs"
+                  ? "hotelos-seg__item hotelos-seg__item--on"
+                  : "hotelos-seg__item"
+              }
+              aria-pressed={tab === "docs"}
+              onClick={() => setTab("docs")}
+            >
+              מסמכים
+            </button>
           </nav>
           <Button
             type="button"
@@ -165,7 +178,9 @@ export function App() {
         </header>
 
         <main id="main-content" className="work-main" tabIndex={-1}>
-          {tab === "attendance" ? <AttendancePage /> : <HrAgentPanel />}
+          {tab === "attendance" ? <AttendancePage /> : null}
+          {tab === "agent" ? <HrAgentPanel /> : null}
+          {tab === "docs" ? <DocsPanel user={user} /> : null}
         </main>
 
         <footer className="work-footer">

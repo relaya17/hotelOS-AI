@@ -763,6 +763,39 @@ export type PublicBookAssistantResultDto = {
   };
 };
 
+export async function postPublicWhatsAppInbound(input: {
+  readonly from: string;
+  readonly body: string;
+  readonly hotelId?: string;
+}): Promise<{
+  readonly intent: string;
+  readonly replyHe: string;
+  readonly booked?: { readonly bookingId: string; readonly guestEmail: string };
+}> {
+  const response = await fetch(`${getApiBase()}/v1/public/whatsapp/inbound`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: input.from,
+      body: input.body,
+      ...(input.hotelId !== undefined ? { hotelId: input.hotelId } : {}),
+    }),
+  });
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "WhatsApp inbound failed"));
+  }
+  const body = payload as {
+    data?: {
+      intent: string;
+      replyHe: string;
+      booked?: { bookingId: string; guestEmail: string };
+    };
+  };
+  if (!body.data) throw new Error("Invalid WhatsApp inbound response");
+  return body.data;
+}
+
 export async function invokePublicBookAssistant(input: {
   readonly message: string;
   readonly confirm?: boolean;
@@ -1075,6 +1108,8 @@ export type VoiceIntentDto = {
   readonly replyEn: string;
   readonly automationId: string | null;
   readonly runId: string | null;
+  readonly effect: string | null;
+  readonly taskId: string | null;
 };
 
 export async function fetchStaffChat(

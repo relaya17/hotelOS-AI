@@ -125,6 +125,7 @@ export function StayHub({
   const stay = stays[selectedIndex];
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const [checkInLoading, setCheckInLoading] = useState(false);
+  const [confirmCheckIn, setConfirmCheckIn] = useState(false);
   const [checkOutLoading, setCheckOutLoading] = useState(false);
   const [confirmCheckOut, setConfirmCheckOut] = useState(false);
   const [actionError, setActionError] = useState<string | undefined>();
@@ -193,6 +194,11 @@ export function StayHub({
 
   async function handleCheckIn() {
     if (!stay) return;
+    if (!confirmCheckIn) {
+      setConfirmCheckIn(true);
+      setToast("בדקו שם ותאריכים — לחיצה נוספת מאשרת צ׳ק-אין בלי ניירת בקבלה.");
+      return;
+    }
     const targetBookingId = stay.bookingId;
     setCheckInLoading(true);
     setActionError(undefined);
@@ -202,6 +208,7 @@ export function StayHub({
         bookingId: targetBookingId,
       });
       onStayUpdated(updated);
+      setConfirmCheckIn(false);
       setToast("צ׳ק-אין דיגיטלי הושלם — ברוכים הבאים!");
       setActivePanel(null);
     } catch (checkInFailure) {
@@ -347,9 +354,14 @@ export function StayHub({
             type="button"
             variant="ghost"
             disabled={checkInLoading}
+            aria-describedby={confirmCheckIn ? "checkin-confirm-hint" : undefined}
             onClick={() => void handleCheckIn()}
           >
-            {checkInLoading ? "מבצע צ׳ק-אין…" : "צ׳ק-אין דיגיטלי"}
+            {checkInLoading
+              ? "מבצע צ׳ק-אין…"
+              : confirmCheckIn
+                ? "אישור צ׳ק-אין"
+                : "צ׳ק-אין דיגיטלי"}
           </Button>
         ) : null}
         {isCheckedIn ? (
@@ -372,6 +384,12 @@ export function StayHub({
         </Button>
       </div>
 
+      {confirmCheckIn && isConfirmed ? (
+        <p id="checkin-confirm-hint" className="hint" role="status">
+          מאשרים הגעה של {stay.guestName} · חדר {stay.roomNumber} ·{" "}
+          {formatDateRange(stay.checkInDate, stay.checkOutDate)}. בלי טופס בקבלה.
+        </p>
+      ) : null}
       {confirmCheckOut && isCheckedIn ? (
         <p id="checkout-confirm-hint" className="hint" role="status">
           לחיצה נוספת מאשרת יציאה — החדר יועבר לניקיון.

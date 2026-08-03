@@ -24,6 +24,7 @@ import { createPublicBooking } from "../../application/create-public-booking.js"
 import { fireAutomationTrigger } from "../../application/fire-automation-trigger.js";
 import { listPublicAvailability } from "../../application/public-availability.js";
 import { quoteRoomStay } from "../../application/room-rates.js";
+import { handleWhatsAppInbound } from "../../application/handle-whatsapp-inbound.js";
 import { runPublicBookAssistant } from "../../application/run-public-book-assistant.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -119,8 +120,41 @@ const bookAssistantSchema = z.object({
     .optional(),
 });
 
+const whatsappInboundSchema = z.object({
+  from: z.string().trim().min(5).max(40),
+  body: z.string().trim().max(2000),
+  hotelId: z.string().uuid().optional(),
+});
+
 export function createPublicRoutes(deps: PublicRouteDeps): Hono {
   const routes = new Hono();
+
+  routes.post("/whatsapp/inbound", async (c) => {
+    try {
+      const body = whatsappInboundSchema.parse(await c.req.json());
+      const data = await handleWhatsAppInbound(
+        {
+          hotels: deps.hotels,
+          rooms: deps.rooms,
+          bookings: deps.bookings,
+          audit: deps.audit,
+          trust: deps.trust,
+          guestStays: deps.guestStays,
+          ops: deps.ops,
+          turbo: deps.turbo,
+          ...(deps.guestProfiles ? { guestProfiles: deps.guestProfiles } : {}),
+        },
+        {
+          from: body.from,
+          body: body.body,
+          ...(body.hotelId !== undefined ? { hotelId: body.hotelId } : {}),
+        },
+      );
+      return c.json({ data });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
 
   routes.post("/book-assistant", async (c) => {
     try {

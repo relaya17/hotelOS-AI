@@ -229,7 +229,7 @@ export async function composeApp() {
       gateway,
       approvals,
     },
-    turbo: { audit, turbo, users, tokens },
+    turbo: { audit, turbo, users, tokens, ops, hotels },
     trust: {
       trust,
       users,

@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import type {
   AuditRepository,
+  HotelRepository,
+  OpsRepository,
   TurboRepository,
   UserRepository,
 } from "@hotelos/database";
@@ -10,8 +12,10 @@ import {
   translateChatInstruction,
   type LocaleCode,
 } from "@hotelos/i18n";
+import { Ids, type HotelId, type TenantId } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
+import { executeAutomationAction } from "../../application/execute-automation-action.js";
 import { resolveVoiceIntent } from "../../application/resolve-voice-intent.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
@@ -21,6 +25,8 @@ export type TurboRouteDeps = {
   readonly turbo: TurboRepository;
   readonly users: UserRepository;
   readonly tokens: JwtTokenService;
+  readonly ops: OpsRepository;
+  readonly hotels: HotelRepository;
 };
 
 const postChatSchema = z.object({
@@ -36,6 +42,16 @@ const toggleSchema = z.object({
 const voiceSchema = z.object({
   transcript: z.string().trim().min(1).max(500),
 });
+
+async function resolveHotelIdForPrincipal(
+  deps: TurboRouteDeps,
+  tenantId: TenantId,
+  scopedHotelId: HotelId | undefined,
+): Promise<HotelId | undefined> {
+  if (scopedHotelId) return scopedHotelId;
+  const hotels = await deps.hotels.listByTenant(tenantId);
+  return hotels[0] ? Ids.hotel(hotels[0].id) : undefined;
+}
 
 export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
   Variables: AuthVariables;
@@ -143,11 +159,23 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
         await deps.turbo.listAutomations(principal.scope.tenantId)
       ).find((rule) => rule.actionKey === "i18n.translate.deliver");
       if (translateAutomation?.enabled) {
-        await deps.turbo.runAutomation(
+        const run = await deps.turbo.runAutomation(
           principal.scope.tenantId,
           translateAutomation.id,
           `Translated instruction ${message.id} (${bundle.verification})`,
         );
+        if (run) {
+          await executeAutomationAction(
+            { turbo: deps.turbo, ops: deps.ops, hotels: deps.hotels },
+            {
+              tenantId: principal.scope.tenantId,
+              actionKey: translateAutomation.actionKey,
+              triggerKey: translateAutomation.triggerKey,
+              detail: run.detail,
+              actorUserId: principal.userId,
+            },
+          );
+        }
       }
 
       return c.json({ data: message }, 201);
@@ -228,12 +256,14 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
   routes.post("/automations/:id/run", async (c) => {
     try {
       const principal = c.get("principal");
+      const rules = await deps.turbo.listAutomations(principal.scope.tenantId);
+      const rule = rules.find((item) => item.id === c.req.param("id"));
       const run = await deps.turbo.runAutomation(
         principal.scope.tenantId,
         c.req.param("id"),
         "Manual Turbo run",
       );
-      if (!run) {
+      if (!run || !rule) {
         return sendError(
           c,
           404,
@@ -241,6 +271,22 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
           "Automation missing or disabled",
         );
       }
+      const hotelId = await resolveHotelIdForPrincipal(
+        deps,
+        principal.scope.tenantId,
+        principal.scope.hotelId,
+      );
+      const effect = await executeAutomationAction(
+        { turbo: deps.turbo, ops: deps.ops, hotels: deps.hotels },
+        {
+          tenantId: principal.scope.tenantId,
+          ...(hotelId !== undefined ? { hotelId } : {}),
+          actionKey: rule.actionKey,
+          triggerKey: rule.triggerKey,
+          detail: run.detail,
+          actorUserId: principal.userId,
+        },
+      );
       await deps.audit.append({
         id: randomUUID(),
         tenantId: principal.scope.tenantId,
@@ -251,10 +297,12 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
         metadata: {
           automationId: run.automationId,
           status: run.status,
+          effect: effect.effect,
+          taskId: effect.taskId ?? null,
         },
         createdAt: new Date().toISOString(),
       });
-      return c.json({ data: run }, 201);
+      return c.json({ data: { ...run, effect: effect.effect, taskId: effect.taskId ?? null } }, 201);
     } catch (error) {
       return mapUnknownError(c, error);
     }
@@ -272,6 +320,8 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
           rule.actionKey === intent.action,
       );
       let runId: string | undefined;
+      let effect: string | undefined;
+      let taskId: string | undefined;
       if (matched?.enabled) {
         const run = await deps.turbo.runAutomation(
           principal.scope.tenantId,
@@ -279,12 +329,34 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
           `Voice: ${body.transcript}`,
         );
         runId = run?.id;
+        if (run) {
+          const hotelId = await resolveHotelIdForPrincipal(
+            deps,
+            principal.scope.tenantId,
+            principal.scope.hotelId,
+          );
+          const actionResult = await executeAutomationAction(
+            { turbo: deps.turbo, ops: deps.ops, hotels: deps.hotels },
+            {
+              tenantId: principal.scope.tenantId,
+              ...(hotelId !== undefined ? { hotelId } : {}),
+              actionKey: matched.actionKey,
+              triggerKey: matched.triggerKey,
+              detail: run.detail,
+              actorUserId: principal.userId,
+            },
+          );
+          effect = actionResult.effect;
+          taskId = actionResult.taskId;
+        }
       }
       return c.json({
         data: {
           ...intent,
           automationId: matched?.id ?? null,
           runId: runId ?? null,
+          effect: effect ?? null,
+          taskId: taskId ?? null,
         },
       });
     } catch (error) {

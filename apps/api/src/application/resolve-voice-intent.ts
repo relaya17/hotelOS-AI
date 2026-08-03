@@ -17,7 +17,7 @@ export function resolveVoiceIntent(transcript: string): VoiceIntentResult {
   ) {
     return {
       intent: "open_finance_committee",
-      action: "briefing.share_agent.cfo",
+      action: "agent.share.cfo",
       automationHint: "briefing.finance.started",
       replyHe: "מפעיל אוטומציה: פתיחת ועדת כספים ושיתוף סוכן CFO.",
       replyEn: "Running automation: open finance committee and share CFO agent.",
@@ -28,14 +28,33 @@ export function resolveVoiceIntent(transcript: string): VoiceIntentResult {
     text.includes("ניקיון") ||
     text.includes("dirty") ||
     text.includes("housekeeping") ||
-    text.includes("נקה")
+    text.includes("נקה") ||
+    text.includes("משק בית")
   ) {
     return {
       intent: "housekeeping_alert",
       action: "notify.housekeeping",
       automationHint: "rooms.dirty.threshold",
-      replyHe: "מפעיל אוטומציה: התראת משק בית לחדרים dirty.",
-      replyEn: "Running automation: housekeeping alert for dirty rooms.",
+      replyHe: "מפעיל אוטומציה: יוצרת משימת משק בית דחופה בחדרים לניקוי.",
+      replyEn: "Running automation: creating urgent housekeeping task.",
+    };
+  }
+
+  if (
+    text.includes("קבלה") ||
+    text.includes("הגעה") ||
+    text.includes("reception") ||
+    text.includes("צ׳ק אין") ||
+    text.includes("צק אין") ||
+    text.includes("check-in") ||
+    text.includes("check in")
+  ) {
+    return {
+      intent: "reception_queue",
+      action: "notify.reception",
+      automationHint: "booking.created",
+      replyHe: "מפעיל אוטומציה: מוסיף משימת הכנה לתור הקבלה.",
+      replyEn: "Running automation: adding a reception prep task.",
     };
   }
 
@@ -62,20 +81,20 @@ export function resolveVoiceIntent(transcript: string): VoiceIntentResult {
   ) {
     return {
       intent: "open_accounting",
-      action: "accounting.open_ledger",
+      action: "ledger.sync.internal_or_external",
       automationHint: "night.audit.close",
-      replyHe: "פותח הנהלת חשבונות פנימית / סנכרון ERP.",
-      replyEn: "Opening internal accounting / ERP sync.",
+      replyHe: "מפעיל סנכרון הנהלת חשבונות פנימית / ERP.",
+      replyEn: "Queuing internal accounting / ERP sync.",
     };
   }
 
   return {
     intent: "turbo_help",
-    action: "voice.help",
+    action: "agent.route.action",
     automationHint: "voice.intent.detected",
     replyHe:
-      "אפשר להגיד: כספים, ניקיון, תרגום צ׳אט, או הנהלת חשבונות — ואפעיל אוטומציה.",
+      "אפשר להגיד: כספים, ניקיון, קבלה, תרגום צ׳אט, או הנהלת חשבונות — ואפעיל אוטומציה אמיתית.",
     replyEn:
-      "Try saying: finance, housekeeping, chat translation, or accounting.",
+      "Try saying: finance, housekeeping, reception, chat translation, or accounting.",
   };
 }
