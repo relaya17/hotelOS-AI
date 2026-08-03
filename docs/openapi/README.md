@@ -1,10 +1,22 @@
 # OpenAPI — HotelOS API surface
 
 **Version:** 1.0  
-**Status:** ✅ Approved inventory (PO, 2026-07-18)  
-**Note:** Full OpenAPI YAML generation can be added in CI; this inventory is the contract checklist for v1.
+**Status:** ✅ Approved inventory + live OpenAPI 3.1 spec (2026-08-04)  
+**Spec file:** [`hotelos-v1.openapi.yaml`](./hotelos-v1.openapi.yaml)  
+**Live (running API):** `GET /v1/meta/openapi.yaml` · `GET /v1/meta/openapi.json`
 
 Base: `http://localhost:3001`
+
+Partners should prefer the live meta URLs or the YAML in this folder. Incomplete or evolving routes are marked in the spec with **see README inventory** below.
+
+## Sync note
+
+Source of truth: `docs/openapi/hotelos-v1.openapi.yaml`.  
+The API serves a bundled copy from `apps/api/src/presentation/http/openapi-spec.embed.{json,yaml}` for Vercel/production; re-run embed sync after YAML changes:
+
+```bash
+node -e "const fs=require('fs');const yaml=require('yaml');const p='docs/openapi/hotelos-v1.openapi.yaml';const spec=yaml.parse(fs.readFileSync(p,'utf8'));fs.writeFileSync('apps/api/src/presentation/http/openapi-spec.embed.json',JSON.stringify(spec));fs.copyFileSync(p,'apps/api/src/presentation/http/openapi-spec.embed.yaml');"
+```
 
 ## Public
 
@@ -13,6 +25,8 @@ Base: `http://localhost:3001`
 | GET | `/health` |
 | GET | `/v1/meta/apps` |
 | GET | `/v1/meta/tenancy-model` |
+| GET | `/v1/meta/openapi.yaml` |
+| GET | `/v1/meta/openapi.json` |
 | GET | `/v1/public/legal` |
 | POST | `/v1/public/stays/lookup` |
 | POST | `/v1/public/stays/check-in` |
@@ -39,6 +53,14 @@ Base: `http://localhost:3001`
 | POST | `/v1/hotels/:hotelId/bookings/:bookingId/status` |
 | GET | `/v1/overview/chain` |
 
+## Guests / twin
+
+| Method | Path |
+|--------|------|
+| GET | `/v1/guests/by-email?hotelId=&email=` |
+| GET | `/v1/twin/hotels/:hotelId` |
+| POST | `/v1/twin/hotels/:hotelId/pms-sync` |
+
 ## Turbo / agents / briefings
 
 | Method | Path |
@@ -52,9 +74,29 @@ Base: `http://localhost:3001`
 | Method | Path |
 |--------|------|
 | * | `/v1/trust/**` |
-| * | `/v1/ops/**` including `GET /v1/ops/cio-digest` |
+| * | `/v1/ops/**` including `GET /v1/ops/forecast`, `GET /v1/ops/cio-digest` |
 | * | `/v1/org-comms/**` |
 | * | `/v1/knowledge/**` |
 | * | `/v1/kashrut/**` |
+| — | `/v1/ops/knowledge-graph` (planned — stub in OpenAPI) |
+
+## Autonomy (HITL suggest)
+
+| Method | Path |
+|--------|------|
+| POST | `/v1/autonomy/suggest` |
+| POST | `/v1/autonomy/suggest-low-stock` |
+| POST | `/v1/autonomy/suggest-dirty-rooms` |
+| POST | `/v1/autonomy/suggest-send-purchase-order` |
+| POST | `/v1/autonomy/suggest-recruiting-stage` |
+| POST | `/v1/autonomy/suggest-todays-arrivals` |
+| POST | `/v1/autonomy/suggest-feedback-followup` |
+| POST | `/v1/autonomy/suggest-ledger-close` |
+
+## Integrations
+
+| Method | Path |
+|--------|------|
+| — | `/v1/integrations/catalog` (planned — domains in `@hotelos/connectors`) |
 
 Auth: `Authorization: Bearer <accessToken>`. Rate limits apply (see `rate-limit.ts`).

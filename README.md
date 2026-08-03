@@ -272,7 +272,7 @@ Runbooks נוספים:
 | [`docs/adr/0005-trust-compliance-attendance.md`](docs/adr/0005-trust-compliance-attendance.md) | Trust, Google, נוכחות |
 | [`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md) | libSQL/Turso |
 | [`docs/adr/0008-ai-gateway.md`](docs/adr/0008-ai-gateway.md) | AI Gateway |
-| [`docs/openapi/README.md`](docs/openapi/README.md) | OpenAPI inventory |
+| [`docs/openapi/README.md`](docs/openapi/README.md) | OpenAPI spec + inventory · live at `/v1/meta/openapi.yaml` |
 | [`docs/planning/gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) | שיווק: תוצאות, OS diagram, מצגת משקיעים |
 | [`docs/planning/competitive-wedge.md`](docs/planning/competitive-wedge.md) | מיצוב תחרותי: חוזקות, פערים, סדר land & expand |
 | [`docs/planning/hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md) | מיצוב HIP + התממשקות מודולרית מעל PMS |

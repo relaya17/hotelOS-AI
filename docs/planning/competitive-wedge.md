@@ -54,7 +54,7 @@
 | Guest 360 | ✅ MVP — `GET /v1/guests/by-email` + כרטיס בקבלת Admin | להרחיב העדפות/נאמנות חוצת־רשת |
 | AI Copilot לפי תפקיד | ✅ Work «Copilot תפעול» (HK + Reception Suggest→HITL) + Admin | להרחיב כספים/משמרת ב־Work |
 | Knowledge Graph | מוגדר ב־AI Platform (Vol 5); יישום הדרגתי | לא למכור לפני שיש edges מדידים |
-| Marketplace מודולים | חלקי (integration domains) | שלב 2 אחרי 2–3 מחברי live |
+| Marketplace מודולים | ✅ קטלוג read-only ב־Admin + `GET /v1/integrations/catalog` | שלב 2 — enablement / secrets אחרי 2–3 מחברי live |
 | Open API רחב | OpenAPI inventory + `/v1/*` | לחזק DX / מפתחים אחרי יציבות פיילוט |
 
 ---

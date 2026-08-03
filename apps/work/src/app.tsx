@@ -17,11 +17,15 @@ import { MeetJoinPage } from "./meet-join-page.js";
 import { InvitePage } from "./invite-page.js";
 import { LoginPage } from "./login-page.js";
 import {
+  canAccessFinancePanel,
+  FinancePanel,
+} from "./finance-panel.js";
+import {
   canAccessOpsCopilot,
   OpsCopilotPanel,
 } from "./ops-copilot-panel.js";
 
-type WorkTab = "attendance" | "agent" | "copilot" | "docs";
+type WorkTab = "attendance" | "agent" | "copilot" | "finance" | "docs";
 
 function readInviteToken(): string | null {
   const params = new URLSearchParams(window.location.search);
@@ -65,6 +69,7 @@ export function App() {
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<WorkTab>("attendance");
   const showCopilot = user ? canAccessOpsCopilot(user.roles) : false;
+  const showFinance = user ? canAccessFinancePanel(user.roles) : false;
 
   useEffect(() => {
     let cancelled = false;
@@ -208,6 +213,20 @@ export function App() {
                 Copilot תפעול
               </button>
             ) : null}
+            {showFinance ? (
+              <button
+                type="button"
+                className={
+                  tab === "finance"
+                    ? "hotelos-seg__item hotelos-seg__item--on"
+                    : "hotelos-seg__item"
+                }
+                aria-pressed={tab === "finance"}
+                onClick={() => setTab("finance")}
+              >
+                כספים
+              </button>
+            ) : null}
             <button
               type="button"
               className={
@@ -237,6 +256,9 @@ export function App() {
           {tab === "attendance" ? <AttendancePage /> : null}
           {tab === "agent" ? <HrAgentPanel /> : null}
           {tab === "copilot" && user ? <OpsCopilotPanel user={user} /> : null}
+          {tab === "finance" && user ? (
+            <FinancePanel roles={user.roles} />
+          ) : null}
           {tab === "docs" ? <DocsPanel user={user} /> : null}
         </main>
 

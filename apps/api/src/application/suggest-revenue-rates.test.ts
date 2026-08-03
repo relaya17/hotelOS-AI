@@ -7,9 +7,11 @@ import type {
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import {
+  applySeasonEventToRateSuggestion,
   bookingOccupiesNight,
   buildRevenueRateSuggestionDrafts,
   countOccupiedRoomsOnNight,
+  seasonEventAdjustmentForDate,
   suggestRateDeltaForOccupancy,
   suggestRevenueRates,
 } from "./suggest-revenue-rates.js";
@@ -47,6 +49,26 @@ describe("suggest-revenue-rates", () => {
     const result = suggestRateDeltaForOccupancy(55);
     assert.equal(result.suggestedDeltaPct, 0);
     assert.match(result.rationaleHe, /shoulder/);
+  });
+
+  it("adds weekend season adjustment after occupancy delta", () => {
+    const base = suggestRateDeltaForOccupancy(55);
+    const adjusted = applySeasonEventToRateSuggestion(base, "2026-08-07");
+    assert.equal(adjusted.suggestedDeltaPct, 7);
+    assert.match(adjusted.rationaleHe, /לוח עונות\/אירועים/);
+    assert.match(adjusted.rationaleHe, /סוף שבוע/);
+  });
+
+  it("stacks holiday and summer peak adjustments", () => {
+    const season = seasonEventAdjustmentForDate("2026-08-01");
+    assert.ok(season.totalDeltaPct >= 3);
+    assert.ok(season.labelsHe.includes("עונת שיא קיץ"));
+  });
+
+  it("applies independence day holiday bump", () => {
+    const season = seasonEventAdjustmentForDate("2026-05-14");
+    assert.equal(season.totalDeltaPct, 5);
+    assert.match(season.labelsHe.join(" "), /יום העצמאות/);
   });
 
   it("builds daily drafts for 7 days", () => {

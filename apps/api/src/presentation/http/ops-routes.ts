@@ -18,6 +18,7 @@ import type {
   RevenueSuggestionsRepository,
   ReputationRepository,
   GuestProfileRepository,
+  RoomRepository,
   TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
   TurboRepository,
@@ -43,6 +44,7 @@ import {
 } from "../../application/build-cfo-finance-brief.js";
 import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
 import { buildIncidentCenter } from "../../application/build-incident-center.js";
+import { buildOpsKnowledgeGraph } from "../../application/build-ops-knowledge-graph.js";
 import { runPredictiveMaintenanceScan } from "../../application/detect-predictive-maintenance.js";
 import { ingestTrustedMarketFeeds } from "../../application/ingest-trusted-market-feeds.js";
 import { mapSecurityWebhook } from "../../application/map-security-webhook.js";
@@ -85,6 +87,7 @@ export type OpsRouteDeps = {
   readonly trustedSources: TrustedSourcesRepository;
   readonly snapshots: TrustedSourceSnapshotsRepository;
   readonly guestProfiles?: GuestProfileRepository;
+  readonly rooms: RoomRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -1636,7 +1639,48 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
     }
   });
 
-  // ---- Unified dashboard ("knowledge graph") ----
+  // ---- Operational knowledge graph (Vol 5 §5.5 — explicit nodes/edges) ----
+
+  routes.get("/knowledge-graph", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) {
+        return resolved.response;
+      }
+      if (!deps.guestProfiles) {
+        return sendError(
+          c,
+          503,
+          "GUEST_PROFILES_UNAVAILABLE",
+          "Guest profiles repository is not configured",
+        );
+      }
+      const graph = await buildOpsKnowledgeGraph(
+        {
+          hotels: deps.hotels,
+          rooms: deps.rooms,
+          bookings: deps.bookings,
+          guestProfiles: deps.guestProfiles,
+          ops: deps.ops,
+          equipment: deps.equipment,
+          maintenance: deps.maintenance,
+        },
+        {
+          tenantId: principal.scope.tenantId,
+          hotelId: resolved.hotelId,
+        },
+      );
+      if (!graph) {
+        return sendError(c, 404, "HOTEL_NOT_FOUND", "Hotel not found");
+      }
+      return c.json({ data: graph });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  // ---- Unified dashboard ----
 
   routes.get("/dashboard", async (c) => {
     try {

@@ -1,0 +1,1071 @@
+openapi: 3.1.0
+info:
+  title: HotelOS API
+  version: "1.0"
+  description: |
+    Public and core authenticated surface for HotelOS v1 — Intelligence Layer for Hotels.
+
+    Incomplete or evolving areas are marked in operation descriptions with
+    **see README inventory** (`docs/openapi/README.md`).
+
+    Live spec: `GET /v1/meta/openapi.yaml` or `GET /v1/meta/openapi.json`.
+  contact:
+    name: HotelOS Engineering
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:3001
+    description: Local development
+  - url: https://api.hotelos.example
+    description: Production (replace with deployed host)
+
+tags:
+  - name: Meta
+    description: Discovery, tenancy model, OpenAPI document
+  - name: Health
+    description: Liveness and version
+  - name: Public
+    description: Unauthenticated guest and marketing endpoints
+  - name: Auth
+    description: Login, refresh, session
+  - name: Hotels
+    description: Hotel-scoped operations (authenticated)
+  - name: Overview
+    description: Chain-level dashboards
+  - name: Ops
+    description: Operations, digest, forecast, tasks — see README inventory for full `/v1/ops/**`
+  - name: Twin
+    description: Digital twin — PMS merge and overlays
+  - name: Guests
+    description: Staff guest 360 lookup
+  - name: Autonomy
+    description: HITL suggest endpoints (human-in-the-loop, no auto-execute)
+  - name: Agents
+    description: Agent catalog — see README inventory
+  - name: Turbo
+    description: Turbo OS — see README inventory
+  - name: Trust
+    description: Trust & compliance — see README inventory
+  - name: Knowledge
+    description: Company knowledge — see README inventory
+  - name: Integrations
+    description: Connector catalog (planned)
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /v1/health:
+    get:
+      tags: [Health]
+      summary: Health check (versioned alias)
+      security: []
+      operationId: getHealthV1
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /v1/meta/apps:
+    get:
+      tags: [Meta]
+      summary: Registered HotelOS apps and trust capabilities
+      security: []
+      operationId: getMetaApps
+      responses:
+        "200":
+          description: App registry
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apps:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        url: { type: string, format: uri }
+                        level: { type: string, enum: [chain, hotel, guest] }
+                  positioning: { type: string }
+                  trust:
+                    type: array
+                    items: { type: string }
+
+  /v1/meta/tenancy-model:
+    get:
+      tags: [Meta]
+      summary: Tenancy hierarchy
+      security: []
+      operationId: getMetaTenancyModel
+      responses:
+        "200":
+          description: Tenancy model
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hierarchy:
+                    type: array
+                    items: { type: string }
+                  positioning: { type: string }
+
+  /v1/meta/openapi.yaml:
+    get:
+      tags: [Meta]
+      summary: OpenAPI 3.1 specification (YAML)
+      security: []
+      operationId: getOpenApiYaml
+      responses:
+        "200":
+          description: OpenAPI document
+          content:
+            application/yaml:
+              schema:
+                type: string
+
+  /v1/meta/openapi.json:
+    get:
+      tags: [Meta]
+      summary: OpenAPI 3.1 specification (JSON)
+      security: []
+      operationId: getOpenApiJson
+      responses:
+        "200":
+          description: OpenAPI document
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/public/legal:
+    get:
+      tags: [Public]
+      summary: Public legal documents
+      security: []
+      operationId: getPublicLegal
+      description: see README inventory for document keys
+      responses:
+        "200":
+          description: Legal content bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/public/stays/lookup:
+    post:
+      tags: [Public]
+      summary: Lookup guest stays by email
+      security: []
+      operationId: publicStaysLookup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 200
+      responses:
+        "200":
+          description: Matching stays with optional upsell offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicStay"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/public/stays/check-in:
+    post:
+      tags: [Public]
+      summary: Guest self check-in
+      security: []
+      operationId: publicStaysCheckIn
+      description: see README inventory for full request schema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, bookingId]
+              properties:
+                email: { type: string, format: email }
+                bookingId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Check-in result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/public/feedback:
+    post:
+      tags: [Public]
+      summary: Submit guest feedback
+      security: []
+      operationId: publicFeedback
+      description: Available when feedback ingest is enabled — see README inventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bookingId, rating]
+              properties:
+                bookingId: { type: string, format: uuid }
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                comment: { type: string, maxLength: 2000 }
+      responses:
+        "200":
+          description: Feedback recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Email/password login
+      security: []
+      operationId: authLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantId, email, password]
+              properties:
+                tenantId: { type: string, format: uuid }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8, maxLength: 200 }
+      responses:
+        "200":
+          description: Token pair and user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthLoginResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate access token
+      security: []
+      operationId: authRefresh
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string, minLength: 20, maxLength: 500 }
+      responses:
+        "200":
+          description: New token pair
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  refreshToken: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke refresh session
+      security: []
+      operationId: authLogout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: Session revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      ok: { type: boolean }
+
+  /v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user profile
+      operationId: authMe
+      responses:
+        "200":
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/hotels:
+    get:
+      tags: [Hotels]
+      summary: List hotels in tenant scope
+      operationId: listHotels
+      responses:
+        "200":
+          description: Hotels visible to the principal
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HotelSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/hotels/{hotelId}/kashrut:
+    patch:
+      tags: [Hotels]
+      summary: Toggle kashrut module for a hotel
+      operationId: patchHotelKashrut
+      parameters:
+        - $ref: "#/components/parameters/hotelId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        "200":
+          description: Updated hotel
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/HotelSummary"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/hotels/{hotelId}/rooms:
+    get:
+      tags: [Hotels]
+      summary: List rooms for a hotel
+      operationId: listHotelRooms
+      parameters:
+        - $ref: "#/components/parameters/hotelId"
+      responses:
+        "200":
+          description: Room inventory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/hotels/{hotelId}/rooms/{roomId}/status:
+    patch:
+      tags: [Hotels]
+      summary: Update room status
+      operationId: patchRoomStatus
+      parameters:
+        - $ref: "#/components/parameters/hotelId"
+        - name: roomId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [vacant, occupied, dirty, maintenance]
+      responses:
+        "200":
+          description: Updated room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/hotels/{hotelId}/bookings:
+    get:
+      tags: [Hotels]
+      summary: List bookings
+      operationId: listHotelBookings
+      parameters:
+        - $ref: "#/components/parameters/hotelId"
+      responses:
+        "200":
+          description: Bookings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+    post:
+      tags: [Hotels]
+      summary: Create booking
+      operationId: createHotelBooking
+      parameters:
+        - $ref: "#/components/parameters/hotelId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roomId, guestName, guestEmail, checkInDate, checkOutDate]
+              properties:
+                roomId: { type: string, format: uuid }
+                guestName: { type: string }
+                guestEmail: { type: string, format: email }
+                guestPhone: { type: string }
+                checkInDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+                checkOutDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+                status:
+                  type: string
+                  enum: [confirmed, checked_in]
+      responses:
+        "201":
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/hotels/{hotelId}/bookings/{bookingId}/status:
+    post:
+      tags: [Hotels]
+      summary: Transition booking status
+      operationId: postBookingStatus
+      description: see README inventory for allowed transitions
+      parameters:
+        - $ref: "#/components/parameters/hotelId"
+        - name: bookingId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string }
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/overview/chain:
+    get:
+      tags: [Overview]
+      summary: Chain overview KPIs
+      operationId: getChainOverview
+      responses:
+        "200":
+          description: Chain dashboard payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/ops/forecast:
+    get:
+      tags: [Ops]
+      summary: 7-day ops forecast pack
+      operationId: getOpsForecast
+      parameters:
+        - $ref: "#/components/parameters/hotelIdQuery"
+      responses:
+        "200":
+          description: Deterministic forecast bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/ops/cio-digest:
+    get:
+      tags: [Ops]
+      summary: Role-based CIO digest (deterministic)
+      operationId: getCioDigest
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [owner, ceo, cfo, reception, housekeeping, fb]
+            default: ceo
+      responses:
+        "200":
+          description: Digest for the selected executive/ops role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/ops/cio-digest/synthesize:
+    post:
+      tags: [Ops]
+      summary: AI-augmented CIO digest (Gateway)
+      operationId: synthesizeCioDigest
+      description: Deterministic facts plus AI narrative via AI Gateway — see README inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  enum: [owner, ceo, cfo, reception, housekeeping, fb]
+                  default: ceo
+      responses:
+        "200":
+          description: Synthesized digest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/ops/knowledge-graph:
+    get:
+      tags: [Ops]
+      summary: Ops knowledge graph (planned)
+      operationId: getOpsKnowledgeGraph
+      description: |
+        **Not yet implemented** — planned ops knowledge graph endpoint.
+        see README inventory.
+      parameters:
+        - $ref: "#/components/parameters/hotelIdQuery"
+      responses:
+        "501":
+          description: Not implemented
+
+  /v1/twin/hotels/{hotelId}:
+    get:
+      tags: [Twin]
+      summary: Digital twin for a hotel
+      operationId: getHotelTwin
+      parameters:
+        - $ref: "#/components/parameters/hotelId"
+        - name: pms
+          in: query
+          description: Set to `0` to omit PMS inventory merge
+          schema: { type: string, enum: ["0", "1"] }
+      responses:
+        "200":
+          description: Merged twin with operational overlays
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    description: Twin rooms plus overlays — see README inventory
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /v1/twin/hotels/{hotelId}/pms-sync:
+    post:
+      tags: [Twin]
+      summary: Read-merge PMS inventory into twin
+      operationId: postHotelTwinPmsSync
+      description: Read-only merge; does not write back to PMS
+      parameters:
+        - $ref: "#/components/parameters/hotelId"
+      responses:
+        "200":
+          description: Twin after sync with provider metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/guests/by-email:
+    get:
+      tags: [Guests]
+      summary: Guest 360 profile by email
+      operationId: getGuestByEmail
+      parameters:
+        - $ref: "#/components/parameters/hotelIdQuery"
+        - name: email
+          in: query
+          required: true
+          schema: { type: string, format: email, maxLength: 200 }
+      responses:
+        "200":
+          description: Guest 360 aggregate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/integrations/catalog:
+    get:
+      tags: [Integrations]
+      summary: Integration connector catalog (planned)
+      operationId: getIntegrationsCatalog
+      description: |
+        **Not yet exposed via HTTP** — connector domains live in `@hotelos/connectors`.
+        see README inventory.
+      responses:
+        "501":
+          description: Not implemented
+
+  /v1/autonomy/suggest:
+    post:
+      tags: [Autonomy]
+      summary: Generic autonomy suggest (department task, procurement draft, maintenance quote)
+      operationId: autonomySuggest
+      description: HITL suggest — creates approval artifacts, does not auto-execute. see README inventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, hotelId]
+              properties:
+                kind:
+                  type: string
+                  enum: [department_task, procurement_draft, maintenance_quote_accept]
+                hotelId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Suggestion recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/autonomy/suggest-low-stock:
+    post:
+      tags: [Autonomy]
+      summary: Suggest procurement for low stock
+      operationId: autonomySuggestLowStock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hotelId]
+              properties:
+                hotelId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Suggestion recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/autonomy/suggest-dirty-rooms:
+    post:
+      tags: [Autonomy]
+      summary: Suggest housekeeping batch for dirty rooms
+      operationId: autonomySuggestDirtyRooms
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hotelId]
+              properties:
+                hotelId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Suggestion recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/autonomy/suggest-send-purchase-order:
+    post:
+      tags: [Autonomy]
+      summary: Suggest sending an approved purchase order
+      operationId: autonomySuggestSendPurchaseOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hotelId, purchaseOrderId]
+              properties:
+                hotelId: { type: string, format: uuid }
+                purchaseOrderId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Suggestion recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/autonomy/suggest-recruiting-stage:
+    post:
+      tags: [Autonomy]
+      summary: Suggest recruiting pipeline stage change
+      operationId: autonomySuggestRecruitingStage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hotelId]
+              properties:
+                hotelId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Suggestion recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/autonomy/suggest-todays-arrivals:
+    post:
+      tags: [Autonomy]
+      summary: Suggest reception prep for today's arrivals
+      operationId: autonomySuggestTodaysArrivals
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hotelId]
+              properties:
+                hotelId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Suggestion recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/autonomy/suggest-feedback-followup:
+    post:
+      tags: [Autonomy]
+      summary: Suggest follow-up task for guest feedback
+      operationId: autonomySuggestFeedbackFollowup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hotelId]
+              properties:
+                hotelId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Suggestion recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/autonomy/suggest-ledger-close:
+    post:
+      tags: [Autonomy]
+      summary: Suggest ledger close approval
+      operationId: autonomySuggestLedgerClose
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hotelId]
+              properties:
+                hotelId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Suggestion recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/agents:
+    get:
+      tags: [Agents]
+      summary: Agent catalog
+      operationId: listAgents
+      description: see README inventory
+      responses:
+        "200":
+          description: Agents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+
+  /v1/turbo/{path}:
+    get:
+      tags: [Turbo]
+      summary: Turbo OS routes (stub)
+      operationId: turboRoutesStub
+      description: Full `/v1/turbo/**` surface — see README inventory
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Turbo resource
+
+  /v1/trust/{path}:
+    get:
+      tags: [Trust]
+      summary: Trust & compliance routes (stub)
+      operationId: trustRoutesStub
+      description: Full `/v1/trust/**` surface — see README inventory
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Trust resource
+
+  /v1/knowledge/{path}:
+    get:
+      tags: [Knowledge]
+      summary: Company knowledge routes (stub)
+      operationId: knowledgeRoutesStub
+      description: Full `/v1/knowledge/**` surface — see README inventory
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Knowledge resource
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Authorization: Bearer accessToken from POST /v1/auth/login"
+
+  parameters:
+    hotelId:
+      name: hotelId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    hotelIdQuery:
+      name: hotelId
+      in: query
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Forbidden:
+      description: Principal lacks scope for the resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+
+  schemas:
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, details, correlationId]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+            correlationId: { type: string }
+
+    DataEnvelope:
+      type: object
+      properties:
+        data: {}
+
+    HealthStatus:
+      type: object
+      required: [status, service, version]
+      properties:
+        status: { type: string, enum: [ok] }
+        service: { type: string, enum: [api] }
+        version: { type: string }
+        recordings:
+          type: object
+          properties:
+            backend: { type: string }
+            root: { type: string }
+
+    HotelSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        timezone: { type: string }
+        currency: { type: string }
+        chainId: { type: string, format: uuid, nullable: true }
+        kashrutEnabled: { type: boolean }
+
+    UserProfile:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        roles:
+          type: array
+          items: { type: string }
+        scope:
+          type: object
+          properties:
+            tenantId: { type: string, format: uuid }
+            chainId: { type: string, format: uuid }
+            hotelId: { type: string, format: uuid }
+            departmentId: { type: string, format: uuid }
+
+    AuthLoginResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        user:
+          $ref: "#/components/schemas/UserProfile"
+
+    PublicStay:
+      type: object
+      properties:
+        bookingId: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        hotelName: { type: string }
+        roomNumber: { type: string }
+        guestName: { type: string }
+        guestPhone: { type: string, nullable: true }
+        checkInDate: { type: string }
+        checkOutDate: { type: string }
+        status: { type: string }
+        roomPrepStatus: { type: string, nullable: true }
+        roomStatus: { type: string, nullable: true }
+        upsellOffers:
+          type: array
+          items: { type: object }

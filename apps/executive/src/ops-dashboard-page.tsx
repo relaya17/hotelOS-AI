@@ -7,14 +7,33 @@ import {
   fetchEnergySuggestions,
   fetchOpsDashboard,
   fetchOpsForecast,
+  fetchOpsKnowledgeGraph,
   fetchReputationReviews,
   generateEnergySuggestions,
   type DailyBriefingHotelDto,
   type EnergySuggestionDto,
   type OpsDashboardHotelDto,
   type OpsForecastDto,
+  type OpsKnowledgeGraphDto,
   type ReputationReviewDto,
 } from "@hotelos/web-client";
+
+const KG_EDGE_LABELS_HE: Record<string, string> = {
+  has_room: "מכיל חדר",
+  has_booking: "הזמנה",
+  assigned_to: "משויך לחדר",
+  booked_by: "הוזמן על ידי",
+  stays_at: "שוהה במלון",
+  open_incident: "אירוע פתוח",
+  linked_task: "משימה קשורה",
+  equipment_at: "ציוד במלון",
+  predicts_on: "חיזוי על ציוד",
+  predicts_at: "חיזוי במלון",
+};
+
+function edgeTypeLabelHe(type: string): string {
+  return KG_EDGE_LABELS_HE[type] ?? type;
+}
 
 export function OpsDashboardPage() {
   const [hotels, setHotels] = useState<readonly OpsDashboardHotelDto[]>([]);
@@ -43,6 +62,12 @@ export function OpsDashboardPage() {
   >([]);
   const [energyLoading, setEnergyLoading] = useState(false);
   const [energyError, setEnergyError] = useState<string | undefined>();
+
+  const [knowledgeGraph, setKnowledgeGraph] = useState<OpsKnowledgeGraphDto | null>(
+    null,
+  );
+  const [kgLoading, setKgLoading] = useState(false);
+  const [kgError, setKgError] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -175,6 +200,38 @@ export function OpsDashboardPage() {
   }, [hotels]);
 
   useEffect(() => {
+    const firstHotelId = hotels[0]?.hotelId;
+    if (firstHotelId === undefined) {
+      setKnowledgeGraph(null);
+      return;
+    }
+    const hotelId: string = firstHotelId;
+    let cancelled = false;
+    async function loadKnowledgeGraph() {
+      setKgLoading(true);
+      setKgError(undefined);
+      try {
+        const graph = await fetchOpsKnowledgeGraph(hotelId);
+        if (!cancelled) setKnowledgeGraph(graph);
+      } catch (loadError) {
+        if (!cancelled) {
+          setKgError(
+            loadError instanceof Error
+              ? loadError.message
+              : "שגיאה בטעינת גרף הידע",
+          );
+        }
+      } finally {
+        if (!cancelled) setKgLoading(false);
+      }
+    }
+    void loadKnowledgeGraph();
+    return () => {
+      cancelled = true;
+    };
+  }, [hotels]);
+
+  useEffect(() => {
     let cancelled = false;
     async function loadBriefing() {
       setBriefingLoading(true);
@@ -222,6 +279,20 @@ export function OpsDashboardPage() {
             10,
         ) / 10
       : null;
+
+  const kgNodeLabels = new Map(
+    (knowledgeGraph?.nodes ?? []).map((node) => [node.id, node.label]),
+  );
+  const kgEdgeCounts = (knowledgeGraph?.edges ?? []).reduce<
+    Record<string, number>
+  >((acc, edge) => {
+    acc[edge.type] = (acc[edge.type] ?? 0) + 1;
+    return acc;
+  }, {});
+  const kgEdgeCountEntries = Object.entries(kgEdgeCounts).sort(
+    (a, b) => b[1] - a[1],
+  );
+  const kgSampleEdges = (knowledgeGraph?.edges ?? []).slice(0, 8);
 
   async function onGenerateEnergy() {
     const hotelId = hotels[0]?.hotelId;
@@ -281,6 +352,59 @@ export function OpsDashboardPage() {
               </li>
             ))}
           </ul>
+        ) : null}
+      </section>
+
+      <section className="card kg-card" aria-labelledby="ops-kg-heading">
+        <h2 id="ops-kg-heading">גרף ידע תפעולי</h2>
+        <p className="hint">
+          {hotels[0]?.hotelName ?? "מלון ראשון ברשת"} — קשרים מפורשים מנתוני
+          המערכת (חדרים, הזמנות, אורחים, אירועים, ציוד).
+        </p>
+        {kgLoading ? <p className="state">טוען גרף…</p> : null}
+        {kgError !== undefined ? (
+          <p className="state state--error" role="alert">
+            {kgError}
+          </p>
+        ) : null}
+        {!kgLoading && knowledgeGraph ? (
+          <>
+            <p className="kg-meta">
+              {knowledgeGraph.nodes.length} ישויות · {knowledgeGraph.edges.length}{" "}
+              קשרים · עודכן {knowledgeGraph.generatedAt.slice(0, 19)}
+            </p>
+            {kgEdgeCountEntries.length > 0 ? (
+              <ul className="kg-types">
+                {kgEdgeCountEntries.map(([type, count]) => (
+                  <li key={type}>
+                    <span>{edgeTypeLabelHe(type)}</span>
+                    <strong>{count}</strong>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="hint">אין קשרים עדיין.</p>
+            )}
+            {kgSampleEdges.length > 0 ? (
+              <>
+                <h3 className="kg-sample-title">דוגמאות קשרים</h3>
+                <ul className="kg-samples">
+                  {kgSampleEdges.map((edge) => (
+                    <li key={`${edge.from}-${edge.type}-${edge.to}`}>
+                      <span className="kg-edge-type">{edgeTypeLabelHe(edge.type)}</span>
+                      {" · "}
+                      {kgNodeLabels.get(edge.from) ?? edge.from}
+                      {" → "}
+                      {kgNodeLabels.get(edge.to) ?? edge.to}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+          </>
+        ) : null}
+        {!kgLoading && !kgError && hotels.length === 0 ? (
+          <p className="hint">טעינת מלונות נדרשת לפני גרף הידע.</p>
         ) : null}
       </section>
 
@@ -511,6 +635,14 @@ export function OpsDashboardPage() {
         .chain-summary { margin:0 0 var(--space-3); font-weight:600; }
         .briefing-list { margin:0; padding-inline-start:1.2rem; display:grid; gap:var(--space-2); }
         .briefing-warnings { margin:.3rem 0 0; padding-inline-start:1.1rem; display:grid; gap:.2rem; font-size:var(--text-small); color:var(--color-warn); }
+        .kg-card { border-color:var(--color-line-strong); }
+        .kg-meta { margin:0 0 var(--space-3); font-size:var(--text-small); color:var(--color-ink-soft); font-weight:600; }
+        .kg-types { list-style:none; margin:0 0 var(--space-3); padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:var(--space-2); }
+        .kg-types li { display:flex; justify-content:space-between; gap:var(--space-2); padding:var(--space-2) var(--space-3); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:var(--color-paper); font-size:var(--text-small); }
+        .kg-types strong { font-family:var(--font-display); }
+        .kg-sample-title { margin:0 0 var(--space-2); font-size:var(--text-body); font-weight:700; }
+        .kg-samples { margin:0; padding-inline-start:1.2rem; display:grid; gap:var(--space-2); font-size:var(--text-small); }
+        .kg-edge-type { font-weight:700; color:var(--color-sea-deep); }
         .reputation-card { border-color:var(--color-line-strong); }
         .reputation-list { list-style:none; margin:var(--space-3) 0 0; padding:0; display:grid; gap:var(--space-3); }
         .reputation-item { padding:var(--space-3); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:var(--color-paper); }

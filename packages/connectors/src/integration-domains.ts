@@ -46,6 +46,15 @@ export const INTEGRATION_DOMAINS = [
     status: "mvp",
   },
   {
+    id: "predictive_maintenance",
+    titleHe: "תחזוקה חיזויית / חיישנים",
+    examples: [
+      "sensor webhook → /v1/public/equipment/ingest",
+      "history rules + Twin overlay",
+    ],
+    status: "mvp",
+  },
+  {
     id: "access",
     titleHe: "מנעולים / mobile key",
     examples: ["Assa Abloy", "Salto", "dormakaba (deferred)"],

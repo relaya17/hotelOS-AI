@@ -2480,6 +2480,35 @@ export async function fetchOpsDashboard(): Promise<{
   return payload.data;
 }
 
+export type OpsKnowledgeGraphNodeDto = {
+  readonly id: string;
+  readonly type: string;
+  readonly label: string;
+  readonly meta?: Record<string, string | number | boolean | null>;
+};
+
+export type OpsKnowledgeGraphEdgeDto = {
+  readonly from: string;
+  readonly to: string;
+  readonly type: string;
+};
+
+export type OpsKnowledgeGraphDto = {
+  readonly generatedAt: string;
+  readonly nodes: readonly OpsKnowledgeGraphNodeDto[];
+  readonly edges: readonly OpsKnowledgeGraphEdgeDto[];
+};
+
+export async function fetchOpsKnowledgeGraph(
+  hotelId: string,
+): Promise<OpsKnowledgeGraphDto> {
+  const params = new URLSearchParams({ hotelId });
+  const payload = (await authGet(
+    `/v1/ops/knowledge-graph?${params.toString()}`,
+  )) as { data: OpsKnowledgeGraphDto };
+  return payload.data;
+}
+
 export type DailyBriefingHotelDto = {
   readonly hotelId: string;
   readonly hotelName: string;
@@ -4062,6 +4091,29 @@ export async function syncHotelTwinPms(hotelId: string): Promise<{
       twin: HotelTwinDto;
       sync: { noteHe: string; providerId: string };
     };
+  };
+  return payload.data;
+}
+
+export type IntegrationDomainStatus = "adapters" | "mvp" | "deferred";
+
+export type IntegrationDomainDto = {
+  readonly id: string;
+  readonly titleHe: string;
+  readonly examples: readonly string[];
+  readonly status: IntegrationDomainStatus;
+};
+
+export type IntegrationsCatalogDto = {
+  readonly domains: readonly IntegrationDomainDto[];
+  readonly live: {
+    readonly pmsProvider: string;
+  };
+};
+
+export async function fetchIntegrationsCatalog(): Promise<IntegrationsCatalogDto> {
+  const payload = (await authGet("/v1/integrations/catalog")) as {
+    data: IntegrationsCatalogDto;
   };
   return payload.data;
 }

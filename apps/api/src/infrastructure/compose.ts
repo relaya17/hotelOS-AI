@@ -340,6 +340,7 @@ export async function composeApp() {
       trustedSources,
       snapshots: trustedSourceSnapshots,
       guestProfiles,
+      rooms,
       tokens,
     },
     upsells: {
@@ -463,6 +464,10 @@ export async function composeApp() {
       approvals,
       audit,
       gateway,
+      tokens,
+    },
+    integrations: {
+      pmsProvider: env.PMS_PROVIDER,
       tokens,
     },
   });

@@ -97,10 +97,15 @@ import {
   createGuestRoutes,
   type GuestRouteDeps,
 } from "./guest-routes.js";
+import {
+  createIntegrationRoutes,
+  type IntegrationRouteDeps,
+} from "./integration-routes.js";
 import { isOriginAllowed } from "@hotelos/config";
 import { captureException } from "../../infrastructure/observability.js";
 import { createRateLimitMiddleware } from "./rate-limit.js";
 import { securityHeaders } from "./security-headers.js";
+import { createMetaRoutes } from "./meta-routes.js";
 
 export type ApiDependencies = {
   readonly getHealth: GetHealth;
@@ -130,6 +135,7 @@ export type ApiDependencies = {
   readonly twin: TwinRouteDeps;
   readonly cron: CronRouteDeps;
   readonly simulator: SimulatorRouteDeps;
+  readonly integrations: IntegrationRouteDeps;
 };
 
 export function createApp(deps: ApiDependencies): Hono {
@@ -255,6 +261,8 @@ export function createApp(deps: ApiDependencies): Hono {
     }),
   );
 
+  app.route("/v1/meta", createMetaRoutes());
+
   app.route("/v1/auth", createAuthRoutes(deps.auth));
   app.route("/v1/hotels", createHotelRoutes(deps.hotels));
   app.route("/v1/guests", createGuestRoutes(deps.guests));
@@ -277,6 +285,7 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/hr", createHrRoutes(deps.hr));
   app.route("/v1/correspondence", createCorrespondenceRoutes(deps.correspondence));
   app.route("/v1/twin", createTwinRoutes(deps.twin));
+  app.route("/v1/integrations", createIntegrationRoutes(deps.integrations));
   app.route("/v1/cron", createCronRoutes(deps.cron));
   app.route("/v1/simulator", createSimulatorRoutes(deps.simulator));
 

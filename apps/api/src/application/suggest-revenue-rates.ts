@@ -18,6 +18,104 @@ export const REVENUE_INCREASE_MIN_PCT = 5;
 export const REVENUE_INCREASE_MAX_PCT = 12;
 export const REVENUE_PROMO_DECREASE_PCT = -5;
 
+/** Static season/event calendar — applied after occupancy delta (no PMS/LLM). */
+export type SeasonEventRule = {
+  readonly labelHe: string;
+  readonly deltaPct: number;
+  readonly monthDays?: readonly string[];
+  readonly weekdays?: readonly number[];
+  readonly monthRange?: readonly [number, number];
+};
+
+export const SEASON_EVENT_ADJUSTMENTS: readonly SeasonEventRule[] = [
+  {
+    labelHe: "סוף שבוע (שישי–שבת)",
+    deltaPct: 4,
+    weekdays: [5, 6],
+  },
+  {
+    labelHe: "עונת שיא קיץ",
+    deltaPct: 3,
+    monthRange: [6, 8],
+  },
+  {
+    labelHe: "חג הפסח",
+    deltaPct: 6,
+    monthDays: ["04-12", "04-13", "04-14", "04-15"],
+  },
+  {
+    labelHe: "ראש השנה",
+    deltaPct: 5,
+    monthDays: ["09-22", "09-23", "09-24"],
+  },
+  {
+    labelHe: "סוכות",
+    deltaPct: 4,
+    monthDays: ["10-06", "10-07", "10-08", "10-09"],
+  },
+  {
+    labelHe: "יום העצמאות",
+    deltaPct: 5,
+    monthDays: ["05-14"],
+  },
+  {
+    labelHe: "חנוכה",
+    deltaPct: 3,
+    monthDays: ["12-24", "12-25", "12-26"],
+  },
+];
+
+export type SeasonEventAdjustment = {
+  readonly totalDeltaPct: number;
+  readonly labelsHe: readonly string[];
+};
+
+export function seasonEventAdjustmentForDate(
+  nightDate: string,
+): SeasonEventAdjustment {
+  const weekday = new Date(`${nightDate}T12:00:00.000Z`).getUTCDay();
+  const monthDay = nightDate.slice(5);
+  const month = Number.parseInt(nightDate.slice(5, 7), 10);
+
+  const labelsHe: string[] = [];
+  let totalDeltaPct = 0;
+
+  for (const rule of SEASON_EVENT_ADJUSTMENTS) {
+    const matchesWeekday =
+      rule.weekdays !== undefined && rule.weekdays.includes(weekday);
+    const matchesMonthDay =
+      rule.monthDays !== undefined && rule.monthDays.includes(monthDay);
+    const matchesMonthRange =
+      rule.monthRange !== undefined &&
+      month >= rule.monthRange[0] &&
+      month <= rule.monthRange[1];
+
+    if (matchesWeekday || matchesMonthDay || matchesMonthRange) {
+      totalDeltaPct += rule.deltaPct;
+      labelsHe.push(rule.labelHe);
+    }
+  }
+
+  return { totalDeltaPct, labelsHe };
+}
+
+export function applySeasonEventToRateSuggestion(
+  base: Pick<RevenueRateSuggestionDraft, "suggestedDeltaPct" | "rationaleHe">,
+  nightDate: string,
+): Pick<RevenueRateSuggestionDraft, "suggestedDeltaPct" | "rationaleHe"> {
+  const season = seasonEventAdjustmentForDate(nightDate);
+  if (season.labelsHe.length === 0) {
+    return base;
+  }
+
+  const suggestedDeltaPct = base.suggestedDeltaPct + season.totalDeltaPct;
+  const sign =
+    season.totalDeltaPct >= 0 ? `+${season.totalDeltaPct}` : `${season.totalDeltaPct}`;
+  const rationaleHe = `${base.rationaleHe} · לוח עונות/אירועים: ${season.labelsHe.join(", ")} (${sign}%).`;
+
+  return { suggestedDeltaPct, rationaleHe };
+}
+
 export type RevenueRateSuggestionDraft = {
   readonly periodStart: string;
   readonly periodEnd: string;
@@ -147,8 +245,11 @@ export function buildRevenueRateSuggestionDrafts(
     const night = formatDateUtc(addDaysUtc(now, offset));
     const occupied = countOccupiedRoomsOnNight(bookings, night);
     const occupancyPct = projectedOccupancyPct(occupied, totalRooms);
-    const { suggestedDeltaPct, rationaleHe } =
-      suggestRateDeltaForOccupancy(occupancyPct);
+    const base = suggestRateDeltaForOccupancy(occupancyPct);
+    const { suggestedDeltaPct, rationaleHe } = applySeasonEventToRateSuggestion(
+      base,
+      night,
+    );
 
     drafts.push({
       periodStart: night,
