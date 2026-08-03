@@ -5,7 +5,12 @@ import { createMewsHttpPmsConnector } from "./mews-http-pms.js";
 test("mews http connector maps resources and reservations", async () => {
   const calls: string[] = [];
   const fetchImpl: typeof fetch = async (input) => {
-    const url = String(input);
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url;
     calls.push(url);
     if (url.includes("/resources/getAll")) {
       return new Response(

@@ -42,37 +42,44 @@ test("drain retries pending/failed and skips already-sent rows", async () => {
       throw new Error("unused");
     },
     markSent: async (id, sentAt) => {
-      const idx = store.findIndex((entry) => entry.id === id);
-      assert.ok(idx >= 0);
-      store[idx] = {
-        ...store[idx]!,
+      const current = store.find((entry) => entry.id === id);
+      assert.ok(current);
+      const updated: PersistedNotification = {
+        ...current,
         status: "sent",
         error: null,
         sentAt,
         nextAttemptAt: null,
       };
-      return store[idx]!;
+      store[store.indexOf(current)] = updated;
+      return updated;
     },
     markFailed: async (id, error, meta) => {
-      const idx = store.findIndex((entry) => entry.id === id);
-      assert.ok(idx >= 0);
-      store[idx] = {
-        ...store[idx]!,
+      const current = store.find((entry) => entry.id === id);
+      assert.ok(current);
+      const updated: PersistedNotification = {
+        ...current,
         status: "failed",
         error,
-        attemptCount: meta?.attemptCount ?? store[idx]!.attemptCount,
+        attemptCount: meta?.attemptCount ?? current.attemptCount,
         nextAttemptAt:
           meta?.nextAttemptAt !== undefined
             ? meta.nextAttemptAt
-            : store[idx]!.nextAttemptAt,
+            : current.nextAttemptAt,
       };
-      return store[idx]!;
+      store[store.indexOf(current)] = updated;
+      return updated;
     },
     markSkipped: async (id) => {
-      const idx = store.findIndex((entry) => entry.id === id);
-      assert.ok(idx >= 0);
-      store[idx] = { ...store[idx]!, status: "skipped", error: null };
-      return store[idx]!;
+      const current = store.find((entry) => entry.id === id);
+      assert.ok(current);
+      const updated: PersistedNotification = {
+        ...current,
+        status: "skipped",
+        error: null,
+      };
+      store[store.indexOf(current)] = updated;
+      return updated;
     },
     latestForBooking: async () => null,
     listByHotel: async () => store,
@@ -122,16 +129,17 @@ test("drain records backoff and dead-letters after max attempts", async () => {
     },
     markSent: async () => null,
     markFailed: async (id, error, meta) => {
-      const idx = store.findIndex((entry) => entry.id === id);
-      assert.ok(idx >= 0);
-      store[idx] = {
-        ...store[idx]!,
+      const current = store.find((entry) => entry.id === id);
+      assert.ok(current);
+      const updated: PersistedNotification = {
+        ...current,
         status: "failed",
         error,
-        attemptCount: meta?.attemptCount ?? store[idx]!.attemptCount,
+        attemptCount: meta?.attemptCount ?? current.attemptCount,
         nextAttemptAt: meta?.nextAttemptAt ?? null,
       };
-      return store[idx]!;
+      store[store.indexOf(current)] = updated;
+      return updated;
     },
     markSkipped: async () => null,
     latestForBooking: async () => null,
