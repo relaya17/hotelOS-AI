@@ -1,3 +1,11 @@
+import {
+  BREAKFAST_RATE_PER_NIGHT,
+  countNights,
+  roomRateFor,
+  roundMoney,
+  VAT_RATE,
+} from "./room-rates.js";
+
 export type GuestFolioStay = {
   readonly checkInDate: string;
   readonly checkOutDate: string;
@@ -24,34 +32,6 @@ export type GuestFolio = {
   readonly paid: number;
   readonly balanceDue: number;
 };
-
-const ROOM_RATE_PER_NIGHT: Readonly<Record<string, number>> = {
-  standard: 450,
-  deluxe: 550,
-  suite: 700,
-};
-const DEFAULT_ROOM_RATE_PER_NIGHT = 450;
-const BREAKFAST_RATE_PER_NIGHT = 85;
-const VAT_RATE = 0.17;
-
-function countNights(checkInDate: string, checkOutDate: string): number {
-  const checkIn = new Date(`${checkInDate}T12:00:00Z`);
-  const checkOut = new Date(`${checkOutDate}T12:00:00Z`);
-  const nights = Math.round(
-    (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24),
-  );
-  return Math.max(nights, 1);
-}
-
-function roomRateFor(roomType: string | null): number {
-  if (!roomType) return DEFAULT_ROOM_RATE_PER_NIGHT;
-  return ROOM_RATE_PER_NIGHT[roomType.trim().toLowerCase()] ??
-    DEFAULT_ROOM_RATE_PER_NIGHT;
-}
-
-function roundMoney(amount: number): number {
-  return Math.round(amount * 100) / 100;
-}
 
 export function buildGuestFolio(stay: GuestFolioStay): GuestFolio {
   const nights = countNights(stay.checkInDate, stay.checkOutDate);

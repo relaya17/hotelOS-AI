@@ -9,10 +9,11 @@ import {
   type GuestStayDto,
   type LegalDocDetail,
 } from "@hotelos/web-client";
+import { BookFlow } from "./book-flow.js";
 import { LandingPage } from "./landing-page.js";
 import { StayHub } from "./stay-hub.js";
 
-type GuestView = "landing" | "find-stay";
+type GuestView = "landing" | "find-stay" | "book";
 
 function GuestCookieBanner() {
   return (
@@ -146,17 +147,34 @@ export function App() {
   }
 
   function goBookIntent() {
-    const el = document.getElementById("book-intent");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
+    setView("book");
+    setError(undefined);
+  }
+
+  async function handleBooked(input: {
+    readonly email: string;
+    readonly bookingId: string;
+  }) {
+    setEmail(input.email);
+    setLoading(true);
+    setError(undefined);
+    try {
+      const data = await lookupGuestStay(input.email);
+      setStays(data);
+      const index = data.findIndex((stay) => stay.bookingId === input.bookingId);
+      setSelectedStayIndex(index >= 0 ? index : 0);
+      if (data.length === 0) {
+        setError("ההזמנה נוצרה אך לא נמצאה בחיפוש — נסו כניסה לשהייה");
+        setView("find-stay");
+      }
+    } catch (lookupError) {
+      setError(
+        lookupError instanceof Error ? lookupError.message : "שגיאה בטעינת שהייה",
+      );
+      setView("find-stay");
+    } finally {
+      setLoading(false);
     }
-    setView("landing");
-    window.setTimeout(() => {
-      document
-        .getElementById("book-intent")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 0);
   }
 
   const hasStay = stays !== null && stays.length > 0;
@@ -213,6 +231,28 @@ export function App() {
               onSelectStay={setSelectedStayIndex}
               onStayUpdated={handleStayUpdated}
               onSearchAgain={handleSearchAgain}
+            />
+          </section>
+          <SiteFooter />
+          <GuestCookieBanner />
+          <style>{stayShellStyles}</style>
+        </main>
+      </>
+    );
+  }
+
+  if (view === "book") {
+    return (
+      <>
+        <SkipLink />
+        <main id="main-content" className="shell shell--find" tabIndex={-1}>
+          <section className="panel hotelos-surface">
+            <BookFlow
+              onCancel={() => {
+                setView("landing");
+                setError(undefined);
+              }}
+              onBooked={handleBooked}
             />
           </section>
           <SiteFooter />

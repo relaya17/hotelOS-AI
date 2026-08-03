@@ -601,6 +601,134 @@ export async function updateBookingRoomPrep(
   return payload.data;
 }
 
+export type PublicHotelDto = {
+  readonly id: string;
+  readonly name: string;
+  readonly timezone: string;
+  readonly currency: string;
+  readonly kashrutEnabled: boolean;
+};
+
+export type PublicAvailabilityOfferDto = {
+  readonly roomType: string;
+  readonly labelHe: string;
+  readonly availableCount: number;
+  readonly ratePerNight: number;
+};
+
+export type PublicAvailabilityDto = {
+  readonly hotelId: string;
+  readonly hotelName: string;
+  readonly currency: string;
+  readonly checkInDate: string;
+  readonly checkOutDate: string;
+  readonly offers: readonly PublicAvailabilityOfferDto[];
+};
+
+export type PublicQuoteDto = {
+  readonly roomType: string;
+  readonly roomTypeLabelHe: string;
+  readonly nights: number;
+  readonly currency: string;
+  readonly roomTotal: number;
+  readonly breakfastTotal: number;
+  readonly subtotal: number;
+  readonly tax: number;
+  readonly total: number;
+  readonly amountMinor: number;
+};
+
+export type PublicBookingResultDto = {
+  readonly bookingId: string;
+  readonly hotelId: string;
+  readonly roomNumber: string;
+  readonly guestName: string;
+  readonly guestEmail: string;
+  readonly checkInDate: string;
+  readonly checkOutDate: string;
+  readonly status: string;
+  readonly quote: PublicQuoteDto;
+  readonly payment: {
+    readonly id: string;
+    readonly status: string;
+    readonly amountMinor: number;
+    readonly currency: string;
+  };
+};
+
+export async function listPublicHotels(): Promise<readonly PublicHotelDto[]> {
+  const response = await fetch(`${getApiBase()}/v1/public/hotels`);
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Failed to load hotels"));
+  }
+  const body = payload as { data?: PublicHotelDto[] };
+  if (!Array.isArray(body.data)) {
+    throw new Error("Invalid hotels response");
+  }
+  return body.data;
+}
+
+export async function fetchPublicAvailability(input: {
+  readonly hotelId: string;
+  readonly checkInDate: string;
+  readonly checkOutDate: string;
+}): Promise<PublicAvailabilityDto> {
+  const params = new URLSearchParams({
+    checkIn: input.checkInDate,
+    checkOut: input.checkOutDate,
+  });
+  const response = await fetch(
+    `${getApiBase()}/v1/public/hotels/${encodeURIComponent(input.hotelId)}/availability?${params}`,
+  );
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Availability failed"));
+  }
+  const body = payload as { data?: PublicAvailabilityDto };
+  if (!body.data) {
+    throw new Error("Invalid availability response");
+  }
+  return body.data;
+}
+
+export async function createPublicBooking(input: {
+  readonly hotelId: string;
+  readonly roomType: string;
+  readonly guestName: string;
+  readonly guestEmail: string;
+  readonly guestPhone?: string;
+  readonly checkInDate: string;
+  readonly checkOutDate: string;
+}): Promise<PublicBookingResultDto> {
+  const response = await fetch(
+    `${getApiBase()}/v1/public/hotels/${encodeURIComponent(input.hotelId)}/bookings`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomType: input.roomType,
+        guestName: input.guestName,
+        guestEmail: input.guestEmail,
+        ...(input.guestPhone !== undefined
+          ? { guestPhone: input.guestPhone }
+          : {}),
+        checkInDate: input.checkInDate,
+        checkOutDate: input.checkOutDate,
+      }),
+    },
+  );
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Booking failed"));
+  }
+  const body = payload as { data?: PublicBookingResultDto };
+  if (!body.data) {
+    throw new Error("Invalid booking response");
+  }
+  return body.data;
+}
+
 export async function lookupGuestStay(email: string): Promise<readonly GuestStayDto[]> {
   const response = await fetch(`${getApiBase()}/v1/public/stays/lookup`, {
     method: "POST",

@@ -8,7 +8,7 @@ export type LandingPageProps = {
 
 /**
  * Public marketing surface (book.*) — hero first, then one-job sections.
- * Checkout is intentionally not wired yet.
+ * Booking CTA opens the public book funnel (dates → room → demo pay).
  */
 export function LandingPage({ onBookIntent, onFindStay }: LandingPageProps) {
   return (
@@ -58,12 +58,11 @@ export function LandingPage({ onBookIntent, onFindStay }: LandingPageProps) {
       >
         <h2 id="book-intent-title">הזמנה דיגיטלית</h2>
         <p className="landing-section__lede">
-          בחירת חדר ותשלום מאובטח ייפתחו כאן בקרוב. בינתיים אפשר להיכנס לשהייה
-          קיימת.
+          בחרו תאריכים וסוג חדר, שלמו בהדגמה מאובטחת, ועברו מיד לאזור האישי.
         </p>
         <div className="landing-section__actions">
-          <Button type="button" disabled title="בקרוב">
-            בחירת תאריכים — בקרוב
+          <Button type="button" onClick={onBookIntent}>
+            בחירת תאריכים
           </Button>
           <Button type="button" variant="ghost" onClick={onFindStay}>
             כניסה לשהייה קיימת

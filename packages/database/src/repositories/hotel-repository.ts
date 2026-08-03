@@ -16,6 +16,9 @@ export type PersistedHotel = {
 
 export type HotelRepository = {
   listByTenant: (tenantId: TenantId) => Promise<readonly PersistedHotel[]>;
+  /** Public booking — resolve hotel without staff tenancy principal. */
+  findById: (hotelId: HotelId) => Promise<PersistedHotel | null>;
+  listAll: () => Promise<readonly PersistedHotel[]>;
   setKashrutEnabled: (
     tenantId: TenantId,
     hotelId: HotelId,
@@ -44,6 +47,20 @@ export function createHotelRepository(db: HotelOsDb): HotelRepository {
         .where(eq(hotels.tenantId, tenantId))
         .all();
 
+      return rows.map(mapHotel);
+    },
+
+    async findById(hotelId) {
+      const row = await db
+        .select()
+        .from(hotels)
+        .where(eq(hotels.id, hotelId))
+        .get();
+      return row ? mapHotel(row) : null;
+    },
+
+    async listAll() {
+      const rows = await db.select().from(hotels).all();
       return rows.map(mapHotel);
     },
 
