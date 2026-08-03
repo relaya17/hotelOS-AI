@@ -1,9 +1,9 @@
 # Deploying to Vercel
 
-HotelOS AI is a pnpm/turbo monorepo with four deployable units. Vercel deploys
-one build output per project, so this ships as **four Vercel projects from
-the same GitHub repo** (`executive`, `admin`, `guest`, `api`), each with its
-own subdomain. A `vercel.json` is already committed in each app folder.
+HotelOS AI is a pnpm/turbo monorepo with five deployable units. Vercel deploys
+one build output per project, so this ships as **five Vercel projects from
+the same GitHub repo** (`executive`, `admin`, `guest`, `work`, `api`), each with
+its own subdomain. A `vercel.json` is already committed in each app folder.
 
 ## 0. One-time: create a Turso database
 
@@ -29,20 +29,22 @@ the API project below. Local dev is untouched: `.env` still uses
 See **[four-projects.md](./four-projects.md)**. Frontends use **same-origin**
 `/v1/*` + Edge `middleware.ts` → separate API. Browser never calls `localhost`.
 
-## 1. Import the repo **four** times (recommended)
+## 1. Import the repo **five** times (recommended)
 
-Three separate frontends **plus a separate API** is the correct production
-shape (ADR 0003): Guest / Admin (hotel) / Executive (management) / API.
+Four separate frontends **plus a separate API** is the correct production
+shape (ADR 0003): Guest / Admin (hotel) / Executive (management) / Work
+(employees) / API. Or run `./scripts/deploy-five-vercel.ps1`.
 
-In Vercel: **Add New → Project**, import the same Git repo four times. Name
+In Vercel: **Add New → Project**, import the same Git repo five times. Name
 them with a shared prefix so sibling URLs auto-resolve, e.g.:
 
 | Vercel project name (example) | Root Directory | Role |
 |---|---|---|
 | `hotel-os-ai-api-eight` | `apps/api` | API server |
-| `hotel-os-ai-executive-eight` | `apps/executive` | הנהלת רשת |
-| `hotel-os-ai-admin-eight` | `apps/admin` | תפעול מלון |
-| `hotel-os-ai-guest-eight` | `apps/guest` | אורחים |
+| `hotel-os-ai-executive-eight` | `apps/executive` | הנהלת רשת (hq) |
+| `hotel-os-ai-admin-eight` | `apps/admin` | תפעול מלון (ops) |
+| `hotel-os-ai-guest-eight` | `apps/guest` | אורחים (book) |
+| `hotel-os-ai-work-eight` | `apps/work` | עובדים (work) |
 
 For each project: **Include files outside the root directory = On**.
 
@@ -76,24 +78,27 @@ each `vercel.json` already assume this.
 
 Deploy this project first; note its URL (e.g. `https://hotelos-api.vercel.app`).
 
-## 3. Frontend project env vars (`executive`, `admin`, `guest`)
+## 3. Frontend project env vars (`executive`, `admin`, `guest`, `work`)
 
-Each of the three needs the API URL from step 2, plus the URLs of the other
-two apps (for cross-app deep links, e.g. Admin → Executive):
+Each frontend needs the API URL from step 2 (or naming-convention inference),
+plus sibling app URLs for cross-app deep links (e.g. Admin → Work invites):
 
 | Variable | Value |
 |---|---|
-| `VITE_API_BASE` | `https://hotel-os-ai-api-eight.vercel.app` (your API project URL) |
+| `VITE_API_BASE` | `https://hotel-os-ai-api-eight.vercel.app` (your API project URL) — optional when Edge middleware + naming convention are used |
+| `HOTELOS_API_ORIGIN` | API URL for Edge `middleware.ts` proxy (recommended) |
 | `VITE_APP_URL_EXECUTIVE` | executive URL (optional if names follow `…-executive-…` convention) |
 | `VITE_APP_URL_ADMIN` | admin URL (optional with `…-admin-…` naming) |
 | `VITE_APP_URL_GUEST` | guest URL (optional with `…-guest-…` naming) |
+| `VITE_APP_URL_WORK` | work URL (optional with `…-work-…` naming) |
 | `VITE_SENTRY_DSN` | optional — browser Sentry/GlitchTip DSN (empty = disabled) |
 | `VITE_SENTRY_ENVIRONMENT` | optional — defaults to Vite `MODE` |
 
-**Naming convention:** if frontends are `…-admin-…` / `…-executive-…` / `…-guest-…`
-and API is `…-api-…` on the same suffix, the client **infers** the API URL
-even when `VITE_API_BASE` was baked as localhost — still set `VITE_API_BASE`
-explicitly and redeploy for production clarity.
+**Naming convention:** if frontends are `…-admin-…` / `…-executive-…` /
+`…-guest-…` / `…-work-…` and API is `…-api-…` on the same suffix, the client
+**infers** sibling URLs even when `VITE_API_BASE` was baked as localhost —
+still set `HOTELOS_API_ORIGIN` (or `VITE_API_BASE`) explicitly and redeploy
+for production clarity.
 
 Emergency override without rebuild: open  
 `https://hotel-os-ai-admin-eight.vercel.app/?api=https://hotel-os-ai-api-eight.vercel.app`
@@ -156,13 +161,13 @@ A Vercel site cannot use your laptop’s `localhost:3001`.
 **Fix (required):**
 
 1. Find the API project URL (e.g. `https://hotel-os-ai-api-….vercel.app`).
-2. On **each** frontend Vercel project (`admin` / `executive` / `guest`):
+2. On **each** frontend Vercel project (`admin` / `executive` / `guest` / `work`):
    - Settings → Environment Variables
-   - `VITE_API_BASE` = `https://<your-api>.vercel.app` (no trailing slash)
-   - Redeploy (Vite bakes env at **build** time — changing env without redeploy does nothing)
+   - `HOTELOS_API_ORIGIN` = `https://<your-api>.vercel.app` (no trailing slash)
+   - optional: `VITE_API_BASE` = same API URL
+   - Redeploy (Vite bakes `VITE_*` at **build** time — changing env without redeploy does nothing)
 3. On the **API** Vercel project:
-   - `CORS_ORIGINS` =
-     `https://hotel-os-ai-admin-eight.vercel.app,https://<executive>.vercel.app,https://<guest>.vercel.app`
+   - `CORS_ORIGINS` = `https://*.vercel.app` (or the four exact frontend URLs)
    - Redeploy API
 
-Until step 2 is done, login will keep targeting `localhost` and look like a CORS error.
+Until step 2 is done, login may keep targeting `localhost` and look like a CORS error.

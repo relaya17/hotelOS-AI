@@ -1,28 +1,29 @@
-# ארבע כתובות — השורש הנכון
+# חמש כתובות — השורש הנכון
 
 | # | תפקיד | Root Directory | דוגמת שם ב־Vercel |
 |---|--------|----------------|-------------------|
 | 1 | **API** (שרת) | `apps/api` | `hotel-os-ai-api-eight` |
-| 2 | הנהלה | `apps/executive` | `hotel-os-ai-executive-eight` |
-| 3 | מלון | `apps/admin` | `hotel-os-ai-admin-eight` |
-| 4 | אורח | `apps/guest` | `hotel-os-ai-guest-eight` |
+| 2 | הנהלה (hq) | `apps/executive` | `hotel-os-ai-executive-eight` |
+| 3 | מלון (ops) | `apps/admin` | `hotel-os-ai-admin-eight` |
+| 4 | אורח (book) | `apps/guest` | `hotel-os-ai-guest-eight` |
+| 5 | עובדים (work) | `apps/work` | `hotel-os-ai-work-eight` |
 
 ## למה זה פותר את CORS / localhost
 
 1. הדפדפן קורא רק ל־**אותו דומיין** של האפליקציה (`/v1/auth/login`).
 2. `middleware.ts` ב־Edge מעביר את הבקשה ל־API הנפרד (server-to-server — בלי CORS).
-3. שם ה־API נגזר אוטומטית: `…-admin-…` → `…-api-…` (או `HOTELOS_API_ORIGIN`).
+3. שם ה־API נגזר אוטומטית: `…-admin-…` / `…-work-…` → `…-api-…` (או `HOTELOS_API_ORIGIN`).
 
 ## חובה: פרויקט API
 
-בלי פרויקט `#1` שלושת האתרים נטענים אבל Login נכשל.
+בלי פרויקט `#1` האתרים נטענים אבל Login נכשל.
 
 ### איפה שמים secrets (שרת)
 
 | מקום | קובץ | מטרה |
 |------|------|------|
 | מקומי / סקריפט פריסה | **`apps/api/.env`** | העתק מ־`apps/api/.env.example` — כאן מדביקים Turso + JWT |
-| Vercel (פרודקשן) | Project Settings → Environment Variables של פרויקט ה־API | הסקריפט `scripts/deploy-four-vercel.ps1` מעתיק מ־`apps/api/.env` |
+| Vercel (פרודקשן) | Project Settings → Environment Variables של פרויקט ה־API | הסקריפט `scripts/deploy-five-vercel.ps1` מעתיק מ־`apps/api/.env` |
 
 `apps/api/.env` ב־gitignore — לא נכנס לגיט.
 
@@ -39,3 +40,5 @@ Include files outside root: **On**.
 
 לא חובה `VITE_API_BASE` (נשאר ריק ב־`.env.production`).  
 אופציונלי: `HOTELOS_API_ORIGIN=https://hotel-os-ai-api-eight.vercel.app` אם שם ה־API לא תואם את המוסכמה.
+
+פריסה מלאה: `./scripts/deploy-five-vercel.ps1` (עם `VERCEL_TOKEN`).
