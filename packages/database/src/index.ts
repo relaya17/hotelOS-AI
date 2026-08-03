@@ -30,6 +30,7 @@ export {
   type BookingRepository,
   type BookingStatus,
   type CreateBookingInput,
+  type GuestBookingStay,
   type PersistedBooking,
   type RoomPrepAction,
   type RoomPrepError,

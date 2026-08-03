@@ -16,8 +16,12 @@ import { HrAgentPanel } from "./hr-agent-panel.js";
 import { MeetJoinPage } from "./meet-join-page.js";
 import { InvitePage } from "./invite-page.js";
 import { LoginPage } from "./login-page.js";
+import {
+  canAccessOpsCopilot,
+  OpsCopilotPanel,
+} from "./ops-copilot-panel.js";
 
-type WorkTab = "attendance" | "agent" | "docs";
+type WorkTab = "attendance" | "agent" | "copilot" | "docs";
 
 function readInviteToken(): string | null {
   const params = new URLSearchParams(window.location.search);
@@ -60,6 +64,7 @@ export function App() {
   const [user, setUser] = useState<StoredUser | null>(null);
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<WorkTab>("attendance");
+  const showCopilot = user ? canAccessOpsCopilot(user.roles) : false;
 
   useEffect(() => {
     let cancelled = false;
@@ -189,6 +194,20 @@ export function App() {
             >
               סוכן HR
             </button>
+            {showCopilot ? (
+              <button
+                type="button"
+                className={
+                  tab === "copilot"
+                    ? "hotelos-seg__item hotelos-seg__item--on"
+                    : "hotelos-seg__item"
+                }
+                aria-pressed={tab === "copilot"}
+                onClick={() => setTab("copilot")}
+              >
+                Copilot תפעול
+              </button>
+            ) : null}
             <button
               type="button"
               className={
@@ -217,6 +236,7 @@ export function App() {
         <main id="main-content" className="work-main" tabIndex={-1}>
           {tab === "attendance" ? <AttendancePage /> : null}
           {tab === "agent" ? <HrAgentPanel /> : null}
+          {tab === "copilot" && user ? <OpsCopilotPanel user={user} /> : null}
           {tab === "docs" ? <DocsPanel user={user} /> : null}
         </main>
 

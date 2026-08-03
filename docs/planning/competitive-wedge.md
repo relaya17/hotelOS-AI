@@ -48,11 +48,11 @@
 
 | יכולת | מצב בקוד / תכנון | פעולת GTM |
 |--------|------------------|-----------|
-| Digital Twin | קיים (מיזוג מלאי + connector; Executive) | להציג בפיילוט כ־«תמונת מלון חיה» |
-| Predictive Maintenance | MVP (sensors + היסטוריה) | דומיין פיילוט ברור |
+| Digital Twin | ✅ תמונת חדרים + overlays (אירועים / PM / אנרגיה) ב־`GET /v1/twin` | realtime (SSE) בשלב הבא |
+| Predictive Maintenance | MVP (sensors + היסטוריה) + מוצג ב־Twin overlay | דומיין פיילוט ברור |
 | Revenue Optimization | MVP (suggestions HITL + forecast + simulator) | תמיד עם HITL — אמון CFO |
-| Guest 360 | חלקי (Guest app + reputation + stays) | לחזק פרופיל אחוד כ־roadmap |
-| AI Copilot לפי תפקיד | סוכנים + Work/Admin/Executive לפי תפקיד | למסגר כ־«Copilot לרשת» לא כ־chatbot |
+| Guest 360 | ✅ MVP — `GET /v1/guests/by-email` + כרטיס בקבלת Admin | להרחיב העדפות/נאמנות חוצת־רשת |
+| AI Copilot לפי תפקיד | ✅ Work «Copilot תפעול» (HK + Reception Suggest→HITL) + Admin | להרחיב כספים/משמרת ב־Work |
 | Knowledge Graph | מוגדר ב־AI Platform (Vol 5); יישום הדרגתי | לא למכור לפני שיש edges מדידים |
 | Marketplace מודולים | חלקי (integration domains) | שלב 2 אחרי 2–3 מחברי live |
 | Open API רחב | OpenAPI inventory + `/v1/*` | לחזק DX / מפתחים אחרי יציבות פיילוט |

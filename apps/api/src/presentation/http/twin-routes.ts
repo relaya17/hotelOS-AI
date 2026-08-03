@@ -6,15 +6,28 @@ import {
 } from "@hotelos/connectors";
 import type { JwtTokenService } from "@hotelos/auth";
 import { canAccessHotel } from "@hotelos/auth";
-import type { RoomRepository } from "@hotelos/database";
+import type {
+  EnergyRepository,
+  EquipmentRepository,
+  HotelRepository,
+  MaintenanceRepository,
+  OpsRepository,
+  RoomRepository,
+} from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
+import { buildTwinOverlays } from "../../application/build-twin-overlays.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type TwinRouteDeps = {
   readonly rooms: RoomRepository;
   readonly tokens: JwtTokenService;
+  readonly ops: OpsRepository;
+  readonly maintenance: MaintenanceRepository;
+  readonly hotels: HotelRepository;
+  readonly equipment: EquipmentRepository;
+  readonly energy: EnergyRepository;
   readonly pms?: PmsConnector;
 };
 
@@ -48,7 +61,18 @@ export function createTwinRoutes(deps: TwinRouteDeps): Hono<{
         })),
         ...(inventory !== undefined ? { pms: inventory } : {}),
       });
-      return c.json({ data: twin });
+      const overlays = await buildTwinOverlays(
+        {
+          ops: deps.ops,
+          maintenance: deps.maintenance,
+          hotels: deps.hotels,
+          equipment: deps.equipment,
+          energy: deps.energy,
+        },
+        principal.scope.tenantId,
+        hotelId,
+      );
+      return c.json({ data: { ...twin, overlays } });
     } catch (error) {
       return mapUnknownError(c, error);
     }
@@ -74,9 +98,20 @@ export function createTwinRoutes(deps: TwinRouteDeps): Hono<{
         })),
         pms: inventory,
       });
+      const overlays = await buildTwinOverlays(
+        {
+          ops: deps.ops,
+          maintenance: deps.maintenance,
+          hotels: deps.hotels,
+          equipment: deps.equipment,
+          energy: deps.energy,
+        },
+        principal.scope.tenantId,
+        hotelId,
+      );
       return c.json({
         data: {
-          twin,
+          twin: { ...twin, overlays },
           sync: {
             providerId: inventory.providerId,
             mode: "read_merge_only",

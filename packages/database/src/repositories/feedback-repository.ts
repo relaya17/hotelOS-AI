@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import type { HotelId, TenantId } from "@hotelos/shared";
 import type { HotelOsDb } from "../client.js";
 import { guestFeedback } from "../schema/ops.js";
+import { bookings } from "../schema/tenancy.js";
 
 export type FeedbackSource = "guest_app_survey" | "manual" | "external_import";
 
@@ -47,6 +48,12 @@ export type FeedbackRepository = {
     tenantId: TenantId,
     hotelId: HotelId,
   ) => Promise<readonly PersistedGuestFeedback[]>;
+  listByGuestEmail: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    email: string,
+    options?: { readonly limit?: number },
+  ) => Promise<readonly PersistedGuestFeedback[]>;
   findByIdInHotel: (
     tenantId: TenantId,
     hotelId: HotelId,
@@ -87,6 +94,26 @@ export function createFeedbackRepository(db: HotelOsDb): FeedbackRepository {
         .orderBy(desc(guestFeedback.submittedAt))
         .all();
       return rows.map(mapFeedback);
+    },
+
+    async listByGuestEmail(tenantId, hotelId, email, options) {
+      const normalized = email.trim().toLowerCase();
+      const limit = options?.limit ?? 5;
+      const rows = await db
+        .select({ feedback: guestFeedback })
+        .from(guestFeedback)
+        .innerJoin(bookings, eq(guestFeedback.bookingId, bookings.id))
+        .where(
+          and(
+            eq(guestFeedback.tenantId, tenantId),
+            eq(guestFeedback.hotelId, hotelId),
+            eq(bookings.guestEmail, normalized),
+          ),
+        )
+        .orderBy(desc(guestFeedback.submittedAt))
+        .limit(limit)
+        .all();
+      return rows.map((row) => mapFeedback(row.feedback));
     },
 
     async findByIdInHotel(tenantId, hotelId, feedbackId) {

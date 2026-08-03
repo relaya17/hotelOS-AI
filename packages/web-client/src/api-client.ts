@@ -577,6 +577,73 @@ export async function listBookings(
   return payload.data;
 }
 
+export type Guest360ProfileDto = {
+  readonly email: string;
+  readonly displayName: string;
+  readonly phone: string | null;
+  readonly notesHe: string | null;
+  readonly preferences: Record<string, unknown>;
+  readonly stayCount: number;
+  readonly lastStayAt: string | null;
+  readonly marketingConsent: boolean;
+};
+
+export type Guest360StayDto = {
+  readonly id: string;
+  readonly hotelId: string;
+  readonly hotelName: string;
+  readonly roomNumber: string;
+  readonly guestName: string;
+  readonly checkInDate: string;
+  readonly checkOutDate: string;
+  readonly status: string;
+};
+
+export type Guest360FeedbackDto = {
+  readonly id: string;
+  readonly rating: number;
+  readonly comment: string | null;
+  readonly categories: readonly string[];
+  readonly submittedAt: string;
+  readonly source: string;
+};
+
+export type Guest360ReviewDto = {
+  readonly id: string;
+  readonly source: string;
+  readonly rating: number;
+  readonly title: string | null;
+  readonly body: string;
+  readonly sentiment: string;
+  readonly reviewedAt: string;
+};
+
+export type Guest360Dto = {
+  readonly email: string;
+  readonly hotelId: string;
+  readonly profile: Guest360ProfileDto | null;
+  readonly staysAtHotel: readonly Guest360StayDto[];
+  readonly staysInChain: readonly Guest360StayDto[];
+  readonly chainStayCount: number;
+  readonly lastFeedback: Guest360FeedbackDto | null;
+  readonly feedbackHistory: readonly Guest360FeedbackDto[];
+  readonly reputationSignals: readonly Guest360ReviewDto[];
+};
+
+export async function fetchGuest360(input: {
+  readonly hotelId: string;
+  readonly email: string;
+}): Promise<Guest360Dto> {
+  const params = new URLSearchParams({
+    hotelId: input.hotelId,
+    email: input.email.trim(),
+  });
+  const payload = (await authGet(`/v1/guests/by-email?${params.toString()}`)) as {
+    data: Guest360Dto;
+  };
+  return payload.data;
+}
+
 export async function createBooking(
   hotelId: string,
   input: {
@@ -3951,6 +4018,29 @@ export type HotelTwinDto = {
       readonly status: string;
     }[];
   };
+  readonly overlays?: HotelTwinOverlaysDto;
+};
+
+export type HotelTwinOverlayItemDto = {
+  readonly id: string;
+  readonly title: string;
+  readonly severity?: string;
+  readonly department?: string;
+  readonly riskScore?: number;
+  readonly estimatedSavingPct?: number;
+  readonly status?: string;
+};
+
+export type HotelTwinOverlaySummaryDto = {
+  readonly count: number;
+  readonly topItems: readonly HotelTwinOverlayItemDto[];
+};
+
+export type HotelTwinOverlaysDto = {
+  readonly generatedAt: string;
+  readonly openIncidents: HotelTwinOverlaySummaryDto;
+  readonly predictiveAlerts: HotelTwinOverlaySummaryDto;
+  readonly energyHints: HotelTwinOverlaySummaryDto;
 };
 
 export async function fetchHotelTwin(hotelId: string): Promise<HotelTwinDto> {

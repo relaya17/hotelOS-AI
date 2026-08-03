@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Button } from "@hotelos/ui";
 import {
+  fetchGuest360,
   listBookings,
   listHotelNotifications,
   suggestAutonomyTodaysArrivals,
   updateBookingRoomPrep,
   type BookingDto,
+  type Guest360Dto,
   type GuestNotificationDto,
   type RoomPrepStatusDto,
 } from "@hotelos/web-client";
@@ -42,6 +44,10 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
   const [suggesting, setSuggesting] = useState(false);
   const [actingId, setActingId] = useState<string | undefined>();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guest360, setGuest360] = useState<Guest360Dto | undefined>();
+  const [guest360Loading, setGuest360Loading] = useState(false);
+  const [guest360Error, setGuest360Error] = useState<string | undefined>();
 
   async function reload() {
     setLoading(true);
@@ -160,6 +166,39 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
     }
   }
 
+  async function onLookupGuest360() {
+    const email = guestEmail.trim();
+    if (!email) {
+      setGuest360Error("הזינו כתובת אימייל");
+      return;
+    }
+    setGuest360Loading(true);
+    setGuest360Error(undefined);
+    setGuest360(undefined);
+    try {
+      const profile = await fetchGuest360({ hotelId, email });
+      setGuest360(profile);
+    } catch (lookupError) {
+      setGuest360Error(
+        lookupError instanceof Error ? lookupError.message : "חיפוש אורח נכשל",
+      );
+    } finally {
+      setGuest360Loading(false);
+    }
+  }
+
+  function formatPreferences(
+    preferences: Record<string, unknown>,
+  ): string | undefined {
+    const entries = Object.entries(preferences).filter(
+      ([, value]) => value !== null && value !== undefined && value !== "",
+    );
+    if (entries.length === 0) {
+      return undefined;
+    }
+    return entries.map(([key, value]) => `${key}: ${String(value)}`).join(" · ");
+  }
+
   return (
     <div className="panel">
       {loading ? <p className="state">טוען…</p> : null}
@@ -173,6 +212,99 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
           {notice}
         </p>
       ) : null}
+
+      <section className="card" aria-labelledby="guest360-title">
+        <h2 id="guest360-title">Guest 360 · פרופיל אורח</h2>
+        <p className="hint">
+          חיפוש לפי אימייל — העדפות, היסטוריית שהייה, משוב אחרון והערות.
+        </p>
+        <div className="guest360-search">
+          <label className="email-field">
+            אימייל אורח
+            <input
+              type="email"
+              value={guestEmail}
+              onChange={(e) => setGuestEmail(e.target.value)}
+              placeholder="guest@example.com"
+            />
+          </label>
+          <Button
+            type="button"
+            disabled={guest360Loading}
+            onClick={() => void onLookupGuest360()}
+          >
+            {guest360Loading ? "מחפש…" : "חפש"}
+          </Button>
+        </div>
+        {guest360Error !== undefined ? (
+          <p className="state state--error" role="alert">
+            {guest360Error}
+          </p>
+        ) : null}
+        {guest360 !== undefined ? (
+          <div className="guest360-body">
+            <p>
+              <strong>
+                {guest360.profile?.displayName ??
+                  guest360.staysAtHotel[0]?.guestName ??
+                  guest360.email}
+              </strong>
+              <span className="muted"> · {guest360.email}</span>
+            </p>
+            <ul className="guest360-stats">
+              <li>
+                שהיות במלון:{" "}
+                <strong>{guest360.staysAtHotel.length}</strong>
+              </li>
+              <li>
+                שהיות ברשת:{" "}
+                <strong>{guest360.chainStayCount}</strong>
+              </li>
+              <li>
+                זיכרון שהיות (CRM):{" "}
+                <strong>{guest360.profile?.stayCount ?? 0}</strong>
+              </li>
+            </ul>
+            {formatPreferences(guest360.profile?.preferences ?? {}) ? (
+              <p className="hint">
+                העדפות:{" "}
+                {formatPreferences(guest360.profile?.preferences ?? {})}
+              </p>
+            ) : (
+              <p className="hint">אין העדפות שמורות.</p>
+            )}
+            {guest360.profile?.notesHe ? (
+              <p className="hint">הערות: {guest360.profile.notesHe}</p>
+            ) : null}
+            {guest360.lastFeedback ? (
+              <p className="hint">
+                משוב אחרון: {guest360.lastFeedback.rating}/5
+                {guest360.lastFeedback.comment
+                  ? ` · ${truncateAt(guest360.lastFeedback.comment, 80)}`
+                  : ""}
+              </p>
+            ) : (
+              <p className="hint">אין משוב מהאורח במלון זה.</p>
+            )}
+            {guest360.reputationSignals.length > 0 ? (
+              <p className="hint">
+                ביקורת חיצונית: {guest360.reputationSignals[0]?.rating}/5 (
+                {guest360.reputationSignals[0]?.source})
+              </p>
+            ) : null}
+            {guest360.staysAtHotel.length > 0 ? (
+              <ul className="list guest360-stays">
+                {guest360.staysAtHotel.slice(0, 3).map((stay) => (
+                  <li key={stay.id} className="muted">
+                    חדר {stay.roomNumber} · {stay.checkInDate}–
+                    {stay.checkOutDate} · {stay.status}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
 
       <section className="card" aria-labelledby="waiting-title">
         <h2 id="waiting-title">ממתינים לחדר</h2>
@@ -317,6 +449,12 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
         .notify-status{font-weight:700}
         .state--error{color:var(--color-danger)}
         .state--ok{color:var(--color-sea-deep);font-weight:600}
+        .guest360-search{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:flex-end}
+        .email-field{display:grid;gap:var(--space-2);font-size:var(--text-small);font-weight:600;color:var(--color-ink-soft);min-width:14rem;flex:1}
+        .email-field input{font:inherit;padding:.55rem .7rem;border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);background:#fff}
+        .guest360-body{display:grid;gap:var(--space-2)}
+        .guest360-stats{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:var(--space-3);font-size:var(--text-small)}
+        .guest360-stays{margin-top:var(--space-1)}
       `}</style>
     </div>
   );

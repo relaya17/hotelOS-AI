@@ -80,11 +80,34 @@ export type CreateBookingInput = {
   readonly createdAt: string;
 };
 
+export type GuestBookingStay = {
+  readonly id: BookingId;
+  readonly hotelId: HotelId;
+  readonly hotelName: string;
+  readonly roomNumber: string;
+  readonly guestName: string;
+  readonly checkInDate: string;
+  readonly checkOutDate: string;
+  readonly status: BookingStatus;
+};
+
 export type BookingRepository = {
   listByHotel: (
     tenantId: TenantId,
     hotelId: HotelId,
   ) => Promise<readonly PersistedBooking[]>;
+  listByGuestEmailAtHotel: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    email: string,
+    options?: { readonly limit?: number },
+  ) => Promise<readonly GuestBookingStay[]>;
+  listByGuestEmailInChain: (
+    tenantId: TenantId,
+    chainId: string,
+    email: string,
+    options?: { readonly limit?: number },
+  ) => Promise<readonly GuestBookingStay[]>;
   create: (input: CreateBookingInput) => Promise<PersistedBooking>;
   findByIdInHotel: (
     tenantId: TenantId,
@@ -201,6 +224,76 @@ export function createBookingRepository(db: HotelOsDb): BookingRepository {
         .all();
 
       return rows.map((row) => mapBooking(row.booking, row.roomNumber));
+    },
+
+    async listByGuestEmailAtHotel(tenantId, hotelId, email, options) {
+      const normalized = email.trim().toLowerCase();
+      const limit = options?.limit ?? 10;
+      const rows = await db
+        .select({
+          booking: bookings,
+          roomNumber: rooms.number,
+          hotelName: hotels.name,
+        })
+        .from(bookings)
+        .innerJoin(rooms, eq(bookings.roomId, rooms.id))
+        .innerJoin(hotels, eq(bookings.hotelId, hotels.id))
+        .where(
+          and(
+            eq(bookings.tenantId, tenantId),
+            eq(bookings.hotelId, hotelId),
+            eq(bookings.guestEmail, normalized),
+          ),
+        )
+        .orderBy(desc(bookings.checkInDate))
+        .limit(limit)
+        .all();
+
+      return rows.map((row) => ({
+        id: Ids.booking(row.booking.id),
+        hotelId: Ids.hotel(row.booking.hotelId),
+        hotelName: row.hotelName,
+        roomNumber: row.roomNumber,
+        guestName: row.booking.guestName,
+        checkInDate: row.booking.checkInDate,
+        checkOutDate: row.booking.checkOutDate,
+        status: asBookingStatus(row.booking.status),
+      }));
+    },
+
+    async listByGuestEmailInChain(tenantId, chainId, email, options) {
+      const normalized = email.trim().toLowerCase();
+      const limit = options?.limit ?? 10;
+      const rows = await db
+        .select({
+          booking: bookings,
+          roomNumber: rooms.number,
+          hotelName: hotels.name,
+        })
+        .from(bookings)
+        .innerJoin(rooms, eq(bookings.roomId, rooms.id))
+        .innerJoin(hotels, eq(bookings.hotelId, hotels.id))
+        .where(
+          and(
+            eq(bookings.tenantId, tenantId),
+            eq(hotels.chainId, chainId),
+            eq(bookings.guestEmail, normalized),
+          ),
+        )
+        .orderBy(desc(bookings.checkInDate))
+        .limit(limit)
+        .all();
+
+      return rows.map((row) => ({
+        id: Ids.booking(row.booking.id),
+        hotelId: Ids.hotel(row.booking.hotelId),
+        hotelName: row.hotelName,
+        roomNumber: row.roomNumber,
+        guestName: row.booking.guestName,
+        checkInDate: row.booking.checkInDate,
+        checkOutDate: row.booking.checkOutDate,
+        status: asBookingStatus(row.booking.status),
+      }));
     },
 
     async findByIdInHotel(tenantId, hotelId, bookingId) {

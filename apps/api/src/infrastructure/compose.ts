@@ -236,6 +236,14 @@ export async function composeApp() {
       tokens,
       guestProfiles,
     },
+    guests: {
+      guestProfiles,
+      bookings,
+      feedback,
+      reputation,
+      hotels,
+      tokens,
+    },
     overview: { overview, tokens },
     publicRoutes: {
       guestStays,
@@ -396,6 +404,11 @@ export async function composeApp() {
     twin: {
       rooms,
       tokens,
+      ops,
+      maintenance,
+      hotels,
+      equipment,
+      energy,
       pms,
     },
     cron: {

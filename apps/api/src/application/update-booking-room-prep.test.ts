@@ -88,6 +88,11 @@ function notificationsStub(
   };
 }
 
+const guestEmailLookupStubs = {
+  listByGuestEmailAtHotel: async () => [] as const,
+  listByGuestEmailInChain: async () => [] as const,
+};
+
 test("updateBookingRoomPrep invites only when ready", async () => {
   const audits: string[] = [];
   const result = await updateBookingRoomPrep(
@@ -95,6 +100,7 @@ test("updateBookingRoomPrep invites only when ready", async () => {
       hotelBelongsToTenant: async () => true,
       findRoomInHotel: async () => null,
       listByHotel: async () => [],
+      ...guestEmailLookupStubs,
       findByIdInHotel: async () => sampleBooking("waiting"),
       updateStatus: async () => null,
       setRoomPrep: async (_t, _h, _b, action: RoomPrepAction) => {
@@ -138,6 +144,7 @@ test("updateBookingRoomPrep audits successful waiting mark", async () => {
       hotelBelongsToTenant: async () => true,
       findRoomInHotel: async () => null,
       listByHotel: async () => [],
+      ...guestEmailLookupStubs,
       findByIdInHotel: async () => sampleBooking(null),
       updateStatus: async () => null,
       setRoomPrep: async () => ({
@@ -178,6 +185,7 @@ test("invite enqueues demo WhatsApp notification when phone exists", async () =>
       hotelBelongsToTenant: async () => true,
       findRoomInHotel: async () => null,
       listByHotel: async () => [],
+      ...guestEmailLookupStubs,
       findByIdInHotel: async () => sampleBooking("ready"),
       updateStatus: async () => null,
       setRoomPrep: async () => ({ ok: true, booking: invited }),

@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { HotelId, TenantId } from "@hotelos/shared";
 import type { HotelOsDb } from "../client.js";
 import { reputationReviews } from "../schema/ops.js";
@@ -94,6 +94,12 @@ export type ReputationRepository = {
       readonly limit?: number;
       readonly sentiment?: ReputationSentiment;
     },
+  ) => Promise<readonly PersistedReputationReview[]>;
+  listByAuthorName: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    authorName: string,
+    options?: { readonly limit?: number },
   ) => Promise<readonly PersistedReputationReview[]>;
 };
 
@@ -202,6 +208,28 @@ export function createReputationRepository(db: HotelOsDb): ReputationRepository 
             ...(options?.sentiment !== undefined
               ? [eq(reputationReviews.sentiment, options.sentiment)]
               : []),
+          ),
+        )
+        .orderBy(desc(reputationReviews.reviewedAt))
+        .limit(limit)
+        .all();
+      return rows.map(mapReview);
+    },
+
+    async listByAuthorName(tenantId, hotelId, authorName, options) {
+      const normalized = authorName.trim().toLowerCase();
+      if (normalized.length === 0) {
+        return [];
+      }
+      const limit = options?.limit ?? 5;
+      const rows = await db
+        .select()
+        .from(reputationReviews)
+        .where(
+          and(
+            eq(reputationReviews.tenantId, tenantId),
+            eq(reputationReviews.hotelId, hotelId),
+            sql`lower(${reputationReviews.authorName}) = ${normalized}`,
           ),
         )
         .orderBy(desc(reputationReviews.reviewedAt))
