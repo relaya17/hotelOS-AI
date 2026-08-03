@@ -177,7 +177,8 @@ export function createApp(deps: ApiDependencies): Hono {
       },
       allowHeaders: [
         "Content-Type",
-        "Authorization", // required for JWT on REST + future SSE/live-stream reconnect
+        "Authorization", // required for JWT on REST + SSE reconnect
+        "Accept", // required for SSE fetch Accept: text/event-stream
         "X-Correlation-Id",
         "X-Tenant-Id",
         "X-HotelOS-Tenant",

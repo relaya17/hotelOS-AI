@@ -122,7 +122,7 @@ export async function subscribeOpsDashboardStream(
     try {
       while (true) {
         if (signal?.aborted) {
-          await reader.cancel();
+          await reader.cancel("aborted");
           return;
         }
         const { done, value } = await reader.read();
@@ -139,6 +139,12 @@ export async function subscribeOpsDashboardStream(
         cause instanceof Error ? cause : new Error("Stream read failed");
       onError?.(error);
       throw error;
+    } finally {
+      try {
+        reader.releaseLock();
+      } catch {
+        // Reader may already be released after cancel.
+      }
     }
   }
 

@@ -204,19 +204,28 @@ export async function composeApp() {
       ? { externalToken: env.PAYMENT_EXTERNAL_TOKEN }
       : {}),
   });
-  const pms = createPmsConnector({
-    provider: env.PMS_PROVIDER,
-    ...(env.PMS_PROVIDER === "mews"
-      ? {
-          mews: {
-            clientToken: env.MEWS_CLIENT_TOKEN,
-            accessToken: env.MEWS_ACCESS_TOKEN,
-            platformUrl: env.MEWS_PLATFORM_URL,
-            clientName: env.MEWS_CLIENT_NAME,
-          },
-        }
-      : {}),
-  });
+  let pms;
+  try {
+    pms = createPmsConnector({
+      provider: env.PMS_PROVIDER,
+      ...(env.PMS_PROVIDER === "mews"
+        ? {
+            mews: {
+              clientToken: env.MEWS_CLIENT_TOKEN,
+              accessToken: env.MEWS_ACCESS_TOKEN,
+              platformUrl: env.MEWS_PLATFORM_URL,
+              clientName: env.MEWS_CLIENT_NAME,
+            },
+          }
+        : {}),
+    });
+  } catch (pmsError) {
+    logger.warn("PMS connector failed to initialize — falling back to demo", {
+      provider: env.PMS_PROVIDER,
+      error: pmsError instanceof Error ? pmsError.message : String(pmsError),
+    });
+    pms = createPmsConnector({ provider: "demo" });
+  }
   const app = createApp({
     getHealth,
     logger,
@@ -480,6 +489,9 @@ export async function composeApp() {
     },
     integrations: {
       pmsProvider: env.PMS_PROVIDER,
+      mewsConfigured:
+        Boolean(env.MEWS_CLIENT_TOKEN?.trim()) &&
+        Boolean(env.MEWS_ACCESS_TOKEN?.trim()),
       tokens,
     },
   });

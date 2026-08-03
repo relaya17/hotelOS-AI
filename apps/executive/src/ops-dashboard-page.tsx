@@ -287,9 +287,13 @@ export function OpsDashboardPage() {
     enabled: firstHotelId !== undefined,
   });
 
+  // Initial load when stream is unavailable; avoid double-fetch with first SSE snapshot.
   useEffect(() => {
+    if (firstHotelId === undefined || streamConnected) {
+      return;
+    }
     void refreshLiveData();
-  }, [refreshLiveData]);
+  }, [firstHotelId, streamConnected, refreshLiveData]);
 
   const { prefersReducedMotion, refreshNow } = useIntervalRefresh(
     refreshLiveData,

@@ -116,6 +116,18 @@ export function IntegrationsMarketplacePanel({
         ) : (
           <p className="hint">לא זוהה PMS פעיל — בדקו PMS_PROVIDER או סנכרון Twin.</p>
         )}
+        {envPms === "mews" ? (
+          <p className={catalog?.live.mewsConfigured ? "hint" : "error"}>
+            {catalog?.live.mewsConfigured
+              ? "Mews live: טוקנים מוגדרים בשרת (מוכן לסנכרון Twin)."
+              : "Mews live נבחר אבל חסרים MEWS_CLIENT_TOKEN / MEWS_ACCESS_TOKEN — השרת ייפול ל־demo עד שיסופקו."}
+          </p>
+        ) : (
+          <p className="hint">
+            לפיילוט live: הגדירו PMS_PROVIDER=mews + טוקני Mews ב־.env (קריאה בלבד
+            ל־Twin — לא מחליף PMS).
+          </p>
+        )}
       </div>
 
       <div className="integrations-marketplace__grid">

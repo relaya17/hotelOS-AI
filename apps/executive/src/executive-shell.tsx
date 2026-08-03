@@ -76,10 +76,20 @@ const OPS_SCROLL_TARGETS: Partial<Record<string, string>> = {
   "ops-pm": "pm-panel",
 };
 
-function parseLocationHash(): { kind: View["kind"]; scrollTarget?: string } {
+function parseLocationHash(): {
+  kind: View["kind"];
+  scrollTarget?: string;
+  roomId?: string;
+} {
   const raw = window.location.hash.slice(1);
   if (!raw) {
     return { kind: "portfolio" };
+  }
+  if (raw.startsWith("meet/")) {
+    const roomId = raw.slice("meet/".length).trim();
+    if (roomId.length > 0) {
+      return { kind: "meet", roomId };
+    }
   }
   const kind = HASH_VIEWS[raw];
   if (kind && kind !== "meet") {
@@ -92,10 +102,11 @@ function parseLocationHash(): { kind: View["kind"]; scrollTarget?: string } {
   return { kind: "portfolio" };
 }
 
-function navigateToView(kind: View["kind"]): void {
-  const nextHash = `#${kind}`;
-  if (window.location.hash !== nextHash) {
-    window.location.hash = kind;
+function navigateToView(kind: View["kind"], roomId?: string): void {
+  const nextHash =
+    kind === "meet" && roomId !== undefined ? `meet/${roomId}` : kind;
+  if (window.location.hash !== `#${nextHash}`) {
+    window.location.hash = nextHash;
   }
 }
 
@@ -128,7 +139,11 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
   useEffect(() => {
     function applyHash() {
       const parsed = parseLocationHash();
-      setView({ kind: parsed.kind } as View);
+      if (parsed.kind === "meet" && parsed.roomId) {
+        setView({ kind: "meet", roomId: parsed.roomId });
+      } else {
+        setView({ kind: parsed.kind } as View);
+      }
       setOpsScrollTarget(parsed.scrollTarget);
     }
     applyHash();
@@ -259,9 +274,18 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         {view.kind === "incidents" ? <IncidentCenterPage /> : null}
         {view.kind === "knowledge" ? (
           <KnowledgeCommandPage
-            onOpenCio={() => setView({ kind: "cio" })}
-            onOpenFinance={() => setView({ kind: "finance" })}
-            onOpenApprovals={() => setView({ kind: "approvals" })}
+            onOpenCio={() => {
+              setView({ kind: "cio" });
+              navigateToView("cio");
+            }}
+            onOpenFinance={() => {
+              setView({ kind: "finance" });
+              navigateToView("finance");
+            }}
+            onOpenApprovals={() => {
+              setView({ kind: "approvals" });
+              navigateToView("approvals");
+            }}
           />
         ) : null}
         {view.kind === "cio" ? <CioDigestPage /> : null}
@@ -270,13 +294,19 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         {view.kind === "approvals" ? <AiApprovalsPage /> : null}
         {view.kind === "briefings" ? (
           <BriefingRoomsPage
-            onOpenRoom={(roomId) => setView({ kind: "meet", roomId })}
+            onOpenRoom={(roomId) => {
+              setView({ kind: "meet", roomId });
+              navigateToView("meet", roomId);
+            }}
           />
         ) : null}
         {view.kind === "meet" ? (
           <BriefingMeetPage
             roomId={view.roomId}
-            onBack={() => setView({ kind: "briefings" })}
+            onBack={() => {
+              setView({ kind: "briefings" });
+              navigateToView("briefings");
+            }}
           />
         ) : null}
         {view.kind === "accounting" ? (

@@ -4121,6 +4121,8 @@ export type IntegrationsCatalogDto = {
   readonly domains: readonly IntegrationDomainDto[];
   readonly live: {
     readonly pmsProvider: string;
+    readonly mewsConfigured?: boolean;
+    readonly pmsLiveReady?: boolean;
   };
 };
 

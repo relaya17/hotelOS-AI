@@ -16,6 +16,8 @@ export type UseOpsLiveStreamResult = {
   readonly error: string | undefined;
 };
 
+const RECONNECT_DELAY_MS = 1_500;
+
 export function useOpsLiveStream(
   options: UseOpsLiveStreamOptions,
 ): UseOpsLiveStreamResult {
@@ -42,47 +44,66 @@ export function useOpsLiveStream(
     void (async () => {
       setError(undefined);
       setConnected(false);
-      try {
-        await subscribeOpsDashboardStream({
-          hotelId,
-          signal: abortController.signal,
-          onEvent: (event) => {
-            if (!active || abortController.signal.aborted) {
-              return;
-            }
-            setConnected(true);
-            setLastEventAt(new Date().toISOString());
-            if (event.type === "error") {
-              const message =
-                typeof event.data === "object" &&
-                event.data !== null &&
-                "message" in event.data &&
-                typeof (event.data as { message: unknown }).message === "string"
-                  ? (event.data as { message: string }).message
-                  : "Stream error";
-              setError(message);
+
+      while (active && !abortController.signal.aborted) {
+        try {
+          await subscribeOpsDashboardStream({
+            hotelId,
+            signal: abortController.signal,
+            onEvent: (event) => {
+              if (!active || abortController.signal.aborted) {
+                return;
+              }
+              setConnected(true);
+              setLastEventAt(new Date().toISOString());
+              if (event.type === "error") {
+                const message =
+                  typeof event.data === "object" &&
+                  event.data !== null &&
+                  "message" in event.data &&
+                  typeof (event.data as { message: unknown }).message ===
+                    "string"
+                    ? (event.data as { message: string }).message
+                    : "Stream error";
+                setError(message);
+                setConnected(false);
+              } else if (event.type !== "heartbeat") {
+                setError(undefined);
+              }
+              onEventRef.current?.(event);
+            },
+            onError: (streamError) => {
+              if (!active || abortController.signal.aborted) {
+                return;
+              }
               setConnected(false);
-            }
-            onEventRef.current?.(event);
-          },
-          onError: (streamError) => {
-            if (!active || abortController.signal.aborted) {
-              return;
-            }
-            setConnected(false);
-            setError(streamError.message);
-          },
-        });
-      } catch (cause) {
+              setError(streamError.message);
+            },
+          });
+        } catch (cause) {
+          if (!active || abortController.signal.aborted) {
+            return;
+          }
+          setConnected(false);
+          setError(cause instanceof Error ? cause.message : "Stream failed");
+        }
+
         if (!active || abortController.signal.aborted) {
           return;
         }
+
         setConnected(false);
-        setError(cause instanceof Error ? cause.message : "Stream failed");
-      } finally {
-        if (active && !abortController.signal.aborted) {
-          setConnected(false);
-        }
+        await new Promise<void>((resolve) => {
+          const timer = window.setTimeout(resolve, RECONNECT_DELAY_MS);
+          abortController.signal.addEventListener(
+            "abort",
+            () => {
+              window.clearTimeout(timer);
+              resolve();
+            },
+            { once: true },
+          );
+        });
       }
     })();
 

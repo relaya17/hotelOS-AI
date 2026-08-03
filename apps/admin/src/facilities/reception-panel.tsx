@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@hotelos/ui";
 import {
   fetchGuest360,
@@ -48,6 +48,7 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
   const [guest360, setGuest360] = useState<Guest360Dto | undefined>();
   const [guest360Loading, setGuest360Loading] = useState(false);
   const [guest360Error, setGuest360Error] = useState<string | undefined>();
+  const guest360RequestRef = useRef(0);
 
   async function reload() {
     setLoading(true);
@@ -79,7 +80,44 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
   }
 
   useEffect(() => {
-    void reload();
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(undefined);
+      try {
+        const [data, notificationList] = await Promise.all([
+          listBookings(hotelId),
+          listHotelNotifications(hotelId),
+        ]);
+        if (cancelled) return;
+        setBookings(data);
+        setNotifications(notificationList);
+        setSelected((prev) => {
+          const arrivalIds = new Set(
+            data
+              .filter(
+                (b) =>
+                  b.status === "confirmed" && b.checkInDate === checkInDate,
+              )
+              .map((b) => b.id),
+          );
+          if (prev.size === 0) return arrivalIds;
+          return new Set([...prev].filter((id) => arrivalIds.has(id)));
+        });
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(
+            loadError instanceof Error ? loadError.message : "שגיאה בטעינה",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, [hotelId, checkInDate]);
 
   const arrivals = bookings.filter(
@@ -172,19 +210,24 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
       setGuest360Error("הזינו כתובת אימייל");
       return;
     }
+    const requestId = ++guest360RequestRef.current;
     setGuestEmail(trimmed);
     setGuest360Loading(true);
     setGuest360Error(undefined);
     setGuest360(undefined);
     try {
       const profile = await fetchGuest360({ hotelId, email: trimmed });
+      if (requestId !== guest360RequestRef.current) return;
       setGuest360(profile);
     } catch (lookupError) {
+      if (requestId !== guest360RequestRef.current) return;
       setGuest360Error(
         lookupError instanceof Error ? lookupError.message : "חיפוש אורח נכשל",
       );
     } finally {
-      setGuest360Loading(false);
+      if (requestId === guest360RequestRef.current) {
+        setGuest360Loading(false);
+      }
     }
   }
 
@@ -460,7 +503,11 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
                       type="button"
                       className="arrival-guest-btn"
                       aria-label={`טען Guest 360 עבור ${booking.guestName}`}
-                      onClick={() => onArrivalSelect(booking)}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onArrivalSelect(booking);
+                      }}
                     >
                       <strong>{booking.guestName}</strong>
                       <span className="muted">

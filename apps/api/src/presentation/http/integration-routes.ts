@@ -5,6 +5,8 @@ import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 
 export type IntegrationRouteDeps = {
   readonly pmsProvider: string;
+  /** True when MEWS tokens are present (no secret values exposed). */
+  readonly mewsConfigured: boolean;
   readonly tokens: JwtTokenService;
 };
 
@@ -26,6 +28,9 @@ export function createIntegrationRoutes(deps: IntegrationRouteDeps): Hono<{
         domains: INTEGRATION_DOMAINS,
         live: {
           pmsProvider: deps.pmsProvider,
+          mewsConfigured: deps.mewsConfigured,
+          pmsLiveReady:
+            deps.pmsProvider === "mews" ? deps.mewsConfigured : true,
         },
       },
     }),
