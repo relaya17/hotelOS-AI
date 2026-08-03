@@ -152,10 +152,10 @@ export function TurboVoicePage({ locale }: TurboVoicePageProps) {
         .eyebrow{margin:0 0 var(--space-2);letter-spacing:.08em;text-transform:uppercase;font-size:var(--text-small);color:var(--color-sea-deep);font-weight:700}
         h1{margin:0;font-size:clamp(1.8rem,3vw,2.6rem)}
         .sub{margin:var(--space-2) 0 0;color:var(--color-ink-soft)}
-        .card{background:rgb(255 250 242 / 92%);border:1px solid rgb(16 36 31 / 10%);border-radius:var(--radius-md);padding:var(--space-4);display:grid;gap:var(--space-3);box-shadow:var(--shadow-soft)}
+        .card{background:var(--color-paper-elevated);border:1px solid var(--color-line);border-radius:var(--radius-md);padding:var(--space-4);display:grid;gap:var(--space-3);box-shadow:var(--shadow-soft)}
         .manual{display:grid;gap:var(--space-2)}
         .manual span{font-size:var(--text-small);font-weight:600;color:var(--color-ink-soft)}
-        .manual input{font:inherit;padding:.85rem .95rem;border-radius:var(--radius-sm);border:1px solid rgb(16 36 31 / 18%);background:var(--color-paper-elevated)}
+        .manual input{font:inherit;padding:.85rem .95rem;border-radius:var(--radius-sm);border:1px solid var(--color-line-strong);background:var(--color-paper-elevated)}
         .result h2{margin:0;font-family:var(--font-display)}
         .result p{margin:0;color:var(--color-ink-soft)}
         dl{margin:0;display:grid;gap:var(--space-2)}

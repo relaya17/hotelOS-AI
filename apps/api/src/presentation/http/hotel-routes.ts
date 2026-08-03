@@ -3,14 +3,17 @@ import type {
   AuditRepository,
   BookingRepository,
   HotelRepository,
+  NotificationRepository,
   RoomRepository,
 } from "@hotelos/database";
 import type { JwtTokenService } from "@hotelos/auth";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { createBooking } from "../../application/create-booking.js";
+import { updateBookingRoomPrep } from "../../application/update-booking-room-prep.js";
 import { updateBookingStatus } from "../../application/update-booking-status.js";
 import { updateRoomStatus } from "../../application/update-room-status.js";
+import type { WhatsAppProvider } from "../../infrastructure/whatsapp-provider.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -18,6 +21,8 @@ export type HotelRouteDeps = {
   readonly hotels: HotelRepository;
   readonly rooms: RoomRepository;
   readonly bookings: BookingRepository;
+  readonly notifications: NotificationRepository;
+  readonly whatsapp: WhatsAppProvider;
   readonly audit: AuditRepository;
   readonly tokens: JwtTokenService;
 };
@@ -28,10 +33,44 @@ const createBookingSchema = z.object({
   roomId: z.string().uuid(),
   guestName: z.string().trim().min(2).max(120),
   guestEmail: z.string().email().max(200),
+  guestPhone: z.string().trim().min(7).max(40).optional(),
   checkInDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   checkOutDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   status: z.enum(["confirmed", "checked_in"]).default("confirmed"),
 });
+
+function toNotificationDto(
+  notification: {
+    readonly id: string;
+    readonly channel: string;
+    readonly eventKey: string;
+    readonly toAddress: string | null;
+    readonly body: string;
+    readonly status: string;
+    readonly error: string | null;
+    readonly provider: string;
+    readonly attemptCount?: number;
+    readonly nextAttemptAt?: string | null;
+    readonly createdAt: string;
+    readonly sentAt: string | null;
+  } | null,
+) {
+  if (!notification) return null;
+  return {
+    id: notification.id,
+    channel: notification.channel,
+    eventKey: notification.eventKey,
+    toAddress: notification.toAddress,
+    body: notification.body,
+    status: notification.status,
+    error: notification.error,
+    provider: notification.provider,
+    attemptCount: notification.attemptCount ?? 0,
+    nextAttemptAt: notification.nextAttemptAt ?? null,
+    createdAt: notification.createdAt,
+    sentAt: notification.sentAt,
+  };
+}
 
 const roomIdParamSchema = z.string().uuid();
 const bookingIdParamSchema = z.string().uuid();
@@ -48,6 +87,10 @@ const bookingTransitionSchema = z.object({
   transition: z.enum(["check_in", "check_out"]),
 });
 
+const roomPrepSchema = z.object({
+  status: z.enum(["waiting", "invited"]),
+});
+
 function toBookingDto(
   booking: Awaited<ReturnType<BookingRepository["create"]>>,
 ) {
@@ -57,9 +100,11 @@ function toBookingDto(
     roomNumber: booking.roomNumber,
     guestName: booking.guestName,
     guestEmail: booking.guestEmail,
+    guestPhone: booking.guestPhone,
     checkInDate: booking.checkInDate,
     checkOutDate: booking.checkOutDate,
     status: booking.status,
+    roomPrepStatus: booking.roomPrepStatus,
   };
 }
 
@@ -183,6 +228,7 @@ export function createHotelRoutes(deps: HotelRouteDeps): Hono<{
         roomId: body.roomId,
         guestName: body.guestName,
         guestEmail: body.guestEmail,
+        ...(body.guestPhone ? { guestPhone: body.guestPhone } : {}),
         checkInDate: body.checkInDate,
         checkOutDate: body.checkOutDate,
         status: body.status,
@@ -266,6 +312,68 @@ export function createHotelRoutes(deps: HotelRouteDeps): Hono<{
       }
 
       return c.json({ data: toBookingDto(result.value) });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.patch("/:hotelId/bookings/:bookingId/room-prep", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const hotelId = hotelIdParamSchema.parse(c.req.param("hotelId"));
+      const bookingId = bookingIdParamSchema.parse(c.req.param("bookingId"));
+      const body = roomPrepSchema.parse(await c.req.json());
+      const result = await updateBookingRoomPrep(
+        deps.bookings,
+        deps.audit,
+        deps.notifications,
+        deps.whatsapp,
+        principal,
+        {
+          hotelId,
+          bookingId,
+          status: body.status,
+        },
+      );
+
+      if (!result.ok) {
+        const status =
+          result.error.code === "HOTEL_NOT_FOUND" ||
+          result.error.code === "BOOKING_NOT_FOUND"
+            ? 404
+            : 409;
+        return sendError(c, status, result.error.code, result.error.message);
+      }
+
+      return c.json({
+        data: {
+          ...toBookingDto(result.value.booking),
+          notification: toNotificationDto(result.value.notification),
+        },
+      });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.get("/:hotelId/notifications", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const hotelId = Ids.hotel(hotelIdParamSchema.parse(c.req.param("hotelId")));
+      const belongs = await deps.bookings.hotelBelongsToTenant(
+        principal.scope.tenantId,
+        hotelId,
+      );
+      if (!belongs) {
+        return sendError(c, 404, "HOTEL_NOT_FOUND", "Hotel not found");
+      }
+      const list = await deps.notifications.listByHotel(
+        principal.scope.tenantId,
+        hotelId,
+      );
+      return c.json({
+        data: list.map((item) => toNotificationDto(item)),
+      });
     } catch (error) {
       return mapUnknownError(c, error);
     }

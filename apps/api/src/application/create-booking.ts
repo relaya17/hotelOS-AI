@@ -10,6 +10,7 @@ export type CreateBookingCommand = {
   readonly roomId: string;
   readonly guestName: string;
   readonly guestEmail: string;
+  readonly guestPhone?: string;
   readonly checkInDate: string;
   readonly checkOutDate: string;
   readonly status: "confirmed" | "checked_in";
@@ -77,6 +78,7 @@ export async function createBooking(
     roomId,
     guestName: command.guestName.trim(),
     guestEmail: command.guestEmail.trim().toLowerCase(),
+    guestPhone: command.guestPhone?.trim() || null,
     checkInDate: command.checkInDate,
     checkOutDate: command.checkOutDate,
     status: command.status,

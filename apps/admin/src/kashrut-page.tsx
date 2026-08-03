@@ -228,11 +228,11 @@ export function KashrutPage() {
         .kashrut{max-width:40rem;display:grid;gap:var(--space-4)}
         .lead{margin:0;color:rgb(16 36 31 / 72%)}
         .field{display:grid;gap:.35rem;font-weight:600}
-        .field select{font:inherit;padding:.55rem .7rem;border-radius:var(--radius-sm);border:1px solid rgb(16 36 31 / 18%)}
+        .field select{font:inherit;padding:.55rem .7rem;border-radius:var(--radius-sm);border:1px solid var(--color-line-strong)}
         .row{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:center}
         .badge{padding:.25rem .6rem;border-radius:var(--radius-sm);background:rgb(16 36 31 / 8%);font-weight:700}
         .badge--on{background:var(--color-sea-deep);color:#fff}
-        .form{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid rgb(16 36 31 / 12%);border-radius:var(--radius-md)}
+        .form{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--color-line);border-radius:var(--radius-md)}
         .list{margin:0;padding-inline-start:1.2rem;display:grid;gap:.5rem}
         .err{color:#8b1e1e;font-weight:600}
         .muted{color:rgb(16 36 31 / 55%)}

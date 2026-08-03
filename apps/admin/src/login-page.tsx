@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { staffGoogleLogin, staffWebAuthnLogin } from "@hotelos/features";
-import { Button, TextField } from "@hotelos/ui";
+import { Button, TextField, SkipLink } from "@hotelos/ui";
 import {
   APP_URLS,
   describeRemoteApiMisconfig,
@@ -103,84 +103,75 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
   }
 
   return (
-    <main id="main-content" className="shell" tabIndex={-1}>
-      <section className="hero">
-        <p className="eyebrow">Admin · תפעול מלון</p>
-        <h1>HotelOS AI</h1>
-        <p className="lede">
-          אפליקציה נפרדת לתפעול יומיומי: חדרים, הזמנות וצוות — לפי מלון נבחר.
-        </p>
-        <p className="apps">
-          <a href={APP_URLS.executive}>לוח בקרה לרשת</a> ·{" "}
-          <a href={APP_URLS.guest}>אורחים</a>
-        </p>
-      </section>
-      <section className="panel">
-        <form className="form" onSubmit={onSubmit} noValidate>
-          <h2>כניסת מנהל/תפעול</h2>
-          <TextField
-            label="אימייל"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <TextField
-            label="סיסמה"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            {...(error !== undefined ? { error } : {})}
-          />
-          <Button type="submit" disabled={loading}>
-            {loading ? "מתחבר…" : "התחברות"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={loading}
-            onClick={() => {
-              void onGoogle();
-            }}
-          >
-            המשך עם Google (צוות)
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={loading}
-            onClick={() => {
-              void onWebAuthn();
-            }}
-          >
-            התחברות באצבע / פנים
-          </Button>
-          <p className="legal">
-            <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
-            {" · "}
-            <a href={APP_URLS.legal("cookies")}>עוגיות</a>
-            {" · "}
-            <a href={APP_URLS.legal("security")}>אבטחה</a>
-            {" · "}
-            <a href={APP_URLS.legal("privacy")}>פרטיות</a>
+    <>
+      <SkipLink />
+      <main id="main-content" className="hotelos-auth-shell" tabIndex={-1}>
+        <section className="hero">
+          <p className="hotelos-eyebrow">Admin · תפעול מלון</p>
+          <h1 className="brand-mark">HotelOS AI</h1>
+          <p className="auth-lede">
+            אפליקציה נפרדת לתפעול יומיומי: חדרים, הזמנות וצוות — לפי מלון נבחר.
           </p>
-        </form>
-      </section>
-      <style>{`
-        .shell { min-height:100vh; display:grid; grid-template-columns:1.1fr .9fr; gap:var(--space-6); padding:clamp(1.5rem,4vw,4rem); align-items:center; }
-        .eyebrow { margin:0 0 var(--space-3); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
-        h1 { font-size:var(--text-display); margin:0; }
-        .lede { margin:var(--space-4) 0 0; max-width:34ch; color:var(--color-ink-soft); font-size:1.15rem; }
-        .apps { margin-top:var(--space-4); font-size:var(--text-small); }
-        .panel { background:rgb(255 250 242 / 88%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .15rem); box-shadow:var(--shadow-soft); padding:clamp(1.4rem,3vw,2.2rem); }
-        .form { display:grid; gap:var(--space-4); }
-        .form h2 { margin:0; font-size:var(--text-title); }
-        .legal{margin:0;font-size:var(--text-small);color:var(--color-ink-soft)}
-        @media (max-width:900px){ .shell{ grid-template-columns:1fr; } }
-      `}</style>
-    </main>
+          <p className="auth-apps">
+            <a href={APP_URLS.executive}>לוח בקרה לרשת</a> ·{" "}
+            <a href={APP_URLS.guest}>אורחים</a>
+          </p>
+        </section>
+        <section className="auth-panel">
+          <form className="auth-form" onSubmit={onSubmit} noValidate>
+            <h2>כניסת מנהל/תפעול</h2>
+            <TextField
+              label="אימייל"
+              name="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <TextField
+              label="סיסמה"
+              name="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              {...(error !== undefined ? { error } : {})}
+            />
+            <Button type="submit" disabled={loading}>
+              {loading ? "מתחבר…" : "התחברות"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={loading}
+              onClick={() => {
+                void onGoogle();
+              }}
+            >
+              המשך עם Google (צוות)
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={loading}
+              onClick={() => {
+                void onWebAuthn();
+              }}
+            >
+              התחברות באצבע / פנים
+            </Button>
+            <p className="auth-legal">
+              <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
+              {" · "}
+              <a href={APP_URLS.legal("cookies")}>עוגיות</a>
+              {" · "}
+              <a href={APP_URLS.legal("security")}>אבטחה</a>
+              {" · "}
+              <a href={APP_URLS.legal("privacy")}>פרטיות</a>
+            </p>
+          </form>
+        </section>
+      </main>
+    </>
   );
 }

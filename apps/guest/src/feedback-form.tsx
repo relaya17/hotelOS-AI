@@ -74,8 +74,10 @@ export function FeedbackForm({ bookingId, onDone }: FeedbackFormProps) {
           <button
             key={value}
             type="button"
+            role="radio"
             className={value <= rating ? "star star--on" : "star"}
-            aria-pressed={value <= rating}
+            aria-checked={value === rating}
+            aria-label={`${value} כוכבים`}
             onClick={() => setRating(value)}
           >
             ⭐
@@ -118,16 +120,16 @@ export function FeedbackForm({ bookingId, onDone }: FeedbackFormProps) {
       </div>
 
       <style>{`
-        .feedback { padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); background:var(--color-paper-elevated); border-radius:var(--radius-sm); display:grid; gap:var(--space-3); }
+        .feedback { padding:var(--space-4); border:1px solid var(--color-line); background:var(--color-paper-elevated); border-radius:var(--radius-sm); display:grid; gap:var(--space-3); }
         .feedback h3 { margin:0; font-family:var(--font-display); }
         .stars { display:flex; gap:.3rem; }
         .star { font-size:1.4rem; background:none; border:none; cursor:pointer; opacity:.35; filter:grayscale(1); padding:0; }
         .star--on { opacity:1; filter:none; }
         .categories { display:flex; flex-wrap:wrap; gap:var(--space-2); }
-        .category { display:flex; align-items:center; gap:.35rem; font-size:var(--text-small); border:1px solid rgb(16 36 31 / 14%); border-radius:999px; padding:.35rem .7rem; cursor:pointer; }
+        .category { display:flex; align-items:center; gap:.35rem; font-size:var(--text-small); border:1px solid var(--color-line-strong); border-radius:999px; padding:.35rem .7rem; cursor:pointer; }
         .comment-field { display:grid; gap:var(--space-2); }
         .comment-field span { font-size:var(--text-small); font-weight:600; color:var(--color-ink-soft); }
-        .comment-field textarea { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.75rem .85rem; background:#fff; resize:vertical; }
+        .comment-field textarea { font:inherit; border:1px solid var(--color-line-strong); border-radius:var(--radius-sm); padding:.75rem .85rem; background:#fff; resize:vertical; }
         .feedback__actions { display:flex; gap:var(--space-2); }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }

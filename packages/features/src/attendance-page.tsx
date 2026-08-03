@@ -446,13 +446,13 @@ export function AttendancePage() {
         h1{margin:0;font-size:clamp(1.8rem,6vw,2.4rem)}
         h2{margin:0;font-size:1.15rem}
         .sub{margin:var(--space-2) 0 0;color:var(--color-ink-soft);max-width:40ch;line-height:1.5}
-        .card{background:rgb(255 250 242 / 92%);border:1px solid rgb(16 36 31 / 10%);border-radius:var(--radius-md);padding:var(--space-4);display:grid;gap:var(--space-3);box-shadow:var(--shadow-soft)}
-        .hero{background:linear-gradient(145deg,rgb(230 245 240 / 95%),rgb(255 250 242 / 98%));border-color:rgb(16 36 31 / 14%)}
+        .card{background:var(--color-paper-elevated);border:1px solid var(--color-line);border-radius:var(--radius-md);padding:var(--space-4);display:grid;gap:var(--space-3);box-shadow:var(--shadow-soft)}
+        .hero{background:linear-gradient(145deg,rgb(230 245 240 / 95%),rgb(255 250 242 / 98%));border-color:var(--color-line-strong)}
         .hero-label{margin:0;font-size:var(--text-small);font-weight:600;color:var(--color-ink-soft)}
         .hero-title{margin:0;font-size:1.35rem;font-weight:700;color:var(--color-sea-deep)}
         .field{display:grid;gap:var(--space-2)}
         .field span{font-size:var(--text-small);font-weight:600;color:var(--color-ink-soft)}
-        select{font:inherit;border:1px solid rgb(16 36 31 / 18%);border-radius:var(--radius-sm);padding:.85rem .95rem;background:var(--color-paper-elevated);min-height:2.75rem}
+        select{font:inherit;border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:.85rem .95rem;background:var(--color-paper-elevated);min-height:2.75rem}
         .toggle{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-small);color:var(--color-ink-soft);cursor:pointer}
         .toggle input{width:1.1rem;height:1.1rem;accent-color:var(--color-sea-deep)}
         .optional{display:grid;gap:var(--space-2)}
@@ -466,7 +466,7 @@ export function AttendancePage() {
         @keyframes spin{to{transform:rotate(360deg)}}
         ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-2)}
         .journal-item{display:grid;gap:var(--space-2);padding:var(--space-3);border-radius:var(--radius-sm);background:var(--color-paper-elevated)}
-        .journal-item--latest{border:1px solid rgb(16 36 31 / 12%);background:rgb(255 252 247 / 98%)}
+        .journal-item--latest{border:1px solid var(--color-line);background:rgb(255 252 247 / 98%)}
         .journal-meta{font-size:var(--text-small);color:var(--color-ink-soft)}
         .chips{display:flex;flex-wrap:wrap;gap:.35rem}
         .chip{font-size:.75rem;padding:.2rem .55rem;border-radius:999px;background:rgb(16 36 31 / 6%);color:var(--color-ink-soft)}

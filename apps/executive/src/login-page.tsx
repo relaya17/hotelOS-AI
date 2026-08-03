@@ -103,21 +103,21 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
   return (
     <>
     <SkipLink />
-    <main id="main-content" className="shell" tabIndex={-1}>
+    <main id="main-content" className="hotelos-auth-shell" tabIndex={-1}>
       <section className="hero">
-        <p className="eyebrow">Executive · רשת</p>
-        <h1>HotelOS AI</h1>
-        <p className="lede">
+        <p className="hotelos-eyebrow">Executive · רשת</p>
+        <h1 className="brand-mark">HotelOS AI</h1>
+        <p className="auth-lede">
           לוח בקרה ברמת הרשת — כל בתי המלון, תפוסה והזמנות פעילות במבט אחד.
         </p>
-        <p className="apps">
+        <p className="auth-apps">
           אפליקציות נפרדות:{" "}
           <a href={APP_URLS.admin}>תפעול מלון</a> ·{" "}
           <a href={APP_URLS.guest}>אורחים</a>
         </p>
       </section>
-      <section className="panel">
-        <form className="form" onSubmit={onSubmit} noValidate>
+      <section className="auth-panel">
+        <form className="auth-form" onSubmit={onSubmit} noValidate>
           <h2>כניסת הנהלת רשת</h2>
           <TextField
             label="אימייל"
@@ -159,7 +159,7 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
           >
             התחברות באצבע / פנים
           </Button>
-          <p className="legal">
+          <p className="auth-legal">
             <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
             {" · "}
             <a href={APP_URLS.legal("cookies")}>עוגיות</a>
@@ -181,18 +181,6 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
           });
         }}
       />
-      <style>{`
-        .shell { min-height:100vh; display:grid; grid-template-columns:1.1fr .9fr; gap:var(--space-6); padding:clamp(1.5rem,4vw,4rem); align-items:center; }
-        .eyebrow { margin:0 0 var(--space-3); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
-        h1 { font-size:var(--text-display); margin:0; max-width:10ch; }
-        .lede { margin:var(--space-4) 0 0; max-width:36ch; color:var(--color-ink-soft); font-size:1.15rem; }
-        .apps { margin-top:var(--space-4); font-size:var(--text-small); }
-        .panel { background:rgb(255 250 242 / 88%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .15rem); box-shadow:var(--shadow-soft); padding:clamp(1.4rem,3vw,2.2rem); }
-        .form { display:grid; gap:var(--space-4); }
-        .form h2 { margin:0; font-size:var(--text-title); }
-        .legal{margin:0;font-size:var(--text-small);color:var(--color-ink-soft)}
-        @media (max-width:900px){ .shell{ grid-template-columns:1fr; } }
-      `}</style>
     </main>
     </>
   );

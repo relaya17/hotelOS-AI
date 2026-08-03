@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { composeApp } from "./infrastructure/compose.js";
 
-const apiRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "../..");
+// main.ts lives in apps/api/src — one level up is the API package root.
+const apiRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
 const repoRoot = resolve(apiRoot, "../..");
 // Prefer apps/api/.env (server folder); fall back to monorepo root .env.
 loadDotenv({ path: resolve(apiRoot, ".env") });

@@ -96,7 +96,7 @@ export function OpsDashboardPage() {
     <div className="ops-dash">
       <header className="ops-dash__header">
         <div>
-          <p className="eyebrow">מבט-על תפעולי · כל המחלקות</p>
+          <p className="hotelos-eyebrow">מבט-על תפעולי · כל המחלקות</p>
           <h1>לוח בקרה תפעולי מאוחד</h1>
           <p className="sub">
             תחזוקה, רכש, מלאי ומשוב אורחים — בתמונה אחת לכל בתי המלון ברשת.
@@ -218,35 +218,40 @@ export function OpsDashboardPage() {
       </section>
 
       <style>{`
-        .ops-dash { display:grid; gap:var(--space-5); align-content:start; }
+        .ops-dash { display:grid; gap:var(--space-5); align-content:start; animation:hotelos-enter var(--motion-med) var(--ease-out) both; }
         .ops-dash__header { display:flex; justify-content:space-between; gap:var(--space-4); align-items:start; }
-        .eyebrow { margin:0 0 var(--space-2); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
+        .ops-dash__header .hotelos-eyebrow { margin-bottom:var(--space-2); }
         h1 { font-size:var(--text-display); margin:0; }
-        .sub { margin:var(--space-2) 0 0; color:var(--color-ink-soft); max-width:60ch; }
+        .sub { margin:var(--space-2) 0 0; color:var(--color-ink-soft); max-width:60ch; font-weight:500; }
         .kpi-row { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:var(--space-3); }
-        .kpi { background:rgb(255 250 242 / 90%); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-md); padding:var(--space-4); box-shadow:var(--shadow-soft); }
-        .kpi p { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); }
-        .kpi strong { display:block; margin-top:var(--space-2); font-family:var(--font-display); font-size:1.7rem; }
-        .card { background:rgb(255 250 242 / 90%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); }
+        .kpi { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:var(--radius-md); padding:var(--space-4); box-shadow:var(--shadow-soft); }
+        .kpi p { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); font-weight:500; }
+        .kpi strong { display:block; margin-top:var(--space-2); font-family:var(--font-display); font-size:1.7rem; letter-spacing:var(--tracking-display); }
+        .card { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:var(--radius-md); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); }
         .card h2 { margin:0 0 var(--space-3); font-size:var(--text-title); }
-        .hint { margin:0; color:var(--color-ink-soft); }
-        .briefing-card { border-color:rgb(16 36 31 / 14%); }
+        .hint { margin:0; color:var(--color-ink-soft); font-weight:500; }
+        .briefing-card { border-color:var(--color-line-strong); }
         .chain-summary { margin:0 0 var(--space-3); font-weight:600; }
         .briefing-list { margin:0; padding-inline-start:1.2rem; display:grid; gap:var(--space-2); }
-        .briefing-warnings { margin:.3rem 0 0; padding-inline-start:1.1rem; display:grid; gap:.2rem; font-size:var(--text-small); color:#b3541e; }
+        .briefing-warnings { margin:.3rem 0 0; padding-inline-start:1.1rem; display:grid; gap:.2rem; font-size:var(--text-small); color:var(--color-warn); }
         .hotel-grid { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:var(--space-4); }
-        .hotel-card { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
-        .hotel-card h3 { margin:0; font-family:var(--font-display); }
+        .hotel-card { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--color-line); border-radius:var(--radius-md); background:var(--color-paper-elevated); box-shadow:var(--shadow-soft); }
+        .hotel-card h3 { margin:0; }
         .hotel-card > div > p { margin:var(--space-1) 0 0; color:var(--color-ink-soft); font-size:var(--text-small); }
         .metrics { margin:0; display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2); }
         .metrics div { display:grid; gap:.15rem; }
         .metrics dt { font-size:var(--text-small); color:var(--color-ink-soft); }
         .metrics dd { margin:0; font-weight:700; }
         .open-ops { display:inline-block; font-weight:700; color:var(--color-sea-deep); }
-        .state { margin:0; color:var(--color-ink-soft); }
+        .state { margin:0; color:var(--color-ink-soft); font-weight:500; }
         .state--error { color:var(--color-danger); }
         @media (max-width:1100px){ .kpi-row{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
-        @media (max-width:640px){ .kpi-row{ grid-template-columns:1fr 1fr; } }
+        @media (max-width:640px){
+          .ops-dash__header{ flex-direction:column; }
+          h1{ font-size:clamp(1.35rem,6vw,2rem); word-break:break-word; }
+          .kpi-row{ grid-template-columns:1fr 1fr; }
+          .hotel-grid{ grid-template-columns:1fr; }
+        }
       `}</style>
     </div>
   );

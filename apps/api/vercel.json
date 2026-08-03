@@ -12,6 +12,10 @@
     {
       "path": "/v1/cron/anomaly-scan",
       "schedule": "30 */6 * * *"
+    },
+    {
+      "path": "/v1/cron/notification-outbox",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

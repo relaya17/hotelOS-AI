@@ -1,8 +1,8 @@
 import type { PmsConnector, PmsHotelInventory } from "../types.js";
 
 /**
- * Deterministic demo PMS — no network. Used for Twin MVP and connector wiring
- * until a real Opera/Mews/etc. adapter is approved.
+ * Deterministic demo PMS — no network. Default Twin inventory;
+ * switch PMS_PROVIDER to mews_stub / opera_stub / mews for other adapters.
  */
 export function createDemoPmsConnector(): PmsConnector {
   return {

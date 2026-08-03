@@ -31,6 +31,9 @@ export {
   type BookingStatus,
   type CreateBookingInput,
   type PersistedBooking,
+  type RoomPrepAction,
+  type RoomPrepError,
+  type RoomPrepStatus,
 } from "./repositories/booking-repository.js";
 export {
   createOverviewRepository,
@@ -40,6 +43,7 @@ export {
 } from "./repositories/overview-repository.js";
 export {
   createGuestStayRepository,
+  type GuestFolioStay,
   type GuestStay,
   type GuestStayRepository,
 } from "./repositories/guest-stay-repository.js";
@@ -132,6 +136,16 @@ export {
   type PersistedGuestFeedback,
   type SubmitGuestFeedbackInput,
 } from "./repositories/feedback-repository.js";
+export {
+  NOTIFICATION_MAX_ATTEMPTS,
+  createNotificationRepository,
+  type EnqueueNotificationInput,
+  type MarkFailedMeta,
+  type NotificationChannel,
+  type NotificationRepository,
+  type NotificationStatus,
+  type PersistedNotification,
+} from "./repositories/notification-repository.js";
 export {
   createRecruitingRepository,
   type AddCandidateInput,

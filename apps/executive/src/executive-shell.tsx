@@ -70,69 +70,82 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
     main?.focus({ preventScroll: true });
   }, [view.kind]);
 
+  const navItems = [
+    ["portfolio", tUi(locale, "nav.portfolio")],
+    ["ops", tUi(locale, "nav.ops")],
+    ["cio", tUi(locale, "nav.cio")],
+    ["approvals", tUi(locale, "nav.approvals")],
+    ["briefings", tUi(locale, "nav.briefings")],
+    ["accounting", tUi(locale, "nav.accounting")],
+    ["chat", tUi(locale, "nav.chat")],
+    ["automations", tUi(locale, "nav.automations")],
+    ["voice", tUi(locale, "nav.voice")],
+    ["attendance", tUi(locale, "nav.attendance")],
+    ["trust", tUi(locale, "nav.trust")],
+  ] as const;
+
   return (
     <div className="shell">
       <SkipLink />
-      <nav className="nav" aria-label="HotelOS Turbo OS">
-        <div className="brand">
-          <strong>{tUi(locale, "app.brand")}</strong>
-          <span>{tUi(locale, "app.turbo")}</span>
-        </div>
-        <div className="tabs hotelos-nav-scroll">
-          {(
-            [
-              ["portfolio", tUi(locale, "nav.portfolio")],
-              ["ops", tUi(locale, "nav.ops")],
-              ["cio", tUi(locale, "nav.cio")],
-              ["approvals", tUi(locale, "nav.approvals")],
-              ["briefings", tUi(locale, "nav.briefings")],
-              ["accounting", tUi(locale, "nav.accounting")],
-              ["chat", tUi(locale, "nav.chat")],
-              ["automations", tUi(locale, "nav.automations")],
-              ["voice", tUi(locale, "nav.voice")],
-              ["attendance", tUi(locale, "nav.attendance")],
-              ["trust", tUi(locale, "nav.trust")],
-            ] as const
-          ).map(([kind, label]) => (
-            <button
-              key={kind}
+      <nav className="nav hotelos-app-bar" aria-label="HotelOS Turbo OS">
+        <div className="nav__top">
+          <div className="brand">
+            <strong>{tUi(locale, "app.brand")}</strong>
+            <span className="brand__sub">{tUi(locale, "app.turbo")}</span>
+          </div>
+          <div className="nav__actions">
+            <label className="locale">
+              <span className="sr">Language</span>
+              <select
+                className="hotelos-select locale__select"
+                value={locale}
+                onChange={(event) =>
+                  setLocale(event.target.value as LocaleCode)
+                }
+              >
+                {LOCALE_META.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {item.nativeName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <a className="nav__ops" href={APP_URLS.admin}>
+              {tUi(locale, "action.openHotelOps")}
+            </a>
+            <Button
+              variant="ghost"
               type="button"
-              className={
-                view.kind === kind ||
-                (kind === "briefings" && view.kind === "meet")
-                  ? "tab tab--on hotelos-touch-target"
-                  : "tab hotelos-touch-target"
-              }
-              onClick={() => setView({ kind })}
+              onClick={() => {
+                void logout().then(onLogout);
+              }}
             >
-              {label}
-            </button>
-          ))}
+              {tUi(locale, "action.logout")}
+            </Button>
+          </div>
         </div>
-        <div className="nav__actions">
-          <label className="locale">
-            <span className="sr">Language</span>
-            <select
-              value={locale}
-              onChange={(event) => setLocale(event.target.value as LocaleCode)}
-            >
-              {LOCALE_META.map((item) => (
-                <option key={item.code} value={item.code}>
-                  {item.nativeName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <a href={APP_URLS.admin}>{tUi(locale, "action.openHotelOps")}</a>
-          <Button
-            variant="ghost"
-            type="button"
-            onClick={() => {
-              void logout().then(onLogout);
-            }}
-          >
-            {tUi(locale, "action.logout")}
-          </Button>
+        <div className="tabs hotelos-nav-scroll hotelos-seg" role="tablist">
+          {navItems.map(([kind, label]) => {
+            const on =
+              view.kind === kind ||
+              (kind === "briefings" && view.kind === "meet");
+            return (
+              <button
+                key={kind}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                className={
+                  on
+                    ? "hotelos-seg__item hotelos-seg__item--on hotelos-touch-target"
+                    : "hotelos-seg__item hotelos-touch-target"
+                }
+                onClick={() => setView({ kind })}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </nav>
 
@@ -140,7 +153,9 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
         id="main-content"
         tabIndex={-1}
         className={
-          view.kind === "portfolio" ? "shell__main shell__main--portfolio" : "shell__main"
+          view.kind === "portfolio"
+            ? "shell__main shell__main--portfolio hotelos-page"
+            : "shell__main hotelos-page"
         }
       >
         {view.kind === "portfolio" ? (
@@ -195,32 +210,30 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
 
       <style>{`
         .shell { min-height:100vh; display:grid; grid-template-rows:auto 1fr auto; }
-        .nav { display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:center; justify-content:space-between; padding:var(--space-3) clamp(1rem,3vw,2rem); border-bottom:1px solid rgb(16 36 31 / 10%); background:rgb(255 250 242 / 72%); backdrop-filter:blur(10px); position:sticky; top:0; z-index:5; }
-        .brand { display:grid; gap:.1rem; }
-        .brand strong { font-family:var(--font-display); font-size:1.2rem; }
-        .brand span { font-size:var(--text-small); color:var(--color-ink-soft); }
-        .tabs { display:flex; gap:var(--space-2); max-width:100%; }
-        .tab { font:inherit; font-weight:600; border:1px solid transparent; background:transparent; padding:.65rem 1rem; border-radius:var(--radius-sm); cursor:pointer; color:var(--color-ink-soft); white-space:nowrap; }
-        .tab--on { color:var(--color-sea-deep); background:rgb(15 106 92 / 10%); border-color:rgb(15 106 92 / 18%); }
-        .nav__actions { display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap; }
-        .nav__actions a { font-weight:600; color:var(--color-sea-deep); }
-        .locale select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.45rem .6rem; background:var(--color-paper-elevated); }
+        .nav { display:grid; gap:var(--space-3); padding:var(--space-3) clamp(1rem,3vw,2rem) var(--space-2); }
+        .nav__top { display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:center; justify-content:space-between; min-width:0; }
+        .brand { display:grid; gap:.2rem; min-width:0; }
+        .brand strong {
+          font-family:var(--font-display);
+          font-size:clamp(1.35rem,2.2vw,1.65rem);
+          line-height:1.1;
+          letter-spacing:var(--tracking-display);
+        }
+        .brand__sub { font-size:var(--text-micro); font-weight:600; color:var(--color-ink-faint); letter-spacing:.04em; }
+        .tabs { width:fit-content; max-width:100%; min-width:0; }
+        .nav__actions { display:flex; gap:var(--space-2); align-items:center; flex-wrap:wrap; justify-content:flex-end; min-width:0; }
+        .nav__ops { font-weight:600; font-size:var(--text-small); color:var(--color-sea-deep); white-space:nowrap; text-decoration:none; }
+        .nav__ops:hover { text-decoration:underline; }
+        .locale__select { width:auto; min-height:2.5rem; padding:.45rem .7rem; max-width:9.5rem; }
         .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
-        .shell__main { padding:clamp(1rem,3vw,2.5rem); }
-        .shell__main--portfolio { padding-top:var(--space-3); }
+        .shell__main { padding:0; }
+        .shell__main--portfolio { padding-top:0; }
         @media (max-width:768px){
-          .nav{
-            display:grid;
-            grid-template-columns:1fr auto;
-            grid-template-rows:auto auto;
-            gap:var(--space-2);
-            padding:var(--space-2) var(--space-3);
-          }
-          .brand{ grid-column:1; grid-row:1; }
-          .nav__actions{ grid-column:2; grid-row:1; justify-self:end; }
-          .tabs{ grid-column:1 / -1; grid-row:2; flex-wrap:nowrap; width:100%; }
-          .shell__main{ padding:var(--space-3); }
-          .shell__main--portfolio{ padding:var(--space-2) var(--space-3) var(--space-3); }
+          .nav{ gap:var(--space-2); padding:var(--space-2) var(--space-3); }
+          .brand__sub{ display:none; }
+          .nav__actions{ width:100%; justify-content:flex-start; }
+          .nav__ops{ display:none; }
+          .tabs{ width:100%; }
         }
       `}</style>
     </div>

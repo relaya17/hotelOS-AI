@@ -23,6 +23,7 @@ import {
   createHotelRepository,
   createKashrutRepository,
   createMaintenanceRepository,
+  createNotificationRepository,
   createOpsRepository,
   createOrgCommsRepository,
   createOverviewRepository,
@@ -46,6 +47,7 @@ import { createGetHealth } from "../application/get-health.js";
 import { createApp } from "../presentation/http/create-app.js";
 import { initObservability } from "./observability.js";
 import { createRecordingStorage } from "./recording-storage.js";
+import { createWhatsAppProvider } from "./whatsapp-provider.js";
 import type { AuditRepository } from "@hotelos/database";
 
 const API_VERSION = "0.9.0";
@@ -77,6 +79,16 @@ export async function composeApp() {
   const hotels = createHotelRepository(db);
   const rooms = createRoomRepository(db);
   const bookings = createBookingRepository(db);
+  const notifications = createNotificationRepository(db);
+  const whatsapp = createWhatsAppProvider({
+    provider: env.WHATSAPP_PROVIDER,
+    apiUrl: env.WHATSAPP_API_URL,
+    apiToken: env.WHATSAPP_API_TOKEN,
+    metaPhoneNumberId: env.WHATSAPP_META_PHONE_NUMBER_ID,
+    metaGraphVersion: env.WHATSAPP_META_GRAPH_VERSION,
+    metaTemplateName: env.WHATSAPP_META_TEMPLATE_NAME,
+    metaTemplateLanguage: env.WHATSAPP_META_TEMPLATE_LANGUAGE,
+  });
   const overview = createOverviewRepository(db);
   const guestStays = createGuestStayRepository(db);
   const agents = createAgentRepository(db);
@@ -158,7 +170,10 @@ export async function composeApp() {
     },
   });
 
-  const getHealth = createGetHealth(API_VERSION);
+  const getHealth = createGetHealth(API_VERSION, {
+    backend: recordings.backend,
+    root: recordings.root,
+  });
   const app = createApp({
     getHealth,
     logger,
@@ -168,9 +183,9 @@ export async function composeApp() {
     ),
     isProduction: env.NODE_ENV === "production",
     auth: { users, sessions, audit, tokens },
-    hotels: { hotels, rooms, bookings, audit, tokens },
+    hotels: { hotels, rooms, bookings, notifications, whatsapp, audit, tokens },
     overview: { overview, tokens },
-    publicRoutes: { guestStays, feedback, hr },
+    publicRoutes: { guestStays, feedback, hr, ops },
     agents: { agents, tokens },
     briefing: {
       audit,
@@ -256,7 +271,23 @@ export async function composeApp() {
       feedback,
       tokens,
     },
-    twin: { rooms, tokens, pms: createPmsConnector(env.PMS_PROVIDER) },
+    twin: {
+      rooms,
+      tokens,
+      pms: createPmsConnector({
+        provider: env.PMS_PROVIDER,
+        ...(env.PMS_PROVIDER === "mews"
+          ? {
+              mews: {
+                clientToken: env.MEWS_CLIENT_TOKEN,
+                accessToken: env.MEWS_ACCESS_TOKEN,
+                platformUrl: env.MEWS_PLATFORM_URL,
+                clientName: env.MEWS_CLIENT_NAME,
+              },
+            }
+          : {}),
+      }),
+    },
     cron: {
       cronSecret: env.CRON_SECRET,
       cioDaily: {
@@ -280,6 +311,10 @@ export async function composeApp() {
         turbo,
         ops,
       },
+      notificationOutbox: {
+        notifications,
+        whatsapp,
+      },
     },
     simulator: {
       overview,
@@ -297,5 +332,6 @@ export async function composeApp() {
   });
   logger.info("ai gateway ready", { provider: gateway.primaryProvider });
   logger.info("pms connector ready", { provider: env.PMS_PROVIDER });
+  logger.info("whatsapp provider ready", { provider: whatsapp.name });
   return { app, env, logger };
 }

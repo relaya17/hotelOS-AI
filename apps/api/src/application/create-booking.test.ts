@@ -22,6 +22,9 @@ test("createBooking rejects invalid date range", async () => {
       listByHotel: async () => [],
       findByIdInHotel: async () => null,
       updateStatus: async () => null,
+      setRoomPrep: async () => ({ ok: false, reason: "BOOKING_NOT_FOUND" }),
+      advanceRoomPrepForDirtyRoom: async () => undefined,
+      advanceRoomPrepForVacantRoom: async () => undefined,
       create: async () => {
         throw new Error("should not create");
       },

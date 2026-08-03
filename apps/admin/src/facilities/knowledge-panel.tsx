@@ -138,9 +138,9 @@ export function KnowledgePanel() {
 
       <style>{`
         .stack{display:grid;gap:.75rem;max-width:36rem}
-        .stack textarea{width:100%;font:inherit;padding:.75rem;border-radius:8px;border:1px solid rgb(16 36 31 / 18%)}
+        .stack textarea{width:100%;font:inherit;padding:.75rem;border-radius:8px;border:1px solid var(--color-line-strong)}
         .docs{list-style:none;padding:0;display:grid;gap:1rem}
-        .docs pre{white-space:pre-wrap;font:inherit;background:rgb(255 250 242);padding:.75rem;border-radius:8px}
+        .docs pre{white-space:pre-wrap;font:inherit;background:var(--color-paper);padding:.75rem;border-radius:8px}
         .muted{opacity:.75}
         .error{color:#8b1e1e}
       `}</style>

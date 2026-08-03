@@ -116,9 +116,11 @@ export async function migrate(client: Client): Promise<void> {
       room_id TEXT NOT NULL REFERENCES rooms(id),
       guest_name TEXT NOT NULL,
       guest_email TEXT NOT NULL,
+      guest_phone TEXT,
       check_in_date TEXT NOT NULL,
       check_out_date TEXT NOT NULL,
       status TEXT NOT NULL,
+      room_prep_status TEXT,
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS bookings_hotel_idx ON bookings(hotel_id);
@@ -596,6 +598,32 @@ export async function migrate(client: Client): Promise<void> {
     CREATE INDEX IF NOT EXISTS guest_feedback_tenant_idx ON guest_feedback(tenant_id);
     CREATE INDEX IF NOT EXISTS guest_feedback_hotel_idx ON guest_feedback(hotel_id);
 
+    CREATE TABLE IF NOT EXISTS notification_outbox (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      booking_id TEXT REFERENCES bookings(id),
+      channel TEXT NOT NULL,
+      event_key TEXT NOT NULL,
+      to_address TEXT,
+      body TEXT NOT NULL,
+      status TEXT NOT NULL,
+      error TEXT,
+      provider TEXT NOT NULL,
+      attempt_count INTEGER NOT NULL DEFAULT 0,
+      next_attempt_at TEXT,
+      created_at TEXT NOT NULL,
+      sent_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS notification_outbox_tenant_idx
+      ON notification_outbox(tenant_id);
+    CREATE INDEX IF NOT EXISTS notification_outbox_hotel_idx
+      ON notification_outbox(hotel_id);
+    CREATE INDEX IF NOT EXISTS notification_outbox_booking_idx
+      ON notification_outbox(booking_id);
+    CREATE INDEX IF NOT EXISTS notification_outbox_hotel_status_idx
+      ON notification_outbox(hotel_id, status);
+
     CREATE TABLE IF NOT EXISTS job_postings (
       id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL REFERENCES tenants(id),
@@ -840,6 +868,33 @@ export async function migrate(client: Client): Promise<void> {
   );
   await ensureColumn(client, "employee_profiles", "status", "status TEXT");
   await ensureColumn(client, "employee_profiles", "department_id", "department_id TEXT");
+
+  // Guest room-prep tracking (waiting → cleaning → ready → invited)
+  await ensureColumn(client, "bookings", "guest_phone", "guest_phone TEXT");
+  await ensureColumn(
+    client,
+    "bookings",
+    "room_prep_status",
+    "room_prep_status TEXT",
+  );
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS bookings_hotel_room_prep_idx
+      ON bookings(hotel_id, room_prep_status);
+  `);
+
+  // WhatsApp outbox retry / backoff
+  await ensureColumn(
+    client,
+    "notification_outbox",
+    "attempt_count",
+    "attempt_count INTEGER NOT NULL DEFAULT 0",
+  );
+  await ensureColumn(
+    client,
+    "notification_outbox",
+    "next_attempt_at",
+    "next_attempt_at TEXT",
+  );
 }
 
 async function ensureColumn(
@@ -850,7 +905,16 @@ async function ensureColumn(
 ): Promise<void> {
   const result = await client.execute(`PRAGMA table_info(${table})`);
   const hasColumn = result.rows.some((row) => row["name"] === column);
-  if (!hasColumn) {
+  if (hasColumn) {
+    return;
+  }
+  try {
     await client.execute(`ALTER TABLE ${table} ADD COLUMN ${addColumnDdl}`);
+  } catch (error) {
+    // Turso/libsql can race or report PRAGMA stale — ignore duplicate column.
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/duplicate column/i.test(message)) {
+      throw error;
+    }
   }
 }

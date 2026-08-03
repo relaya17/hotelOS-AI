@@ -229,10 +229,11 @@ export function DashboardPage({ user, hideChrome = true }: DashboardPageProps) {
   }
 
   return (
-    <main id="main-content" className="dash" tabIndex={-1}>
+    <main id="main-content" className="dash hotelos-page" tabIndex={-1}>
       {hideChrome ? (
         <header className="dash__header dash__header--compact">
           <div>
+            <p className="hotelos-eyebrow">תפעול מלון</p>
             <h1>{selectedHotel?.name ?? "בחרו מלון"}</h1>
             <p className="sub">{user.displayName}</p>
           </div>
@@ -240,16 +241,17 @@ export function DashboardPage({ user, hideChrome = true }: DashboardPageProps) {
       ) : (
         <header className="dash__header">
           <div>
-            <p className="eyebrow">Admin · תפעול מלון</p>
+            <p className="hotelos-eyebrow">Admin · תפעול מלון</p>
             <h1>{selectedHotel?.name ?? "בחרו מלון"}</h1>
             <p className="sub">{user.displayName}</p>
           </div>
         </header>
       )}
 
-      <section className="card">
+      <section className="card card--hotel hotelos-surface">
+        <p className="hotelos-eyebrow">הקשר תפעולי</p>
         <h2>מלון פעיל</h2>
-        <p className="hint">
+        <p className="hint hotelos-hint">
           הרשת יכולה לכלול כמה מלונות — כאן עובדים על מלון אחד בלבד.
         </p>
         {loading ? <p className="state">טוען…</p> : null}
@@ -261,6 +263,7 @@ export function DashboardPage({ user, hideChrome = true }: DashboardPageProps) {
         <label className="select-field">
           <span>בחירת מלון</span>
           <select
+            className="hotelos-select"
             value={selectedHotelId ?? ""}
             onChange={(event) => {
               setSelectedHotelId(event.target.value);
@@ -444,42 +447,41 @@ export function DashboardPage({ user, hideChrome = true }: DashboardPageProps) {
       </section>
 
       <style>{`
-        .dash { padding:clamp(1rem,3vw,2rem); display:grid; gap:var(--space-5); }
+        .dash { max-width:none; }
         .dash__header { display:flex; justify-content:space-between; gap:var(--space-4); align-items:flex-start; }
-        .dash__header--compact h1 { font-size:var(--text-title); margin:0; }
-        .eyebrow { margin:0 0 var(--space-2); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
-        h1 { font-size:var(--text-display); margin:0; }
-        .sub { margin:var(--space-2) 0 0; color:var(--color-ink-soft); font-size:var(--text-small); }
-        .card { background:rgb(255 250 242 / 90%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); }
-        .card h2 { margin:0; font-size:var(--text-title); }
-        .hint { margin:var(--space-2) 0 var(--space-4); color:var(--color-ink-soft); }
+        .dash__header--compact h1 { font-size:clamp(1.6rem,3vw,2.1rem); }
+        h1 { font-size:var(--text-display); }
+        .sub { margin:var(--space-2) 0 0; color:var(--color-ink-soft); font-size:var(--text-small); font-weight:500; }
+        .card { padding:clamp(1.15rem,2.4vw,1.7rem); display:grid; gap:var(--space-3); background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:var(--radius-md); box-shadow:var(--shadow-soft); }
+        .card--hotel { background:linear-gradient(165deg, var(--color-sea-soft), var(--color-paper-elevated) 55%); }
+        .card h2 { font-size:var(--text-title); }
+        .hint { max-width:46ch; }
         .list { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
-        .row { display:flex; flex-wrap:wrap; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .row { display:flex; flex-wrap:wrap; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-4); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:#fff; transition:border-color var(--motion-fast), box-shadow var(--motion-fast); }
+        .row:hover { border-color:var(--color-line-strong); box-shadow:var(--shadow-soft); }
         .row__main { flex:1 1 12rem; min-width:0; }
         .row__actions { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; justify-content:flex-end; }
-        .row h3 { margin:0; font-family:var(--font-display); font-size:1.2rem; }
-        .row p { margin:var(--space-1) 0 0; color:var(--color-ink-soft); font-size:var(--text-small); }
-        .status { font-size:var(--text-small); font-weight:700; padding:.35rem .7rem; border-radius:999px; white-space:nowrap; }
-        .status--vacant { color:#0f6a5c; background:rgb(15 106 92 / 12%); }
-        .status--occupied { color:#1f4b7a; background:rgb(31 75 122 / 12%); }
-        .status--dirty { color:#8a5a12; background:rgb(138 90 18 / 12%); }
-        .status--maintenance { color:#9b2c2c; background:rgb(155 44 44 / 12%); }
-        .status--booking-confirmed { color:#0f6a5c; background:rgb(15 106 92 / 12%); }
-        .status--booking-checked_in { color:#1f4b7a; background:rgb(31 75 122 / 12%); }
-        .status--booking-checked_out { color:#445; background:rgb(68 68 85 / 10%); }
-        .status--booking-cancelled { color:#9b2c2c; background:rgb(155 44 44 / 12%); }
+        .row h3 { font-size:1.15rem; }
+        .row p { margin:var(--space-1) 0 0; color:var(--color-ink-soft); font-size:var(--text-small); font-weight:500; }
+        .status { font-size:var(--text-micro); font-weight:700; letter-spacing:.02em; padding:.4rem .75rem; border-radius:var(--radius-pill); white-space:nowrap; }
+        .status--vacant { color:var(--color-sea-deep); background:var(--color-sea-soft); }
+        .status--occupied { color:var(--color-info); background:var(--color-info-soft); }
+        .status--dirty { color:var(--color-warn); background:var(--color-warn-soft); }
+        .status--maintenance { color:var(--color-danger); background:var(--color-danger-soft); }
+        .status--booking-confirmed { color:var(--color-sea-deep); background:var(--color-sea-soft); }
+        .status--booking-checked_in { color:var(--color-info); background:var(--color-info-soft); }
+        .status--booking-checked_out { color:var(--color-ink-soft); background:rgb(12 31 26 / 6%); }
+        .status--booking-cancelled { color:var(--color-danger); background:var(--color-danger-soft); }
         .status-toggle { display:flex; flex-wrap:wrap; gap:.35rem; max-width:22rem; }
-        .chip { font:inherit; font-size:.75rem; font-weight:600; padding:.35rem .55rem; border-radius:999px; border:1px solid rgb(16 36 31 / 14%); background:transparent; cursor:pointer; color:var(--color-ink-soft); }
+        .chip { font:inherit; font-size:var(--text-micro); font-weight:600; padding:.4rem .65rem; border-radius:var(--radius-pill); border:1px solid var(--color-line-strong); background:transparent; cursor:pointer; color:var(--color-ink-soft); transition:background var(--motion-fast), color var(--motion-fast); }
         .chip:disabled { opacity:.55; cursor:wait; }
         .chip--on { background:var(--color-sea-deep); color:#fff; border-color:transparent; }
-        .create-form { margin-top:var(--space-5); display:grid; gap:var(--space-3); border-top:1px solid rgb(16 36 31 / 10%); padding-top:var(--space-4); }
-        .create-form h3 { margin:0; font-family:var(--font-display); }
-        .select-field { display:grid; gap:var(--space-2); }
+        .create-form { margin-top:var(--space-2); display:grid; gap:var(--space-3); border-top:1px solid var(--color-line); padding-top:var(--space-4); }
+        .select-field { display:grid; gap:var(--space-2); max-width:28rem; }
         .select-field span { font-size:var(--text-small); font-weight:600; color:var(--color-ink-soft); }
-        .select-field select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); }
-        .state { margin:0; color:var(--color-ink-soft); }
+        .state { margin:0; color:var(--color-ink-soft); font-weight:500; }
         .state--error { color:var(--color-danger); }
-        .banner-error { padding:var(--space-3) var(--space-4); background:rgb(155 44 44 / 8%); border-radius:var(--radius-sm); }
+        .banner-error { padding:var(--space-3) var(--space-4); background:var(--color-danger-soft); border-radius:var(--radius-sm); border:1px solid rgb(180 35 24 / 14%); }
         @media (max-width:640px) {
           .status-toggle { max-width:none; }
           .row__actions { width:100%; justify-content:flex-start; }

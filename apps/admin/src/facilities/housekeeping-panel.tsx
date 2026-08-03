@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Button } from "@hotelos/ui";
 import {
+  listBookings,
   listRooms,
   suggestAutonomyDirtyRooms,
   updateRoomStatus,
+  type BookingDto,
   type RoomDto,
 } from "@hotelos/web-client";
 
@@ -20,6 +22,7 @@ const statusLabel: Record<RoomDto["status"], string> = {
 
 export function HousekeepingPanel({ hotelId }: HousekeepingPanelProps) {
   const [rooms, setRooms] = useState<readonly RoomDto[]>([]);
+  const [bookings, setBookings] = useState<readonly BookingDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
@@ -30,11 +33,15 @@ export function HousekeepingPanel({ hotelId }: HousekeepingPanelProps) {
     setLoading(true);
     setError(undefined);
     try {
-      const data = await listRooms(hotelId);
-      setRooms(data);
+      const [roomData, bookingData] = await Promise.all([
+        listRooms(hotelId),
+        listBookings(hotelId),
+      ]);
+      setRooms(roomData);
+      setBookings(bookingData);
       setSelected((prev) => {
         const dirtyIds = new Set(
-          data.filter((r) => r.status === "dirty").map((r) => r.id),
+          roomData.filter((r) => r.status === "dirty").map((r) => r.id),
         );
         if (prev.size === 0) return dirtyIds;
         return new Set([...prev].filter((id) => dirtyIds.has(id)));
@@ -89,12 +96,30 @@ export function HousekeepingPanel({ hotelId }: HousekeepingPanelProps) {
 
   async function onMarkVacant(roomId: string) {
     try {
+      const room = rooms.find((item) => item.id === roomId);
       await updateRoomStatus(hotelId, roomId, "vacant");
+      const waitingForRoom = bookings.filter(
+        (booking) =>
+          booking.roomId === roomId &&
+          booking.status === "confirmed" &&
+          (booking.roomPrepStatus === "waiting" ||
+            booking.roomPrepStatus === "cleaning"),
+      );
+      setNotice(
+        waitingForRoom.length > 0
+          ? `חדר ${room?.number ?? ""} נקי · ${waitingForRoom.length} אורח/ים מוכנים להזמנה בקבלה`
+          : `חדר ${room?.number ?? ""} סומן נקי`,
+      );
       await reload();
     } catch {
       setError("עדכון סטטוס חדר נכשל");
     }
   }
+
+  const readyForInvite = bookings.filter(
+    (booking) =>
+      booking.status === "confirmed" && booking.roomPrepStatus === "ready",
+  );
 
   return (
     <div className="panel">
@@ -126,6 +151,7 @@ export function HousekeepingPanel({ hotelId }: HousekeepingPanelProps) {
                 <label className="check">
                   <input
                     type="checkbox"
+                    aria-label={`חדר ${room.number}, קומה ${room.floor}, ${room.roomType}`}
                     checked={selected.has(room.id)}
                     onChange={() => toggleRoom(room.id)}
                   />
@@ -161,6 +187,22 @@ export function HousekeepingPanel({ hotelId }: HousekeepingPanelProps) {
       </section>
 
       <section className="card">
+        <h2>מוכנים להזמנה</h2>
+        <p className="hint">אחרי «סמן נקי» — הקבלה מזמינה את האורח לחדר.</p>
+        {readyForInvite.length === 0 ? (
+          <p className="state">אין אורחים בסטטוס מוכן כרגע.</p>
+        ) : (
+          <ul className="list list--compact">
+            {readyForInvite.map((booking) => (
+              <li key={booking.id}>
+                {booking.guestName} · חדר {booking.roomNumber} · מוכן
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card">
         <h2>כל החדרים</h2>
         <ul className="list list--compact">
           {rooms.map((room) => (
@@ -173,19 +215,19 @@ export function HousekeepingPanel({ hotelId }: HousekeepingPanelProps) {
 
       <style>{`
         .panel { display:grid; gap:var(--space-4); }
-        .card { background:rgb(255 250 242 / 90%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); display:grid; gap:var(--space-3); }
+        .card { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); display:grid; gap:var(--space-3); }
         .card h2 { margin:0; font-size:var(--text-title); }
         .hint { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); }
         .list { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-2); }
         .list--compact li { padding:.35rem 0; color:var(--color-ink-soft); font-size:var(--text-small); }
-        .row { display:flex; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-3); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .row { display:flex; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-3); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
         .check { display:flex; gap:.65rem; align-items:flex-start; }
         .check strong { display:block; }
         .meta { display:block; color:var(--color-ink-soft); font-size:var(--text-small); margin-top:.15rem; }
-        .mini-btn { font:inherit; font-size:var(--text-small); border:1px solid rgb(16 36 31 / 18%); background:transparent; border-radius:var(--radius-sm); padding:.3rem .6rem; cursor:pointer; font-weight:600; }
+        .mini-btn { font:inherit; font-size:var(--text-small); border:1px solid var(--color-line-strong); background:transparent; border-radius:var(--radius-sm); padding:.3rem .6rem; cursor:pointer; font-weight:600; }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
-        .state--ok { color:#0f6a5c; background:rgb(15 106 92 / 10%); padding:.75rem 1rem; border-radius:var(--radius-sm); }
+        .state--ok { color:var(--color-sea-deep); background:var(--color-sea-soft); padding:.75rem 1rem; border-radius:var(--radius-sm); }
       `}</style>
     </div>
   );

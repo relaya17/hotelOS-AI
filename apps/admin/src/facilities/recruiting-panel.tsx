@@ -423,29 +423,29 @@ export function RecruitingPanel({ hotelId }: RecruitingPanelProps) {
 
       <style>{`
         .panel { display:grid; gap:var(--space-4); }
-        .disclosure { margin:0; padding:var(--space-3) var(--space-4); border:1px solid rgb(15 106 92 / 20%); background:rgb(15 106 92 / 6%); border-radius:var(--radius-sm); color:var(--color-ink-soft); font-size:var(--text-small); }
-        .card { background:rgb(255 250 242 / 90%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); display:grid; gap:var(--space-4); }
+        .disclosure { margin:0; padding:var(--space-3) var(--space-4); border:1px solid rgb(14 107 92 / 20%); background:var(--color-sea-soft); border-radius:var(--radius-sm); color:var(--color-ink-soft); font-size:var(--text-small); }
+        .card { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); display:grid; gap:var(--space-4); }
         .card h2 { margin:0; font-size:var(--text-title); }
         .hint { margin:0; color:var(--color-ink-soft); }
         .list { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
-        .row { display:flex; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .row { display:flex; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-4); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
         .row h3,.candidate h3 { margin:0; font-family:var(--font-display); font-size:1.1rem; }
         .row p,.candidate p { margin:var(--space-1) 0 0; color:var(--color-ink-soft); font-size:var(--text-small); }
         .row p a { color:var(--color-sea-deep); font-weight:600; }
         .row__actions { display:flex; flex-direction:column; gap:var(--space-2); align-items:flex-end; }
-        .candidate { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .candidate { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
         .candidate__head { display:flex; justify-content:space-between; gap:var(--space-3); align-items:center; }
         .candidate__actions { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:end; }
         .candidate__actions label { display:grid; gap:.25rem; font-size:var(--text-small); }
         .candidate__actions select { font:inherit; padding:.4rem .55rem; }
         .status { font-size:var(--text-small); font-weight:700; padding:.35rem .7rem; border-radius:999px; white-space:nowrap; color:#1f4b7a; background:rgb(31 75 122 / 12%); }
-        .mini-btn { font:inherit; font-size:var(--text-small); border:1px solid rgb(16 36 31 / 18%); background:transparent; border-radius:var(--radius-sm); padding:.3rem .6rem; cursor:pointer; font-weight:600; }
+        .mini-btn { font:inherit; font-size:var(--text-small); border:1px solid var(--color-line-strong); background:transparent; border-radius:var(--radius-sm); padding:.3rem .6rem; cursor:pointer; font-weight:600; }
         .mini-btn--accent { border-color:var(--color-sea-deep); color:var(--color-sea-deep); }
-        .create-form { display:grid; gap:var(--space-3); border-top:1px solid rgb(16 36 31 / 10%); padding-top:var(--space-4); }
+        .create-form { display:grid; gap:var(--space-3); border-top:1px solid var(--color-line); padding-top:var(--space-4); }
         .create-form h3 { margin:0; font-family:var(--font-display); }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
-        .state--ok { color:#0f6a5c; background:rgb(15 106 92 / 10%); padding:.75rem 1rem; border-radius:var(--radius-sm); }
+        .state--ok { color:var(--color-sea-deep); background:var(--color-sea-soft); padding:.75rem 1rem; border-radius:var(--radius-sm); }
       `}</style>
     </div>
   );

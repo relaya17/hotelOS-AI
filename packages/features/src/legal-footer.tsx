@@ -10,7 +10,7 @@ export function LegalFooter({ legalUrl }: LegalFooterProps) {
       <a href={legalUrl("security")}>אבטחה</a>
       <a href={legalUrl("privacy")}>פרטיות</a>
       <style>{`
-        .legal-bar{display:flex;flex-wrap:wrap;gap:var(--space-3);padding:var(--space-3) clamp(1rem,3vw,2rem);border-top:1px solid rgb(16 36 31 / 10%);font-size:var(--text-small)}
+        .legal-bar{display:flex;flex-wrap:wrap;gap:var(--space-3);padding:var(--space-3) clamp(1rem,3vw,2rem);border-top:1px solid var(--color-line);font-size:var(--text-small)}
         .legal-bar a{color:var(--color-sea-deep);font-weight:600}
       `}</style>
     </footer>

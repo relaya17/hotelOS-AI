@@ -90,7 +90,7 @@ export function SignaturePad({
       <style>{`
         .sig{display:grid;gap:var(--space-2)}
         .sig span{font-size:var(--text-small);font-weight:600;color:var(--color-ink-soft)}
-        canvas{width:100%;max-width:100%;border:1px solid rgb(16 36 31 / 18%);border-radius:var(--radius-sm);touch-action:none;background:#fffaf2;cursor:crosshair}
+        canvas{width:100%;max-width:100%;border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);touch-action:none;background:#fffaf2;cursor:crosshair}
       `}</style>
     </div>
   );

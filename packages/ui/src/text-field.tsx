@@ -19,7 +19,7 @@ export function TextField({
       <span className="hotelos-field__label">{label}</span>
       <input
         id={fieldId}
-        className="hotelos-field__input"
+        className="hotelos-field__input hotelos-field-control"
         aria-invalid={error ? true : undefined}
         aria-describedby={errorId}
         {...rest}
@@ -37,20 +37,16 @@ export function TextField({
         .hotelos-field__label {
           font-size: var(--text-small);
           font-weight: 600;
+          letter-spacing: 0.01em;
           color: var(--color-ink-soft);
         }
         .hotelos-field__input {
-          font: inherit;
-          border: 1px solid rgb(16 36 31 / 18%);
-          border-radius: var(--radius-sm);
-          padding: 0.85rem 0.95rem;
-          min-height: var(--touch-min, 2.75rem);
-          background: var(--color-paper-elevated);
-          color: var(--color-ink);
+          background: #fff;
         }
         .hotelos-field__error {
           color: var(--color-danger);
           font-size: var(--text-small);
+          font-weight: 500;
         }
       `}</style>
     </label>

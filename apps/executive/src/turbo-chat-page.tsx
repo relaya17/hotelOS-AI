@@ -164,7 +164,7 @@ export function TurboChatPage({ locale }: TurboChatPageProps) {
         h1{margin:0;font-size:clamp(1.8rem,3vw,2.6rem)}
         .sub,.langs{margin:var(--space-2) 0 0;color:var(--color-ink-soft)}
         .langs{font-size:var(--text-small)}
-        .card{background:rgb(255 250 242 / 92%);border:1px solid rgb(16 36 31 / 10%);border-radius:var(--radius-md);padding:var(--space-4);box-shadow:var(--shadow-soft)}
+        .card{background:var(--color-paper-elevated);border:1px solid var(--color-line);border-radius:var(--radius-md);padding:var(--space-4);box-shadow:var(--shadow-soft)}
         .form{display:grid;gap:var(--space-3)}
         .quick{display:flex;flex-wrap:wrap;gap:var(--space-2)}
         .quick button{font:inherit;font-size:.8rem;border:1px solid rgb(15 106 92 / 25%);background:rgb(15 106 92 / 8%);border-radius:var(--radius-sm);padding:.4rem .6rem;cursor:pointer;text-align:start}

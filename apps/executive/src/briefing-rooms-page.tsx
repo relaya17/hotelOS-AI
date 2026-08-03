@@ -183,7 +183,7 @@ export function BriefingRoomsPage({ onOpenRoom }: BriefingRoomsPageProps) {
         .brief__header h1 { margin:0; font-size:var(--text-display); }
         .eyebrow { margin:0 0 var(--space-2); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
         .sub { margin:var(--space-2) 0 0; color:var(--color-ink-soft); max-width:60ch; }
-        .agents-strip { background:rgb(255 250 242 / 88%); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-md); padding:var(--space-4); box-shadow:var(--shadow-soft); }
+        .agents-strip { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:var(--radius-md); padding:var(--space-4); box-shadow:var(--shadow-soft); }
         .agents-strip h2 { margin:0 0 var(--space-3); font-size:1.1rem; }
         .agents-strip ul { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:var(--space-2); }
         .agents-strip li { display:grid; gap:.15rem; padding:.55rem .8rem; border-radius:var(--radius-sm); background:rgb(15 106 92 / 8%); border:1px solid rgb(15 106 92 / 14%); }
@@ -191,16 +191,16 @@ export function BriefingRoomsPage({ onOpenRoom }: BriefingRoomsPageProps) {
         .agents-strip li span { font-size:.75rem; color:var(--color-ink-soft); }
         .agents-strip .more { align-content:center; font-weight:700; color:var(--color-sea-deep); }
         .brief__cols { display:grid; grid-template-columns:1.2fr .8fr; gap:var(--space-4); }
-        .card { background:rgb(255 250 242 / 92%); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-md); padding:clamp(1.2rem,2.5vw,1.8rem); box-shadow:var(--shadow-soft); }
+        .card { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:var(--radius-md); padding:clamp(1.2rem,2.5vw,1.8rem); box-shadow:var(--shadow-soft); }
         .card h2 { margin:0 0 var(--space-4); font-size:var(--text-title); }
         .rooms { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
-        .rooms li { display:flex; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .rooms li { display:flex; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-4); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
         .rooms h3 { margin:0; font-family:var(--font-display); font-size:1.15rem; }
         .rooms p { margin:var(--space-1) 0 0; color:var(--color-ink-soft); font-size:var(--text-small); }
         .form { display:grid; gap:var(--space-3); }
         .select-field { display:grid; gap:var(--space-2); }
         .select-field span { font-size:var(--text-small); font-weight:600; color:var(--color-ink-soft); }
-        .select-field select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); }
+        .select-field select { font:inherit; border:1px solid var(--color-line-strong); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); }
         .hint { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }

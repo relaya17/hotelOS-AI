@@ -51,8 +51,26 @@ export function CookieBanner({
         </Button>
       </div>
       <style>{`
-        .cookie{position:fixed;inset-inline:var(--space-3);bottom:var(--space-3);z-index:40;display:grid;gap:var(--space-3);padding:var(--space-4);max-width:42rem;margin-inline:auto;background:rgb(255 250 242 / 96%);border:1px solid rgb(16 36 31 / 12%);border-radius:var(--radius-md);box-shadow:var(--shadow-soft)}
-        .cookie p{margin:0;color:var(--color-ink-soft);font-size:var(--text-small)}
+        .cookie{
+          position:fixed;
+          inset-inline:var(--space-3);
+          bottom:var(--space-3);
+          z-index:40;
+          display:grid;
+          gap:var(--space-3);
+          padding:var(--space-4);
+          max-width:42rem;
+          margin-inline:auto;
+          background:rgb(255 255 255 / 94%);
+          border:1px solid var(--color-line);
+          border-radius:var(--radius-md);
+          box-shadow:var(--shadow-lift);
+          backdrop-filter:blur(14px);
+          animation:hotelos-enter var(--motion-med) var(--ease-out) both;
+        }
+        .cookie p{margin:0;color:var(--color-ink-soft);font-size:var(--text-small);font-weight:500;line-height:1.55}
+        .cookie a{font-weight:700;text-decoration:none}
+        .cookie a:hover{text-decoration:underline}
         .actions{display:flex;gap:var(--space-2);flex-wrap:wrap}
       `}</style>
     </aside>

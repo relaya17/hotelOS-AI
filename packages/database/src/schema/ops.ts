@@ -318,3 +318,40 @@ export const jobCandidates = sqliteTable(
     index("job_candidates_posting_idx").on(table.jobPostingId),
   ],
 );
+
+/** Guest outbound notifications (WhatsApp/SMS) — sync send on enqueue + optional cron drain. */
+export const notificationOutbox = sqliteTable(
+  "notification_outbox",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    bookingId: text("booking_id").references(() => bookings.id),
+    channel: text("channel").notNull(),
+    eventKey: text("event_key").notNull(),
+    toAddress: text("to_address"),
+    body: text("body").notNull(),
+    status: text("status").notNull(),
+    error: text("error"),
+    provider: text("provider").notNull(),
+    attemptCount: integer("attempt_count", { mode: "number" })
+      .notNull()
+      .default(0),
+    nextAttemptAt: text("next_attempt_at"),
+    createdAt: text("created_at").notNull(),
+    sentAt: text("sent_at"),
+  },
+  (table) => [
+    index("notification_outbox_tenant_idx").on(table.tenantId),
+    index("notification_outbox_hotel_idx").on(table.hotelId),
+    index("notification_outbox_booking_idx").on(table.bookingId),
+    index("notification_outbox_hotel_status_idx").on(
+      table.hotelId,
+      table.status,
+    ),
+  ],
+);

@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { dirname, normalize, resolve, sep } from "node:path";
+import { get, put } from "@vercel/blob";
 
 export type ObjectStorageBackend = "local" | "vercel_blob";
 
@@ -21,6 +22,16 @@ export type ObjectStorage = {
   get: (key: string) => Promise<Buffer | null>;
 };
 
+/** Injectable for unit tests (mock Vercel Blob without network). */
+export type BlobObjectClient = {
+  put: (
+    pathname: string,
+    bytes: Buffer,
+    contentType: string,
+  ) => Promise<{ readonly url?: string }>;
+  get: (pathname: string) => Promise<Buffer | null>;
+};
+
 function assertSafeKey(key: string): string {
   const normalized = normalize(key).replace(/^(\.\.(\/|\\|$))+/, "");
   if (
@@ -33,56 +44,62 @@ function assertSafeKey(key: string): string {
   return normalized.replace(/\\/g, "/");
 }
 
+async function streamToBuffer(
+  stream: ReadableStream<Uint8Array>,
+): Promise<Buffer> {
+  const arrayBuffer = await new Response(stream).arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
+export function createVercelBlobClient(token: string): BlobObjectClient {
+  const trimmed = token.trim();
+  if (trimmed.length === 0) {
+    throw new Error("BLOB_TOKEN_REQUIRED");
+  }
+
+  return {
+    async put(pathname, bytes, contentType) {
+      const result = await put(pathname, bytes, {
+        access: "private",
+        token: trimmed,
+        contentType,
+        allowOverwrite: true,
+      });
+      return { ...(result.url !== undefined ? { url: result.url } : {}) };
+    },
+    async get(pathname) {
+      const result = await get(pathname, {
+        access: "private",
+        token: trimmed,
+      });
+      if (!result || !result.stream) return null;
+      return streamToBuffer(result.stream);
+    },
+  };
+}
+
 export function createObjectStorage(input: {
   readonly root: string;
   readonly blobToken?: string;
+  readonly blobClient?: BlobObjectClient;
 }): ObjectStorage {
   const root = resolve(input.root);
   const blobToken = input.blobToken?.trim() ?? "";
+  const blobClient =
+    input.blobClient ??
+    (blobToken.length > 0 ? createVercelBlobClient(blobToken) : null);
 
-  if (blobToken.length > 0) {
+  if (blobClient) {
     return {
       backend: "vercel_blob",
       root,
       async put(key, bytes, contentType = "application/octet-stream") {
         const safeKey = assertSafeKey(key);
-        const response = await fetch(
-          `https://blob.vercel-storage.com/${encodeURIComponent(safeKey)}`,
-          {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${blobToken}`,
-              "Content-Type": contentType,
-              "x-api-version": "7",
-            },
-            body: new Uint8Array(bytes),
-          },
-        );
-        if (!response.ok) {
-          const text = await response.text();
-          throw new Error(`BLOB_PUT_FAILED:${response.status}:${text}`);
-        }
-        const json = (await response.json()) as { url?: string };
-        return { ...(json.url !== undefined ? { url: json.url } : {}) };
+        return blobClient.put(safeKey, bytes, contentType);
       },
       async get(key) {
         const safeKey = assertSafeKey(key);
-        const response = await fetch(
-          `https://blob.vercel-storage.com/${encodeURIComponent(safeKey)}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${blobToken}`,
-              "x-api-version": "7",
-            },
-          },
-        );
-        if (response.status === 404) return null;
-        if (!response.ok) {
-          throw new Error(`BLOB_GET_FAILED:${response.status}`);
-        }
-        const arrayBuffer = await response.arrayBuffer();
-        return Buffer.from(arrayBuffer);
+        return blobClient.get(safeKey);
       },
     };
   }

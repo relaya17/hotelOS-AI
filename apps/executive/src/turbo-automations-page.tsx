@@ -102,11 +102,11 @@ export function TurboAutomationsPage({ locale }: TurboAutomationsPageProps) {
         h1{margin:0;font-size:clamp(1.8rem,3vw,2.6rem)}
         .sub{margin:var(--space-2) 0 0;color:var(--color-ink-soft)}
         .rules{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-3)}
-        .rules li{display:flex;justify-content:space-between;gap:var(--space-3);align-items:center;padding:var(--space-4);background:rgb(255 250 242 / 92%);border:1px solid rgb(16 36 31 / 10%);border-radius:var(--radius-md);box-shadow:var(--shadow-soft)}
+        .rules li{display:flex;justify-content:space-between;gap:var(--space-3);align-items:center;padding:var(--space-4);background:var(--color-paper-elevated);border:1px solid var(--color-line);border-radius:var(--radius-md);box-shadow:var(--shadow-soft)}
         .rules h3{margin:0;font-family:var(--font-display);font-size:1.1rem}
         .rules p{margin:var(--space-1) 0 0;color:var(--color-ink-soft);font-size:var(--text-small)}
         .actions{display:flex;gap:var(--space-2);flex-shrink:0}
-        .card{background:rgb(255 250 242 / 92%);border:1px solid rgb(16 36 31 / 10%);border-radius:var(--radius-md);padding:var(--space-4)}
+        .card{background:var(--color-paper-elevated);border:1px solid var(--color-line);border-radius:var(--radius-md);padding:var(--space-4)}
         .runs{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-2)}
         .runs li{display:grid;gap:.15rem;padding:var(--space-2);border-radius:var(--radius-sm);background:var(--color-paper-elevated)}
         .runs span{font-size:var(--text-small);color:var(--color-ink-soft)}

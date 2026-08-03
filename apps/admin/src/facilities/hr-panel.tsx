@@ -641,6 +641,7 @@ export function HrPanel({ hotelId }: HrPanelProps) {
                           <label className="option">
                             <input
                               type="checkbox"
+                              aria-label={item.labelHe}
                               checked={checked}
                               disabled={lockedPass || approving}
                               onChange={() => toggleAck(item.id)}
@@ -692,17 +693,17 @@ export function HrPanel({ hotelId }: HrPanelProps) {
       <style>{`
         .hr-panel .stack{display:grid;gap:.75rem;max-width:28rem;margin-block:1rem}
         .hr-panel .hint{background:rgb(16 36 31 / 6%);padding:.75rem;border-radius:8px;word-break:break-all}
-        .hr-panel .draft-body{white-space:pre-wrap;font:inherit;background:rgb(255 250 242);padding:.75rem;border-radius:8px}
+        .hr-panel .draft-body{white-space:pre-wrap;font:inherit;background:var(--color-paper);padding:.75rem;border-radius:8px}
         .hr-panel .error{color:#8b1e1e}
         .hr-panel .option{display:flex;gap:.5rem;align-items:flex-start;margin-block:.25rem}
-        .hr-panel fieldset{border:1px solid rgb(16 36 31 / 12%);border-radius:8px;padding:.75rem}
+        .hr-panel fieldset{border:1px solid var(--color-line);border-radius:8px;padding:.75rem}
         .hr-panel .doc-actions{display:inline-flex;gap:.35rem;margin-inline-start:.5rem;margin-top:.5rem}
         .hr-panel .legal-gate{margin-top:.75rem;padding:1rem;border:1px dashed rgb(16 36 31 / 22%);border-radius:8px;display:grid;gap:.65rem;max-width:36rem}
         .hr-panel .legal-gate__title{margin:0;font-weight:700}
         .hr-panel .legal-items{list-style:none;padding:0;margin:0;display:grid;gap:.5rem}
         .hr-panel .muted{opacity:.75;font-size:.9rem}
         .hr-panel .chip{display:inline-block;margin-inline-start:.35rem;font-size:.75rem;font-weight:700;padding:.1rem .4rem;border-radius:999px}
-        .hr-panel .chip--pass{color:#0f6a5c;background:rgb(15 106 92 / 12%)}
+        .hr-panel .chip--pass{color:var(--color-sea-deep);background:var(--color-sea-soft)}
         .hr-panel .chip--fail{color:#9b2c2c;background:rgb(155 44 44 / 12%)}
         .hr-panel .chip--needs_ack{color:#8a5a12;background:rgb(138 90 18 / 12%)}
       `}</style>

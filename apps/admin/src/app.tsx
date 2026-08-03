@@ -101,69 +101,59 @@ export function App() {
 
   return (
     <div className="admin-root">
-      <SkipLink />
       {user ? (
         <>
-          <nav className="admin-nav" aria-label="Admin">
-            <button
-              type="button"
-              className={
-                view === "ops"
-                  ? "tab tab--on hotelos-touch-target"
-                  : "tab hotelos-touch-target"
-              }
-              onClick={() => setView("ops")}
+          <SkipLink />
+          <nav className="admin-nav hotelos-app-bar" aria-label="Admin">
+            <div className="admin-nav__brand">
+              <strong>HotelOS AI</strong>
+              <span>תפעול מלון</span>
+            </div>
+            <div
+              className="admin-nav__tabs hotelos-nav-scroll hotelos-seg"
+              role="tablist"
             >
-              חדרים והזמנות
-            </button>
-            <button
-              type="button"
-              className={
-                view === "facilities"
-                  ? "tab tab--on hotelos-touch-target"
-                  : "tab hotelos-touch-target"
-              }
-              onClick={() => setView("facilities")}
-            >
-              מחלקות ותפעול
-            </button>
-            <button
-              type="button"
-              className={
-                view === "kashrut"
-                  ? "tab tab--on hotelos-touch-target"
-                  : "tab hotelos-touch-target"
-              }
-              onClick={() => setView("kashrut")}
-            >
-              כשרות
-            </button>
-            <button
-              type="button"
-              className={
-                view === "attendance"
-                  ? "tab tab--on hotelos-touch-target"
-                  : "tab hotelos-touch-target"
-              }
-              onClick={() => setView("attendance")}
-            >
-              נוכחות מהטלפון
-            </button>
-            <a className="link" href={APP_URLS.executive}>
-              Executive
-            </a>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                void logout().then(() => {
-                  setUser(null);
-                  setView("ops");
-                });
-              }}
-            >
-              התנתקות
-            </Button>
+              {(
+                [
+                  ["ops", "חדרים והזמנות"],
+                  ["facilities", "מחלקות ותפעול"],
+                  ["kashrut", "כשרות"],
+                  ["attendance", "נוכחות מהטלפון"],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === key}
+                  className={
+                    view === key
+                      ? "hotelos-seg__item hotelos-seg__item--on hotelos-touch-target"
+                      : "hotelos-seg__item hotelos-touch-target"
+                  }
+                  onClick={() => setView(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="admin-nav__actions">
+              <a className="link" href={APP_URLS.executive}>
+                Executive
+              </a>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  void logout().then(() => {
+                    setUser(null);
+                    setView("ops");
+                  });
+                }}
+              >
+                התנתקות
+              </Button>
+            </div>
           </nav>
           {view === "ops" ? <DashboardPage user={user} /> : null}
           {view === "facilities" ? (
@@ -213,11 +203,27 @@ export function App() {
         }}
       />
       <style>{`
-        .admin-nav{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;padding:var(--space-3) clamp(1rem,3vw,2rem);border-bottom:1px solid rgb(16 36 31 / 10%);background:rgb(255 250 242 / 80%)}
-        .tab{border:1px solid rgb(16 36 31 / 14%);background:transparent;border-radius:var(--radius-sm);padding:.55rem .9rem;font:inherit;cursor:pointer;font-weight:600}
-        .tab--on{background:var(--color-sea-deep);color:#fff;border-color:transparent}
-        .link{margin-inline-start:auto;color:var(--color-sea-deep);font-weight:600}
-        .attendance-wrap,.facilities-wrap,.kashrut-wrap{padding:clamp(1rem,3vw,2rem)}
+        .admin-root{min-height:100vh}
+        .admin-nav{display:grid;grid-template-columns:auto 1fr auto;gap:var(--space-3);align-items:center;padding:var(--space-3) clamp(1rem,3vw,2rem);min-width:0}
+        .admin-nav__brand{display:grid;gap:.15rem;min-width:0}
+        .admin-nav__brand strong{font-family:var(--font-display);font-size:1.3rem;letter-spacing:var(--tracking-display);line-height:1.1}
+        .admin-nav__brand span{font-size:var(--text-micro);font-weight:600;color:var(--color-ink-faint);letter-spacing:.04em}
+        .admin-nav__tabs{justify-self:center;max-width:100%;min-width:0}
+        .admin-nav__actions{display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap;justify-content:flex-end}
+        .link{color:var(--color-sea-deep);font-weight:600;white-space:nowrap;font-size:var(--text-small);text-decoration:none}
+        .link:hover{text-decoration:underline}
+        .attendance-wrap,.facilities-wrap,.kashrut-wrap{
+          width:min(100%,var(--content-max));
+          margin-inline:auto;
+          padding:var(--space-page);
+          min-width:0;
+          animation:hotelos-enter var(--motion-med) var(--ease-out) both;
+        }
+        @media (max-width:900px){
+          .admin-nav{grid-template-columns:1fr;gap:var(--space-2);padding:var(--space-2) var(--space-3)}
+          .admin-nav__tabs{justify-self:stretch;width:100%}
+          .admin-nav__actions{justify-content:flex-start}
+        }
       `}</style>
     </div>
   );

@@ -124,12 +124,16 @@ export function FacilitiesPage() {
         </p>
       ) : null}
 
-      <nav className="facilities__tabs" aria-label="מחלקות תפעול">
+      <nav className="facilities__tabs hotelos-seg" aria-label="מחלקות תפעול">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
-            className={view === tab.key ? "tab tab--on" : "tab"}
+            className={
+              view === tab.key
+                ? "hotelos-seg__item hotelos-seg__item--on"
+                : "hotelos-seg__item"
+            }
             onClick={() => setView(tab.key)}
           >
             {tab.label}
@@ -172,18 +176,16 @@ export function FacilitiesPage() {
       ) : null}
 
       <style>{`
-        .facilities { display:grid; gap:var(--space-4); }
+        .facilities { display:grid; gap:var(--space-4); animation:hotelos-enter var(--motion-med) var(--ease-out) both; }
         .facilities__header { display:flex; justify-content:space-between; gap:var(--space-4); align-items:flex-end; flex-wrap:wrap; }
-        .eyebrow { margin:0 0 var(--space-2); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
-        h1 { font-size:var(--text-display); margin:0; }
+        .eyebrow { margin:0 0 var(--space-2); font-family:var(--font-body); letter-spacing:var(--tracking-label); text-transform:uppercase; font-size:var(--text-micro); color:var(--color-sea-deep); font-weight:700; }
+        h1 { font-size:clamp(1.7rem,3vw,2.3rem); }
         .select-field { display:grid; gap:var(--space-2); }
         .select-field span { font-size:var(--text-small); font-weight:600; color:var(--color-ink-soft); }
-        .select-field select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.65rem .85rem; background:var(--color-paper-elevated); }
-        .facilities__tabs { display:flex; flex-wrap:wrap; gap:var(--space-2); }
-        .tab { border:1px solid rgb(16 36 31 / 14%); background:transparent; border-radius:var(--radius-sm); padding:.55rem .9rem; font:inherit; cursor:pointer; font-weight:600; }
-        .tab--on { background:var(--color-sea-deep); color:#fff; border-color:transparent; }
-        .facilities__content { display:grid; }
-        .state { margin:0; color:var(--color-ink-soft); }
+        .select-field select { font:inherit; border:1px solid var(--color-line-strong); border-radius:var(--radius-sm); padding:.65rem .85rem; background:#fff; min-height:2.6rem; }
+        .facilities__tabs { flex-wrap:wrap; width:fit-content; max-width:100%; }
+        .facilities__content { display:grid; min-width:0; }
+        .state { margin:0; color:var(--color-ink-soft); font-weight:500; }
         .state--error { color:var(--color-danger); }
       `}</style>
     </div>

@@ -101,9 +101,12 @@ export const bookings = sqliteTable(
       .references(() => rooms.id),
     guestName: text("guest_name").notNull(),
     guestEmail: text("guest_email").notNull(),
+    guestPhone: text("guest_phone"),
     checkInDate: text("check_in_date").notNull(),
     checkOutDate: text("check_out_date").notNull(),
     status: text("status").notNull(),
+    /** Waiting-guest room prep: waiting | cleaning | ready | invited */
+    roomPrepStatus: text("room_prep_status"),
     createdAt: text("created_at").notNull(),
   },
   (table) => [
@@ -111,6 +114,10 @@ export const bookings = sqliteTable(
     index("bookings_tenant_idx").on(table.tenantId),
     index("bookings_room_idx").on(table.roomId),
     index("bookings_hotel_status_idx").on(table.hotelId, table.status),
+    index("bookings_hotel_room_prep_idx").on(
+      table.hotelId,
+      table.roomPrepStatus,
+    ),
   ],
 );
 

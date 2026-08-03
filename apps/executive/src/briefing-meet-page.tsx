@@ -346,7 +346,9 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
           {playbackUrl !== undefined ? (
             <div className="playback">
               <h3>ניגון הקלטה שמורה</h3>
-              <video src={playbackUrl} controls playsInline />
+              <video src={playbackUrl} controls playsInline>
+                <track kind="captions" label="עברית" srcLang="he" default />
+              </video>
             </div>
           ) : null}
         </section>
@@ -490,13 +492,13 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
         .playback h3 { margin:0; font-size:1rem; }
         .playback video { width:100%; max-height:240px; border-radius:var(--radius-sm); background:#000; }
         .rail { display:grid; gap:var(--space-3); }
-        .panel { background:rgb(255 250 242 / 92%); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-md); padding:var(--space-4); box-shadow:var(--shadow-soft); }
+        .panel { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:var(--radius-md); padding:var(--space-4); box-shadow:var(--shadow-soft); }
         .panel h2 { margin:0 0 var(--space-2); font-size:1.15rem; }
         .hint { margin:0 0 var(--space-3); color:var(--color-ink-soft); font-size:var(--text-small); }
         .stack { display:grid; gap:var(--space-3); }
         .select-field { display:grid; gap:var(--space-2); }
         .select-field span { font-size:var(--text-small); font-weight:600; color:var(--color-ink-soft); }
-        .select-field select { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); }
+        .select-field select { font:inherit; border:1px solid var(--color-line-strong); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); }
         .recs { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-2); }
         .recs li { display:flex; justify-content:space-between; gap:var(--space-2); align-items:start; padding:var(--space-3); border-radius:var(--radius-sm); background:var(--color-paper-elevated); border:1px solid rgb(16 36 31 / 8%); }
         .recs li > div { display:grid; gap:.2rem; }

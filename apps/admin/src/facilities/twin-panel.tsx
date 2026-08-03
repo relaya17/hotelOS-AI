@@ -41,14 +41,16 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
 
   if (loading) return <p>טוען Digital Twin…</p>;
 
+  const reservations = twin?.pms?.reservations ?? [];
+
   return (
     <section>
       <h2>Digital Twin · חדרים</h2>
       <p className="muted">
-        מיזוג מצב HotelOS עם מחבר PMS דמו (קריאה בלבד).
+        מיזוג מצב HotelOS עם מחבר PMS (קריאה בלבד — demo / Mews / Opera stub).
       </p>
       <Button type="button" onClick={() => void onSync()}>
-        סנכרון PMS דמו
+        סנכרון PMS
       </Button>
       {note ? <p className="hint">{note}</p> : null}
       {error ? <p className="error">{error}</p> : null}
@@ -67,6 +69,24 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
               </li>
             ))}
           </ul>
+          {reservations.length > 0 ? (
+            <>
+              <h3>הזמנות PMS אחרונות</h3>
+              <ul>
+                {reservations.slice(0, 12).map((reservation) => (
+                  <li key={reservation.externalReservationId}>
+                    {reservation.externalReservationId}
+                    {" · "}
+                    חדר {reservation.roomNumber ?? "—"}
+                    {" · "}
+                    {reservation.checkInDate}→{reservation.checkOutDate}
+                    {" · "}
+                    {reservation.status}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </>
       ) : null}
       <style>{`

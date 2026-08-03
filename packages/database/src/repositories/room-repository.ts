@@ -1,8 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { HotelId, RoomId, TenantId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
 import type { HotelOsDb } from "../client.js";
-import { hotels, rooms } from "../schema/tenancy.js";
+import { bookings, hotels, rooms } from "../schema/tenancy.js";
 
 export type RoomStatus = "vacant" | "occupied" | "dirty" | "maintenance";
 
@@ -134,6 +134,34 @@ export function createRoomRepository(db: HotelOsDb): RoomRepository {
           ),
         )
         .run();
+
+      if (status === "dirty") {
+        await db
+          .update(bookings)
+          .set({ roomPrepStatus: "cleaning" })
+          .where(
+            and(
+              eq(bookings.tenantId, tenantId),
+              eq(bookings.hotelId, hotelId),
+              eq(bookings.roomId, roomId),
+              eq(bookings.roomPrepStatus, "waiting"),
+            ),
+          )
+          .run();
+      } else if (status === "vacant") {
+        await db
+          .update(bookings)
+          .set({ roomPrepStatus: "ready" })
+          .where(
+            and(
+              eq(bookings.tenantId, tenantId),
+              eq(bookings.hotelId, hotelId),
+              eq(bookings.roomId, roomId),
+              inArray(bookings.roomPrepStatus, ["waiting", "cleaning"]),
+            ),
+          )
+          .run();
+      }
 
       return {
         id: Ids.room(existing.id),

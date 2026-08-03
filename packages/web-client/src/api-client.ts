@@ -141,15 +141,23 @@ export type RoomDto = {
   readonly status: "vacant" | "occupied" | "dirty" | "maintenance";
 };
 
+export type RoomPrepStatusDto =
+  | "waiting"
+  | "cleaning"
+  | "ready"
+  | "invited";
+
 export type BookingDto = {
   readonly id: string;
   readonly roomId: string;
   readonly roomNumber: string;
   readonly guestName: string;
   readonly guestEmail: string;
+  readonly guestPhone: string | null;
   readonly checkInDate: string;
   readonly checkOutDate: string;
   readonly status: "confirmed" | "checked_in" | "checked_out" | "cancelled";
+  readonly roomPrepStatus: RoomPrepStatusDto | null;
 };
 
 export type HotelOverviewDto = {
@@ -185,9 +193,31 @@ export type GuestStayDto = {
   readonly hotelName: string;
   readonly roomNumber: string;
   readonly guestName: string;
+  readonly guestPhone: string | null;
   readonly checkInDate: string;
   readonly checkOutDate: string;
   readonly status: string;
+  readonly roomPrepStatus: RoomPrepStatusDto | null;
+  readonly roomStatus: string;
+};
+
+export type GuestFolioDto = {
+  readonly status: "estimate";
+  readonly checkInDate: string;
+  readonly checkOutDate: string;
+  readonly roomNumber: string;
+  readonly roomType: string | null;
+  readonly nights: number;
+  readonly currency: string;
+  readonly lines: readonly {
+    readonly label: string;
+    readonly amount: number;
+  }[];
+  readonly subtotal: number;
+  readonly tax: number;
+  readonly total: number;
+  readonly paid: number;
+  readonly balanceDue: number;
 };
 
 export type AgentDto = {
@@ -528,6 +558,49 @@ export async function updateBookingTransition(
   return body.data;
 }
 
+export type GuestNotificationDto = {
+  readonly id: string;
+  readonly channel: string;
+  readonly eventKey: string;
+  readonly toAddress: string | null;
+  readonly body: string;
+  readonly status: string;
+  readonly error: string | null;
+  readonly provider: string;
+  readonly attemptCount?: number;
+  readonly nextAttemptAt?: string | null;
+  readonly createdAt: string;
+  readonly sentAt: string | null;
+};
+
+export async function listHotelNotifications(
+  hotelId: string,
+): Promise<readonly GuestNotificationDto[]> {
+  const payload = (await authGet(`/v1/hotels/${hotelId}/notifications`)) as {
+    data: GuestNotificationDto[];
+  };
+  return payload.data;
+}
+
+export type BookingRoomPrepDto = BookingDto & {
+  readonly notification: GuestNotificationDto | null;
+};
+
+export async function updateBookingRoomPrep(
+  hotelId: string,
+  bookingId: string,
+  status: "waiting" | "invited",
+): Promise<BookingRoomPrepDto> {
+  const payload = (await authPatch(
+    `/v1/hotels/${hotelId}/bookings/${bookingId}/room-prep`,
+    { status },
+  )) as { data?: BookingRoomPrepDto };
+  if (!payload.data) {
+    throw new Error("Invalid room prep response");
+  }
+  return payload.data;
+}
+
 export async function lookupGuestStay(email: string): Promise<readonly GuestStayDto[]> {
   const response = await fetch(`${getApiBase()}/v1/public/stays/lookup`, {
     method: "POST",
@@ -541,6 +614,26 @@ export async function lookupGuestStay(email: string): Promise<readonly GuestStay
   const body = payload as { data?: GuestStayDto[] };
   if (!Array.isArray(body.data)) {
     throw new Error("Invalid lookup response");
+  }
+  return body.data;
+}
+
+export async function fetchGuestFolio(input: {
+  readonly email: string;
+  readonly bookingId: string;
+}): Promise<GuestFolioDto> {
+  const response = await fetch(`${getApiBase()}/v1/public/stays/folio`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Folio request failed"));
+  }
+  const body = payload as { data?: GuestFolioDto };
+  if (!body.data || !Array.isArray(body.data.lines)) {
+    throw new Error("Invalid folio response");
   }
   return body.data;
 }
@@ -561,6 +654,26 @@ export async function checkInGuestStay(input: {
   const body = payload as { data?: GuestStayDto };
   if (!body.data) {
     throw new Error("Invalid check-in response");
+  }
+  return body.data;
+}
+
+export async function checkOutGuestStay(input: {
+  readonly email: string;
+  readonly bookingId: string;
+}): Promise<GuestStayDto> {
+  const response = await fetch(`${getApiBase()}/v1/public/stays/check-out`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Check-out failed"));
+  }
+  const body = payload as { data?: GuestStayDto };
+  if (!body.data) {
+    throw new Error("Invalid check-out response");
   }
   return body.data;
 }
@@ -1598,6 +1711,37 @@ export async function submitGuestFeedback(input: {
     throw new Error(toErrorMessage(payload, "Feedback submission failed"));
   }
   return (payload as { data: GuestFeedbackDto }).data;
+}
+
+export async function submitGuestServiceRequest(input: {
+  readonly email: string;
+  readonly bookingId: string;
+  readonly serviceType: "towels" | "cleaning" | "amenities";
+  readonly note?: string;
+}): Promise<{
+  readonly taskId: string;
+  readonly serviceType: string;
+  readonly status: string;
+}> {
+  const response = await fetch(
+    `${getApiBase()}/v1/public/stays/service-request`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Service request failed"));
+  }
+  const body = payload as {
+    data?: { taskId: string; serviceType: string; status: string };
+  };
+  if (!body.data) {
+    throw new Error("Invalid service request response");
+  }
+  return body.data;
 }
 
 export async function listJobPostings(
@@ -2819,6 +2963,13 @@ export type HotelTwinDto = {
     readonly externalHotelId: string;
     readonly fetchedAt: string;
     readonly reservationCount: number;
+    readonly reservations: readonly {
+      readonly externalReservationId: string;
+      readonly roomNumber: string | null;
+      readonly checkInDate: string;
+      readonly checkOutDate: string;
+      readonly status: string;
+    }[];
   };
 };
 

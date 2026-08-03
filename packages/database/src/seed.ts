@@ -102,6 +102,11 @@ export async function seedDemoTenant(
     { id: "70000000-0000-4000-8000-000000000501", number: "501", floor: "5", roomType: "suite", status: "dirty" },
   ]);
 
+  const today = now.slice(0, 10);
+  const dayAfter = new Date(`${today}T12:00:00.000Z`);
+  dayAfter.setUTCDate(dayAfter.getUTCDate() + 2);
+  const dayAfterIso = dayAfter.toISOString().slice(0, 10);
+
   await ensureDemoBookings(db, now, [
     {
       id: "80000000-0000-4000-8000-000000000001",
@@ -132,6 +137,18 @@ export async function seedDemoTenant(
       checkInDate: "2026-07-15",
       checkOutDate: "2026-07-18",
       status: "checked_in",
+    },
+    {
+      id: "80000000-0000-4000-8000-000000000004",
+      hotelId: DEMO_HOTEL_TLV_ID,
+      roomId: "70000000-0000-4000-8000-000000000102",
+      guestName: "יוסי מזרחי",
+      guestEmail: "yossi@example.com",
+      guestPhone: "050-1234567",
+      checkInDate: today,
+      checkOutDate: dayAfterIso,
+      status: "confirmed",
+      roomPrepStatus: "waiting",
     },
   ]);
 
@@ -289,9 +306,11 @@ async function ensureDemoBookings(
     roomId: string;
     guestName: string;
     guestEmail: string;
+    guestPhone?: string;
     checkInDate: string;
     checkOutDate: string;
     status: string;
+    roomPrepStatus?: string;
   }[],
 ): Promise<void> {
   for (const item of items) {
@@ -311,9 +330,11 @@ async function ensureDemoBookings(
         roomId: item.roomId,
         guestName: item.guestName,
         guestEmail: item.guestEmail,
+        guestPhone: item.guestPhone ?? null,
         checkInDate: item.checkInDate,
         checkOutDate: item.checkOutDate,
         status: item.status,
+        roomPrepStatus: item.roomPrepStatus ?? null,
         createdAt,
       })
       .run();

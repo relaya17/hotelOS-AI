@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { Button } from "@hotelos/ui";
 import {
   listBookings,
+  listHotelNotifications,
   suggestAutonomyTodaysArrivals,
+  updateBookingRoomPrep,
   type BookingDto,
+  type GuestNotificationDto,
+  type RoomPrepStatusDto,
 } from "@hotelos/web-client";
 
 export type ReceptionPanelProps = {
@@ -14,21 +18,41 @@ function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+const prepLabel: Record<RoomPrepStatusDto, string> = {
+  waiting: "ממתין",
+  cleaning: "מנקים",
+  ready: "מוכן",
+  invited: "מוזמן",
+};
+
+function truncateAt(value: string, max: number): string {
+  if (value.length <= max) return value;
+  return `${value.slice(0, max)}…`;
+}
+
 export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
   const [bookings, setBookings] = useState<readonly BookingDto[]>([]);
+  const [notifications, setNotifications] = useState<
+    readonly GuestNotificationDto[]
+  >([]);
   const [checkInDate, setCheckInDate] = useState(todayUtc);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
   const [suggesting, setSuggesting] = useState(false);
+  const [actingId, setActingId] = useState<string | undefined>();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 
   async function reload() {
     setLoading(true);
     setError(undefined);
     try {
-      const data = await listBookings(hotelId);
+      const [data, notificationList] = await Promise.all([
+        listBookings(hotelId),
+        listHotelNotifications(hotelId),
+      ]);
       setBookings(data);
+      setNotifications(notificationList);
       setSelected((prev) => {
         const arrivalIds = new Set(
           data
@@ -55,6 +79,11 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
   const arrivals = bookings.filter(
     (booking) =>
       booking.status === "confirmed" && booking.checkInDate === checkInDate,
+  );
+
+  const waitingQueue = bookings.filter(
+    (booking) =>
+      booking.status === "confirmed" && booking.roomPrepStatus !== null,
   );
 
   function toggleBooking(bookingId: string) {
@@ -96,6 +125,41 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
     }
   }
 
+  async function onRoomPrep(
+    bookingId: string,
+    status: "waiting" | "invited",
+  ) {
+    setActingId(bookingId);
+    setError(undefined);
+    try {
+      const updated = await updateBookingRoomPrep(hotelId, bookingId, status);
+      if (status === "waiting") {
+        setNotice("האורח סומן כממתין לחדר");
+      } else if (updated.notification?.status === "sent") {
+        setNotice(
+          `האורח הוזמן · הודעה נשלחה ל־${updated.notification.toAddress ?? "טלפון"}`,
+        );
+      } else if (updated.notification?.status === "skipped") {
+        setNotice("האורח הוזמן · אין טלפון — לא נשלחה הודעה");
+      } else if (updated.notification?.status === "failed") {
+        setNotice(
+          `האורח הוזמן · שליחת WhatsApp נכשלה (${updated.notification.error ?? "שגיאה"}). ניסיון חוזר אוטומטי בקרוב.`,
+        );
+      } else if (updated.notification?.status === "pending") {
+        setNotice("האורח הוזמן · ההודעה ממתינה לשליחה");
+      } else {
+        setNotice("האורח הוזמן לחדר");
+      }
+      await reload();
+    } catch (prepError) {
+      setError(
+        prepError instanceof Error ? prepError.message : "עדכון הכנת חדר נכשל",
+      );
+    } finally {
+      setActingId(undefined);
+    }
+  }
+
   return (
     <div className="panel">
       {loading ? <p className="state">טוען…</p> : null}
@@ -109,6 +173,66 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
           {notice}
         </p>
       ) : null}
+
+      <section className="card" aria-labelledby="waiting-title">
+        <h2 id="waiting-title">ממתינים לחדר</h2>
+        <p className="hint">מעקב קצר: ממתין → מנקים → מוכן → הזמן.</p>
+        {waitingQueue.length === 0 ? (
+          <p className="hint">אין ממתינים כרגע.</p>
+        ) : (
+          <ul className="list">
+            {waitingQueue.map((booking) => {
+              const prep = booking.roomPrepStatus;
+              return (
+                <li key={booking.id} className="wait-row">
+                  <div>
+                    <strong>{booking.guestName}</strong>
+                    <span className="muted">
+                      {" "}
+                      · חדר {booking.roomNumber}
+                      {prep ? ` · ${prepLabel[prep]}` : ""}
+                    </span>
+                  </div>
+                  {prep === "ready" ? (
+                    <Button
+                      type="button"
+                      disabled={actingId === booking.id}
+                      onClick={() => void onRoomPrep(booking.id, "invited")}
+                    >
+                      {actingId === booking.id ? "מעדכן…" : "הזמן לחדר"}
+                    </Button>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="card" aria-labelledby="guest-notifications-title">
+        <h2 id="guest-notifications-title">הודעות אורחים</h2>
+        {notifications.length === 0 ? (
+          <p className="hint">אין הודעות עדיין.</p>
+        ) : (
+          <ul className="list notify-list">
+            {notifications.slice(0, 12).map((item) => (
+              <li key={item.id} className="notify-row">
+                <span className="notify-status">{item.status}</span>
+                <span className="muted">
+                  {item.toAddress ?? "—"}
+                  {item.attemptCount
+                    ? ` · ניסיון ${item.attemptCount}`
+                    : ""}
+                  {item.error ? ` · ${truncateAt(item.error, 40)}` : ""}
+                </span>
+                <time dateTime={item.createdAt} className="muted">
+                  {truncateAt(item.createdAt.replace("T", " "), 16)}
+                </time>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="card">
         <h2>קבלה · הכנת הגעות</h2>
@@ -132,10 +256,11 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
           <>
             <ul className="list">
               {arrivals.map((booking) => (
-                <li key={booking.id}>
+                <li key={booking.id} className="arrival-item">
                   <label className="row">
                     <input
                       type="checkbox"
+                      aria-label={`${booking.guestName}, חדר ${booking.roomNumber}`}
                       checked={selected.has(booking.id)}
                       onChange={() => toggleBooking(booking.id)}
                     />
@@ -144,9 +269,22 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
                       <span className="muted">
                         {" "}
                         · חדר {booking.roomNumber} · עד {booking.checkOutDate}
+                        {booking.roomPrepStatus
+                          ? ` · ${prepLabel[booking.roomPrepStatus]}`
+                          : ""}
                       </span>
                     </span>
                   </label>
+                  {!booking.roomPrepStatus ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={actingId === booking.id}
+                      onClick={() => void onRoomPrep(booking.id, "waiting")}
+                    >
+                      {actingId === booking.id ? "מעדכן…" : "ממתין"}
+                    </Button>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -164,17 +302,21 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
       </section>
 
       <style>{`
-        .panel{display:grid;gap:1rem}
-        .card{display:grid;gap:.75rem;border:1px solid rgb(16 36 31 / 12%);border-radius:8px;padding:1rem;background:rgb(255 250 242 / 55%)}
-        .card h2{margin:0;font-family:var(--font-display)}
-        .hint{margin:0;opacity:.78;font-size:.92rem}
-        .muted{opacity:.75}
-        .date-field{display:grid;gap:.25rem;font-size:.9rem;max-width:14rem}
-        .date-field input{font:inherit;padding:.4rem .5rem}
-        .list{list-style:none;padding:0;margin:0;display:grid;gap:.5rem}
-        .row{display:flex;gap:.6rem;align-items:flex-start}
-        .state--error{color:#8b1e1e}
-        .state--ok{color:#1a5c45}
+        .panel{display:grid;gap:var(--space-4)}
+        .card{display:grid;gap:var(--space-3);border:1px solid var(--color-line);border-radius:var(--radius-md);padding:var(--space-4);background:var(--color-paper-elevated);box-shadow:var(--shadow-soft)}
+        .card h2{margin:0;font-size:1.15rem}
+        .hint{margin:0;color:var(--color-ink-soft);font-size:var(--text-small);font-weight:500}
+        .muted{color:var(--color-ink-soft);font-weight:500}
+        .date-field{display:grid;gap:var(--space-2);font-size:var(--text-small);font-weight:600;color:var(--color-ink-soft);max-width:14rem}
+        .date-field input{font:inherit;padding:.55rem .7rem;border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);background:#fff}
+        .list{list-style:none;padding:0;margin:0;display:grid;gap:var(--space-2)}
+        .row{display:flex;gap:var(--space-2);align-items:flex-start}
+        .wait-row,.arrival-item{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;justify-content:space-between;padding:var(--space-3);border:1px solid var(--color-line);border-radius:var(--radius-sm);background:#fff}
+        .notify-list{gap:.35rem}
+        .notify-row{display:grid;grid-template-columns:auto 1fr auto;gap:.4rem .75rem;align-items:baseline;font-size:var(--text-small)}
+        .notify-status{font-weight:700}
+        .state--error{color:var(--color-danger)}
+        .state--ok{color:var(--color-sea-deep);font-weight:600}
       `}</style>
     </div>
   );

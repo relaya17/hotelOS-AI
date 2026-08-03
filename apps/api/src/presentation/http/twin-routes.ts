@@ -81,7 +81,9 @@ export function createTwinRoutes(deps: TwinRouteDeps): Hono<{
             providerId: inventory.providerId,
             mode: "read_merge_only",
             noteHe:
-              "סנכרון דמו בלבד — לא כותב חזרה ל־PMS ולא משנה סטטוסי חדר ב־HotelOS ללא אישור.",
+              inventory.providerId === "mews"
+                ? "סנכרון קריאה מ־Mews — מיזוג ל־Digital Twin בלבד, ללא כתיבה חזרה וללא שינוי סטטוס ב־HotelOS."
+                : "סנכרון דמו/stub — לא כותב חזרה ל־PMS ולא משנה סטטוסי חדר ב־HotelOS ללא אישור.",
           },
         },
       });

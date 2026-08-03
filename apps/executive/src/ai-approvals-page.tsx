@@ -243,19 +243,19 @@ export function AiApprovalsPage() {
         })}
       </ul>
       <style>{`
-        .approvals-page{display:grid;gap:1rem;max-width:42rem}
-        .approvals-page h1,.approvals-page h2{font-family:var(--font-display);margin:0}
-        .list{list-style:none;padding:0;display:grid;gap:1rem;margin:0}
-        .list li{border:1px solid rgb(16 36 31 / 12%);border-radius:8px;padding:1rem;background:rgb(255 250 242 / 55%);display:grid;gap:.5rem}
-        .row{display:flex;gap:.5rem}
-        .muted{opacity:.75;margin:.35rem 0}
-        .error{color:#8b1e1e}
-        .notice{color:#1a5c45;background:rgb(26 92 69 / 8%);padding:.75rem;border-radius:8px}
-        .suggest{display:grid;gap:.65rem;border:1px dashed rgb(16 36 31 / 22%);padding:1rem;border-radius:8px}
-        .suggest label{display:grid;gap:.25rem;font-size:.9rem}
-        .suggest input,.suggest select,.suggest textarea{font:inherit;padding:.45rem .55rem}
-        .kashrut-gate{border:1px dashed rgb(16 36 31 / 22%);padding:.75rem;border-radius:8px;display:grid;gap:.4rem}
-        .ack{display:flex;gap:.5rem;align-items:flex-start;font-size:.9rem}
+        .approvals-page{display:grid;gap:var(--space-4);max-width:42rem;animation:hotelos-enter var(--motion-med) var(--ease-out) both}
+        .approvals-page h1,.approvals-page h2{margin:0}
+        .list{list-style:none;padding:0;display:grid;gap:var(--space-3);margin:0}
+        .list li{border:1px solid var(--color-line);border-radius:var(--radius-md);padding:var(--space-4);background:var(--color-paper-elevated);display:grid;gap:var(--space-2);box-shadow:var(--shadow-soft)}
+        .row{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+        .muted{margin:.35rem 0;color:var(--color-ink-soft);font-weight:500}
+        .error{color:var(--color-danger)}
+        .notice{color:var(--color-sea-deep);background:var(--color-sea-soft);padding:var(--space-3);border-radius:var(--radius-sm);border:1px solid rgb(14 107 92 / 16%);font-weight:500}
+        .suggest{display:grid;gap:var(--space-3);border:1px dashed var(--color-line-strong);padding:var(--space-4);border-radius:var(--radius-md);background:rgb(12 31 26 / 2%)}
+        .suggest label{display:grid;gap:.25rem;font-size:var(--text-small);font-weight:600;color:var(--color-ink-soft)}
+        .suggest input,.suggest select,.suggest textarea{font:inherit;padding:.55rem .7rem;border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);background:#fff}
+        .kashrut-gate{border:1px dashed var(--color-line-strong);padding:var(--space-3);border-radius:var(--radius-md);display:grid;gap:var(--space-2);background:rgb(12 31 26 / 2%)}
+        .ack{display:flex;gap:var(--space-2);align-items:flex-start;font-size:var(--text-small)}
       `}</style>
     </section>
   );

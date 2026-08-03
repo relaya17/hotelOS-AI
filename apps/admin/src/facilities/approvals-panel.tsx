@@ -213,12 +213,12 @@ export function ApprovalsPanel() {
       </ul>
       <style>{`
         .approvals{list-style:none;padding:0;display:grid;gap:1rem}
-        .approvals li{border:1px solid rgb(16 36 31 / 12%);border-radius:8px;padding:1rem;display:grid;gap:.5rem}
+        .approvals li{border:1px solid var(--color-line);border-radius:8px;padding:1rem;display:grid;gap:.5rem}
         .row{display:flex;gap:.5rem}
         .muted{opacity:.75}
         .error{color:#8b1e1e}
         .notice{color:#1a5c45;background:rgb(26 92 69 / 8%);padding:.65rem;border-radius:8px}
-        .kashrut-gate{border:1px dashed rgb(16 36 31 / 22%);border-radius:8px;padding:.75rem;display:grid;gap:.4rem;background:rgb(255 250 242 / 55%)}
+        .kashrut-gate{border:1px dashed rgb(16 36 31 / 22%);border-radius:8px;padding:.75rem;display:grid;gap:.4rem;background:var(--color-paper-elevated)}
         .ack{display:flex;gap:.5rem;align-items:flex-start;font-size:.9rem}
       `}</style>
     </section>

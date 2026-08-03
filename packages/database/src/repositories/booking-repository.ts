@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { BookingId, HotelId, RoomId, TenantId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
 import type { HotelOsDb } from "../client.js";
@@ -10,6 +10,8 @@ export type BookingStatus =
   | "checked_out"
   | "cancelled";
 
+export type RoomPrepStatus = "waiting" | "cleaning" | "ready" | "invited";
+
 export type PersistedBooking = {
   readonly id: BookingId;
   readonly tenantId: TenantId;
@@ -17,17 +19,33 @@ export type PersistedBooking = {
   readonly roomId: RoomId;
   readonly guestName: string;
   readonly guestEmail: string;
+  readonly guestPhone: string | null;
   readonly checkInDate: string;
   readonly checkOutDate: string;
   readonly status: BookingStatus;
+  readonly roomPrepStatus: RoomPrepStatus | null;
   readonly roomNumber: string;
 };
+
+export type RoomPrepAction = "waiting" | "invited";
+
+export type RoomPrepError =
+  | "BOOKING_NOT_FOUND"
+  | "INVALID_STATUS"
+  | "INVALID_TRANSITION";
 
 const bookingStatuses: readonly BookingStatus[] = [
   "confirmed",
   "checked_in",
   "checked_out",
   "cancelled",
+];
+
+const roomPrepStatuses: readonly RoomPrepStatus[] = [
+  "waiting",
+  "cleaning",
+  "ready",
+  "invited",
 ];
 
 function asBookingStatus(value: string): BookingStatus {
@@ -37,6 +55,16 @@ function asBookingStatus(value: string): BookingStatus {
   throw new Error("INVALID_BOOKING_STATUS");
 }
 
+function asRoomPrepStatus(value: string | null): RoomPrepStatus | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if ((roomPrepStatuses as readonly string[]).includes(value)) {
+    return value as RoomPrepStatus;
+  }
+  return null;
+}
+
 export type CreateBookingInput = {
   readonly id: BookingId;
   readonly tenantId: TenantId;
@@ -44,9 +72,11 @@ export type CreateBookingInput = {
   readonly roomId: RoomId;
   readonly guestName: string;
   readonly guestEmail: string;
+  readonly guestPhone?: string | null;
   readonly checkInDate: string;
   readonly checkOutDate: string;
   readonly status: BookingStatus;
+  readonly roomPrepStatus?: RoomPrepStatus | null;
   readonly createdAt: string;
 };
 
@@ -67,6 +97,25 @@ export type BookingRepository = {
     bookingId: BookingId,
     status: BookingStatus,
   ) => Promise<PersistedBooking | null>;
+  setRoomPrep: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    bookingId: BookingId,
+    action: RoomPrepAction,
+  ) => Promise<
+    | { readonly ok: true; readonly booking: PersistedBooking }
+    | { readonly ok: false; readonly reason: RoomPrepError }
+  >;
+  advanceRoomPrepForDirtyRoom: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    roomId: RoomId,
+  ) => Promise<void>;
+  advanceRoomPrepForVacantRoom: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    roomId: RoomId,
+  ) => Promise<void>;
   findRoomInHotel: (
     tenantId: TenantId,
     hotelId: HotelId,
@@ -89,11 +138,19 @@ function mapBooking(
     roomId: Ids.room(row.roomId),
     guestName: row.guestName,
     guestEmail: row.guestEmail,
+    guestPhone: row.guestPhone ?? null,
     checkInDate: row.checkInDate,
     checkOutDate: row.checkOutDate,
     status: asBookingStatus(row.status),
+    roomPrepStatus: asRoomPrepStatus(row.roomPrepStatus ?? null),
     roomNumber,
   };
+}
+
+function resolveWaitingPrep(roomStatus: string): RoomPrepStatus {
+  if (roomStatus === "vacant") return "ready";
+  if (roomStatus === "dirty") return "cleaning";
+  return "waiting";
 }
 
 export function createBookingRepository(db: HotelOsDb): BookingRepository {
@@ -188,9 +245,12 @@ export function createBookingRepository(db: HotelOsDb): BookingRepository {
         return null;
       }
 
+      const nextPrep =
+        status === "checked_in" ? null : existing.booking.roomPrepStatus;
+
       await db
         .update(bookings)
-        .set({ status })
+        .set({ status, roomPrepStatus: nextPrep })
         .where(
           and(
             eq(bookings.id, bookingId),
@@ -212,9 +272,117 @@ export function createBookingRepository(db: HotelOsDb): BookingRepository {
           .set({ status: "dirty" })
           .where(eq(rooms.id, existing.booking.roomId))
           .run();
+        await db
+          .update(bookings)
+          .set({ roomPrepStatus: "cleaning" })
+          .where(
+            and(
+              eq(bookings.tenantId, tenantId),
+              eq(bookings.hotelId, hotelId),
+              eq(bookings.roomId, existing.booking.roomId),
+              eq(bookings.roomPrepStatus, "waiting"),
+            ),
+          )
+          .run();
       }
 
-      return mapBooking({ ...existing.booking, status }, existing.roomNumber);
+      return mapBooking(
+        {
+          ...existing.booking,
+          status,
+          roomPrepStatus: nextPrep,
+        },
+        existing.roomNumber,
+      );
+    },
+
+    async setRoomPrep(tenantId, hotelId, bookingId, action) {
+      const existing = await db
+        .select({
+          booking: bookings,
+          roomNumber: rooms.number,
+          roomStatus: rooms.status,
+        })
+        .from(bookings)
+        .innerJoin(rooms, eq(bookings.roomId, rooms.id))
+        .where(
+          and(
+            eq(bookings.id, bookingId),
+            eq(bookings.hotelId, hotelId),
+            eq(bookings.tenantId, tenantId),
+          ),
+        )
+        .get();
+
+      if (!existing) {
+        return { ok: false, reason: "BOOKING_NOT_FOUND" };
+      }
+
+      if (action === "waiting") {
+        if (existing.booking.status !== "confirmed") {
+          return { ok: false, reason: "INVALID_STATUS" };
+        }
+        const next = resolveWaitingPrep(existing.roomStatus);
+        await db
+          .update(bookings)
+          .set({ roomPrepStatus: next })
+          .where(eq(bookings.id, bookingId))
+          .run();
+        return {
+          ok: true,
+          booking: mapBooking(
+            { ...existing.booking, roomPrepStatus: next },
+            existing.roomNumber,
+          ),
+        };
+      }
+
+      // invited
+      if (asRoomPrepStatus(existing.booking.roomPrepStatus ?? null) !== "ready") {
+        return { ok: false, reason: "INVALID_TRANSITION" };
+      }
+      await db
+        .update(bookings)
+        .set({ roomPrepStatus: "invited" })
+        .where(eq(bookings.id, bookingId))
+        .run();
+      return {
+        ok: true,
+        booking: mapBooking(
+          { ...existing.booking, roomPrepStatus: "invited" },
+          existing.roomNumber,
+        ),
+      };
+    },
+
+    async advanceRoomPrepForDirtyRoom(tenantId, hotelId, roomId) {
+      await db
+        .update(bookings)
+        .set({ roomPrepStatus: "cleaning" })
+        .where(
+          and(
+            eq(bookings.tenantId, tenantId),
+            eq(bookings.hotelId, hotelId),
+            eq(bookings.roomId, roomId),
+            eq(bookings.roomPrepStatus, "waiting"),
+          ),
+        )
+        .run();
+    },
+
+    async advanceRoomPrepForVacantRoom(tenantId, hotelId, roomId) {
+      await db
+        .update(bookings)
+        .set({ roomPrepStatus: "ready" })
+        .where(
+          and(
+            eq(bookings.tenantId, tenantId),
+            eq(bookings.hotelId, hotelId),
+            eq(bookings.roomId, roomId),
+            inArray(bookings.roomPrepStatus, ["waiting", "cleaning"]),
+          ),
+        )
+        .run();
     },
 
     async create(input) {
@@ -226,9 +394,11 @@ export function createBookingRepository(db: HotelOsDb): BookingRepository {
           roomId: input.roomId,
           guestName: input.guestName,
           guestEmail: input.guestEmail,
+          guestPhone: input.guestPhone ?? null,
           checkInDate: input.checkInDate,
           checkOutDate: input.checkOutDate,
           status: input.status,
+          roomPrepStatus: input.roomPrepStatus ?? null,
           createdAt: input.createdAt,
         })
         .run();
@@ -257,9 +427,11 @@ export function createBookingRepository(db: HotelOsDb): BookingRepository {
           roomId: input.roomId,
           guestName: input.guestName,
           guestEmail: input.guestEmail,
+          guestPhone: input.guestPhone ?? null,
           checkInDate: input.checkInDate,
           checkOutDate: input.checkOutDate,
           status: input.status,
+          roomPrepStatus: input.roomPrepStatus ?? null,
           createdAt: input.createdAt,
         },
         room.number,

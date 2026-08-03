@@ -68,7 +68,11 @@ each `vercel.json` already assume this.
 | `CRON_SECRET` | optional — enables `GET/POST /v1/cron/*` (Vercel Cron sends `Authorization: Bearer …`) |
 | `SENTRY_DSN` | optional — Sentry/GlitchTip DSN for API server errors |
 | `SENTRY_ENVIRONMENT` | optional — defaults to `NODE_ENV` |
-| `PMS_PROVIDER` | optional — `demo` (default) or `mews_stub` for Digital Twin PMS merge |
+| `PMS_PROVIDER` | optional — `demo` (default), `mews_stub`, `opera_stub`, or `mews` for live Mews Connector API |
+| `MEWS_CLIENT_TOKEN` / `MEWS_ACCESS_TOKEN` | required when `PMS_PROVIDER=mews` |
+| `MEWS_PLATFORM_URL` | optional — default `https://api.mews-demo.com` (prod: `https://api.mews.com`) |
+| `WHATSAPP_PROVIDER` | optional — `demo` (default), `http`, `meta`, or `off` |
+| `WHATSAPP_API_TOKEN` / `WHATSAPP_META_PHONE_NUMBER_ID` | required for `meta`; token + URL for `http` |
 
 Deploy this project first; note its URL (e.g. `https://hotelos-api.vercel.app`).
 
@@ -107,6 +111,16 @@ Emergency override without rebuild: open
 
 - daily `0 5 * * *` UTC → `/v1/cron/cio-daily` (CEO digest → org-comms `cio_daily`)
 - every 6 hours `30 */6 * * *` UTC → `/v1/cron/anomaly-scan` (threshold anomalies → department tasks)
+- every 10 minutes `*/10 * * * *` UTC → `/v1/cron/notification-outbox` (retry pending/failed WhatsApp)
+
+WhatsApp live delivery — pick one:
+
+| `WHATSAPP_PROVIDER` | Required env | Notes |
+|---------------------|--------------|--------|
+| `demo` | — | Local/CI; marks invites as sent |
+| `http` | `WHATSAPP_API_URL`, `WHATSAPP_API_TOKEN` | Generic gateway: `POST` `{ "to", "body" }` + Bearer (any 2xx) |
+| `meta` | `WHATSAPP_API_TOKEN`, `WHATSAPP_META_PHONE_NUMBER_ID` | Meta Cloud API; optional `WHATSAPP_META_TEMPLATE_NAME` (`{{1}}`=guest, `{{2}}`=room) for cold invites |
+| `off` | — | Skip delivery |
 
 Set matching `CRON_SECRET` in the API project env. Without it, cron endpoints return 503.
 

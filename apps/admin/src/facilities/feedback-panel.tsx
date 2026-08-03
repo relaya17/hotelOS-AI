@@ -128,21 +128,21 @@ export function FeedbackPanel({ hotelId }: FeedbackPanelProps) {
 
       <style>{`
         .panel { display:grid; gap:var(--space-4); }
-        .card { background:rgb(255 250 242 / 90%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); display:grid; gap:var(--space-4); }
+        .card { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); display:grid; gap:var(--space-4); }
         .card__header { display:flex; justify-content:space-between; align-items:center; }
         .card h2 { margin:0; font-size:var(--text-title); }
         .avg { font-size:1.4rem; font-weight:700; color:var(--color-sea-deep); }
         .avg small { color:var(--color-ink-soft); font-weight:500; font-size:var(--text-small); }
         .hint { margin:0; color:var(--color-ink-soft); }
         .list { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
-        .row { display:flex; justify-content:space-between; gap:var(--space-3); align-items:flex-start; padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .row { display:flex; justify-content:space-between; gap:var(--space-3); align-items:flex-start; padding:var(--space-4); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
         .row h3 { margin:0; font-family:var(--font-display); font-size:1.05rem; }
         .row p { margin:var(--space-1) 0 0; color:var(--color-ink-soft); font-size:var(--text-small); }
         .row__actions { display:flex; flex-direction:column; gap:var(--space-2); align-items:flex-end; }
         .meta { color:var(--color-ink-soft); font-size:var(--text-small); }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
-        .state--ok { color:#0f6a5c; background:rgb(15 106 92 / 10%); padding:.75rem 1rem; border-radius:var(--radius-sm); }
+        .state--ok { color:var(--color-sea-deep); background:var(--color-sea-soft); padding:.75rem 1rem; border-radius:var(--radius-sm); }
       `}</style>
     </div>
   );

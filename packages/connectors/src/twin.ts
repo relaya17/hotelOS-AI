@@ -1,10 +1,22 @@
-import type { PmsHotelInventory, PmsRoomStatus } from "./types.js";
+import type {
+  PmsHotelInventory,
+  PmsReservationSnapshot,
+  PmsRoomStatus,
+} from "./types.js";
 
 export type TwinRoomNode = {
   readonly roomNumber: string;
   readonly status: PmsRoomStatus;
   readonly source: "hotelos" | "pms" | "merged";
   readonly externalRoomId?: string;
+};
+
+export type TwinReservationSummary = {
+  readonly externalReservationId: string;
+  readonly roomNumber: string | null;
+  readonly checkInDate: string;
+  readonly checkOutDate: string;
+  readonly status: PmsReservationSnapshot["status"];
 };
 
 export type HotelTwinSnapshot = {
@@ -16,6 +28,7 @@ export type HotelTwinSnapshot = {
     readonly externalHotelId: string;
     readonly fetchedAt: string;
     readonly reservationCount: number;
+    readonly reservations: readonly TwinReservationSummary[];
   };
 };
 
@@ -71,6 +84,13 @@ export function mergeHotelTwin(input: {
             externalHotelId: input.pms.externalHotelId,
             fetchedAt: input.pms.fetchedAt,
             reservationCount: input.pms.reservations.length,
+            reservations: input.pms.reservations.map((reservation) => ({
+              externalReservationId: reservation.externalReservationId,
+              roomNumber: reservation.roomNumber,
+              checkInDate: reservation.checkInDate,
+              checkOutDate: reservation.checkOutDate,
+              status: reservation.status,
+            })),
           },
         }
       : {}),

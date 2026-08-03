@@ -62,8 +62,40 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().optional().default(""),
   /** Optional Sentry environment tag (defaults to NODE_ENV). */
   SENTRY_ENVIRONMENT: z.string().optional().default(""),
-  /** PMS connector for Digital Twin merge (stubs until real Opera/Mews). */
-  PMS_PROVIDER: z.enum(["demo", "mews_stub"]).default("demo"),
+  /** PMS connector for Digital Twin merge. */
+  PMS_PROVIDER: z
+    .enum(["demo", "mews_stub", "mews", "opera_stub"])
+    .default("demo"),
+  /** Mews Connector API — required when PMS_PROVIDER=mews. */
+  MEWS_CLIENT_TOKEN: z.string().optional().default(""),
+  MEWS_ACCESS_TOKEN: z.string().optional().default(""),
+  /** Demo: https://api.mews-demo.com · production: https://api.mews.com */
+  MEWS_PLATFORM_URL: z
+    .string()
+    .optional()
+    .default("https://api.mews-demo.com"),
+  MEWS_CLIENT_NAME: z.string().optional().default("HotelOS AI 1.0"),
+  /** WhatsApp delivery adapter. Empty configuration remains safe demo delivery. */
+  WHATSAPP_PROVIDER: z
+    .enum(["demo", "http", "meta", "off"])
+    .default("demo"),
+  /** HTTP WhatsApp gateway endpoint, required when WHATSAPP_PROVIDER=http. */
+  WHATSAPP_API_URL: z.string().optional().default(""),
+  /**
+   * Bearer token: generic gateway (`http`) or Meta Cloud API permanent/system token (`meta`).
+   */
+  WHATSAPP_API_TOKEN: z.string().optional().default(""),
+  /** Meta WhatsApp Business phone number id — required when WHATSAPP_PROVIDER=meta. */
+  WHATSAPP_META_PHONE_NUMBER_ID: z.string().optional().default(""),
+  /** Graph API version for Meta Cloud API. */
+  WHATSAPP_META_GRAPH_VERSION: z.string().optional().default("v21.0"),
+  /**
+   * Optional approved Meta template name for cold outreach (room invites).
+   * Empty = session text messages only (works inside the 24h customer-care window).
+   */
+  WHATSAPP_META_TEMPLATE_NAME: z.string().optional().default(""),
+  /** Template language code (e.g. he, en_US). */
+  WHATSAPP_META_TEMPLATE_LANGUAGE: z.string().optional().default("he"),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

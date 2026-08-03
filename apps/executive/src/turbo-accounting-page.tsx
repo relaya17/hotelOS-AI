@@ -107,7 +107,7 @@ export function TurboAccountingPage({ locale }: TurboAccountingPageProps) {
         .eyebrow{margin:0 0 var(--space-2);letter-spacing:.08em;text-transform:uppercase;font-size:var(--text-small);color:var(--color-sea-deep);font-weight:700}
         h1{margin:0;font-size:clamp(1.8rem,3vw,2.6rem)}
         .sub{margin:var(--space-2) 0 0;color:var(--color-ink-soft)}
-        .card{background:rgb(255 250 242 / 92%);border:1px solid rgb(16 36 31 / 10%);border-radius:var(--radius-md);padding:var(--space-4);box-shadow:var(--shadow-soft)}
+        .card{background:var(--color-paper-elevated);border:1px solid var(--color-line);border-radius:var(--radius-md);padding:var(--space-4);box-shadow:var(--shadow-soft)}
         .card h2{margin:0 0 var(--space-3);font-size:1.2rem}
         .hint{color:var(--color-ink-soft);font-size:var(--text-small)}
         .table{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-2)}

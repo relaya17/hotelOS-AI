@@ -658,11 +658,11 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
 
       <style>{`
         .panel { display:grid; gap:var(--space-4); }
-        .card { background:rgb(255 250 242 / 90%); border:1px solid rgb(16 36 31 / 10%); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); display:grid; gap:var(--space-4); }
+        .card { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:calc(var(--radius-md) + .1rem); box-shadow:var(--shadow-soft); padding:clamp(1.2rem,2.5vw,1.8rem); display:grid; gap:var(--space-4); }
         .card h2 { margin:0; font-size:var(--text-title); }
         .hint { margin:0; color:var(--color-ink-soft); }
         .list { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
-        .row { display:flex; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-4); border:1px solid rgb(16 36 31 / 10%); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
+        .row { display:flex; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-4); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:var(--color-paper-elevated); }
         .row--task { align-items:flex-start; }
         .row h3 { margin:0; font-family:var(--font-display); font-size:1.1rem; }
         .row p { margin:var(--space-1) 0 0; color:var(--color-ink-soft); font-size:var(--text-small); }
@@ -671,26 +671,26 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
         .status { font-size:var(--text-small); font-weight:700; padding:.35rem .7rem; border-radius:999px; white-space:nowrap; }
         .status--maint-open { color:#1f4b7a; background:rgb(31 75 122 / 12%); }
         .status--maint-quote_requested { color:#8a5a12; background:rgb(138 90 18 / 12%); }
-        .status--maint-approved { color:#0f6a5c; background:rgb(15 106 92 / 12%); }
+        .status--maint-approved { color:var(--color-sea-deep); background:var(--color-sea-soft); }
         .status--maint-in_progress { color:#8a5a12; background:rgb(138 90 18 / 12%); }
-        .status--maint-done { color:#0f6a5c; background:rgb(15 106 92 / 12%); }
+        .status--maint-done { color:var(--color-sea-deep); background:var(--color-sea-soft); }
         .status--maint-cancelled { color:#445; background:rgb(68 68 85 / 10%); }
         .status--quote-pending { color:#8a5a12; background:rgb(138 90 18 / 12%); }
-        .status--quote-accepted { color:#0f6a5c; background:rgb(15 106 92 / 12%); }
+        .status--quote-accepted { color:var(--color-sea-deep); background:var(--color-sea-soft); }
         .status--quote-rejected { color:#9b2c2c; background:rgb(155 44 44 / 12%); }
         .status--quote-expired { color:#445; background:rgb(68 68 85 / 10%); }
-        .mini-btn { font:inherit; font-size:var(--text-small); border:1px solid rgb(16 36 31 / 18%); background:transparent; border-radius:var(--radius-sm); padding:.3rem .6rem; cursor:pointer; font-weight:600; }
+        .mini-btn { font:inherit; font-size:var(--text-small); border:1px solid var(--color-line-strong); background:transparent; border-radius:var(--radius-sm); padding:.3rem .6rem; cursor:pointer; font-weight:600; }
         .mini-btn--accent { border-color:var(--color-sea-deep); color:var(--color-sea-deep); }
         .suggest-box { display:grid; gap:var(--space-3); border:1px dashed rgb(16 36 31 / 22%); border-radius:var(--radius-sm); padding:var(--space-4); }
         .suggest-box p { margin:0; color:var(--color-ink-soft); font-size:var(--text-small); }
-        .create-form { display:grid; gap:var(--space-3); border-top:1px solid rgb(16 36 31 / 10%); padding-top:var(--space-4); }
+        .create-form { display:grid; gap:var(--space-3); border-top:1px solid var(--color-line); padding-top:var(--space-4); }
         .create-form h3 { margin:0; font-family:var(--font-display); }
         .select-field { display:grid; gap:var(--space-2); }
         .select-field span { font-size:var(--text-small); font-weight:600; color:var(--color-ink-soft); }
-        .select-field select, .select-field textarea { font:inherit; border:1px solid rgb(16 36 31 / 18%); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); resize:vertical; }
+        .select-field select, .select-field textarea { font:inherit; border:1px solid var(--color-line-strong); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); resize:vertical; }
         .state { margin:0; color:var(--color-ink-soft); }
         .state--error { color:var(--color-danger); }
-        .state--ok { color:#0f6a5c; background:rgb(15 106 92 / 10%); padding:.75rem 1rem; border-radius:var(--radius-sm); }
+        .state--ok { color:var(--color-sea-deep); background:var(--color-sea-soft); padding:.75rem 1rem; border-radius:var(--radius-sm); }
       `}</style>
     </div>
   );

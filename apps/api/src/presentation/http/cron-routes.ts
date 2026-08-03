@@ -4,12 +4,17 @@ import {
   runAnomalyScan,
   type RunAnomalyScanDeps,
 } from "../../application/run-anomaly-scan.js";
+import {
+  drainNotificationOutbox,
+  type DrainNotificationOutboxDeps,
+} from "../../application/drain-notification-outbox.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type CronRouteDeps = {
   readonly cronSecret: string;
   readonly cioDaily: RunCioDailyDigestDeps;
   readonly anomalyScan: RunAnomalyScanDeps;
+  readonly notificationOutbox: DrainNotificationOutboxDeps;
 };
 
 function authorizeCron(c: { req: { header: (name: string) => string | undefined } }, secret: string): boolean {
@@ -92,6 +97,32 @@ export function createCronRoutes(deps: CronRouteDeps): Hono {
 
   routes.get("/anomaly-scan", (c) => runAnomalies(c));
   routes.post("/anomaly-scan", (c) => runAnomalies(c));
+
+  const runNotificationOutbox = async (
+    c: Parameters<typeof sendError>[0],
+  ) => {
+    if (deps.cronSecret.trim().length === 0) {
+      return sendError(
+        c,
+        503,
+        "CRON_DISABLED",
+        "Set CRON_SECRET to enable scheduled jobs",
+      );
+    }
+    if (!authorizeCron(c, deps.cronSecret)) {
+      return sendError(c, 401, "UNAUTHORIZED", "Invalid cron secret");
+    }
+
+    try {
+      const result = await drainNotificationOutbox(deps.notificationOutbox);
+      return c.json({ data: result });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  };
+
+  routes.get("/notification-outbox", (c) => runNotificationOutbox(c));
+  routes.post("/notification-outbox", (c) => runNotificationOutbox(c));
 
   return routes;
 }

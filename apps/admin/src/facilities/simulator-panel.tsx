@@ -136,7 +136,7 @@ export function SimulatorPanel({ hotelId }: SimulatorPanelProps) {
         .sim .muted{opacity:.75}
         .sim .error{color:#8b1e1e}
         .sim .cols{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-        .sim .narrative{white-space:pre-wrap;font:inherit;background:rgb(255 250 242);padding:.75rem;border-radius:8px}
+        .sim .narrative{white-space:pre-wrap;font:inherit;background:var(--color-paper);padding:.75rem;border-radius:8px}
         .sim .result{display:grid;gap:.75rem;margin-top:1rem}
         @media (max-width:700px){.sim .cols{grid-template-columns:1fr}}
       `}</style>
