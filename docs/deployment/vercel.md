@@ -81,6 +81,22 @@ each `vercel.json` already assume this.
 
 Deploy this project first; note its URL (e.g. `https://hotelos-api.vercel.app`).
 
+### Rate limits / duplicate Git projects
+
+Vercel Hobby can return **Deployment rate limited — retry in 24 hours** when many
+projects are connected to the same GitHub repo and fire on every `main` push
+(five `*-eight` apps + leftover projects like `hotel` / `hotel-os-ai-admin`).
+
+Mitigations:
+
+1. Keep only the five production projects linked to Git (`api`, `executive`,
+   `admin`, `guest`, `work`). Disconnect or delete unused projects in the Vercel
+   dashboard so they stop consuming the deploy quota.
+2. Prefer `./scripts/deploy-five-vercel.ps1` (with `VERCEL_TOKEN`) for intentional
+   releases instead of rapid consecutive pushes.
+3. After a rate-limit window, redeploy API first (`hotel-os-ai-api-eight`), then
+   the four frontends.
+
 ## 3. Frontend project env vars (`executive`, `admin`, `guest`, `work`)
 
 Each frontend needs the API URL from step 2 (or naming-convention inference),

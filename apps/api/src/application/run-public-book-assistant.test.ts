@@ -16,46 +16,48 @@ function stubHotel(id = "33333333-3333-4333-8333-333333333333") {
 describe("runPublicBookAssistant", () => {
   it("extracts relative dates, room type and guest contact from one utterance", async () => {
     const hotel = stubHotel();
-    const result = await runPublicBookAssistant(
-      {
-        hotels: {
-          listAll: async () => [hotel],
-          findById: async () => hotel,
-        } as never,
-        rooms: {
-          listByHotel: async () => [
-            {
-              id: "r1",
-              hotelId: hotel.id,
-              roomNumber: "101",
-              roomType: "deluxe",
-              status: "vacant",
-            },
-          ],
-        } as never,
-        bookings: { listByHotel: async () => [], create: async () => {
+    const deps = {
+      hotels: {
+        listAll: async () => [hotel],
+        findById: async () => hotel,
+      },
+      rooms: {
+        listByHotel: async () => [
+          {
+            id: "r1",
+            hotelId: hotel.id,
+            roomNumber: "101",
+            roomType: "deluxe",
+            status: "vacant",
+          },
+        ],
+      },
+      bookings: {
+        listByHotel: async () => [],
+        create: async () => {
           throw new Error("should not book yet");
-        } } as never,
-        audit: { append: async () => undefined } as never,
-        trust: {} as never,
-        payments: {
-          name: "demo",
-          createIntent: async () => {
-            throw new Error("should not charge yet");
-          },
-          confirmIntent: async () => {
-            throw new Error("should not charge yet");
-          },
-          charge: async () => {
-            throw new Error("should not charge yet");
-          },
         },
       },
-      {
-        message:
-          "מחר ליומיים חדר דלוקס שמי רחל כהן rachel@demo.hotelos.local",
+      audit: {
+        append: async () => undefined,
       },
-    );
+      trust: {},
+      payments: {
+        name: "demo" as const,
+        createIntent: async () => {
+          throw new Error("should not charge yet");
+        },
+        confirmIntent: async () => {
+          throw new Error("should not charge yet");
+        },
+        charge: async () => {
+          throw new Error("should not charge yet");
+        },
+      },
+    };
+    const result = await runPublicBookAssistant(deps as never, {
+      message: "מחר ליומיים חדר דלוקס שמי רחל כהן rachel@demo.hotelos.local",
+    });
 
     assert.equal(result.draft.roomType, "deluxe");
     assert.equal(result.draft.guestName, "רחל כהן");
