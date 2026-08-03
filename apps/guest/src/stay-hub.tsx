@@ -11,6 +11,7 @@ import {
 } from "@hotelos/web-client";
 import { FeedbackForm } from "./feedback-form.js";
 import { ServiceRequestForm } from "./service-request-form.js";
+import { UpsellOffersSection } from "./upsell-offers-section.js";
 import { formatCurrency } from "./stay-folio.js";
 
 export type StayHubProps = {
@@ -342,6 +343,12 @@ export function StayHub({
           notifyLine={inviteNotifyLine(stay)}
         />
       ) : null}
+
+      <UpsellOffersSection
+        email={email}
+        stay={stay}
+        onStayUpdated={onStayUpdated}
+      />
 
       <div className="actions">
         {isCheckedIn ? (

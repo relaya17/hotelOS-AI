@@ -97,6 +97,7 @@ each `vercel.json` already assume this.
 | `WHATSAPP_API_TOKEN` / `WHATSAPP_META_PHONE_NUMBER_ID` | required for `meta`; token + URL for `http` |
 | `DIGEST_WHATSAPP_TO` | optional — phone number (E.164 or Israeli local) that also receives the scheduled CIO daily digest over WhatsApp; empty = in-app inbox only |
 | `SECURITY_INGEST_SECRET` | **recommended in prod** — shared secret for `POST /v1/public/security/ingest/:provider` (VMS webhooks; no JWT). Empty disables public ingest in production. |
+| `REPUTATION_INGEST_SECRET` | **recommended in prod** — shared secret for `POST /v1/public/reputation/ingest/:provider` (OTA review webhooks; no JWT). Empty disables public ingest in production. |
 | `PMS_INBOUND_SECRET` | optional — protects channel-manager inbound |
 
 **Local preflight (no secret values printed):**

@@ -3,8 +3,12 @@ import {
   APP_URLS,
   fetchDailyBriefing,
   fetchOpsDashboard,
+  fetchOpsForecast,
+  fetchReputationReviews,
   type DailyBriefingHotelDto,
   type OpsDashboardHotelDto,
+  type OpsForecastDto,
+  type ReputationReviewDto,
 } from "@hotelos/web-client";
 
 export function OpsDashboardPage() {
@@ -12,12 +16,22 @@ export function OpsDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
 
+  const [negativeReviews, setNegativeReviews] = useState<
+    readonly ReputationReviewDto[]
+  >([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewsError, setReviewsError] = useState<string | undefined>();
+
   const [briefingHotels, setBriefingHotels] = useState<
     readonly DailyBriefingHotelDto[]
   >([]);
   const [chainSummaryHe, setChainSummaryHe] = useState<string | undefined>();
   const [briefingLoading, setBriefingLoading] = useState(true);
   const [briefingError, setBriefingError] = useState<string | undefined>();
+
+  const [forecast, setForecast] = useState<OpsForecastDto | null>(null);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastError, setForecastError] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +56,82 @@ export function OpsDashboardPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (hotels.length === 0) {
+      setNegativeReviews([]);
+      setReviewsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    async function loadReviews() {
+      setReviewsLoading(true);
+      setReviewsError(undefined);
+      try {
+        const batches = await Promise.all(
+          hotels.map((hotel) =>
+            fetchReputationReviews(hotel.hotelId, {
+              sentiment: "negative",
+              limit: 5,
+            }),
+          ),
+        );
+        if (cancelled) return;
+        const merged = batches
+          .flat()
+          .sort(
+            (a, b) =>
+              Date.parse(b.reviewedAt) - Date.parse(a.reviewedAt),
+          )
+          .slice(0, 8);
+        setNegativeReviews(merged);
+      } catch (loadError) {
+        if (!cancelled) {
+          setReviewsError(
+            loadError instanceof Error
+              ? loadError.message
+              : "שגיאה בטעינת ביקורות",
+          );
+        }
+      } finally {
+        if (!cancelled) setReviewsLoading(false);
+      }
+    }
+    void loadReviews();
+    return () => {
+      cancelled = true;
+    };
+  }, [hotels]);
+
+  useEffect(() => {
+    const hotelId = hotels[0]?.hotelId;
+    if (!hotelId) {
+      setForecast(null);
+      return;
+    }
+    let cancelled = false;
+    async function loadForecast() {
+      if (!hotelId) return;
+      setForecastLoading(true);
+      setForecastError(undefined);
+      try {
+        const data = await fetchOpsForecast(hotelId);
+        if (!cancelled) setForecast(data);
+      } catch (loadError) {
+        if (!cancelled) {
+          setForecastError(
+            loadError instanceof Error ? loadError.message : "שגיאה בטעינת תחזית",
+          );
+        }
+      } finally {
+        if (!cancelled) setForecastLoading(false);
+      }
+    }
+    void loadForecast();
+    return () => {
+      cancelled = true;
+    };
+  }, [hotels]);
 
   useEffect(() => {
     let cancelled = false;
@@ -132,6 +222,86 @@ export function OpsDashboardPage() {
                 ) : null}
               </li>
             ))}
+          </ul>
+        ) : null}
+      </section>
+
+      <section className="card forecast-card">
+        <h2>תחזית 7 ימים</h2>
+        <p className="hint">
+          {forecast?.hotelName ?? hotels[0]?.hotelName ?? "מלון ראשון ברשת"} —
+          הגעות, יציאות ותפוסה משוערת.
+        </p>
+        {forecastLoading ? <p className="state">טוען תחזית…</p> : null}
+        {forecastError !== undefined ? (
+          <p className="state state--error" role="alert">
+            {forecastError}
+          </p>
+        ) : null}
+        {!forecastLoading && forecast ? (
+          <ul className="briefing-list">
+            {forecast.summaryBulletsHe.map((bullet) => (
+              <li key={bullet}>{bullet}</li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+
+      <section className="card reputation-card" aria-labelledby="reputation-heading">
+        <h2 id="reputation-heading">ביקורות שליליות אחרונות</h2>
+        <p className="hint">
+          Google / Booking / TripAdvisor — ביקורות שיצרו משימת קבלה או דורשות מעקב.
+        </p>
+        {reviewsLoading ? <p className="state">טוען ביקורות…</p> : null}
+        {reviewsError !== undefined ? (
+          <p className="state state--error" role="alert">
+            {reviewsError}
+          </p>
+        ) : null}
+        {!reviewsLoading && !reviewsError && negativeReviews.length === 0 ? (
+          <p className="hint">אין ביקורות שליליות אחרונות.</p>
+        ) : null}
+        {!reviewsLoading && negativeReviews.length > 0 ? (
+          <ul className="reputation-list">
+            {negativeReviews.map((review) => {
+              const hotel = hotels.find((item) => item.hotelId === review.hotelId);
+              const preview =
+                review.title !== null && review.title.length > 0
+                  ? review.title
+                  : review.body.slice(0, 120);
+              return (
+                <li key={review.id} className="reputation-item">
+                  <div className="reputation-item__meta">
+                    <span className="reputation-source">{review.source}</span>
+                    <span aria-label={`דירוג ${review.rating} מתוך 5`}>
+                      {"⭐".repeat(review.rating)}
+                    </span>
+                    {hotel !== undefined ? (
+                      <span className="reputation-hotel">{hotel.hotelName}</span>
+                    ) : null}
+                  </div>
+                  <p className="reputation-preview">{preview}</p>
+                  <div className="reputation-item__actions">
+                    {review.reviewUrl !== null ? (
+                      <a
+                        href={review.reviewUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        צפה במקור
+                      </a>
+                    ) : null}
+                    {review.taskId !== null ? (
+                      <a
+                        href={`${APP_URLS.admin}?hotelId=${review.hotelId}&panel=departments`}
+                      >
+                        פתח משימת קבלה
+                      </a>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         ) : null}
       </section>
@@ -242,6 +412,15 @@ export function OpsDashboardPage() {
         .chain-summary { margin:0 0 var(--space-3); font-weight:600; }
         .briefing-list { margin:0; padding-inline-start:1.2rem; display:grid; gap:var(--space-2); }
         .briefing-warnings { margin:.3rem 0 0; padding-inline-start:1.1rem; display:grid; gap:.2rem; font-size:var(--text-small); color:var(--color-warn); }
+        .reputation-card { border-color:var(--color-line-strong); }
+        .reputation-list { list-style:none; margin:var(--space-3) 0 0; padding:0; display:grid; gap:var(--space-3); }
+        .reputation-item { padding:var(--space-3); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:var(--color-paper); }
+        .reputation-item__meta { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; font-size:var(--text-small); color:var(--color-ink-soft); }
+        .reputation-source { font-weight:700; text-transform:capitalize; color:var(--color-sea-deep); }
+        .reputation-hotel { font-weight:600; }
+        .reputation-preview { margin:var(--space-2) 0 0; font-weight:500; }
+        .reputation-item__actions { display:flex; flex-wrap:wrap; gap:var(--space-3); margin-top:var(--space-2); }
+        .reputation-item__actions a { font-weight:700; color:var(--color-sea-deep); }
         .hotel-grid { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:var(--space-4); }
         .hotel-card { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--color-line); border-radius:var(--radius-md); background:var(--color-paper-elevated); box-shadow:var(--shadow-soft); }
         .hotel-card h3 { margin:0; }

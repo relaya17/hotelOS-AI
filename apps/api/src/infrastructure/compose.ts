@@ -30,14 +30,17 @@ import {
   createOrgCommsRepository,
   createOverviewRepository,
   createProcurementRepository,
+  createReputationRepository,
   createRecruitingRepository,
   createRefreshSessionRepository,
+  createRevenueSuggestionsRepository,
   createRoomRepository,
   createTrustedSourcesRepository,
   createTrustedSourceSnapshotsRepository,
   createGuestProfileRepository,
   createTrustRepository,
   createTurboRepository,
+  createUpsellRepository,
   createUserRepository,
   createHrRepository,
   createCorrespondenceRepository,
@@ -121,7 +124,10 @@ export async function composeApp() {
   const maintenance = createMaintenanceRepository(db);
   const procurement = createProcurementRepository(db);
   const feedback = createFeedbackRepository(db);
+  const reputation = createReputationRepository(db);
+  const upsells = createUpsellRepository(db);
   const recruiting = createRecruitingRepository(db);
+  const revenueSuggestions = createRevenueSuggestionsRepository(db);
   const orgComms = createOrgCommsRepository(db);
   const trustedSources = createTrustedSourcesRepository(db);
   const trustedSourceSnapshots = createTrustedSourceSnapshotsRepository(db);
@@ -230,6 +236,7 @@ export async function composeApp() {
     publicRoutes: {
       guestStays,
       feedback,
+      upsells,
       hr,
       ops,
       guestProfiles,
@@ -237,6 +244,7 @@ export async function composeApp() {
       rooms,
       bookings,
       audit,
+      reputation,
       trust,
       turbo,
       payments,
@@ -253,6 +261,9 @@ export async function composeApp() {
         : {}),
       ...(env.SENTRY_DEFAULT_HOTEL_ID.trim()
         ? { sentryDefaultHotelId: env.SENTRY_DEFAULT_HOTEL_ID.trim() }
+        : {}),
+      ...(env.REPUTATION_INGEST_SECRET.trim()
+        ? { reputationIngestSecret: env.REPUTATION_INGEST_SECRET.trim() }
         : {}),
     },
     agents: { agents, tokens },
@@ -293,9 +304,12 @@ export async function composeApp() {
       maintenance,
       procurement,
       feedback,
+      reputation,
       recruiting,
       hotels,
       overview,
+      bookings,
+      revenueSuggestions,
       kashrut,
       turbo,
       gateway,
@@ -303,6 +317,12 @@ export async function composeApp() {
       trustedSources,
       snapshots: trustedSourceSnapshots,
       guestProfiles,
+      tokens,
+    },
+    upsells: {
+      upsells,
+      gateway,
+      audit,
       tokens,
     },
     orgComms: { orgComms, tokens },
@@ -366,6 +386,7 @@ export async function composeApp() {
         kashrut,
         hotels,
         turbo,
+        bookings,
         orgComms,
         gateway,
         companyKnowledge,

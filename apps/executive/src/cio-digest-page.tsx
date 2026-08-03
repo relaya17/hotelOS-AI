@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { Button, TextField } from "@hotelos/ui";
 import {
   createTrustedSource,
+  decideRevenueSuggestion,
   fetchAiGatewayStatus,
   fetchCioDigest,
   fetchOpsAnomalies,
+  fetchOpsForecast,
+  fetchRevenueSuggestions,
+  generateRevenueSuggestions,
   invokeAiGateway,
   listOrgCommsChannels,
   listOrgCommsMessages,
@@ -16,8 +20,10 @@ import {
   type CioDigestDto,
   type CioRole,
   type OpsAnomalyDto,
+  type OpsForecastDto,
   type OrgCommsChannelDto,
   type OrgCommsMessageDto,
+  type RevenueSuggestionDto,
   type SynthesizedCioDigestDto,
   type TrustedSourceCategory,
   type TrustedSourceDto,
@@ -72,6 +78,13 @@ export function CioDigestPage() {
   const [notice, setNotice] = useState<string | undefined>();
   const [busyAction, setBusyAction] = useState<string | undefined>();
   const [anomalies, setAnomalies] = useState<readonly OpsAnomalyDto[]>([]);
+  const [forecast, setForecast] = useState<OpsForecastDto | null>(null);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [revenueSuggestions, setRevenueSuggestions] = useState<
+    readonly RevenueSuggestionDto[]
+  >([]);
+  const [revenueLoading, setRevenueLoading] = useState(false);
+  const [revenueBusyId, setRevenueBusyId] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -99,6 +112,92 @@ export function CioDigestPage() {
       cancelled = true;
     };
   }, [role]);
+
+  useEffect(() => {
+    const hotelId = digest?.sections[0]?.hotelId;
+    if (!hotelId) {
+      setForecast(null);
+      setRevenueSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    async function loadForecastAndRevenue() {
+      if (!hotelId) return;
+      setForecastLoading(true);
+      setRevenueLoading(true);
+      try {
+        const [forecastData, suggestions] = await Promise.all([
+          fetchOpsForecast(hotelId),
+          fetchRevenueSuggestions(hotelId),
+        ]);
+        if (cancelled) return;
+        setForecast(forecastData);
+        setRevenueSuggestions(suggestions);
+      } catch {
+        if (!cancelled) {
+          setForecast(null);
+          setRevenueSuggestions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setForecastLoading(false);
+          setRevenueLoading(false);
+        }
+      }
+    }
+    void loadForecastAndRevenue();
+    return () => {
+      cancelled = true;
+    };
+  }, [digest?.sections]);
+
+  async function onGenerateRevenueSuggestions() {
+    const hotelId = digest?.sections[0]?.hotelId;
+    if (!hotelId) {
+      setError("אין מלון בתדריך — לא ניתן ליצור הצעות תמחור");
+      return;
+    }
+    setRevenueLoading(true);
+    setError(undefined);
+    try {
+      const result = await generateRevenueSuggestions(hotelId);
+      setRevenueSuggestions(result.suggestions);
+      setNotice(`נוצרו ${result.suggestions.length} הצעות תמחור ל-${result.hotelName}.`);
+    } catch (genError) {
+      setError(
+        genError instanceof Error ? genError.message : "יצירת הצעות תמחור נכשלה",
+      );
+    } finally {
+      setRevenueLoading(false);
+    }
+  }
+
+  async function onDecideRevenueSuggestion(
+    suggestionId: string,
+    status: "approved" | "rejected",
+  ) {
+    setRevenueBusyId(suggestionId);
+    setError(undefined);
+    try {
+      const updated = await decideRevenueSuggestion(suggestionId, status);
+      setRevenueSuggestions((prev) =>
+        prev.map((row) => (row.id === updated.id ? updated : row)),
+      );
+      setNotice(
+        status === "approved"
+          ? "הצעת תמחור אושרה — אין עדכון PMS אוטומטי."
+          : "הצעת תמחור נדחתה.",
+      );
+    } catch (decideError) {
+      setError(
+        decideError instanceof Error
+          ? decideError.message
+          : "עדכון סטטוס הצעת תמחור נכשל",
+      );
+    } finally {
+      setRevenueBusyId(undefined);
+    }
+  }
 
   async function onSynthesize() {
     setSmartLoading(true);
@@ -286,6 +385,107 @@ export function CioDigestPage() {
                   [{row.severity}] {row.titleHe}
                 </strong>
                 <span>{row.evidenceHe}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>תחזית 7 ימים (Forecast Center)</h2>
+        <p className="hint">
+          הגעות/יציאות, תפוסה משוערת, תחזוקה פתוחה והנחיית כוח אדם — ללא LLM.
+        </p>
+        {forecastLoading ? <p className="state">טוען תחזית…</p> : null}
+        {!forecastLoading && forecast ? (
+          <>
+            <ul className="bullets">
+              {forecast.summaryBulletsHe.map((bullet) => (
+                <li key={bullet}>{bullet}</li>
+              ))}
+            </ul>
+            <table className="forecast-table">
+              <thead>
+                <tr>
+                  <th>תאריך</th>
+                  <th>הגעות</th>
+                  <th>יציאות</th>
+                  <th>תפוסה</th>
+                </tr>
+              </thead>
+              <tbody>
+                {forecast.days.map((day) => (
+                  <tr key={day.date}>
+                    <td>{day.date}</td>
+                    <td>{day.arrivalsCount}</td>
+                    <td>{day.departuresCount}</td>
+                    <td>{day.occupancyEstimatePct}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : null}
+        {!forecastLoading && !forecast ? (
+          <p className="hint">טענו תדריך כדי לראות תחזית למלון הראשון בהיקף.</p>
+        ) : null}
+      </section>
+
+      <section className="card">
+        <h2>אופטימיזציית הכנסות (HITL)</h2>
+        <p className="hint">
+          הצעות שינוי מחיר לפי תפוסה — אישור/דחייה בלבד; אין כתיבה ל-PMS.
+        </p>
+        <Button
+          type="button"
+          onClick={() => void onGenerateRevenueSuggestions()}
+          disabled={revenueLoading || !digest?.sections[0]?.hotelId}
+        >
+          {revenueLoading ? "מחשב…" : "צור הצעות תמחור (7 ימים)"}
+        </Button>
+        {revenueSuggestions.length === 0 ? (
+          <p className="hint">אין הצעות תמחור שמורות — לחצו ליצירה.</p>
+        ) : (
+          <ul className="revenue-list">
+            {revenueSuggestions.map((row) => (
+              <li key={row.id} className="revenue-row">
+                <div>
+                  <strong>
+                    {row.periodStart}
+                    {row.suggestedDeltaPct > 0
+                      ? ` · +${row.suggestedDeltaPct}%`
+                      : row.suggestedDeltaPct < 0
+                        ? ` · ${row.suggestedDeltaPct}%`
+                        : " · החזקה"}
+                  </strong>
+                  <span>
+                    תפוסה {row.currentOccupancyPct}% — {row.rationaleHe}
+                  </span>
+                  <span className="badge">סטטוס: {row.status}</span>
+                </div>
+                {row.status === "suggested" ? (
+                  <div className="revenue-actions">
+                    <Button
+                      type="button"
+                      onClick={() =>
+                        void onDecideRevenueSuggestion(row.id, "approved")
+                      }
+                      disabled={revenueBusyId === row.id}
+                    >
+                      אשר
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() =>
+                        void onDecideRevenueSuggestion(row.id, "rejected")
+                      }
+                      disabled={revenueBusyId === row.id}
+                    >
+                      דחה
+                    </Button>
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>

@@ -3,6 +3,7 @@ import { Hono, type Context } from "hono";
 import type { AiGateway } from "@hotelos/ai-gateway";
 import type {
   AuditRepository,
+  BookingRepository,
   CompanyKnowledgeRepository,
   FeedbackRepository,
   HotelRepository,
@@ -12,6 +13,8 @@ import type {
   OverviewRepository,
   ProcurementRepository,
   RecruitingRepository,
+  RevenueSuggestionsRepository,
+  ReputationRepository,
   GuestProfileRepository,
   TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
@@ -20,6 +23,7 @@ import type {
 import {
   canAccessHotel,
   canApproveMoneyAmount,
+  canDecideOpsHitl,
   canOperateProcurement,
   type JwtTokenService,
 } from "@hotelos/auth";
@@ -27,17 +31,21 @@ import type { HotelId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { buildCioDigest, CIO_ROLES } from "../../application/build-cio-digest.js";
+import { buildOpsForecast } from "../../application/build-ops-forecast.js";
 import {
   buildCfoFinanceBrief,
   FINANCE_DOCTOR_AUDIENCES,
   FINANCE_DOCTOR_FOCUSES,
 } from "../../application/build-cfo-finance-brief.js";
 import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
+import { buildIncidentCenter } from "../../application/build-incident-center.js";
 import { ingestTrustedMarketFeeds } from "../../application/ingest-trusted-market-feeds.js";
 import { mapSecurityWebhook } from "../../application/map-security-webhook.js";
+import { ingestReputationReview } from "../../application/ingest-reputation-review.js";
 import { listOpsAnomalies } from "../../application/run-anomaly-scan.js";
 import { synthesizeCfoFinanceBrief } from "../../application/synthesize-cfo-finance-brief.js";
 import { synthesizeCioDigest } from "../../application/synthesize-cio-digest.js";
+import { suggestRevenueRates } from "../../application/suggest-revenue-rates.js";
 import {
   PROCUREMENT_CHAIN_APPROVAL_ILS,
   PROCUREMENT_HOTEL_APPROVAL_ILS,
@@ -56,9 +64,12 @@ export type OpsRouteDeps = {
   readonly maintenance: MaintenanceRepository;
   readonly procurement: ProcurementRepository;
   readonly feedback: FeedbackRepository;
+  readonly reputation: ReputationRepository;
   readonly recruiting: RecruitingRepository;
   readonly hotels: HotelRepository;
   readonly overview: OverviewRepository;
+  readonly bookings: BookingRepository;
+  readonly revenueSuggestions: RevenueSuggestionsRepository;
   readonly kashrut: KashrutRepository;
   readonly turbo: TurboRepository;
   readonly gateway: AiGateway;
@@ -757,6 +768,76 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
     }
   });
 
+  // ---- Reputation reviews (OTA / Google ingest) ----
+
+  routes.get("/reputation/reviews", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
+      const sentimentParsed = z
+        .enum(["positive", "neutral", "negative"])
+        .safeParse(c.req.query("sentiment"));
+      const limitParsed = z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .safeParse(c.req.query("limit") ?? "20");
+      const list = await deps.reputation.listRecent(
+        principal.scope.tenantId,
+        resolved.hotelId,
+        {
+          limit: limitParsed.success ? limitParsed.data : 20,
+          ...(sentimentParsed.success
+            ? { sentiment: sentimentParsed.data }
+            : {}),
+        },
+      );
+      return c.json({ data: list });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/reputation/ingest/:provider", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const providerParsed = z
+        .enum(["generic", "google", "booking", "tripadvisor"])
+        .safeParse(c.req.param("provider"));
+      if (!providerParsed.success) {
+        return sendError(
+          c,
+          400,
+          "UNKNOWN_PROVIDER",
+          "Supported providers: generic, google, booking, tripadvisor",
+        );
+      }
+      const result = await ingestReputationReview(
+        {
+          hotels: deps.hotels,
+          ops: deps.ops,
+          reputation: deps.reputation,
+          audit: deps.audit,
+        },
+        {
+          provider: providerParsed.data,
+          body: await c.req.json(),
+          tenantId: principal.scope.tenantId,
+          actorUserId: principal.userId,
+        },
+      );
+      if (!result.ok) {
+        const status = result.code === "HOTEL_NOT_FOUND" ? 404 : 500;
+        return sendError(c, status, result.code, result.message);
+      }
+      return c.json({ data: result }, result.duplicate ? 200 : 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
   // ---- HR recruiting (job board tracker) ----
 
   routes.get("/recruiting/postings", async (c) => {
@@ -1180,6 +1261,53 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
     }
   });
 
+  // ---- Incident center (security + IT + critical maintenance aggregation) ----
+
+  routes.get("/incidents", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const tenantHotels = await deps.hotels.listByTenant(
+        principal.scope.tenantId,
+      );
+      const rawHotelId = c.req.query("hotelId");
+
+      let scopedHotelIds: HotelId[];
+      if (rawHotelId) {
+        const parsed = hotelIdSchema.safeParse(rawHotelId);
+        if (!parsed.success) {
+          return sendError(c, 400, "VALIDATION_ERROR", "Invalid hotelId");
+        }
+        const hotelId = Ids.hotel(parsed.data);
+        if (!canAccessHotel(principal, hotelId)) {
+          return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+        }
+        if (!tenantHotels.some((hotel) => hotel.id === hotelId)) {
+          return sendError(c, 404, "HOTEL_NOT_FOUND", "Hotel not found");
+        }
+        scopedHotelIds = [hotelId];
+      } else {
+        scopedHotelIds = (
+          principal.scope.hotelId
+            ? tenantHotels.filter((hotel) => hotel.id === principal.scope.hotelId)
+            : tenantHotels
+        ).map((hotel) => hotel.id);
+      }
+
+      const center = await buildIncidentCenter(
+        {
+          ops: deps.ops,
+          maintenance: deps.maintenance,
+          hotels: deps.hotels,
+        },
+        principal.scope.tenantId,
+        scopedHotelIds,
+      );
+      return c.json({ data: center });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
   // ---- Ops / financial threshold anomalies (Stage ה' MVP) ----
 
   routes.get("/anomalies", async (c) => {
@@ -1271,6 +1399,7 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
           kashrut: deps.kashrut,
           hotels: deps.hotels,
           turbo: deps.turbo,
+          bookings: deps.bookings,
         },
         principal.scope.tenantId,
         scopedHotelIds,
@@ -1310,6 +1439,7 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
           kashrut: deps.kashrut,
           hotels: deps.hotels,
           turbo: deps.turbo,
+          bookings: deps.bookings,
           gateway: deps.gateway,
           companyKnowledge: deps.companyKnowledge,
           trustedSources: deps.trustedSources,
@@ -1543,6 +1673,196 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
       );
 
       return c.json({ data: { hotels: perHotel } });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  // ---- Revenue optimization (HITL suggestions — no PMS writeback) ----
+
+  const revenueGenerateSchema = z.object({
+    hotelId: z.string().uuid().optional(),
+    horizonDays: z.number().int().min(7).max(14).optional(),
+  });
+
+  const revenueDecideSchema = z.object({
+    status: z.enum(["approved", "rejected"]),
+  });
+
+  routes.post("/revenue/suggestions/generate", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = revenueGenerateSchema.parse(
+        await c.req.json().catch(() => ({})),
+      );
+      const queryHotelId = c.req.query("hotelId");
+      const rawHotelId = body.hotelId ?? queryHotelId;
+      if (!rawHotelId) {
+        return sendError(
+          c,
+          400,
+          "HOTEL_ID_REQUIRED",
+          "hotelId query param or body field is required",
+        );
+      }
+      const parsedHotelId = hotelIdSchema.safeParse(rawHotelId);
+      if (!parsedHotelId.success) {
+        return sendError(c, 400, "VALIDATION_ERROR", "Invalid hotelId");
+      }
+      const hotelId = Ids.hotel(parsedHotelId.data);
+      if (!canAccessHotel(principal, hotelId)) {
+        return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+      }
+
+      const result = await suggestRevenueRates(
+        {
+          overview: deps.overview,
+          bookings: deps.bookings,
+          revenueSuggestions: deps.revenueSuggestions,
+        },
+        {
+          tenantId: principal.scope.tenantId,
+          hotelId,
+          ...(body.horizonDays !== undefined
+            ? { horizonDays: body.horizonDays }
+            : {}),
+        },
+      );
+      if (!result) {
+        return sendError(c, 404, "NO_DATA", "Hotel or overview not found");
+      }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "revenue.suggestions.generate",
+        resourceType: "revenue_suggestions",
+        resourceId: hotelId,
+        metadata: {
+          count: result.suggestions.length,
+          horizonDays: result.horizonDays,
+        },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({ data: result });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.get("/revenue/suggestions", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
+
+      const statusRaw = c.req.query("status");
+      const statusParsed =
+        statusRaw === "suggested" ||
+        statusRaw === "approved" ||
+        statusRaw === "rejected"
+          ? statusRaw
+          : undefined;
+
+      const suggestions = await deps.revenueSuggestions.listByHotel(
+        principal.scope.tenantId,
+        resolved.hotelId,
+        statusParsed,
+      );
+      return c.json({ data: suggestions });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/revenue/suggestions/:id/decide", async (c) => {
+    try {
+      const principal = c.get("principal");
+      if (!canDecideOpsHitl(principal)) {
+        return sendError(
+          c,
+          403,
+          "FORBIDDEN",
+          "Revenue decisions require executive ops approval role",
+        );
+      }
+
+      const suggestionId = c.req.param("id");
+      const body = revenueDecideSchema.parse(await c.req.json());
+
+      const existing = await deps.revenueSuggestions.findById(
+        principal.scope.tenantId,
+        suggestionId,
+      );
+      if (!existing) {
+        return sendError(c, 404, "NOT_FOUND", "Suggestion not found");
+      }
+      if (!canAccessHotel(principal, existing.hotelId)) {
+        return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+      }
+      if (existing.status !== "suggested") {
+        return sendError(
+          c,
+          409,
+          "ALREADY_DECIDED",
+          "Suggestion was already decided",
+        );
+      }
+
+      const updated = await deps.revenueSuggestions.updateStatus(
+        principal.scope.tenantId,
+        suggestionId,
+        body.status,
+        principal.userId,
+        new Date().toISOString(),
+      );
+      if (!updated) {
+        return sendError(c, 404, "NOT_FOUND", "Suggestion not found");
+      }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: `revenue.suggestions.${body.status}`,
+        resourceType: "revenue_suggestion",
+        resourceId: suggestionId,
+        metadata: {
+          hotelId: existing.hotelId,
+          suggestedDeltaPct: existing.suggestedDeltaPct,
+          periodStart: existing.periodStart,
+        },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({ data: updated });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  // ---- Ops forecast center (7-day deterministic pack) ----
+
+  routes.get("/forecast", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
+
+      const forecast = await buildOpsForecast(
+        {
+          overview: deps.overview,
+          bookings: deps.bookings,
+          maintenance: deps.maintenance,
+        },
+        { tenantId: principal.scope.tenantId, hotelId: resolved.hotelId },
+      );
+      if (!forecast) {
+        return sendError(c, 404, "NO_DATA", "Hotel or overview not found");
+      }
+      return c.json({ data: forecast });
     } catch (error) {
       return mapUnknownError(c, error);
     }

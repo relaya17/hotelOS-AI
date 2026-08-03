@@ -10,9 +10,11 @@ import type {
   HotelRepository,
   HrRepository,
   OpsRepository,
+  ReputationRepository,
   RoomRepository,
   TrustRepository,
   TurboRepository,
+  UpsellRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
@@ -26,18 +28,25 @@ import { fireAutomationTrigger } from "../../application/fire-automation-trigger
 import { ingestPmsReservation } from "../../application/ingest-pms-reservation.js";
 import { ingestSecurityWebhook } from "../../application/ingest-security-webhook.js";
 import { ingestSentryWebhook } from "../../application/ingest-sentry-webhook.js";
+import { ingestReputationReview } from "../../application/ingest-reputation-review.js";
 import { listPublicAvailability } from "../../application/public-availability.js";
 import { quoteRoomStay } from "../../application/room-rates.js";
 import { handleWhatsAppInbound } from "../../application/handle-whatsapp-inbound.js";
 import { runPublicBookAssistant } from "../../application/run-public-book-assistant.js";
+import {
+  decideUpsellOffer,
+  toPublicUpsellDto,
+} from "../../application/suggest-guest-upsells.js";
 import type { PaymentProvider } from "../../infrastructure/payment-provider.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type PublicRouteDeps = {
   readonly guestStays: GuestStayRepository;
   readonly feedback: FeedbackRepository;
+  readonly upsells: UpsellRepository;
   readonly hr: HrRepository;
   readonly ops: OpsRepository;
+  readonly reputation: ReputationRepository;
   readonly guestProfiles?: GuestProfileRepository;
   readonly hotels: HotelRepository;
   readonly rooms: RoomRepository;
@@ -61,6 +70,11 @@ export type PublicRouteDeps = {
   readonly sentryIngestSecret?: string;
   /** Fallback hotel UUID when Sentry events lack a hotelId tag. */
   readonly sentryDefaultHotelId?: string;
+  /**
+   * Reputation webhook secret (Bearer / X-HotelOS-Reputation-Secret).
+   * Required in production when OTA review ingest is enabled.
+   */
+  readonly reputationIngestSecret?: string;
   readonly isProduction?: boolean;
 };
 
@@ -117,6 +131,12 @@ const checkOutSchema = z.object({
 const folioSchema = z.object({
   email: z.string().email().max(200),
   bookingId: z.string().uuid(),
+});
+
+const guestUpsellDecideSchema = z.object({
+  email: z.string().email().max(200),
+  bookingId: z.string().uuid(),
+  decision: z.enum(["accepted", "declined"]),
 });
 
 const serviceRequestSchema = z.object({
@@ -215,6 +235,19 @@ function sentryIngestAuthorized(
     secret,
     isProduction,
     "x-hotelos-sentry-secret",
+  );
+}
+
+function reputationIngestAuthorized(
+  c: { req: { header: (name: string) => string | undefined } },
+  secret: string | undefined,
+  isProduction: boolean | undefined,
+): boolean {
+  return sharedSecretAuthorized(
+    c,
+    secret,
+    isProduction,
+    "x-hotelos-reputation-secret",
   );
 }
 
@@ -365,6 +398,61 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
         return c.json({ data: { skipped: true, reason: result.reason } });
       }
       return c.json({ data: result }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /**
+   * OTA / Google reputation review webhook (no JWT).
+   * Configure connector to POST here with
+   * Authorization: Bearer $REPUTATION_INGEST_SECRET (or X-HotelOS-Reputation-Secret).
+   */
+  routes.post("/reputation/ingest/:provider", async (c) => {
+    try {
+      if (
+        !reputationIngestAuthorized(
+          c,
+          deps.reputationIngestSecret,
+          deps.isProduction,
+        )
+      ) {
+        return sendError(
+          c,
+          401,
+          "UNAUTHORIZED",
+          "Invalid or missing reputation ingest secret",
+        );
+      }
+      const providerParsed = z
+        .enum(["generic", "google", "booking", "tripadvisor"])
+        .safeParse(c.req.param("provider"));
+      if (!providerParsed.success) {
+        return sendError(
+          c,
+          400,
+          "UNKNOWN_PROVIDER",
+          "Supported providers: generic, google, booking, tripadvisor",
+        );
+      }
+      const result = await ingestReputationReview(
+        {
+          hotels: deps.hotels,
+          ops: deps.ops,
+          reputation: deps.reputation,
+          audit: deps.audit,
+        },
+        {
+          provider: providerParsed.data,
+          body: await c.req.json(),
+          publicIngest: true,
+        },
+      );
+      if (!result.ok) {
+        const status = result.code === "HOTEL_NOT_FOUND" ? 404 : 500;
+        return sendError(c, status, result.code, result.message);
+      }
+      return c.json({ data: result }, result.duplicate ? 200 : 201);
     } catch (error) {
       return mapUnknownError(c, error);
     }
@@ -654,21 +742,30 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
     try {
       const body = lookupSchema.parse(await c.req.json());
       const stays = await deps.guestStays.lookupByEmail(body.email);
-      return c.json({
-        data: stays.map((stay) => ({
-          bookingId: stay.bookingId,
-          hotelId: stay.hotelId,
-          hotelName: stay.hotelName,
-          roomNumber: stay.roomNumber,
-          guestName: stay.guestName,
-          guestPhone: stay.guestPhone,
-          checkInDate: stay.checkInDate,
-          checkOutDate: stay.checkOutDate,
-          status: stay.status,
-          roomPrepStatus: stay.roomPrepStatus,
-          roomStatus: stay.roomStatus,
-        })),
-      });
+      const normalizedEmail = body.email.trim().toLowerCase();
+      const data = await Promise.all(
+        stays.map(async (stay) => {
+          const offers = await deps.upsells.listSuggestedForGuest(
+            Ids.booking(stay.bookingId),
+            normalizedEmail,
+          );
+          return {
+            bookingId: stay.bookingId,
+            hotelId: stay.hotelId,
+            hotelName: stay.hotelName,
+            roomNumber: stay.roomNumber,
+            guestName: stay.guestName,
+            guestPhone: stay.guestPhone,
+            checkInDate: stay.checkInDate,
+            checkOutDate: stay.checkOutDate,
+            status: stay.status,
+            roomPrepStatus: stay.roomPrepStatus,
+            roomStatus: stay.roomStatus,
+            upsellOffers: offers.map(toPublicUpsellDto),
+          };
+        }),
+      );
+      return c.json({ data });
     } catch (error) {
       return mapUnknownError(c, error);
     }
@@ -697,6 +794,56 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
       }
 
       return c.json({ data: buildGuestFolio(stayResult.stay) });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/stays/upsells/:id/decide", async (c) => {
+    try {
+      const offerId = z.string().uuid().parse(c.req.param("id"));
+      const body = guestUpsellDecideSchema.parse(await c.req.json());
+      const stayResult = await deps.guestStays.findActiveStayForEmail(
+        body.email,
+        body.bookingId,
+      );
+      if (!stayResult.ok) {
+        if (stayResult.reason === "BOOKING_NOT_FOUND") {
+          return sendError(c, 404, "BOOKING_NOT_FOUND", "Booking not found");
+        }
+        if (stayResult.reason === "EMAIL_MISMATCH") {
+          return sendError(
+            c,
+            403,
+            "EMAIL_MISMATCH",
+            "Booking does not belong to this email",
+          );
+        }
+        return sendError(c, 409, "STAY_NOT_ACTIVE", "Stay is not active");
+      }
+
+      const result = await decideUpsellOffer(deps.upsells, {
+        tenantId: Ids.tenant(stayResult.tenantId),
+        hotelId: Ids.hotel(stayResult.stay.hotelId),
+        offerId,
+        decision: body.decision,
+      });
+
+      if (!result.ok) {
+        const status =
+          result.error.code === "OFFER_NOT_FOUND"
+            ? 404
+            : result.error.code === "OFFER_ALREADY_DECIDED"
+              ? 409
+              : 400;
+        return sendError(c, status, result.error.code, result.error.message);
+      }
+
+      if (result.offer.bookingId !== body.bookingId) {
+        return sendError(c, 404, "OFFER_NOT_FOUND", "Offer not found for stay");
+      }
+
+      return c.json({ data: toPublicUpsellDto(result.offer) });
     } catch (error) {
       return mapUnknownError(c, error);
     }

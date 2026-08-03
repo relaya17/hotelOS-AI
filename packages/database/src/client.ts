@@ -636,6 +636,29 @@ export async function migrate(client: Client): Promise<void> {
     CREATE INDEX IF NOT EXISTS guest_feedback_tenant_idx ON guest_feedback(tenant_id);
     CREATE INDEX IF NOT EXISTS guest_feedback_hotel_idx ON guest_feedback(hotel_id);
 
+    CREATE TABLE IF NOT EXISTS reputation_reviews (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      source TEXT NOT NULL,
+      external_id TEXT NOT NULL,
+      rating INTEGER NOT NULL,
+      title TEXT,
+      body TEXT NOT NULL,
+      author_name TEXT,
+      review_url TEXT,
+      reviewed_at TEXT NOT NULL,
+      sentiment TEXT NOT NULL,
+      topics_json TEXT NOT NULL,
+      task_id TEXT REFERENCES department_tasks(id),
+      created_at TEXT NOT NULL,
+      UNIQUE(tenant_id, source, external_id)
+    );
+    CREATE INDEX IF NOT EXISTS reputation_reviews_tenant_idx ON reputation_reviews(tenant_id);
+    CREATE INDEX IF NOT EXISTS reputation_reviews_hotel_idx ON reputation_reviews(hotel_id);
+    CREATE INDEX IF NOT EXISTS reputation_reviews_hotel_reviewed_idx ON reputation_reviews(hotel_id, reviewed_at);
+    CREATE INDEX IF NOT EXISTS reputation_reviews_source_external_idx ON reputation_reviews(tenant_id, source, external_id);
+
     CREATE TABLE IF NOT EXISTS notification_outbox (
       id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL REFERENCES tenants(id),
@@ -1047,6 +1070,61 @@ export async function migrate(client: Client): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS briefing_goals_tenant_idx ON briefing_goals(tenant_id);
     CREATE INDEX IF NOT EXISTS briefing_goals_room_idx ON briefing_goals(room_id);
+  `);
+
+  // Upsell AI MVP — guest stay upgrade/spa/dinner/late checkout offers
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS upsell_offers (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      booking_id TEXT REFERENCES bookings(id),
+      guest_email TEXT,
+      offer_type TEXT NOT NULL,
+      title_he TEXT NOT NULL,
+      description_he TEXT NOT NULL,
+      price_amount INTEGER NOT NULL,
+      currency TEXT NOT NULL,
+      status TEXT NOT NULL,
+      source TEXT NOT NULL,
+      suggested_at TEXT NOT NULL,
+      decided_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS upsell_offers_tenant_idx ON upsell_offers(tenant_id);
+    CREATE INDEX IF NOT EXISTS upsell_offers_hotel_idx ON upsell_offers(hotel_id);
+    CREATE INDEX IF NOT EXISTS upsell_offers_booking_idx ON upsell_offers(booking_id);
+    CREATE INDEX IF NOT EXISTS upsell_offers_hotel_booking_idx
+      ON upsell_offers(hotel_id, booking_id);
+    CREATE INDEX IF NOT EXISTS upsell_offers_booking_type_status_idx
+      ON upsell_offers(booking_id, offer_type, status);
+    CREATE UNIQUE INDEX IF NOT EXISTS upsell_offers_booking_type_suggested_uidx
+      ON upsell_offers(booking_id, offer_type)
+      WHERE status = 'suggested';
+  `);
+
+  // Revenue optimization — HITL rate suggestions (no auto PMS writeback)
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS revenue_suggestions (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      period_start TEXT NOT NULL,
+      period_end TEXT NOT NULL,
+      current_occupancy_pct INTEGER NOT NULL,
+      suggested_delta_pct INTEGER NOT NULL,
+      rationale_he TEXT NOT NULL,
+      status TEXT NOT NULL,
+      decided_by_user_id TEXT REFERENCES users(id),
+      decided_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS revenue_suggestions_tenant_idx ON revenue_suggestions(tenant_id);
+    CREATE INDEX IF NOT EXISTS revenue_suggestions_hotel_idx ON revenue_suggestions(hotel_id);
+    CREATE INDEX IF NOT EXISTS revenue_suggestions_hotel_status_idx
+      ON revenue_suggestions(hotel_id, status);
+    CREATE INDEX IF NOT EXISTS revenue_suggestions_hotel_period_idx
+      ON revenue_suggestions(hotel_id, period_start);
   `);
 }
 

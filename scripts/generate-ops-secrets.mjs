@@ -25,11 +25,13 @@ function secret(bytes = 32) {
 const cron = secret();
 const security = secret();
 const sentry = secret();
+const reputation = secret();
 
 console.log("HotelOS ops secrets (generated locally — copy to Vercel, do not commit):\n");
 console.log(`CRON_SECRET=${cron}`);
 console.log(`SECURITY_INGEST_SECRET=${security}`);
 console.log(`SENTRY_INGEST_SECRET=${sentry}`);
+console.log(`REPUTATION_INGEST_SECRET=${reputation}`);
 console.log(`
 Where to set:
   • Vercel → hotel-os-ai-api-<suffix> → Settings → Environment Variables → Production
@@ -38,6 +40,7 @@ Where to set:
 CRON_SECRET enables /v1/cron/* (Vercel Cron sends Authorization: Bearer …).
 SECURITY_INGEST_SECRET enables POST /v1/public/security/ingest/:provider (VMS webhooks).
 SENTRY_INGEST_SECRET enables POST /v1/public/sentry/ingest (Sentry → IT tasks).
+REPUTATION_INGEST_SECRET enables POST /v1/public/reputation/ingest/:provider (OTA reviews).
 
 After setting on Vercel, redeploy API once (respect Hobby rate-limit window).
 Verify: pnpm check:vercel-api
@@ -53,6 +56,7 @@ if (write) {
     ["CRON_SECRET", cron],
     ["SECURITY_INGEST_SECRET", security],
     ["SENTRY_INGEST_SECRET", sentry],
+    ["REPUTATION_INGEST_SECRET", reputation],
   ]) {
     const re = new RegExp(`^${key}=.*$`, "m");
     text = re.test(text) ? text.replace(re, `${key}=${val}`) : `${text.trimEnd()}\n${key}=${val}\n`;

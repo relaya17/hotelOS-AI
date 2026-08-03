@@ -80,6 +80,7 @@ export async function runCioDailyDigest(
         kashrut: deps.kashrut,
         hotels: deps.hotels,
         turbo: deps.turbo,
+        bookings: deps.bookings,
         gateway: deps.gateway,
         companyKnowledge: deps.companyKnowledge,
         trustedSources: deps.trustedSources,

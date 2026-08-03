@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { listHotels, type HotelDto } from "@hotelos/web-client";
+import { IncidentCenterPanel } from "@hotelos/features";
 import { ApprovalsPanel } from "./facilities/approvals-panel.js";
 import { DailyBriefingPanel } from "./facilities/daily-briefing-panel.js";
 import { DepartmentsPanel } from "./facilities/departments-panel.js";
@@ -16,6 +17,7 @@ import { TwinPanel } from "./facilities/twin-panel.js";
 
 type SubView =
   | "briefing"
+  | "incidents"
   | "departments"
   | "housekeeping"
   | "reception"
@@ -31,6 +33,7 @@ type SubView =
 
 const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "briefing", label: "תדריך יומי" },
+  { key: "incidents", label: "מרכז אירועים" },
   { key: "departments", label: "מחלקות ומשימות" },
   { key: "housekeeping", label: "משק בית" },
   { key: "reception", label: "קבלה" },
@@ -153,6 +156,9 @@ export function FacilitiesPage() {
         <div className="facilities__content">
           {view === "briefing" ? (
             <DailyBriefingPanel hotelId={selectedHotelId} />
+          ) : null}
+          {view === "incidents" ? (
+            <IncidentCenterPanel hotelId={selectedHotelId} compact />
           ) : null}
           {view === "departments" ? (
             <DepartmentsPanel hotelId={selectedHotelId} />

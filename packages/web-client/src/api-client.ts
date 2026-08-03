@@ -187,6 +187,22 @@ export type ChainOverviewDto = {
   readonly hotels: readonly HotelOverviewDto[];
 };
 
+export type GuestUpsellOfferDto = {
+  readonly id: string;
+  readonly offerType:
+    | "room_upgrade"
+    | "spa"
+    | "dinner"
+    | "late_checkout"
+    | "other";
+  readonly titleHe: string;
+  readonly descriptionHe: string;
+  readonly priceAmount: number;
+  readonly currency: string;
+  readonly status: "suggested" | "accepted" | "declined" | "expired";
+  readonly suggestedAt: string;
+};
+
 export type GuestStayDto = {
   readonly bookingId: string;
   readonly hotelId: string;
@@ -199,6 +215,7 @@ export type GuestStayDto = {
   readonly status: string;
   readonly roomPrepStatus: RoomPrepStatusDto | null;
   readonly roomStatus: string;
+  readonly upsellOffers?: readonly GuestUpsellOfferDto[];
 };
 
 export type GuestFolioDto = {
@@ -579,6 +596,105 @@ export async function createBooking(
   const body = payload as { data?: BookingDto };
   if (!body.data) {
     throw new Error("Invalid create booking response");
+  }
+  return body.data;
+}
+
+export type UpsellOfferDto = {
+  readonly id: string;
+  readonly hotelId: string;
+  readonly bookingId: string | null;
+  readonly guestEmail: string | null;
+  readonly offerType: GuestUpsellOfferDto["offerType"];
+  readonly titleHe: string;
+  readonly descriptionHe: string;
+  readonly priceAmount: number;
+  readonly currency: string;
+  readonly status: GuestUpsellOfferDto["status"];
+  readonly source: "rules" | "agent.guest";
+  readonly suggestedAt: string;
+  readonly decidedAt: string | null;
+  readonly createdAt: string;
+};
+
+export async function suggestGuestUpsells(input: {
+  readonly hotelId: string;
+  readonly bookingId: string;
+}): Promise<readonly UpsellOfferDto[]> {
+  const { payload } = await authedFetch("/v1/ops/upsells/suggest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const body = payload as { data?: UpsellOfferDto[] };
+  if (!Array.isArray(body.data)) {
+    throw new Error("Invalid suggest upsells response");
+  }
+  return body.data;
+}
+
+export async function listGuestUpsells(input: {
+  readonly hotelId: string;
+  readonly bookingId: string;
+}): Promise<readonly UpsellOfferDto[]> {
+  const params = new URLSearchParams({
+    hotelId: input.hotelId,
+    bookingId: input.bookingId,
+  });
+  const { payload } = await authedFetch(`/v1/ops/upsells?${params.toString()}`);
+  const body = payload as { data?: UpsellOfferDto[] };
+  if (!Array.isArray(body.data)) {
+    throw new Error("Invalid list upsells response");
+  }
+  return body.data;
+}
+
+export async function decideGuestUpsell(input: {
+  readonly hotelId: string;
+  readonly offerId: string;
+  readonly decision: "accepted" | "declined";
+}): Promise<UpsellOfferDto> {
+  const params = new URLSearchParams({ hotelId: input.hotelId });
+  const { payload } = await authedFetch(
+    `/v1/ops/upsells/${input.offerId}/decide?${params.toString()}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision: input.decision }),
+    },
+  );
+  const body = payload as { data?: UpsellOfferDto };
+  if (!body.data) {
+    throw new Error("Invalid decide upsell response");
+  }
+  return body.data;
+}
+
+export async function decidePublicGuestUpsell(input: {
+  readonly email: string;
+  readonly bookingId: string;
+  readonly offerId: string;
+  readonly decision: "accepted" | "declined";
+}): Promise<GuestUpsellOfferDto> {
+  const response = await fetch(
+    `${getApiBase()}/v1/public/stays/upsells/${input.offerId}/decide`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: input.email,
+        bookingId: input.bookingId,
+        decision: input.decision,
+      }),
+    },
+  );
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Upsell decision failed"));
+  }
+  const body = payload as { data?: GuestUpsellOfferDto };
+  if (!body.data) {
+    throw new Error("Invalid public upsell decision response");
   }
   return body.data;
 }
@@ -2049,6 +2165,70 @@ export async function fetchOpsFeedback(hotelId: string): Promise<{
   return payload.data;
 }
 
+export type ReputationReviewDto = {
+  readonly id: string;
+  readonly hotelId: string;
+  readonly source: "google" | "booking" | "tripadvisor" | "generic";
+  readonly externalId: string;
+  readonly rating: number;
+  readonly title: string | null;
+  readonly body: string;
+  readonly authorName: string | null;
+  readonly reviewUrl: string | null;
+  readonly reviewedAt: string;
+  readonly sentiment: "positive" | "neutral" | "negative";
+  readonly topics: readonly string[];
+  readonly taskId: string | null;
+  readonly createdAt: string;
+};
+
+export async function fetchReputationReviews(
+  hotelId: string,
+  options?: {
+    readonly sentiment?: "positive" | "neutral" | "negative";
+    readonly limit?: number;
+  },
+): Promise<readonly ReputationReviewDto[]> {
+  const params = new URLSearchParams(hotelQuery(hotelId));
+  if (options?.sentiment !== undefined) {
+    params.set("sentiment", options.sentiment);
+  }
+  if (options?.limit !== undefined) {
+    params.set("limit", String(options.limit));
+  }
+  const payload = (await authGet(
+    `/v1/ops/reputation/reviews?${params.toString()}`,
+  )) as { data: ReputationReviewDto[] };
+  return payload.data;
+}
+
+export async function ingestReputationReviewOps(
+  provider: "generic" | "google" | "booking" | "tripadvisor",
+  body: unknown,
+): Promise<{
+  readonly reviewId: string;
+  readonly hotelId: string;
+  readonly source: string;
+  readonly sentiment: "positive" | "neutral" | "negative";
+  readonly taskId: string | null;
+  readonly duplicate: boolean;
+}> {
+  const payload = (await authPost(
+    `/v1/ops/reputation/ingest/${encodeURIComponent(provider)}`,
+    body,
+  )) as {
+    data: {
+      reviewId: string;
+      hotelId: string;
+      source: string;
+      sentiment: "positive" | "neutral" | "negative";
+      taskId: string | null;
+      duplicate: boolean;
+    };
+  };
+  return payload.data;
+}
+
 export async function submitGuestFeedback(input: {
   bookingId: string;
   rating: number;
@@ -2315,6 +2495,123 @@ export type OpsAnomalyDto = {
 export async function fetchOpsAnomalies(): Promise<readonly OpsAnomalyDto[]> {
   const payload = (await authGet("/v1/ops/anomalies")) as {
     data: readonly OpsAnomalyDto[];
+  };
+  return payload.data;
+}
+
+export type RevenueSuggestionStatus = "suggested" | "approved" | "rejected";
+
+export type RevenueSuggestionDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly hotelId: string;
+  readonly periodStart: string;
+  readonly periodEnd: string;
+  readonly currentOccupancyPct: number;
+  readonly suggestedDeltaPct: number;
+  readonly rationaleHe: string;
+  readonly status: RevenueSuggestionStatus;
+  readonly decidedByUserId: string | null;
+  readonly decidedAt: string | null;
+  readonly createdAt: string;
+};
+
+export type GenerateRevenueSuggestionsResultDto = {
+  readonly hotelId: string;
+  readonly hotelName: string;
+  readonly generatedAt: string;
+  readonly horizonDays: number;
+  readonly suggestions: readonly RevenueSuggestionDto[];
+};
+
+export async function generateRevenueSuggestions(
+  hotelId: string,
+  horizonDays?: number,
+): Promise<GenerateRevenueSuggestionsResultDto> {
+  const payload = (await authPost("/v1/ops/revenue/suggestions/generate", {
+    hotelId,
+    ...(horizonDays !== undefined ? { horizonDays } : {}),
+  })) as { data: GenerateRevenueSuggestionsResultDto };
+  return payload.data;
+}
+
+export async function fetchRevenueSuggestions(
+  hotelId: string,
+  status?: RevenueSuggestionStatus,
+): Promise<readonly RevenueSuggestionDto[]> {
+  const statusQuery =
+    status !== undefined ? `&status=${encodeURIComponent(status)}` : "";
+  const payload = (await authGet(
+    `/v1/ops/revenue/suggestions?${hotelQuery(hotelId)}${statusQuery}`,
+  )) as { data: readonly RevenueSuggestionDto[] };
+  return payload.data;
+}
+
+export async function decideRevenueSuggestion(
+  suggestionId: string,
+  status: "approved" | "rejected",
+): Promise<RevenueSuggestionDto> {
+  const payload = (await authPost(
+    `/v1/ops/revenue/suggestions/${suggestionId}/decide`,
+    { status },
+  )) as { data: RevenueSuggestionDto };
+  return payload.data;
+}
+
+export type OpsForecastDayDto = {
+  readonly date: string;
+  readonly arrivalsCount: number;
+  readonly departuresCount: number;
+  readonly occupancyEstimatePct: number;
+  readonly openMaintenanceCount: number;
+  readonly staffingHintHe: string;
+};
+
+export type OpsForecastDto = {
+  readonly hotelId: string;
+  readonly hotelName: string;
+  readonly generatedAt: string;
+  readonly days: readonly OpsForecastDayDto[];
+  readonly summaryBulletsHe: readonly string[];
+};
+
+export async function fetchOpsForecast(hotelId: string): Promise<OpsForecastDto> {
+  const payload = (await authGet(
+    `/v1/ops/forecast?${hotelQuery(hotelId)}`,
+  )) as { data: OpsForecastDto };
+  return payload.data;
+}
+
+export type IncidentSeverity = "low" | "medium" | "high" | "urgent";
+export type IncidentDepartment = "security" | "it" | "maintenance";
+
+export type IncidentDto = {
+  readonly id: string;
+  readonly hotelId: string;
+  readonly hotelName: string;
+  readonly department: IncidentDepartment;
+  readonly severity: IncidentSeverity;
+  readonly title: string;
+  readonly source: string;
+  readonly createdAt: string;
+  readonly status: string;
+  readonly taskId: string | null;
+};
+
+export type IncidentCenterDto = {
+  readonly generatedAt: string;
+  readonly incidents: readonly IncidentDto[];
+};
+
+export async function fetchIncidentCenter(
+  hotelId?: string,
+): Promise<IncidentCenterDto> {
+  const query =
+    hotelId !== undefined && hotelId.length > 0
+      ? `?hotelId=${encodeURIComponent(hotelId)}`
+      : "";
+  const payload = (await authGet(`/v1/ops/incidents${query}`)) as {
+    data: IncidentCenterDto;
   };
   return payload.data;
 }

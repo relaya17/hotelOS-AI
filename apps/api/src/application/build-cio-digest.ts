@@ -1,4 +1,5 @@
 import type {
+  BookingRepository,
   FeedbackRepository,
   HotelRepository,
   KashrutRepository,
@@ -9,6 +10,7 @@ import type {
   TurboRepository,
 } from "@hotelos/database";
 import type { HotelId, TenantId } from "@hotelos/shared";
+import { buildOpsForecast, forecastBulletsHe } from "./build-ops-forecast.js";
 import { detectOpsAnomalies } from "./detect-ops-anomalies.js";
 
 export const CIO_ROLES = [
@@ -57,6 +59,7 @@ export type CioDigestDeps = {
   readonly kashrut: KashrutRepository;
   readonly hotels: HotelRepository;
   readonly turbo: TurboRepository;
+  readonly bookings: BookingRepository;
 };
 
 /**
@@ -148,6 +151,21 @@ export async function buildCioDigest(
         .slice(0, 4)
         .map((row) => `אנומליה: ${row.titleHe} — ${row.evidenceHe}`);
 
+      let forecastBullets: readonly string[] = [];
+      if (role === "ceo" || role === "cfo" || role === "owner") {
+        const forecast = await buildOpsForecast(
+          {
+            overview: deps.overview,
+            bookings: deps.bookings,
+            maintenance: deps.maintenance,
+          },
+          { tenantId, hotelId },
+        );
+        if (forecast) {
+          forecastBullets = forecastBulletsHe(forecast);
+        }
+      }
+
       const bulletsHe = buildRoleBullets(role, {
         hotelName: hotel.name,
         occupancyPercent,
@@ -166,6 +184,7 @@ export async function buildCioDigest(
         accounts,
         journalCount: journal.length,
         anomalyBulletsHe,
+        forecastBulletsHe: forecastBullets,
       });
 
       return {
@@ -234,6 +253,7 @@ type RoleBulletInput = {
   readonly accounts: readonly { readonly balanceMinor: number; readonly currency: string }[];
   readonly journalCount: number;
   readonly anomalyBulletsHe: readonly string[];
+  readonly forecastBulletsHe: readonly string[];
 };
 
 function buildRoleBullets(role: CioRole, input: RoleBulletInput): readonly string[] {
@@ -241,6 +261,7 @@ function buildRoleBullets(role: CioRole, input: RoleBulletInput): readonly strin
 
   switch (role) {
     case "owner": {
+      bullets.push(...input.forecastBulletsHe);
       bullets.push(
         input.averageFeedbackRating !== null && input.averageFeedbackRating < 3.5
           ? `סיכון מוניטין: דירוג אורחים נמוך (${input.averageFeedbackRating.toFixed(1)}/5) ב${input.hotelName}.`
@@ -261,6 +282,7 @@ function buildRoleBullets(role: CioRole, input: RoleBulletInput): readonly strin
       break;
     }
     case "ceo": {
+      bullets.push(...input.forecastBulletsHe);
       bullets.push(
         `תפוסה ${input.occupancyPercent}% · ${input.activeBookings} הזמנות פעילות ב${input.hotelName}.`,
       );
@@ -287,6 +309,7 @@ function buildRoleBullets(role: CioRole, input: RoleBulletInput): readonly strin
       break;
     }
     case "cfo": {
+      bullets.push(...input.forecastBulletsHe);
       const totalBalanceMinor = input.accounts.reduce(
         (sum, account) => sum + account.balanceMinor,
         0,

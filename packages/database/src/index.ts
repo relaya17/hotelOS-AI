@@ -149,6 +149,31 @@ export {
   type SubmitGuestFeedbackInput,
 } from "./repositories/feedback-repository.js";
 export {
+  createUpsellRepository,
+  type BookingUpsellContext,
+  type CreateUpsellOfferInput,
+  type PersistedUpsellOffer,
+  type UpsellOfferSource,
+  type UpsellOfferStatus,
+  type UpsellOfferType,
+  type UpsellRepository,
+} from "./repositories/upsell-repository.js";
+export {
+  createRevenueSuggestionsRepository,
+  type CreateRevenueSuggestionInput,
+  type PersistedRevenueSuggestion,
+  type RevenueSuggestionStatus,
+  type RevenueSuggestionsRepository,
+} from "./repositories/revenue-suggestions-repository.js";
+export {
+  createReputationRepository,
+  type CreateReputationReviewInput,
+  type PersistedReputationReview,
+  type ReputationRepository,
+  type ReputationReviewSource,
+  type ReputationSentiment,
+} from "./repositories/reputation-repository.js";
+export {
   NOTIFICATION_MAX_ATTEMPTS,
   createNotificationRepository,
   type EnqueueNotificationInput,

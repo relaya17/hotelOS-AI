@@ -244,6 +244,48 @@ export const purchaseOrderItems = sqliteTable(
   ],
 );
 
+/**
+ * External OTA / Google reputation reviews — ingested via webhook or staff path.
+ * Negative or low-rated reviews can spawn front-office department_tasks.
+ */
+export const reputationReviews = sqliteTable(
+  "reputation_reviews",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    source: text("source").notNull(),
+    externalId: text("external_id").notNull(),
+    rating: integer("rating").notNull(),
+    title: text("title"),
+    body: text("body").notNull(),
+    authorName: text("author_name"),
+    reviewUrl: text("review_url"),
+    reviewedAt: text("reviewed_at").notNull(),
+    sentiment: text("sentiment").notNull(),
+    topicsJson: text("topics_json").notNull(),
+    taskId: text("task_id").references(() => departmentTasks.id),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("reputation_reviews_tenant_idx").on(table.tenantId),
+    index("reputation_reviews_hotel_idx").on(table.hotelId),
+    index("reputation_reviews_hotel_reviewed_idx").on(
+      table.hotelId,
+      table.reviewedAt,
+    ),
+    index("reputation_reviews_source_external_idx").on(
+      table.tenantId,
+      table.source,
+      table.externalId,
+    ),
+  ],
+);
+
 export const guestFeedback = sqliteTable(
   "guest_feedback",
   {
@@ -316,6 +358,81 @@ export const jobCandidates = sqliteTable(
   },
   (table) => [
     index("job_candidates_posting_idx").on(table.jobPostingId),
+  ],
+);
+
+/** AI/rules upsell offers for in-house and upcoming guest stays. */
+export const upsellOffers = sqliteTable(
+  "upsell_offers",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    bookingId: text("booking_id").references(() => bookings.id),
+    guestEmail: text("guest_email"),
+    offerType: text("offer_type").notNull(),
+    titleHe: text("title_he").notNull(),
+    descriptionHe: text("description_he").notNull(),
+    priceAmount: integer("price_amount").notNull(),
+    currency: text("currency").notNull(),
+    status: text("status").notNull(),
+    source: text("source").notNull(),
+    suggestedAt: text("suggested_at").notNull(),
+    decidedAt: text("decided_at"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("upsell_offers_tenant_idx").on(table.tenantId),
+    index("upsell_offers_hotel_idx").on(table.hotelId),
+    index("upsell_offers_booking_idx").on(table.bookingId),
+    index("upsell_offers_hotel_booking_idx").on(table.hotelId, table.bookingId),
+    index("upsell_offers_booking_type_status_idx").on(
+      table.bookingId,
+      table.offerType,
+      table.status,
+    ),
+  ],
+);
+
+/**
+ * Revenue rate suggestions (HITL) — deterministic occupancy rules, no PMS writeback.
+ * Staff approve/reject before any pricing action outside HotelOS.
+ */
+export const revenueSuggestions = sqliteTable(
+  "revenue_suggestions",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    periodStart: text("period_start").notNull(),
+    periodEnd: text("period_end").notNull(),
+    currentOccupancyPct: integer("current_occupancy_pct").notNull(),
+    suggestedDeltaPct: integer("suggested_delta_pct").notNull(),
+    rationaleHe: text("rationale_he").notNull(),
+    status: text("status").notNull(),
+    decidedByUserId: text("decided_by_user_id").references(() => users.id),
+    decidedAt: text("decided_at"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("revenue_suggestions_tenant_idx").on(table.tenantId),
+    index("revenue_suggestions_hotel_idx").on(table.hotelId),
+    index("revenue_suggestions_hotel_status_idx").on(
+      table.hotelId,
+      table.status,
+    ),
+    index("revenue_suggestions_hotel_period_idx").on(
+      table.hotelId,
+      table.periodStart,
+    ),
   ],
 );
 

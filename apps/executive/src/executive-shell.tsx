@@ -20,6 +20,7 @@ import { BriefingRoomsPage } from "./briefing-rooms-page.js";
 import { ChainDashboard } from "./chain-dashboard.js";
 import { CioDigestPage } from "./cio-digest-page.js";
 import { FinanceDoctorPage } from "./finance-doctor-page.js";
+import { IncidentCenterPage } from "./incident-center-page.js";
 import { KnowledgeCommandPage } from "./knowledge-command-page.js";
 import { OpsDashboardPage } from "./ops-dashboard-page.js";
 import { TrustPaymentsPage } from "./trust-payments-page.js";
@@ -43,6 +44,7 @@ type View =
   | { readonly kind: "voice" }
   | { readonly kind: "trust" }
   | { readonly kind: "ops" }
+  | { readonly kind: "incidents" }
   | { readonly kind: "cio" }
   | { readonly kind: "finance" }
   | { readonly kind: "approvals" }
@@ -76,6 +78,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
   const navItems = [
     ["portfolio", tUi(locale, "nav.portfolio")],
     ["ops", tUi(locale, "nav.ops")],
+    ["incidents", tUi(locale, "nav.incidents")],
     ["knowledge", tUi(locale, "nav.knowledge")],
     ["cio", tUi(locale, "nav.cio")],
     ["finance", tUi(locale, "nav.finance")],
@@ -174,6 +177,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
           />
         ) : null}
         {view.kind === "ops" ? <OpsDashboardPage /> : null}
+        {view.kind === "incidents" ? <IncidentCenterPage /> : null}
         {view.kind === "knowledge" ? (
           <KnowledgeCommandPage
             onOpenCio={() => setView({ kind: "cio" })}

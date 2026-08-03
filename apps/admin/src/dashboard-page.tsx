@@ -12,6 +12,7 @@ import {
   type RoomDto,
   type StoredUser,
 } from "@hotelos/web-client";
+import { BookingUpsellPanel } from "./booking-upsell-panel.js";
 
 export type DashboardPageProps = {
   readonly user: StoredUser;
@@ -342,7 +343,7 @@ export function DashboardPage({ user, hideChrome = true }: DashboardPageProps) {
         {!opsLoading && opsError === undefined ? (
           <ul className="list">
             {bookings.map((booking) => (
-              <li key={booking.id} className="row">
+              <li key={booking.id} className="row row--booking">
                 <div className="row__main">
                   <h3>{booking.guestName}</h3>
                   <p>
@@ -380,6 +381,12 @@ export function DashboardPage({ user, hideChrome = true }: DashboardPageProps) {
                     </Button>
                   ) : null}
                 </div>
+                {selectedHotelId ? (
+                  <BookingUpsellPanel
+                    hotelId={selectedHotelId}
+                    booking={booking}
+                  />
+                ) : null}
               </li>
             ))}
           </ul>
@@ -458,6 +465,8 @@ export function DashboardPage({ user, hideChrome = true }: DashboardPageProps) {
         .hint { max-width:46ch; }
         .list { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
         .row { display:flex; flex-wrap:wrap; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-4); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:#fff; transition:border-color var(--motion-fast), box-shadow var(--motion-fast); }
+        .row--booking { display:grid; grid-template-columns:1fr auto; align-items:center; }
+        .row--booking .upsell-panel { grid-column:1 / -1; }
         .row:hover { border-color:var(--color-line-strong); box-shadow:var(--shadow-soft); }
         .row__main { flex:1 1 12rem; min-width:0; }
         .row__actions { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; justify-content:flex-end; }
