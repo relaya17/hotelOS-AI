@@ -8,11 +8,13 @@ import type {
   OverviewRepository,
   UserRepository,
 } from "@hotelos/database";
+import { MEETING_POLICY_VERSION } from "@hotelos/database";
 import type { JwtTokenService } from "@hotelos/auth";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
 import { consultBriefingAgent } from "../../application/consult-briefing-agent.js";
+import { endBriefingWithSecretary } from "../../application/end-briefing-with-secretary.js";
 import {
   extensionFromMime,
   type RecordingStorage,
@@ -33,9 +35,12 @@ export type BriefingRouteDeps = {
 };
 
 const roomIdSchema = z.string().uuid();
+const roomKindSchema = z.enum(["committee", "training", "all_hands"]);
+
 const createRoomSchema = z.object({
   title: z.string().trim().min(3).max(160),
   purpose: z.string().trim().min(2).max(80),
+  roomKind: roomKindSchema.default("committee"),
   participants: z
     .array(
       z.object({
@@ -45,6 +50,26 @@ const createRoomSchema = z.object({
     )
     .max(20)
     .default([]),
+});
+
+const joinRoomSchema = z.object({
+  inviteToken: z.string().uuid(),
+});
+
+const recordingConsentSchema = z.object({
+  accepted: z.literal(true),
+});
+
+const createGoalSchema = z.object({
+  title: z.string().trim().min(2).max(160),
+  description: z.string().trim().max(500).default(""),
+  ownerDisplayName: z.string().trim().min(2).max(120).optional(),
+  ownerUserId: z.string().uuid().optional(),
+  dueDate: z.string().datetime().optional(),
+});
+
+const updateGoalStatusSchema = z.object({
+  status: z.enum(["open", "done", "cancelled"]),
 });
 
 const shareAgentSchema = z.object({
@@ -77,6 +102,9 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
           status: room.status,
           hostUserId: room.hostUserId,
           chainId: room.chainId,
+          roomKind: room.roomKind,
+          inviteToken: room.inviteToken,
+          policyVersion: room.policyVersion,
           createdAt: room.createdAt,
         })),
       });
@@ -106,6 +134,7 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
         chainId,
         title: body.title,
         purpose: body.purpose,
+        roomKind: body.roomKind,
         hostUserId: principal.userId,
         createdAt: new Date().toISOString(),
         participants: [
@@ -131,6 +160,7 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
         resourceId: room.id,
         metadata: {
           purpose: room.purpose,
+          roomKind: room.roomKind,
           participantCount: body.participants.length + 1,
         },
         createdAt: new Date().toISOString(),
@@ -144,11 +174,64 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
             status: room.status,
             hostUserId: room.hostUserId,
             chainId: room.chainId,
+            roomKind: room.roomKind,
+            inviteToken: room.inviteToken,
+            policyVersion: room.policyVersion,
             createdAt: room.createdAt,
           },
         },
         201,
       );
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/join", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = joinRoomSchema.parse(await c.req.json());
+      const room = await deps.briefing.findByInviteToken(
+        principal.scope.tenantId,
+        body.inviteToken,
+      );
+      if (!room) {
+        return sendError(
+          c,
+          404,
+          "INVITE_NOT_FOUND",
+          "קישור הזמנה לפגישה לא נמצא",
+        );
+      }
+
+      const displayName = await resolveDisplayName(deps.users, principal.userId);
+      const attendance = await deps.briefing.joinRoom({
+        roomId: room.id,
+        tenantId: principal.scope.tenantId,
+        userId: principal.userId,
+        displayName,
+      });
+      if (!attendance) {
+        return sendError(c, 404, "ROOM_NOT_FOUND", "Briefing room not found");
+      }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "briefing.room.join",
+        resourceType: "briefing_room",
+        resourceId: room.id,
+        metadata: { inviteToken: body.inviteToken },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({
+        data: {
+          room: toRoomDto(room),
+          attendance: toAttendanceDto(attendance),
+        },
+      });
     } catch (error) {
       return mapUnknownError(c, error);
     }
@@ -198,20 +281,223 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
     try {
       const principal = c.get("principal");
       const roomId = Ids.briefingRoom(roomIdSchema.parse(c.req.param("roomId")));
-      const room = await deps.briefing.setStatus(
-        principal.scope.tenantId,
-        roomId,
-        "ended",
+      const result = await endBriefingWithSecretary(
+        deps.agents,
+        deps.briefing,
+        deps.gateway,
+        {
+          tenantId: principal.scope.tenantId,
+          roomId,
+          actorUserId: principal.userId,
+        },
       );
-      if (!room) {
-        return sendError(c, 404, "ROOM_NOT_FOUND", "Briefing room not found");
+      if (!result.ok) {
+        const status = result.error.code === "ROOM_NOT_FOUND" ? 404 : 400;
+        return sendError(c, status, result.error.code, result.error.message);
       }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "briefing.room.end",
+        resourceType: "briefing_room",
+        resourceId: roomId,
+        metadata: {
+          summaryId: result.value.summary.id,
+          idempotent: result.value.idempotent,
+          goalCount: result.value.goals.length,
+        },
+        createdAt: new Date().toISOString(),
+      });
+
       return c.json({
         data: {
-          id: room.id,
-          status: room.status,
+          id: result.value.roomId,
+          status: result.value.status,
+          summary: toSummaryDto(result.value.summary),
+          goals: result.value.goals.map(toGoalDto),
+          idempotent: result.value.idempotent,
         },
       });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/:roomId/leave", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const roomId = Ids.briefingRoom(roomIdSchema.parse(c.req.param("roomId")));
+      const ok = await deps.briefing.leaveRoom({
+        roomId,
+        tenantId: principal.scope.tenantId,
+        userId: principal.userId,
+      });
+      if (!ok) {
+        return sendError(
+          c,
+          404,
+          "NOT_IN_ROOM",
+          "לא נמצאה נוכחות פעילה בחדר",
+        );
+      }
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "briefing.room.leave",
+        resourceType: "briefing_room",
+        resourceId: roomId,
+        metadata: {},
+        createdAt: new Date().toISOString(),
+      });
+      return c.json({ data: { ok: true } });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/:roomId/recording-consent", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const roomId = Ids.briefingRoom(roomIdSchema.parse(c.req.param("roomId")));
+      const body = recordingConsentSchema.parse(await c.req.json());
+      if (!body.accepted) {
+        return sendError(
+          c,
+          400,
+          "CONSENT_REQUIRED",
+          "יש לאשר את מדיניות ההקלטה",
+        );
+      }
+
+      const detail = await deps.briefing.getDetail(
+        principal.scope.tenantId,
+        roomId,
+      );
+      if (!detail) {
+        return sendError(c, 404, "ROOM_NOT_FOUND", "Briefing room not found");
+      }
+      if (detail.room.policyVersion !== MEETING_POLICY_VERSION) {
+        return sendError(
+          c,
+          409,
+          "POLICY_VERSION_MISMATCH",
+          "גרסת מדיניות הפגישה אינה תואמת — יש לרענן ולאשר מחדש",
+        );
+      }
+
+      const ok = await deps.briefing.recordRecordingConsent({
+        roomId,
+        tenantId: principal.scope.tenantId,
+        userId: principal.userId,
+        policyVersion: MEETING_POLICY_VERSION,
+      });
+      if (!ok) {
+        return sendError(
+          c,
+          404,
+          "NOT_IN_ROOM",
+          "יש להצטרף לחדר לפני מתן הסכמה להקלטה",
+        );
+      }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "briefing.recording.consent",
+        resourceType: "briefing_room",
+        resourceId: roomId,
+        metadata: { policyVersion: MEETING_POLICY_VERSION },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({
+        data: {
+          ok: true,
+          policyVersion: MEETING_POLICY_VERSION,
+        },
+      });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/:roomId/goals", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const roomId = Ids.briefingRoom(roomIdSchema.parse(c.req.param("roomId")));
+      const body = createGoalSchema.parse(await c.req.json());
+      const ownerDisplayName =
+        body.ownerDisplayName ??
+        (await resolveDisplayName(deps.users, principal.userId));
+
+      const goal = await deps.briefing.createGoal({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        roomId,
+        title: body.title,
+        description: body.description,
+        ownerDisplayName,
+        ...(body.ownerUserId !== undefined
+          ? { ownerUserId: Ids.user(body.ownerUserId) }
+          : {}),
+        ...(body.dueDate !== undefined ? { dueDate: body.dueDate } : {}),
+        source: "manual",
+        createdAt: new Date().toISOString(),
+      });
+      if (!goal) {
+        return sendError(c, 404, "ROOM_NOT_FOUND", "Briefing room not found");
+      }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "briefing.goal.create",
+        resourceType: "briefing_goal",
+        resourceId: goal.id,
+        metadata: { roomId, source: "manual" },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({ data: toGoalDto(goal) }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.patch("/:roomId/goals/:goalId", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const roomId = Ids.briefingRoom(roomIdSchema.parse(c.req.param("roomId")));
+      const goalId = roomIdSchema.parse(c.req.param("goalId"));
+      const body = updateGoalStatusSchema.parse(await c.req.json());
+
+      const goal = await deps.briefing.updateGoalStatus({
+        tenantId: principal.scope.tenantId,
+        roomId,
+        goalId,
+        status: body.status,
+      });
+      if (!goal) {
+        return sendError(c, 404, "GOAL_NOT_FOUND", "יעד לא נמצא");
+      }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "briefing.goal.update",
+        resourceType: "briefing_goal",
+        resourceId: goal.id,
+        metadata: { roomId, status: body.status },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({ data: toGoalDto(goal) });
     } catch (error) {
       return mapUnknownError(c, error);
     }
@@ -423,6 +709,21 @@ export function createBriefingRoutes(deps: BriefingRouteDeps): Hono<{
       if (!detail) {
         return sendError(c, 404, "ROOM_NOT_FOUND", "Briefing room not found");
       }
+
+      const hasConsent = await deps.briefing.hasRecordingConsent(
+        principal.scope.tenantId,
+        roomId,
+        principal.userId,
+      );
+      if (!hasConsent) {
+        return sendError(
+          c,
+          403,
+          "RECORDING_CONSENT_REQUIRED",
+          "יש לאשר את מדיניות ההקלטה לפני התחלת הקלטה",
+        );
+      }
+
       const recording = await deps.briefing.startRecording({
         id: randomUUID(),
         tenantId: principal.scope.tenantId,
@@ -579,21 +880,108 @@ async function resolveDisplayName(
   return user?.displayName ?? "משתמש";
 }
 
+function toRoomDto(room: {
+  readonly id: string;
+  readonly title: string;
+  readonly purpose: string;
+  readonly status: string;
+  readonly hostUserId: string;
+  readonly chainId: string;
+  readonly roomKind: string;
+  readonly inviteToken: string;
+  readonly policyVersion: string;
+  readonly createdAt: string;
+}) {
+  return {
+    id: room.id,
+    title: room.title,
+    purpose: room.purpose,
+    status: room.status,
+    hostUserId: room.hostUserId,
+    chainId: room.chainId,
+    roomKind: room.roomKind,
+    inviteToken: room.inviteToken,
+    policyVersion: room.policyVersion,
+    createdAt: room.createdAt,
+  };
+}
+
+function toAttendanceDto(attendance: {
+  readonly id: string;
+  readonly userId: string;
+  readonly displayName: string;
+  readonly joinedAt: string;
+  readonly leftAt: string | null;
+  readonly recordingConsent: boolean;
+  readonly consentAt: string | null;
+  readonly consentPolicyVersion: string | null;
+}) {
+  return {
+    id: attendance.id,
+    userId: attendance.userId,
+    displayName: attendance.displayName,
+    joinedAt: attendance.joinedAt,
+    leftAt: attendance.leftAt,
+    recordingConsent: attendance.recordingConsent,
+    consentAt: attendance.consentAt,
+    consentPolicyVersion: attendance.consentPolicyVersion,
+  };
+}
+
+function toSummaryDto(summary: {
+  readonly id: string;
+  readonly summaryHe: string;
+  readonly decisions: readonly string[];
+  readonly goalsSnapshot: readonly {
+    readonly title: string;
+    readonly description: string;
+  }[];
+  readonly generatedByAgentId: string;
+  readonly createdByUserId: string;
+  readonly createdAt: string;
+}) {
+  return {
+    id: summary.id,
+    summaryHe: summary.summaryHe,
+    decisions: summary.decisions,
+    goalsSnapshot: summary.goalsSnapshot,
+    generatedByAgentId: summary.generatedByAgentId,
+    createdByUserId: summary.createdByUserId,
+    createdAt: summary.createdAt,
+  };
+}
+
+function toGoalDto(goal: {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+  readonly ownerDisplayName: string;
+  readonly ownerUserId: string | null;
+  readonly dueDate: string | null;
+  readonly status: string;
+  readonly source: string;
+  readonly createdAt: string;
+}) {
+  return {
+    id: goal.id,
+    title: goal.title,
+    description: goal.description,
+    ownerDisplayName: goal.ownerDisplayName,
+    ownerUserId: goal.ownerUserId,
+    dueDate: goal.dueDate,
+    status: goal.status,
+    source: goal.source,
+    createdAt: goal.createdAt,
+  };
+}
+
 function toDetailDto(
   detail: NonNullable<
     Awaited<ReturnType<BriefingRepository["getDetail"]>>
   >,
 ) {
   return {
-    room: {
-      id: detail.room.id,
-      title: detail.room.title,
-      purpose: detail.room.purpose,
-      status: detail.room.status,
-      hostUserId: detail.room.hostUserId,
-      chainId: detail.room.chainId,
-      createdAt: detail.room.createdAt,
-    },
+    room: toRoomDto(detail.room),
     participants: detail.participants,
     sharedAgents: detail.sharedAgents.map((agent) => ({
       id: agent.id,
@@ -607,6 +995,9 @@ function toDetailDto(
     })),
     messages: detail.messages,
     recordings: detail.recordings.map(toRecordingDto),
+    attendance: detail.attendance.map(toAttendanceDto),
+    summaries: detail.summaries.map(toSummaryDto),
+    goals: detail.goals.map(toGoalDto),
   };
 }
 

@@ -206,10 +206,15 @@ export async function migrate(client: Client): Promise<void> {
       purpose TEXT NOT NULL,
       status TEXT NOT NULL,
       host_user_id TEXT NOT NULL REFERENCES users(id),
+      room_kind TEXT NOT NULL DEFAULT 'committee',
+      invite_token TEXT,
+      policy_version TEXT NOT NULL DEFAULT 'meetings.2026.1',
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS briefing_rooms_tenant_idx ON briefing_rooms(tenant_id);
     CREATE INDEX IF NOT EXISTS briefing_rooms_chain_idx ON briefing_rooms(chain_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS briefing_rooms_invite_token_uidx
+      ON briefing_rooms(invite_token);
 
     CREATE TABLE IF NOT EXISTS briefing_participants (
       id TEXT PRIMARY KEY,
@@ -969,6 +974,80 @@ export async function migrate(client: Client): Promise<void> {
     "next_attempt_at",
     "next_attempt_at TEXT",
   );
+
+  // HotelOS Meet — room kind, invite links, attendance, summaries, goals
+  await ensureColumn(
+    client,
+    "briefing_rooms",
+    "room_kind",
+    "room_kind TEXT NOT NULL DEFAULT 'committee'",
+  );
+  await ensureColumn(
+    client,
+    "briefing_rooms",
+    "invite_token",
+    "invite_token TEXT",
+  );
+  await ensureColumn(
+    client,
+    "briefing_rooms",
+    "policy_version",
+    "policy_version TEXT NOT NULL DEFAULT 'meetings.2026.1'",
+  );
+  await client.execute(`
+    CREATE UNIQUE INDEX IF NOT EXISTS briefing_rooms_invite_token_uidx
+      ON briefing_rooms(invite_token);
+  `);
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS briefing_attendance (
+      id TEXT PRIMARY KEY,
+      room_id TEXT NOT NULL REFERENCES briefing_rooms(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      display_name TEXT NOT NULL,
+      joined_at TEXT NOT NULL,
+      left_at TEXT,
+      recording_consent INTEGER NOT NULL DEFAULT 0,
+      consent_at TEXT,
+      consent_policy_version TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS briefing_attendance_room_idx ON briefing_attendance(room_id);
+    CREATE INDEX IF NOT EXISTS briefing_attendance_user_idx ON briefing_attendance(user_id);
+    CREATE INDEX IF NOT EXISTS briefing_attendance_room_user_idx
+      ON briefing_attendance(room_id, user_id);
+  `);
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS briefing_summaries (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      room_id TEXT NOT NULL REFERENCES briefing_rooms(id),
+      summary_he TEXT NOT NULL,
+      decisions_json TEXT NOT NULL,
+      goals_json TEXT NOT NULL,
+      generated_by_agent_id TEXT NOT NULL,
+      created_by_user_id TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS briefing_summaries_tenant_idx ON briefing_summaries(tenant_id);
+    CREATE INDEX IF NOT EXISTS briefing_summaries_room_idx ON briefing_summaries(room_id);
+  `);
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS briefing_goals (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      room_id TEXT NOT NULL REFERENCES briefing_rooms(id),
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      owner_display_name TEXT NOT NULL,
+      owner_user_id TEXT REFERENCES users(id),
+      due_date TEXT,
+      status TEXT NOT NULL,
+      source TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS briefing_goals_tenant_idx ON briefing_goals(tenant_id);
+    CREATE INDEX IF NOT EXISTS briefing_goals_room_idx ON briefing_goals(room_id);
+  `);
 }
 
 async function ensureColumn(

@@ -170,4 +170,12 @@ export const AGENT_CATALOG: readonly AgentCatalogEntry[] = [
     summaryHe: "טיוטות מכתבים רשמיים, הזמנות בכתב ונאומים — ללא שליחה אוטומטית.",
     autonomyMode: "suggest",
   },
+  {
+    id: "agent.meeting_secretary",
+    nameHe: "מזכירת פגישות",
+    nameEn: "Meeting Secretary",
+    domain: "meetings",
+    summaryHe: "סיכום פגישות, החלטות ויעדים מתוך שיח החדר — ללא הקלטה סמויה.",
+    autonomyMode: "suggest",
+  },
 ] as const;

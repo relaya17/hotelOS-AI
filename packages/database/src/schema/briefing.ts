@@ -1,5 +1,17 @@
-import { index, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import { hotelChains, tenants, users } from "./tenancy.js";
+
+export const MEETING_POLICY_VERSION = "meetings.2026.1" as const;
+
+export type BriefingRoomKind = "committee" | "training" | "all_hands";
+export type BriefingGoalStatus = "open" | "done" | "cancelled";
+export type BriefingGoalSource = "summary" | "manual";
 
 /** Platform agent catalog — shared across tenants; scoped at runtime by RBAC. */
 export const agents = sqliteTable("agents", {
@@ -28,11 +40,17 @@ export const briefingRooms = sqliteTable(
     hostUserId: text("host_user_id")
       .notNull()
       .references(() => users.id),
+    roomKind: text("room_kind").notNull().default("committee"),
+    inviteToken: text("invite_token"),
+    policyVersion: text("policy_version")
+      .notNull()
+      .default(MEETING_POLICY_VERSION),
     createdAt: text("created_at").notNull(),
   },
   (table) => [
     index("briefing_rooms_tenant_idx").on(table.tenantId),
     index("briefing_rooms_chain_idx").on(table.chainId),
+    uniqueIndex("briefing_rooms_invite_token_uidx").on(table.inviteToken),
   ],
 );
 
@@ -95,6 +113,83 @@ export const briefingMessages = sqliteTable(
  * Meeting recordings — row always scoped by tenant + chain + room.
  * Media files live under RECORDINGS_PATH/{tenantId}/{chainId}/{roomId}/
  */
+export const briefingAttendance = sqliteTable(
+  "briefing_attendance",
+  {
+    id: text("id").primaryKey(),
+    roomId: text("room_id")
+      .notNull()
+      .references(() => briefingRooms.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    displayName: text("display_name").notNull(),
+    joinedAt: text("joined_at").notNull(),
+    leftAt: text("left_at"),
+    recordingConsent: integer("recording_consent", { mode: "number" })
+      .notNull()
+      .default(0),
+    consentAt: text("consent_at"),
+    consentPolicyVersion: text("consent_policy_version"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("briefing_attendance_room_idx").on(table.roomId),
+    index("briefing_attendance_user_idx").on(table.userId),
+    index("briefing_attendance_room_user_idx").on(table.roomId, table.userId),
+  ],
+);
+
+export const briefingSummaries = sqliteTable(
+  "briefing_summaries",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    roomId: text("room_id")
+      .notNull()
+      .references(() => briefingRooms.id),
+    summaryHe: text("summary_he").notNull(),
+    decisionsJson: text("decisions_json").notNull(),
+    goalsJson: text("goals_json").notNull(),
+    generatedByAgentId: text("generated_by_agent_id").notNull(),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("briefing_summaries_tenant_idx").on(table.tenantId),
+    index("briefing_summaries_room_idx").on(table.roomId),
+  ],
+);
+
+export const briefingGoals = sqliteTable(
+  "briefing_goals",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    roomId: text("room_id")
+      .notNull()
+      .references(() => briefingRooms.id),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    ownerDisplayName: text("owner_display_name").notNull(),
+    ownerUserId: text("owner_user_id").references(() => users.id),
+    dueDate: text("due_date"),
+    status: text("status").notNull(),
+    source: text("source").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("briefing_goals_tenant_idx").on(table.tenantId),
+    index("briefing_goals_room_idx").on(table.roomId),
+  ],
+);
+
 export const briefingRecordings = sqliteTable(
   "briefing_recordings",
   {

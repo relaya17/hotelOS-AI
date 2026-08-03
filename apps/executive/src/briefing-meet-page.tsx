@@ -1,20 +1,38 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button, TextField } from "@hotelos/ui";
 import {
+  APP_URLS,
+  acceptBriefingRecordingConsent,
   briefingRecordingMediaUrl,
   completeBriefingRecording,
   consultBriefingAgent,
+  createBriefingGoal,
+  endBriefingRoom,
   fetchBriefingRoom,
+  joinBriefingRoomByInvite,
   listAgents,
   postBriefingMessage,
   readAccessToken,
+  readStoredUser,
   shareAgentToBriefingRoom,
   startBriefingRecording,
   startBriefingRoom,
+  updateBriefingGoalStatus,
   type AgentDto,
+  type BriefingGoalDto,
   type BriefingRecordingDto,
   type BriefingRoomDetailDto,
+  type BriefingRoomKind,
+  type EndBriefingRoomResultDto,
 } from "@hotelos/web-client";
+
+const MEETING_SECRETARY_AGENT_ID = "agent.meeting_secretary";
+
+const roomKindLabel: Record<BriefingRoomKind, string> = {
+  committee: "ועדה",
+  training: "הדרכה",
+  all_hands: "כולם",
+};
 
 export type BriefingMeetPageProps = {
   readonly roomId: string;
@@ -27,7 +45,13 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
   const [agentToShare, setAgentToShare] = useState("");
   const [message, setMessage] = useState("");
   const [prompt, setPrompt] = useState("מה מצב התזרים והתפוסה ברשת?");
+  const [goalTitle, setGoalTitle] = useState("");
+  const [goalDescription, setGoalDescription] = useState("");
+  const [consentChecked, setConsentChecked] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [endResult, setEndResult] = useState<EndBriefingRoomResultDto | null>(
+    null,
+  );
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [activeRecordingId, setActiveRecordingId] = useState<string | null>(
@@ -40,6 +64,17 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
   const chunksRef = useRef<Blob[]>([]);
   const startedAtRef = useRef<number>(0);
 
+  const storedUser = readStoredUser();
+  const myAttendance = detail?.attendance.find(
+    (item) => item.userId === storedUser?.id,
+  );
+  const hasRecordingConsent = myAttendance?.recordingConsent === true;
+  const latestSummary =
+    detail && detail.summaries.length > 0
+      ? detail.summaries[detail.summaries.length - 1]
+      : null;
+  const roomEnded = detail?.room.status === "ended";
+
   async function reload() {
     const [room, catalog] = await Promise.all([
       fetchBriefingRoom(roomId),
@@ -48,6 +83,18 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
     setDetail(room);
     setAgents(catalog);
     const sharedIds = new Set(room.sharedAgents.map((item) => item.agentId));
+    if (
+      room.room.roomKind === "training" &&
+      !sharedIds.has(MEETING_SECRETARY_AGENT_ID)
+    ) {
+      const secretary = catalog.find(
+        (agent) => agent.id === MEETING_SECRETARY_AGENT_ID,
+      );
+      if (secretary) {
+        setAgentToShare(secretary.id);
+        return;
+      }
+    }
     const firstAvailable = catalog.find((agent) => !sharedIds.has(agent.id));
     setAgentToShare(firstAvailable?.id ?? "");
   }
@@ -58,6 +105,10 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
       setError(undefined);
       try {
         await startBriefingRoom(roomId);
+        const initial = await fetchBriefingRoom(roomId);
+        if (!cancelled && initial.room.inviteToken) {
+          await joinBriefingRoomByInvite(initial.room.inviteToken);
+        }
         if (!cancelled) await reload();
       } catch (loadError) {
         if (!cancelled) {
@@ -118,6 +169,25 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
     };
   }, []);
 
+  async function onAcceptConsent() {
+    if (!consentChecked) {
+      setError("יש לסמן את תיבת האישור לפני המשך");
+      return;
+    }
+    setBusy(true);
+    setError(undefined);
+    try {
+      await acceptBriefingRecordingConsent(roomId);
+      await reload();
+    } catch (consentError) {
+      setError(
+        consentError instanceof Error ? consentError.message : "אישור נכשל",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onShareAgent(event: FormEvent) {
     event.preventDefault();
     if (!agentToShare) return;
@@ -151,6 +221,43 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
     }
   }
 
+  async function onAddGoal(event: FormEvent) {
+    event.preventDefault();
+    if (!goalTitle.trim()) return;
+    setBusy(true);
+    setError(undefined);
+    try {
+      await createBriefingGoal(roomId, {
+        title: goalTitle.trim(),
+        description: goalDescription.trim(),
+      });
+      setGoalTitle("");
+      setGoalDescription("");
+      await reload();
+    } catch (goalError) {
+      setError(
+        goalError instanceof Error ? goalError.message : "יצירת יעד נכשלה",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onGoalStatus(goal: BriefingGoalDto, status: BriefingGoalDto["status"]) {
+    setBusy(true);
+    setError(undefined);
+    try {
+      await updateBriefingGoalStatus(roomId, goal.id, status);
+      await reload();
+    } catch (statusError) {
+      setError(
+        statusError instanceof Error ? statusError.message : "עדכון יעד נכשל",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onConsult(agentId: string) {
     setBusy(true);
     setError(undefined);
@@ -160,6 +267,22 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
     } catch (consultError) {
       setError(
         consultError instanceof Error ? consultError.message : "תדריך נכשל",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onEndMeeting() {
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await endBriefingRoom(roomId);
+      setEndResult(result);
+      await reload();
+    } catch (endError) {
+      setError(
+        endError instanceof Error ? endError.message : "סיום פגישה נכשל",
       );
     } finally {
       setBusy(false);
@@ -260,6 +383,9 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
   const sharedIds = new Set(detail?.sharedAgents.map((a) => a.agentId) ?? []);
   const availableAgents = agents.filter((agent) => !sharedIds.has(agent.id));
   const recordings = detail?.recordings ?? [];
+  const workInviteUrl = detail
+    ? `${APP_URLS.work}/?meetInvite=${encodeURIComponent(detail.room.inviteToken)}`
+    : "";
 
   return (
     <div className="meet">
@@ -268,9 +394,23 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
           <p className="eyebrow">HotelOS Meet · פגישה פנימית</p>
           <h1>{detail?.room.title ?? "חדר בריפינג"}</h1>
           <p className="sub">
-            מנהל אזור + צוותים · שיתוף סוכנים · הקלטות נשמרות בהפרדת
-            tenant/chain/חדר · סטטוס {detail?.room.status ?? "…"}
+            {detail ? (
+              <>
+                <span className="kind-badge">
+                  {roomKindLabel[detail.room.roomKind]}
+                </span>
+                {" · "}
+              </>
+            ) : null}
+            מנהל אזור + צוותים · שיתוף סוכנים · סטטוס{" "}
+            {detail?.room.status ?? "…"}
           </p>
+          {detail && !roomEnded ? (
+            <p className="invite-line">
+              קישור Work:{" "}
+              <code>{workInviteUrl}</code>
+            </p>
+          ) : null}
         </div>
         <div className="top-actions">
           {recording ? (
@@ -283,16 +423,97 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
               onClick={() => {
                 void onStartRecording();
               }}
-              disabled={busy}
+              disabled={busy || !hasRecordingConsent || roomEnded}
+              aria-describedby={
+                !hasRecordingConsent ? "recording-consent-hint" : undefined
+              }
             >
               הקלט פגישה
             </Button>
           )}
+          {!roomEnded ? (
+            <Button
+              type="button"
+              onClick={() => {
+                void onEndMeeting();
+              }}
+              disabled={busy}
+            >
+              סיים פגישה + מזכירה
+            </Button>
+          ) : null}
           <Button variant="ghost" type="button" onClick={onBack}>
             חזרה לרשימת חדרים
           </Button>
         </div>
       </header>
+
+      {!hasRecordingConsent && !roomEnded ? (
+        <section
+          className="consent-gate"
+          aria-labelledby="consent-gate-title"
+          role="region"
+        >
+          <h2 id="consent-gate-title">אישור הקלטה</h2>
+          <p className="hint">
+            לפני הקלטת הפגישה יש לאשר את מדיניות HotelOS Meet (
+            {detail?.room.policyVersion ?? "meetings.2026.1"}).
+          </p>
+          <label className="consent-check">
+            <input
+              type="checkbox"
+              checked={consentChecked}
+              onChange={(event) => setConsentChecked(event.target.checked)}
+            />
+            <span>
+              קראתי את{" "}
+              <a
+                href={APP_URLS.legal("meetings")}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                מדיניות פגישות והקלטות
+              </a>
+            </span>
+          </label>
+          <Button
+            type="button"
+            disabled={busy || !consentChecked}
+            onClick={() => {
+              void onAcceptConsent();
+            }}
+          >
+            מאשר/ת הקלטה לפי מדיניות meetings.2026.1
+          </Button>
+          <p id="recording-consent-hint" className="sr-only">
+            יש לאשר הקלטה לפני לחיצה על הקלט פגישה
+          </p>
+        </section>
+      ) : null}
+
+      {endResult ? (
+        <section className="end-result" role="status" aria-live="polite">
+          <h2>סיכום פגישה</h2>
+          {endResult.idempotent ? (
+            <p className="hint">הפגישה כבר הסתיימה — מוצג סיכום קיים.</p>
+          ) : null}
+          <p>{endResult.summary.summaryHe}</p>
+          {endResult.summary.decisions.length > 0 ? (
+            <ul>
+              {endResult.summary.decisions.map((decision) => (
+                <li key={decision}>{decision}</li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
+
+      {latestSummary && !endResult ? (
+        <section className="summary-panel" aria-labelledby="latest-summary-title">
+          <h2 id="latest-summary-title">סיכום אחרון</h2>
+          <p>{latestSummary.summaryHe}</p>
+        </section>
+      ) : null}
 
       {recording ? (
         <p className="rec-live" role="status">
@@ -333,7 +554,7 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
                 <span>סוכן משותף · {agent.autonomyMode}</span>
                 <Button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || roomEnded}
                   onClick={() => {
                     void onConsult(agent.agentId);
                   }}
@@ -354,6 +575,93 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
         </section>
 
         <aside className="rail">
+          <section className="panel" aria-labelledby="attendance-title">
+            <h2 id="attendance-title">נוכחות</h2>
+            <ul className="attendance">
+              {(detail?.attendance ?? []).length === 0 ? (
+                <li className="empty">אין משתתפים רשומים</li>
+              ) : (
+                detail?.attendance.map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.displayName}</strong>
+                    <span>
+                      {new Date(item.joinedAt).toLocaleTimeString()}
+                      {item.leftAt ? " · יצא/ה" : " · בחדר"}
+                    </span>
+                    {item.recordingConsent ? (
+                      <span className="badge badge--ok">הסכמה להקלטה</span>
+                    ) : (
+                      <span className="badge">ללא הסכמה</span>
+                    )}
+                  </li>
+                ))
+              )}
+            </ul>
+          </section>
+
+          <section className="panel" aria-labelledby="goals-title">
+            <h2 id="goals-title">יעדים</h2>
+            <ul className="goals">
+              {(detail?.goals ?? []).length === 0 ? (
+                <li className="empty">אין יעדים עדיין</li>
+              ) : (
+                detail?.goals.map((goal) => (
+                  <li key={goal.id}>
+                    <strong>{goal.title}</strong>
+                    {goal.description ? <p>{goal.description}</p> : null}
+                    <span>
+                      {goal.ownerDisplayName} · {goal.status}
+                    </span>
+                    {!roomEnded && goal.status === "open" ? (
+                      <div className="goal-actions">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={busy}
+                          onClick={() => {
+                            void onGoalStatus(goal, "done");
+                          }}
+                        >
+                          סומן כבוצע
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={busy}
+                          onClick={() => {
+                            void onGoalStatus(goal, "cancelled");
+                          }}
+                        >
+                          ביטול
+                        </Button>
+                      </div>
+                    ) : null}
+                  </li>
+                ))
+              )}
+            </ul>
+            {!roomEnded ? (
+              <form className="stack" onSubmit={onAddGoal}>
+                <TextField
+                  label="יעד חדש"
+                  name="goalTitle"
+                  value={goalTitle}
+                  onChange={(event) => setGoalTitle(event.target.value)}
+                  required
+                />
+                <TextField
+                  label="תיאור (אופציונלי)"
+                  name="goalDescription"
+                  value={goalDescription}
+                  onChange={(event) => setGoalDescription(event.target.value)}
+                />
+                <Button type="submit" disabled={busy || !goalTitle.trim()}>
+                  הוסף יעד
+                </Button>
+              </form>
+            ) : null}
+          </section>
+
           <section className="panel">
             <h2>הקלטות שמורות</h2>
             <p className="hint">
@@ -401,7 +709,9 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
           <section className="panel">
             <h2>שתף סוכן לחדר</h2>
             <p className="hint">
-              כמו בוועדת כספים — מזמינים סוכן קיים (CFO, Revenue…) לחדר בלבד.
+              {detail?.room.roomKind === "training"
+                ? "בהדרכות מומלץ לשתף את מזכירת הפגישות (meeting_secretary)."
+                : "כמו בוועדת כספים — מזמינים סוכן קיים (CFO, Revenue…) לחדר בלבד."}
             </p>
             <form className="stack" onSubmit={onShareAgent}>
               <label className="select-field">
@@ -409,6 +719,7 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
                 <select
                   value={agentToShare}
                   onChange={(event) => setAgentToShare(event.target.value)}
+                  aria-label="בחירת סוכן לשיתוף"
                 >
                   {availableAgents.length === 0 ? (
                     <option value="">כל הסוכנים כבר בחדר</option>
@@ -423,7 +734,7 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
               </label>
               <Button
                 type="submit"
-                disabled={busy || availableAgents.length === 0}
+                disabled={busy || availableAgents.length === 0 || roomEnded}
               >
                 שתף סוכן
               </Button>
@@ -445,7 +756,10 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
               />
-              <Button type="submit" disabled={busy || !message.trim()}>
+              <Button
+                type="submit"
+                disabled={busy || !message.trim() || roomEnded}
+              >
                 שלח לחדר
               </Button>
             </form>
@@ -472,11 +786,21 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
 
       <style>{`
         .meet { display:grid; gap:var(--space-5); }
-        .meet__top { display:flex; justify-content:space-between; gap:var(--space-4); align-items:start; }
+        .meet__top { display:flex; justify-content:space-between; gap:var(--space-4); align-items:start; flex-wrap:wrap; }
         .top-actions { display:flex; gap:var(--space-2); flex-wrap:wrap; }
         .eyebrow { margin:0 0 var(--space-2); letter-spacing:.08em; text-transform:uppercase; font-size:var(--text-small); color:var(--color-sea-deep); font-weight:700; }
         h1 { margin:0; font-size:clamp(1.8rem,3vw,2.6rem); }
         .sub { margin:var(--space-2) 0 0; color:var(--color-ink-soft); }
+        .kind-badge { font-size:.75rem; font-weight:700; padding:.15rem .5rem; border-radius:999px; background:rgb(15 106 92 / 12%); color:var(--color-sea-deep); }
+        .invite-line { margin:var(--space-2) 0 0; font-size:var(--text-small); color:var(--color-ink-soft); }
+        .invite-line code { display:block; margin-top:.25rem; font-size:.68rem; word-break:break-all; font-family:ui-monospace,monospace; }
+        .consent-gate { background:rgb(180 83 9 / 8%); border:1px solid rgb(180 83 9 / 25%); border-radius:var(--radius-md); padding:var(--space-4); display:grid; gap:var(--space-3); }
+        .consent-gate h2 { margin:0; font-size:1.1rem; }
+        .consent-check { display:flex; gap:var(--space-2); align-items:flex-start; cursor:pointer; }
+        .consent-check input { margin-top:.25rem; }
+        .end-result, .summary-panel { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:var(--radius-md); padding:var(--space-4); }
+        .end-result h2, .summary-panel h2 { margin:0 0 var(--space-2); font-size:1.1rem; }
+        .end-result ul { margin:var(--space-2) 0 0; padding-inline-start:1.25rem; }
         .rec-live { margin:0; color:#9b2c2c; font-weight:700; }
         .meet__grid { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.9fr); gap:var(--space-4); align-items:start; }
         .stage { background:linear-gradient(160deg,#0c2f2a,#123f37 55%,#1a4f45); border-radius:calc(var(--radius-md) + .2rem); padding:var(--space-4); min-height:28rem; box-shadow:var(--shadow-soft); display:grid; gap:var(--space-4); }
@@ -495,14 +819,19 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
         .panel { background:var(--color-paper-elevated); border:1px solid var(--color-line); border-radius:var(--radius-md); padding:var(--space-4); box-shadow:var(--shadow-soft); }
         .panel h2 { margin:0 0 var(--space-2); font-size:1.15rem; }
         .hint { margin:0 0 var(--space-3); color:var(--color-ink-soft); font-size:var(--text-small); }
-        .stack { display:grid; gap:var(--space-3); }
+        .stack { display:grid; gap:var(--space-3); margin-top:var(--space-3); }
         .select-field { display:grid; gap:var(--space-2); }
         .select-field span { font-size:var(--text-small); font-weight:600; color:var(--color-ink-soft); }
         .select-field select { font:inherit; border:1px solid var(--color-line-strong); border-radius:var(--radius-sm); padding:.85rem .95rem; background:var(--color-paper-elevated); }
-        .recs { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-2); }
-        .recs li { display:flex; justify-content:space-between; gap:var(--space-2); align-items:start; padding:var(--space-3); border-radius:var(--radius-sm); background:var(--color-paper-elevated); border:1px solid rgb(16 36 31 / 8%); }
+        .attendance, .goals, .recs { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-2); }
+        .attendance li, .goals li, .recs li { padding:var(--space-3); border-radius:var(--radius-sm); background:var(--color-paper-elevated); border:1px solid rgb(16 36 31 / 8%); display:grid; gap:.25rem; }
+        .attendance span, .goals span, .recs span { font-size:var(--text-small); color:var(--color-ink-soft); }
+        .badge { display:inline-block; font-size:.7rem; font-weight:700; padding:.15rem .45rem; border-radius:999px; background:rgb(16 36 31 / 8%); }
+        .badge--ok { background:rgb(15 106 92 / 15%); color:var(--color-sea-deep); }
+        .goals p { margin:0; font-size:var(--text-small); color:var(--color-ink-soft); }
+        .goal-actions { display:flex; flex-wrap:wrap; gap:var(--space-2); }
+        .recs li { flex-direction:row; justify-content:space-between; align-items:start; }
         .recs li > div { display:grid; gap:.2rem; }
-        .recs span { font-size:var(--text-small); color:var(--color-ink-soft); }
         .recs .key { font-family:ui-monospace,monospace; font-size:.7rem; word-break:break-all; }
         .empty { color:var(--color-ink-soft); }
         .transcript ul { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); max-height:22rem; overflow:auto; }
@@ -511,7 +840,8 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
         .msg strong { display:block; margin-bottom:.35rem; }
         .msg p { margin:0; white-space:pre-wrap; color:var(--color-ink-soft); font-size:var(--text-small); }
         .state--error { color:var(--color-danger); }
-        @media (max-width:980px){ .meet__grid{ grid-template-columns:1fr; } }
+        .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+        @media (max-width:980px){ .meet__grid{ grid-template-columns:1fr; } .meet__top{ flex-direction:column; } }
       `}</style>
     </div>
   );

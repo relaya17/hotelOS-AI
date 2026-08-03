@@ -63,12 +63,16 @@ export {
   type BriefingRepository,
   type BriefingRoomDetail,
   type BriefingRoomStatus,
+  type PersistedAttendance,
+  type PersistedBriefingGoal,
   type PersistedBriefingMessage,
   type PersistedBriefingRecording,
   type PersistedBriefingRoom,
+  type PersistedBriefingSummary,
   type PersistedSharedAgent,
   type RecordingStatus,
 } from "./repositories/briefing-repository.js";
+export { MEETING_POLICY_VERSION } from "./schema/briefing.js";
 export { AGENT_CATALOG } from "./catalog/agent-catalog.js";
 export {
   createTurboRepository,

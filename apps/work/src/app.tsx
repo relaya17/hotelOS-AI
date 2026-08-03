@@ -13,6 +13,7 @@ import {
 } from "@hotelos/web-client";
 import { DocsPanel } from "./docs-panel.js";
 import { HrAgentPanel } from "./hr-agent-panel.js";
+import { MeetJoinPage } from "./meet-join-page.js";
 import { InvitePage } from "./invite-page.js";
 import { LoginPage } from "./login-page.js";
 
@@ -24,6 +25,15 @@ function readInviteToken(): string | null {
   if (fromQuery && fromQuery.trim().length > 0) return fromQuery.trim();
   const path = window.location.pathname;
   const match = path.match(/^\/invite\/([^/]+)\/?$/);
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
+}
+
+function readMeetInvite(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get("meetInvite");
+  if (fromQuery && fromQuery.trim().length > 0) return fromQuery.trim();
+  const path = window.location.pathname;
+  const match = path.match(/^\/meet\/([^/]+)\/?$/);
   return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
@@ -44,6 +54,9 @@ function WorkCookieBanner() {
 
 export function App() {
   const [inviteToken, setInviteToken] = useState<string | null>(readInviteToken);
+  const [meetInviteToken, setMeetInviteToken] = useState<string | null>(
+    readMeetInvite,
+  );
   const [user, setUser] = useState<StoredUser | null>(null);
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<WorkTab>("attendance");
@@ -84,6 +97,30 @@ export function App() {
       cancelled = true;
     };
   }, []);
+
+  if (meetInviteToken) {
+    return (
+      <>
+        <SkipLink />
+        {booting ? (
+          <main className="work-boot">
+            <p>טוען…</p>
+          </main>
+        ) : !user ? (
+          <LoginPage onLoggedIn={setUser} />
+        ) : (
+          <MeetJoinPage
+            token={meetInviteToken}
+            onDone={() => {
+              window.history.replaceState({}, "", "/");
+              setMeetInviteToken(null);
+            }}
+          />
+        )}
+        <WorkCookieBanner />
+      </>
+    );
+  }
 
   if (inviteToken) {
     return (

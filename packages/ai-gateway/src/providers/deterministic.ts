@@ -22,7 +22,12 @@ export function createDeterministicProvider(): LlmProvider {
       const agentId = agentMatch?.[1] ?? "agent.cio";
 
       const isDailyDigest = /תדריך יומי|המלצות להיום/i.test(question);
-      const answerHe = isDailyDigest
+      const isMeetingSummary =
+        agentId === "agent.meeting_secretary" || /סיכום פגישה/i.test(question);
+
+      const answerHe = isMeetingSummary
+        ? buildMeetingSecretaryAnswer(agentId, question)
+        : isDailyDigest
         ? [
             `תשובת Gateway (${agentId}, מצב דטרמיניסטי):`,
             "סיכום יומי מבוסס נתוני תפעול מהקשר — בלי ביצוע כספי.",
@@ -76,4 +81,32 @@ export function deterministicEmbed(
   }
   const norm = Math.sqrt(vec.reduce((sum, value) => sum + value * value, 0)) || 1;
   return vec.map((value) => value / norm);
+}
+
+function buildMeetingSecretaryAnswer(agentId: string, question: string): string {
+  const summaryHe =
+    question.length > 0
+      ? `סיכום פגישה (דטרמיניסטי) — ${question.slice(0, 120)}`
+      : "סיכום פגישה — לא נמצאו הודעות מספיקות לניתוח מלא.";
+  const payload = {
+    summaryHe,
+    decisions: [
+      "לאשר המשך פעולות לפי סיכום הפגישה",
+      "לעדכן בעלי תפקידים ביעדים שהוגדרו",
+    ],
+    goals: [
+      {
+        title: "מעקב יעדים מהפגישה",
+        description: "לוודא שהחלטות הפגישה מיושמות עד המועד הבא",
+      },
+    ],
+  };
+  return [
+    `תשובת Gateway (${agentId}, מזכירת פגישות — מצב דטרמיניסטי):`,
+    summaryHe,
+    "",
+    "```json",
+    JSON.stringify(payload, null, 2),
+    "```",
+  ].join("\n");
 }

@@ -229,6 +229,8 @@ export type AgentDto = {
   readonly autonomyMode: string;
 };
 
+export type BriefingRoomKind = "committee" | "training" | "all_hands";
+
 export type BriefingRoomSummaryDto = {
   readonly id: string;
   readonly title: string;
@@ -237,6 +239,58 @@ export type BriefingRoomSummaryDto = {
   readonly hostUserId: string;
   readonly chainId: string;
   readonly createdAt: string;
+  readonly roomKind: BriefingRoomKind;
+  readonly inviteToken: string;
+  readonly policyVersion: string;
+};
+
+export type BriefingAttendanceDto = {
+  readonly id: string;
+  readonly userId: string;
+  readonly displayName: string;
+  readonly joinedAt: string;
+  readonly leftAt: string | null;
+  readonly recordingConsent: boolean;
+  readonly consentAt: string | null;
+  readonly consentPolicyVersion: string | null;
+};
+
+export type BriefingSummaryDto = {
+  readonly id: string;
+  readonly summaryHe: string;
+  readonly decisions: readonly string[];
+  readonly goalsSnapshot: readonly {
+    readonly title: string;
+    readonly description: string;
+  }[];
+  readonly generatedByAgentId: string;
+  readonly createdByUserId: string;
+  readonly createdAt: string;
+};
+
+export type BriefingGoalDto = {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+  readonly ownerDisplayName: string;
+  readonly ownerUserId: string | null;
+  readonly dueDate: string | null;
+  readonly status: "open" | "done" | "cancelled";
+  readonly source: "summary" | "manual";
+  readonly createdAt: string;
+};
+
+export type EndBriefingRoomResultDto = {
+  readonly id: string;
+  readonly status: BriefingRoomSummaryDto["status"];
+  readonly summary: BriefingSummaryDto;
+  readonly goals: readonly BriefingGoalDto[];
+  readonly idempotent: boolean;
+};
+
+export type JoinBriefingRoomResultDto = {
+  readonly room: BriefingRoomSummaryDto;
+  readonly attendance: BriefingAttendanceDto;
 };
 
 export type BriefingRecordingDto = {
@@ -283,6 +337,9 @@ export type BriefingRoomDetailDto = {
     readonly createdAt: string;
   }[];
   readonly recordings: readonly BriefingRecordingDto[];
+  readonly attendance: readonly BriefingAttendanceDto[];
+  readonly summaries: readonly BriefingSummaryDto[];
+  readonly goals: readonly BriefingGoalDto[];
 };
 
 type ApiError = {
@@ -936,6 +993,7 @@ export async function fetchBriefingRoom(
 export async function createBriefingRoom(input: {
   title: string;
   purpose: string;
+  roomKind?: BriefingRoomKind;
   participants?: readonly { displayName: string; roleLabel: string }[];
 }): Promise<BriefingRoomSummaryDto> {
   const payload = (await authPost("/v1/briefing-rooms", input)) as {
@@ -948,8 +1006,68 @@ export async function startBriefingRoom(roomId: string): Promise<void> {
   await authPost(`/v1/briefing-rooms/${roomId}/start`);
 }
 
-export async function endBriefingRoom(roomId: string): Promise<void> {
-  await authPost(`/v1/briefing-rooms/${roomId}/end`);
+export async function endBriefingRoom(
+  roomId: string,
+): Promise<EndBriefingRoomResultDto> {
+  const payload = (await authPost(`/v1/briefing-rooms/${roomId}/end`)) as {
+    data: EndBriefingRoomResultDto;
+  };
+  return payload.data;
+}
+
+export async function joinBriefingRoomByInvite(
+  inviteToken: string,
+): Promise<JoinBriefingRoomResultDto> {
+  const payload = (await authPost("/v1/briefing-rooms/join", {
+    inviteToken,
+  })) as { data: JoinBriefingRoomResultDto };
+  return payload.data;
+}
+
+export async function leaveBriefingRoom(roomId: string): Promise<void> {
+  await authPost(`/v1/briefing-rooms/${roomId}/leave`);
+}
+
+export async function acceptBriefingRecordingConsent(
+  roomId: string,
+): Promise<{ readonly ok: true; readonly policyVersion: string }> {
+  const payload = (await authPost(
+    `/v1/briefing-rooms/${roomId}/recording-consent`,
+    { accepted: true },
+  )) as { data: { ok: true; policyVersion: string } };
+  return payload.data;
+}
+
+export async function createBriefingGoal(
+  roomId: string,
+  input: {
+    title: string;
+    description?: string;
+    ownerDisplayName?: string;
+    ownerUserId?: string;
+    dueDate?: string;
+  },
+): Promise<BriefingGoalDto> {
+  const payload = (await authPost(`/v1/briefing-rooms/${roomId}/goals`, input)) as {
+    data: BriefingGoalDto;
+  };
+  return payload.data;
+}
+
+export async function updateBriefingGoalStatus(
+  roomId: string,
+  goalId: string,
+  status: BriefingGoalDto["status"],
+): Promise<BriefingGoalDto> {
+  const { payload } = await authedFetch(
+    `/v1/briefing-rooms/${roomId}/goals/${goalId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    },
+  );
+  return (payload as { data: BriefingGoalDto }).data;
 }
 
 export async function shareAgentToBriefingRoom(
@@ -3483,7 +3601,9 @@ export const APP_URLS = {
   get book(): string {
     return APP_URLS.guest;
   },
-  legal(doc: "terms" | "cookies" | "security" | "privacy"): string {
+  legal(
+    doc: "terms" | "cookies" | "security" | "privacy" | "meetings",
+  ): string {
     return `${APP_URLS.guest}/?doc=${doc}`;
   },
 };

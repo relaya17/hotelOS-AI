@@ -1,4 +1,4 @@
-export type LegalDocumentId = "terms" | "cookies" | "security" | "privacy";
+export type LegalDocumentId = "terms" | "cookies" | "security" | "privacy" | "meetings";
 
 export type LegalDocument = {
   readonly id: LegalDocumentId;
@@ -36,7 +36,7 @@ export const LEGAL_DOCUMENTS: readonly LegalDocument[] = [
       },
       {
         heading: "4. הקלטות ונוכחות",
-        body: "הקלטות פגישות ורישומי שעון נוכחות נשמרים בהפרדת נתונים לפי Tenant. השימוש בהם כפוף לדין החל ולמדיניות המעסיק.",
+        body: "הקלטות פגישות ורישומי שעון נוכחות נשמרים בהפרדת נתונים לפי Tenant. השימוש בהם כפוף לדין החל, למדיניות המעסיק ולמדיניות HotelOS Meet (meetings.2026.1) — כולל הסכמה מפורשת להקלטה, שמירה עד 90 יום, ואיסור הקלטה סמויה.",
       },
       {
         heading: "5. תשלומים וחתימה דיגיטלית",
@@ -112,6 +112,35 @@ export const LEGAL_DOCUMENTS: readonly LegalDocument[] = [
       {
         heading: "3. זכויות",
         body: "בקשות עיון/מחיקה בהתאם לדין ולמדיניות הארגון המפעיל את ה־Tenant.",
+      },
+    ],
+  },
+  {
+    id: "meetings",
+    titleHe: "מדיניות הקלטות ופגישות (HotelOS Meet)",
+    titleEn: "Meetings & Recordings Policy (HotelOS Meet)",
+    updatedAt: "2026-08-03",
+    version: "meetings.2026.1",
+    sections: [
+      {
+        heading: "1. מטרה",
+        body: "HotelOS Meet מאפשר פגישות פנימיות (ועדות, הדרכות, כלל-עובדים) עם סיכום AI, נוכחות והקלטה מודעת. המדיניות מגדירה הסכמה, שמירה ושימוש.",
+      },
+      {
+        heading: "2. הסכמה להקלטה",
+        body: "הקלטת פגישה מותרת רק לאחר שהמשתתף (כולל מארח/ת הפגישה) אישר/ה במפורש את מדיניות ההקלטה בגרסה הפעילה. אין הקלטה סמויה.",
+      },
+      {
+        heading: "3. שמירה ומחיקה",
+        body: "הקלטות ותמלולים נשמרים בהפרדה לפי Tenant/Chain/Room עד 90 יום, אלא אם החוק או מדיניות הארגון דורשים אחרת.",
+      },
+      {
+        heading: "4. מזכירת פגישות (AI)",
+        body: "סוכן meeting_secretary מעבד את תמליל השיח בחדר לצורך סיכום, החלטות ויעדים — לא נתונים אישיים פרטיים מעבר לתוכן הפגישה.",
+      },
+      {
+        heading: "5. אישור עובד/ת",
+        body: "השימוש ב־Meet, כולל הקלטה וסיכום AI, מהווה הכרה במדיניות זו ובתנאי השימוש הכלליים של HotelOS AI.",
       },
     ],
   },
