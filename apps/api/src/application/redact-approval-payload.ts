@@ -17,9 +17,7 @@ export function redactSensitiveKeys(value: unknown): unknown {
   return value;
 }
 
-export function parseAndRedactApprovalPayload(
-  payloadJson: string,
-): unknown | null {
+export function parseAndRedactApprovalPayload(payloadJson: string): unknown {
   try {
     return redactSensitiveKeys(JSON.parse(payloadJson) as unknown);
   } catch {

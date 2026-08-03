@@ -3488,7 +3488,7 @@ export type AiApprovalDto = {
   readonly summaryHe: string;
   readonly reasonHe: string;
   readonly status: string;
-  readonly payload?: unknown | null;
+  readonly payload?: unknown;
   readonly decidedByUserId?: string | null;
   readonly decidedAt?: string | null;
   readonly createdAt: string;
@@ -4056,6 +4056,7 @@ export type HotelTwinDto = {
     readonly status: string;
     readonly source: string;
     readonly floor?: string;
+    readonly roomId?: string;
   }[];
   readonly pms?: {
     readonly providerId: string;

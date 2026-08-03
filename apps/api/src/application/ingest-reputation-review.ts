@@ -63,7 +63,7 @@ export async function ingestReputationReview(
   const tenantId = input.tenantId ?? Ids.tenant(DEMO_TENANT_ID);
   const actorUserId = input.actorUserId ?? REPUTATION_INGEST_ACTOR_USER_ID;
   const hotelId = Ids.hotel(mapped.hotelId);
-  const source = input.provider as ReputationReviewSource;
+  const source = input.provider;
 
   const hotel = await deps.hotels.findById(hotelId);
   if (!hotel || hotel.tenantId !== tenantId) {
@@ -91,7 +91,7 @@ export async function ingestReputationReview(
   const review = await deps.reputation.create({
     id: existing?.id ?? randomUUID(),
     tenantId,
-    hotelId: hotelId as HotelId,
+    hotelId: hotelId,
     source,
     externalId: mapped.externalId,
     rating: mapped.rating,
@@ -138,7 +138,7 @@ export async function ingestReputationReview(
     const task = await deps.ops.createTask({
       id: randomUUID(),
       tenantId,
-      hotelId: hotelId as HotelId,
+      hotelId: hotelId,
       departmentId: dept.id,
       taskType: "reputation_review",
       title: `ביקורת ${source} — ${mapped.rating}/5`,

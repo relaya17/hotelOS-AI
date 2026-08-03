@@ -70,7 +70,7 @@ type ApprovalDto = {
   readonly summaryHe: string;
   readonly reasonHe: string;
   readonly status: string;
-  readonly payload: unknown | null;
+  readonly payload: unknown;
   readonly decidedByUserId: string | null;
   readonly decidedAt: string | null;
   readonly createdAt: string;

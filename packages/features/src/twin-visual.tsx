@@ -7,6 +7,17 @@ import type {
 export type TwinVisualProps = {
   readonly twin: HotelTwinDto;
   readonly hotelName?: string;
+  readonly actionBusy?: boolean;
+  readonly actionNotice?: string;
+  readonly actionError?: string;
+  readonly onSuggestClean?: (room: {
+    readonly roomNumber: string;
+    readonly roomId: string;
+  }) => void;
+  readonly onSuggestMaintenance?: (room: {
+    readonly roomNumber: string;
+    readonly roomId?: string;
+  }) => void;
 };
 
 type RoomStatus = string;
@@ -65,7 +76,15 @@ function roomHasAlert(
  * Stage-A Twin Visual: luxurious 2.5D hotel building from live Twin rooms.
  * Click a room to open a live status panel (not a full 3D engine).
  */
-export function TwinVisual({ twin, hotelName }: TwinVisualProps) {
+export function TwinVisual({
+  twin,
+  hotelName,
+  actionBusy = false,
+  actionNotice,
+  actionError,
+  onSuggestClean,
+  onSuggestMaintenance,
+}: TwinVisualProps) {
   const [selectedRoom, setSelectedRoom] = useState<string | undefined>();
 
   const floors = useMemo(() => {
@@ -88,6 +107,7 @@ export function TwinVisual({ twin, hotelName }: TwinVisualProps) {
   }, [twin.rooms]);
 
   const selected = twin.rooms.find((room) => room.roomNumber === selectedRoom);
+  const selectedRoomId = selected?.roomId;
   const relatedEquipment = (twin.equipment ?? []).filter(
     (asset) =>
       selectedRoom !== undefined &&
@@ -243,6 +263,59 @@ export function TwinVisual({ twin, hotelName }: TwinVisualProps) {
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {(onSuggestClean !== undefined ||
+                onSuggestMaintenance !== undefined) && (
+                <>
+                  <h5>Suggest → Approve → Act</h5>
+                  <p className="twin-visual__meta">
+                    ההצעה נכנסת לתיבת אישורי AI — אין כתיבה ל־PMS בלי אישור
+                    אנושי.
+                  </p>
+                  <div className="twin-visual__actions">
+                    {onSuggestClean !== undefined &&
+                    selected.status === "dirty" &&
+                    selectedRoomId !== undefined ? (
+                      <button
+                        type="button"
+                        className="twin-visual__action"
+                        disabled={actionBusy}
+                        onClick={() =>
+                          onSuggestClean({
+                            roomNumber: selected.roomNumber,
+                            roomId: selectedRoomId,
+                          })
+                        }
+                      >
+                        {actionBusy ? "שולח…" : "הצע ניקיון לחדר"}
+                      </button>
+                    ) : null}
+                    {onSuggestMaintenance !== undefined ? (
+                      <button
+                        type="button"
+                        className="twin-visual__action twin-visual__action--warn"
+                        disabled={actionBusy}
+                        onClick={() =>
+                          onSuggestMaintenance({
+                            roomNumber: selected.roomNumber,
+                            ...(selectedRoomId !== undefined
+                              ? { roomId: selectedRoomId }
+                              : {}),
+                          })
+                        }
+                      >
+                        {actionBusy ? "שולח…" : "הצע משימת תחזוקה"}
+                      </button>
+                    ) : null}
+                  </div>
+                  {actionNotice ? (
+                    <p className="twin-visual__notice">{actionNotice}</p>
+                  ) : null}
+                  {actionError ? (
+                    <p className="twin-visual__action-error">{actionError}</p>
+                  ) : null}
+                </>
               )}
             </>
           )}
@@ -450,6 +523,39 @@ export function TwinVisual({ twin, hotelName }: TwinVisualProps) {
           margin: 0;
           opacity: .75;
           line-height: 1.45;
+        }
+        .twin-visual__actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: .45rem;
+          margin-top: .55rem;
+        }
+        .twin-visual__action {
+          border: 1px solid rgb(212 176 122 / 45%);
+          background: rgb(212 176 122 / 16%);
+          color: var(--tv-mist);
+          border-radius: .45rem;
+          padding: .45rem .7rem;
+          cursor: pointer;
+          font-size: .82rem;
+        }
+        .twin-visual__action:disabled {
+          opacity: .55;
+          cursor: not-allowed;
+        }
+        .twin-visual__action--warn {
+          border-color: rgb(201 133 59 / 55%);
+          background: rgb(201 133 59 / 18%);
+        }
+        .twin-visual__notice {
+          margin: .55rem 0 0 !important;
+          font-size: .82rem !important;
+          color: var(--tv-jade);
+        }
+        .twin-visual__action-error {
+          margin: .55rem 0 0 !important;
+          font-size: .82rem !important;
+          color: var(--tv-crit);
         }
         @media (prefers-reduced-motion: reduce) {
           .twin-visual__room,

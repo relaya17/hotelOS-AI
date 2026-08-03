@@ -3,6 +3,8 @@ import { Button } from "@hotelos/ui";
 import { TwinVisual, useIntervalRefresh } from "@hotelos/features";
 import {
   fetchHotelTwin,
+  suggestAutonomyDepartmentTask,
+  suggestAutonomyDirtyRooms,
   syncHotelTwinPms,
   type HotelTwinDto,
   type HotelTwinOverlaySummaryDto,
@@ -151,6 +153,9 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
   const [note, setNote] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | undefined>();
+  const [actionError, setActionError] = useState<string | undefined>();
 
   async function reload() {
     setLoading(true);
@@ -183,6 +188,65 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
     }
   }
 
+  async function onSuggestClean(room: {
+    readonly roomNumber: string;
+    readonly roomId: string;
+  }) {
+    setActionBusy(true);
+    setActionError(undefined);
+    setActionNotice(undefined);
+    try {
+      const result = await suggestAutonomyDirtyRooms({
+        hotelId,
+        roomIds: [room.roomId],
+      });
+      setActionNotice(
+        `Suggest ניקיון לחדר ${room.roomNumber} נשלח (${result.approvalId.slice(0, 8)}…). אשרו בתיבת אישורי AI → Act.`,
+      );
+    } catch (suggestError) {
+      setActionError(
+        suggestError instanceof Error ? suggestError.message : "Suggest נכשל",
+      );
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function onSuggestMaintenance(room: {
+    readonly roomNumber: string;
+    readonly roomId?: string;
+  }) {
+    setActionBusy(true);
+    setActionError(undefined);
+    setActionNotice(undefined);
+    try {
+      const result = await suggestAutonomyDepartmentTask({
+        hotelId,
+        departmentCode: "maintenance",
+        taskType: "twin_room_maintenance",
+        title: `תחזוקה — חדר ${room.roomNumber}`,
+        description: [
+          `הצעה מ־Twin Visual לחדר ${room.roomNumber}.`,
+          room.roomId ? `roomId=${room.roomId}` : "roomId לא זמין מ־Twin.",
+          "Suggest→Approve→Act — אין כתיבה ל־PMS בלי אישור.",
+        ].join("\n"),
+        priority: "high",
+        agentId: "agent.maintenance",
+        summaryHe: `Twin: תחזוקה לחדר ${room.roomNumber}`,
+        reasonHe: "לחיצה מחדר ב־Twin Visual — נדרש אישור לפני פתיחת משימה.",
+      });
+      setActionNotice(
+        `Suggest תחזוקה לחדר ${room.roomNumber} נשלח (${result.approvalId.slice(0, 8)}…). אשרו בתיבת אישורי AI → Act.`,
+      );
+    } catch (suggestError) {
+      setActionError(
+        suggestError instanceof Error ? suggestError.message : "Suggest נכשל",
+      );
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
   if (loading) return <p>טוען Digital Twin…</p>;
 
   const reservations = twin?.pms?.reservations ?? [];
@@ -212,7 +276,14 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
               ? ` · שכבות ${overlays.generatedAt.slice(0, 19)}`
               : ""}
           </p>
-          <TwinVisual twin={twin} />
+          <TwinVisual
+            twin={twin}
+            actionBusy={actionBusy}
+            {...(actionNotice !== undefined ? { actionNotice } : {})}
+            {...(actionError !== undefined ? { actionError } : {})}
+            onSuggestClean={(room) => void onSuggestClean(room)}
+            onSuggestMaintenance={(room) => void onSuggestMaintenance(room)}
+          />
           <EquipmentSection equipment={equipment} />
           <div className="twin-overlays">
             <OverlaySection

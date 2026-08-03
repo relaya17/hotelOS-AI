@@ -85,7 +85,7 @@ export async function ingestSecurityWebhook(
   const task = await deps.ops.createTask({
     id: randomUUID(),
     tenantId,
-    hotelId: hotelId as HotelId,
+    hotelId: hotelId,
     departmentId: dept.id,
     taskType: "security_event",
     title: event.title,

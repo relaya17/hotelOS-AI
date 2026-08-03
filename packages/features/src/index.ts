@@ -31,3 +31,8 @@ export {
   TwinVisual,
   type TwinVisualProps,
 } from "./twin-visual.js";
+export {
+  useOpsLiveStream,
+  type UseOpsLiveStreamOptions,
+  type UseOpsLiveStreamResult,
+} from "./use-ops-live-stream.js";

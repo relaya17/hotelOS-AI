@@ -452,7 +452,6 @@ export function BriefingMeetPage({ roomId, onBack }: BriefingMeetPageProps) {
         <section
           className="consent-gate"
           aria-labelledby="consent-gate-title"
-          role="region"
         >
           <h2 id="consent-gate-title">אישור הקלטה</h2>
           <p className="hint">

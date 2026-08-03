@@ -368,15 +368,18 @@ function parseGoalsSnapshot(
   }
   const goals: { title: string; description: string }[] = [];
   for (const item of parsed) {
+    if (typeof item !== "object" || item === null) {
+      continue;
+    }
+    const record = item as Record<string, unknown>;
     if (
-      typeof item === "object" &&
-      item !== null &&
-      "title" in item &&
-      "description" in item &&
-      typeof item.title === "string" &&
-      typeof item.description === "string"
+      typeof record["title"] === "string" &&
+      typeof record["description"] === "string"
     ) {
-      goals.push({ title: item.title, description: item.description });
+      goals.push({
+        title: record["title"],
+        description: record["description"],
+      });
     }
   }
   return goals;

@@ -249,7 +249,7 @@ function normalizeGoals(
   }
   const goals: { title: string; description: string }[] = [];
   for (const item of value) {
-    if (typeof item !== "object" || item === null || !isGoalPayload(item)) {
+    if (!isGoalPayload(item)) {
       continue;
     }
     goals.push({
@@ -262,9 +262,13 @@ function normalizeGoals(
 }
 
 function isGoalPayload(
-  value: object,
+  value: unknown,
 ): value is { title: string; description?: string } {
-  return "title" in value && typeof value.title === "string";
+  if (typeof value !== "object" || value === null || !("title" in value)) {
+    return false;
+  }
+  const title = Reflect.get(value, "title");
+  return typeof title === "string";
 }
 
 export function buildFallbackMeetingSummary(

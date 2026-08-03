@@ -98,7 +98,7 @@ export async function ingestEquipmentSignal(
     id: randomUUID(),
     assetId: asset.id,
     tenantId,
-    hotelId: hotelId as HotelId,
+    hotelId: hotelId,
     signalType: parsed.data.signalType,
     valueNum: parsed.data.valueNum ?? null,
     valueText: parsed.data.valueText ?? null,

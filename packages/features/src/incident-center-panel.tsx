@@ -81,7 +81,7 @@ export function IncidentCenterPanel({
   compact = false,
 }: IncidentCenterPanelProps) {
   const [hotels, setHotels] = useState<readonly HotelDto[]>([]);
-  const [selectedHotelId, setSelectedHotelId] = useState<string | "all">(
+  const [selectedHotelId, setSelectedHotelId] = useState<string>(
     fixedHotelId ?? "all",
   );
   const [severity, setSeverity] = useState<IncidentSeverity | "all">("all");

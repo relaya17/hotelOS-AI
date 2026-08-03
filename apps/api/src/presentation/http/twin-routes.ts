@@ -60,6 +60,7 @@ export function createTwinRoutes(deps: TwinRouteDeps): Hono<{
           roomNumber: room.number,
           status: room.status,
           floor: room.floor,
+          roomId: String(room.id),
         })),
         ...(inventory !== undefined ? { pms: inventory } : {}),
       });
@@ -105,6 +106,7 @@ export function createTwinRoutes(deps: TwinRouteDeps): Hono<{
           roomNumber: room.number,
           status: room.status,
           floor: room.floor,
+          roomId: String(room.id),
         })),
         pms: inventory,
       });

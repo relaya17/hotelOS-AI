@@ -80,16 +80,41 @@ export default tseslint.config(
     files: ["**/*.test.ts", "**/*.test.tsx"],
     rules: {
       "@typescript-eslint/no-floating-promises": "off",
+      // Tests often use explicit casts for fixtures; keep signal on app code only.
+      "@typescript-eslint/no-unnecessary-type-assertion": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
     },
   },
   // Browser packages exclude Node test files from tsconfig; lint without type-checking.
   {
     files: [
-      "packages/ui/src/*.test.ts",
-      "packages/web-client/src/*.test.ts",
+      "packages/ui/src/**/*.test.ts",
+      "packages/ui/src/**/*.test.tsx",
+      "packages/web-client/src/**/*.test.ts",
+      "packages/features/src/**/*.test.ts",
+      "apps/www/src/**/*.test.ts",
     ],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: null,
+      },
+      globals: { ...globals.node },
+    },
+  },
+  {
+    files: ["packages/a11y-e2e/scripts/**/*.{js,mjs,cjs}"],
+    ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: null,
+      },
       globals: { ...globals.node },
     },
   },

@@ -112,7 +112,7 @@ async function createItTaskFromErrorEvent(
   const task = await deps.ops.createTask({
     id: randomUUID(),
     tenantId: ctx.tenantId,
-    hotelId: hotelId as HotelId,
+    hotelId: hotelId,
     departmentId: dept.id,
     taskType: "error_event",
     title: event.title,

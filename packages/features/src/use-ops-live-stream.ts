@@ -57,13 +57,13 @@ export function useOpsLiveStream(
               setConnected(true);
               setLastEventAt(new Date().toISOString());
               if (event.type === "error") {
+                const data = event.data;
                 const message =
-                  typeof event.data === "object" &&
-                  event.data !== null &&
-                  "message" in event.data &&
-                  typeof (event.data as { message: unknown }).message ===
-                    "string"
-                    ? (event.data as { message: string }).message
+                  typeof data === "object" &&
+                  data !== null &&
+                  "message" in data &&
+                  typeof data.message === "string"
+                    ? data.message
                     : "Stream error";
                 setError(message);
                 setConnected(false);

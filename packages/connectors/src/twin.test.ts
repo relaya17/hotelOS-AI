@@ -77,4 +77,35 @@ describe("mergeHotelTwin", () => {
     });
     assert.equal(twin.rooms[0]?.floor, "2");
   });
+
+  it("preserves HotelOS roomId on merged rooms", () => {
+    const twin = mergeHotelTwin({
+      hotelId: "h1",
+      hotelosRooms: [
+        {
+          roomNumber: "201",
+          status: "dirty",
+          roomId: "11111111-1111-4111-8111-111111111111",
+        },
+      ],
+      pms: {
+        providerId: "demo",
+        externalHotelId: "ext",
+        fetchedAt: "2026-08-03T00:00:00.000Z",
+        rooms: [
+          {
+            externalRoomId: "pms-201",
+            roomNumber: "201",
+            status: "dirty",
+          },
+        ],
+        reservations: [],
+      },
+    });
+    assert.equal(twin.rooms[0]?.source, "merged");
+    assert.equal(
+      twin.rooms[0]?.roomId,
+      "11111111-1111-4111-8111-111111111111",
+    );
+  });
 });

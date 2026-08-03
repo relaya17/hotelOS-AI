@@ -1,6 +1,6 @@
 # Twin Visual — Stage A (2.5D)
 
-**Status:** ✅ Shipped (Admin Digital Twin)  
+**Status:** ✅ Stage A shipped · ✅ Stage B HITL room actions  
 **Goal:** Luxurious live hotel picture without a full 3D engine.
 
 ## What it is
@@ -9,18 +9,20 @@
 - Status colors: vacant / occupied / dirty / maintenance
 - Click room → live panel (status, related equipment, incidents/predictions)
 - Auto-refresh every 30s in Admin Twin panel
+- **Stage B:** from selected room → Suggest ניקיון (dirty + roomId) / Suggest תחזוקה → pending AI approval (Approve→Act in Approvals inbox)
 
 ## What it is not
 
 - Not Unreal/Unity walkthrough
 - Not a PMS replacement
-- Stage B/C (enter-room immersive 3D) only after pilot ROI proof
+- Stage C (enter-room immersive 3D) only after pilot ROI proof
 
 ## Where
 
 - UI: `packages/features/src/twin-visual.tsx` → Admin `twin-panel.tsx`
-- Data: Twin rooms (+ optional `floor`), equipment, overlays
+- Data: Twin rooms (+ optional `floor`, `roomId`), equipment, overlays
+- HITL: existing `/v1/autonomy/suggest-dirty-rooms` + `/v1/autonomy/suggest` (`department_task`)
 
-## Next (Stage B)
+## Next (Stage C)
 
-Room detail as richer “live room” with Suggest→HITL actions, still 2.5D.
+Immersive 3D only after measured pilot ROI — not before.
