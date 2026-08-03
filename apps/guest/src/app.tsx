@@ -9,7 +9,10 @@ import {
   type GuestStayDto,
   type LegalDocDetail,
 } from "@hotelos/web-client";
+import { LandingPage } from "./landing-page.js";
 import { StayHub } from "./stay-hub.js";
+
+type GuestView = "landing" | "find-stay";
 
 function GuestCookieBanner() {
   return (
@@ -26,22 +29,6 @@ function GuestCookieBanner() {
   );
 }
 
-const highlights: readonly { readonly title: string; readonly body: string }[] =
-  [
-    {
-      title: "החדר מוכן מתי שצריך",
-      body: "מעקב ניקיון והזמנה לחדר — בלי להתקשר לקבלה בכל רבע שעה.",
-    },
-    {
-      title: "בקשות שירות במקום",
-      body: "מגבות, כריות או שאלה קצרה — נשלח ישירות לצוות.",
-    },
-    {
-      title: "אומדן חשבון שקוף",
-      body: "רואים לינה וארוחת בוקר לפני הצ׳ק־אאוט.",
-    },
-  ];
-
 function readLegalDoc(): string | null {
   return new URLSearchParams(window.location.search).get("doc");
 }
@@ -57,17 +44,14 @@ function SiteFooter() {
         <a href={APP_URLS.legal("security")}>אבטחה</a>
         {" · "}
         <a href={APP_URLS.legal("privacy")}>פרטיות</a>
-        {" · "}
-        <a href="#accessibility">הצהרת נגישות</a>
       </p>
       <p className="site-footer__staff">
-        <a href={APP_URLS.admin}>צוות</a>
+        <a href={APP_URLS.admin}>ops</a>
         {" · "}
-        <a href={APP_URLS.executive}>הנהלה</a>
+        <a href={APP_URLS.executive}>hq</a>
       </p>
       <style>{`
         .site-footer {
-          grid-column: 1 / -1;
           margin-top: auto;
           padding-top: var(--space-6);
           display: grid;
@@ -88,7 +72,8 @@ function SiteFooter() {
 export function App() {
   const [legalId, setLegalId] = useState<string | null>(readLegalDoc);
   const [legalDoc, setLegalDoc] = useState<LegalDocDetail | null>(null);
-  const [email, setEmail] = useState("noa@example.com");
+  const [view, setView] = useState<GuestView>("landing");
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [stays, setStays] = useState<readonly GuestStayDto[] | null>(null);
@@ -152,6 +137,26 @@ export function App() {
     setStays(null);
     setError(undefined);
     setSelectedStayIndex(0);
+    setView("find-stay");
+  }
+
+  function goFindStay() {
+    setView("find-stay");
+    setError(undefined);
+  }
+
+  function goBookIntent() {
+    const el = document.getElementById("book-intent");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    setView("landing");
+    window.setTimeout(() => {
+      document
+        .getElementById("book-intent")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
   }
 
   const hasStay = stays !== null && stays.length > 0;
@@ -178,9 +183,10 @@ export function App() {
             onClick={() => {
               window.history.replaceState({}, "", "/");
               setLegalId(null);
+              setView("landing");
             }}
           >
-            חזרה לאפליקציית אורחים
+            חזרה לדף הבית
           </Button>
           <GuestCookieBanner />
           <style>{`
@@ -194,35 +200,12 @@ export function App() {
     );
   }
 
-  return (
-    <>
-      <SkipLink />
-      <main
-        id="main-content"
-        className={`shell${hasStay ? " shell--stay" : ""}`}
-        tabIndex={-1}
-      >
-        {!hasStay ? (
-          <section className="hero" aria-labelledby="guest-hero-title">
-            <p className="brand">HotelOS AI</p>
-            <h1 id="guest-hero-title">השהייה שלכם, חכמה יותר</h1>
-            <p className="lede">
-              שכבת האינטליגנציה של המלון — חדר, שירות וחשבון בזמן אמת, בלי תור
-              בקבלה.
-            </p>
-            <ul className="highlights">
-              {highlights.map((item) => (
-                <li key={item.title}>
-                  <h3>{item.title}</h3>
-                  <p>{item.body}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        <section className="panel hotelos-surface">
-          {hasStay ? (
+  if (hasStay) {
+    return (
+      <>
+        <SkipLink />
+        <main id="main-content" className="shell shell--stay" tabIndex={-1}>
+          <section className="panel hotelos-surface">
             <StayHub
               email={email}
               stays={stays}
@@ -231,9 +214,24 @@ export function App() {
               onStayUpdated={handleStayUpdated}
               onSearchAgain={handleSearchAgain}
             />
-          ) : (
+          </section>
+          <SiteFooter />
+          <GuestCookieBanner />
+          <style>{stayShellStyles}</style>
+        </main>
+      </>
+    );
+  }
+
+  if (view === "find-stay") {
+    return (
+      <>
+        <SkipLink />
+        <main id="main-content" className="shell shell--find" tabIndex={-1}>
+          <section className="panel hotelos-surface">
             <form className="form" onSubmit={onSubmit} noValidate>
-              <h2>השהייה שלי</h2>
+              <p className="hotelos-eyebrow">HotelOS</p>
+              <h1>השהייה שלי</h1>
               <p className="form-lede">
                 הזינו את האימייל שבו נעשה ההזמנה — ונציג את פרטי השהייה.
               </p>
@@ -244,96 +242,83 @@ export function App() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
+                autoComplete="email"
                 {...(error !== undefined ? { error } : {})}
               />
-              <Button type="submit" disabled={loading}>
-                {loading ? "מחפש…" : "מצא שהייה"}
-              </Button>
+              <div className="form-actions">
+                <Button type="submit" disabled={loading}>
+                  {loading ? "מחפש…" : "מצא שהייה"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setView("landing");
+                    setError(undefined);
+                  }}
+                >
+                  חזרה לדף הבית
+                </Button>
+              </div>
             </form>
-          )}
-        </section>
+          </section>
+          <SiteFooter />
+          <GuestCookieBanner />
+          <style>{stayShellStyles}</style>
+        </main>
+      </>
+    );
+  }
 
-        <SiteFooter />
+  return (
+    <>
+      <SkipLink />
+      <main id="main-content" tabIndex={-1}>
+        <LandingPage onBookIntent={goBookIntent} onFindStay={goFindStay} />
         <GuestCookieBanner />
-
-        <style>{`
-          .shell {
-            min-height: 100vh;
-            display: grid;
-            grid-template-columns: 1.08fr .92fr;
-            gap: clamp(1.5rem, 4vw, 3.5rem);
-            padding: clamp(1.5rem, 4vw, 4rem);
-            padding-bottom: clamp(5rem, 12vw, 7rem);
-            align-items: center;
-            animation: hotelos-enter var(--motion-med) var(--ease-out) both;
-          }
-          .shell--stay {
-            grid-template-columns: 1fr;
-            max-width: 42rem;
-            margin-inline: auto;
-            width: 100%;
-            align-items: start;
-          }
-          .hero { display: grid; gap: var(--space-4); max-width: 34rem; }
-          .brand {
-            margin: 0;
-            font-family: var(--font-display);
-            font-size: clamp(2.1rem, 5vw, 3rem);
-            letter-spacing: var(--tracking-display);
-            color: var(--color-sea-deep);
-            line-height: 1.05;
-          }
-          h1 {
-            font-size: clamp(1.65rem, 3.4vw, 2.25rem);
-            color: var(--color-ink);
-          }
-          .lede {
-            max-width: 36ch;
-            color: var(--color-ink-soft);
-            font-size: 1.1rem;
-            font-weight: 500;
-            line-height: 1.65;
-          }
-          .highlights {
-            list-style: none;
-            margin: var(--space-2) 0 0;
-            padding: 0;
-            display: grid;
-            gap: var(--space-3);
-          }
-          .highlights li { display: grid; gap: .3rem; }
-          .highlights h3 { font-size: 1.05rem; color: var(--color-sea-deep); }
-          .highlights p {
-            color: var(--color-ink-soft);
-            font-size: var(--text-small);
-            font-weight: 500;
-            line-height: 1.55;
-          }
-          .panel {
-            padding: clamp(1.4rem, 3vw, 2.2rem);
-            display: grid;
-            gap: var(--space-5);
-          }
-          .form { display: grid; gap: var(--space-4); }
-          .form h2 { font-size: var(--text-title); }
-          .form-lede {
-            color: var(--color-ink-soft);
-            font-size: var(--text-small);
-            font-weight: 500;
-            line-height: 1.6;
-          }
-          @media (max-width: 900px) {
-            .shell {
-              grid-template-columns: 1fr;
-              padding: var(--space-5) var(--space-3) clamp(5rem, 12vw, 7rem);
-              gap: var(--space-5);
-              align-items: start;
-            }
-            .brand { font-size: clamp(1.9rem, 8vw, 2.5rem); }
-            .lede { max-width: none; }
-          }
-        `}</style>
       </main>
     </>
   );
 }
+
+const stayShellStyles = `
+  .shell {
+    min-height: 100vh;
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    padding: clamp(1.5rem, 4vw, 4rem);
+    padding-bottom: clamp(5rem, 12vw, 7rem);
+    align-items: start;
+    animation: hotelos-enter var(--motion-med) var(--ease-out) both;
+  }
+  .shell--stay,
+  .shell--find {
+    grid-template-columns: 1fr;
+    max-width: 42rem;
+    margin-inline: auto;
+    width: 100%;
+  }
+  .panel {
+    padding: clamp(1.4rem, 3vw, 2.2rem);
+    display: grid;
+    gap: var(--space-5);
+  }
+  .form { display: grid; gap: var(--space-4); }
+  .form h1 { font-size: clamp(1.6rem, 3vw, 2rem); }
+  .form-lede {
+    color: var(--color-ink-soft);
+    font-size: var(--text-small);
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  @media (max-width: 900px) {
+    .shell {
+      padding: var(--space-5) var(--space-3) clamp(5rem, 12vw, 7rem);
+    }
+  }
+`;
