@@ -111,6 +111,16 @@ export function LandingPage() {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const onChange = () => {
+      if (!mq.matches) setMenuOpen(false);
+    };
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
   const closeMenu = () => setMenuOpen(false);
 
   return (

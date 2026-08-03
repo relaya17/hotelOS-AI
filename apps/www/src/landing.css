@@ -194,8 +194,28 @@ a {
   color: var(--brass-hot) !important;
 }
 
-/* Mobile: brand on physical left, hamburger on physical right */
-@media (max-width: 860px) {
+/* Desktop / tablet: always show full nav, never hamburger */
+@media (min-width: 769px) {
+  .top__burger {
+    display: none !important;
+  }
+
+  .top__nav {
+    display: flex !important;
+    position: static;
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem 1rem;
+    padding: 0;
+    animation: none;
+  }
+}
+
+/* Phone only: brand left + hamburger right */
+@media (max-width: 768px) {
   .top {
     direction: ltr;
     flex-wrap: wrap;
@@ -232,6 +252,7 @@ a {
   }
 
   .top__nav a {
+    display: block;
     padding: 0.85rem 0.35rem;
     border-bottom: 1px solid var(--line);
     font-size: 1rem;
@@ -900,10 +921,6 @@ a {
 }
 
 @media (max-width: 820px) {
-  .top__nav a:not(.top__cta) {
-    display: none;
-  }
-
   .outcome-table__head {
     display: none;
   }
