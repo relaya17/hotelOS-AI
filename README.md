@@ -27,8 +27,9 @@
 | **Guest** | אורח | חיפוש שהייה, הזמנה, מסמכי Legal | http://localhost:5175 |
 | **Work** | עובד | נוכחות, הזמנה עצמית (invite), סוכן HR, מסמכים | http://localhost:5176 |
 | **API** | שרת נפרד | Auth, תפעול, Turbo, Trust, סוכנים, webhooks | http://localhost:3001 |
+| **WWW** | שיווק | דף נחיתה — תוצאות / OS / פיילוט | http://localhost:5177 |
 
-ארכיטקטורה בפרודקשן: **5 כתובות** — אורח · מלון · הנהלה · עובדים · **API נפרד**.  
+ארכיטקטורה בפרודקשן: אורח · מלון · הנהלה · עובדים · **שיווק (www)** · **API נפרד**.  
 ב־Vercel הדפדפן קורא לאותו דומיין; `middleware.ts` מעביר ל־API (בלי CORS/localhost).  
 מדריך: [`docs/deployment/four-projects.md`](docs/deployment/four-projects.md) · [`docs/deployment/vercel.md`](docs/deployment/vercel.md).
 

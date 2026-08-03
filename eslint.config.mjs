@@ -6,7 +6,12 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import globals from "globals";
 
-const FRONTEND_APPS = ["apps/executive", "apps/admin", "apps/guest"];
+const FRONTEND_APPS = [
+  "apps/executive",
+  "apps/admin",
+  "apps/guest",
+  "apps/www",
+];
 
 export default tseslint.config(
   {
