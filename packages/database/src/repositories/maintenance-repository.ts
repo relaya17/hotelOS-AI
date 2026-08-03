@@ -152,6 +152,10 @@ export type MaintenanceRepository = {
     tenantId: TenantId,
     hotelId: HotelId,
   ) => Promise<readonly PersistedMaintenanceRequest[]>;
+  findRequestById: (
+    tenantId: TenantId,
+    requestId: string,
+  ) => Promise<PersistedMaintenanceRequest | null>;
   createRequest: (
     input: CreateMaintenanceRequestInput,
   ) => Promise<PersistedMaintenanceRequest>;
@@ -176,6 +180,7 @@ export type MaintenanceRepository = {
   createVendor: (input: CreateVendorInput) => Promise<PersistedVendor>;
   addQuote: (input: CreateVendorQuoteInput) => Promise<PersistedVendorQuote>;
   listQuotesForRequest: (
+    tenantId: TenantId,
     maintenanceRequestId: string,
   ) => Promise<readonly PersistedVendorQuote[]>;
   findQuoteById: (
@@ -183,6 +188,7 @@ export type MaintenanceRepository = {
     quoteId: string,
   ) => Promise<PersistedVendorQuote | null>;
   decideQuote: (
+    tenantId: TenantId,
     quoteId: string,
     status: "accepted" | "rejected",
     decidedByUserId: string | undefined,
@@ -205,6 +211,20 @@ export function createMaintenanceRepository(db: HotelOsDb): MaintenanceRepositor
         .orderBy(desc(maintenanceRequests.createdAt))
         .all();
       return rows.map(mapRequest);
+    },
+
+    async findRequestById(tenantId, requestId) {
+      const row = await db
+        .select()
+        .from(maintenanceRequests)
+        .where(
+          and(
+            eq(maintenanceRequests.tenantId, tenantId),
+            eq(maintenanceRequests.id, requestId),
+          ),
+        )
+        .get();
+      return row ? mapRequest(row) : null;
     },
 
     async createRequest(input) {
@@ -330,11 +350,16 @@ export function createMaintenanceRepository(db: HotelOsDb): MaintenanceRepositor
       return mapQuote(row);
     },
 
-    async listQuotesForRequest(maintenanceRequestId) {
+    async listQuotesForRequest(tenantId, maintenanceRequestId) {
       const rows = await db
         .select()
         .from(vendorQuotes)
-        .where(eq(vendorQuotes.maintenanceRequestId, maintenanceRequestId))
+        .where(
+          and(
+            eq(vendorQuotes.tenantId, tenantId),
+            eq(vendorQuotes.maintenanceRequestId, maintenanceRequestId),
+          ),
+        )
         .orderBy(desc(vendorQuotes.submittedAt))
         .all();
       return rows.map(mapQuote);
@@ -354,20 +379,24 @@ export function createMaintenanceRepository(db: HotelOsDb): MaintenanceRepositor
       return row ? mapQuote(row) : null;
     },
 
-    async decideQuote(quoteId, status, decidedByUserId, decidedAt) {
+    async decideQuote(tenantId, quoteId, status, decidedByUserId, decidedAt) {
       await db.update(vendorQuotes)
         .set({
           status,
           decidedByUserId: decidedByUserId ?? null,
           decidedAt,
         })
-        .where(eq(vendorQuotes.id, quoteId))
+        .where(
+          and(eq(vendorQuotes.id, quoteId), eq(vendorQuotes.tenantId, tenantId)),
+        )
         .run();
 
       const row = await db
         .select()
         .from(vendorQuotes)
-        .where(eq(vendorQuotes.id, quoteId))
+        .where(
+          and(eq(vendorQuotes.id, quoteId), eq(vendorQuotes.tenantId, tenantId)),
+        )
         .get();
       if (!row) {
         return null;
@@ -381,7 +410,12 @@ export function createMaintenanceRepository(db: HotelOsDb): MaintenanceRepositor
             estimatedCost: row.amount,
             updatedAt: decidedAt,
           })
-          .where(eq(maintenanceRequests.id, row.maintenanceRequestId))
+          .where(
+            and(
+              eq(maintenanceRequests.id, row.maintenanceRequestId),
+              eq(maintenanceRequests.tenantId, tenantId),
+            ),
+          )
           .run();
       }
 

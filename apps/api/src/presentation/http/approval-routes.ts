@@ -1,5 +1,10 @@
 import { Hono } from "hono";
-import type { JwtTokenService } from "@hotelos/auth";
+import {
+  canAccessHotel,
+  canApproveMoneyAmount,
+  canDecideOpsHitl,
+  type JwtTokenService,
+} from "@hotelos/auth";
 import type {
   ApprovalRepository,
   AuditRepository,
@@ -14,10 +19,18 @@ import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
 import {
+  estimateApprovalAmountIls,
+  isMoneyApprovalPayload,
+} from "../../application/approval-money-amount.js";
+import {
   evaluateKashrutProcurementGate,
   kashrutGateAllowsApprove,
 } from "../../application/evaluate-kashrut-procurement-gate.js";
-import { executeApprovalAct } from "../../application/execute-approval-act.js";
+import {
+  executeApprovalAct,
+  PROCUREMENT_CHAIN_APPROVAL_ILS,
+  PROCUREMENT_HOTEL_APPROVAL_ILS,
+} from "../../application/execute-approval-act.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -49,7 +62,12 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
     try {
       const principal = c.get("principal");
       const data = await deps.approvals.listPending(principal.scope.tenantId);
-      return c.json({ data });
+      const visible = data.filter(
+        (item) =>
+          item.hotelId === null ||
+          canAccessHotel(principal, Ids.hotel(item.hotelId)),
+      );
+      return c.json({ data: visible });
     } catch (error) {
       return mapUnknownError(c, error);
     }
@@ -93,6 +111,43 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
           "APPROVAL_NOT_FOUND",
           "Pending approval not found",
         );
+      }
+
+      if (
+        pending.hotelId !== null &&
+        !canAccessHotel(principal, Ids.hotel(pending.hotelId))
+      ) {
+        return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+      }
+
+      if (!canDecideOpsHitl(principal)) {
+        return sendError(
+          c,
+          403,
+          "ROLE_REQUIRED",
+          "HITL decide requires an ops/management role",
+        );
+      }
+
+      if (isMoneyApprovalPayload(pending.payloadJson)) {
+        const amountIls = estimateApprovalAmountIls(pending.payloadJson);
+        if (
+          !canApproveMoneyAmount(principal, amountIls, {
+            hotelIls: PROCUREMENT_HOTEL_APPROVAL_ILS,
+            chainIls: PROCUREMENT_CHAIN_APPROVAL_ILS,
+          })
+        ) {
+          return sendError(
+            c,
+            403,
+            "MONEY_ROLE_REQUIRED",
+            amountIls >= PROCUREMENT_CHAIN_APPROVAL_ILS
+              ? "Chain-level money approval requires executive/owner/cfo/admin"
+              : amountIls >= PROCUREMENT_HOTEL_APPROVAL_ILS
+                ? "Hotel-level money approval requires gm or above"
+                : "Money approval requires a procurement/management role",
+          );
+        }
       }
 
       if (body.status === "approved") {

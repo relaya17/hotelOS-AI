@@ -1,5 +1,11 @@
-import { Hono } from "hono";
-import type { JwtTokenService } from "@hotelos/auth";
+import { Hono, type Context } from "hono";
+import {
+  canAccessHotel,
+  canDecideOpsHitl,
+  canOperateProcurement,
+  type AuthPrincipal,
+  type JwtTokenService,
+} from "@hotelos/auth";
 import type {
   ApprovalRepository,
   AuditRepository,
@@ -11,7 +17,7 @@ import type {
   RecruitingRepository,
   RoomRepository,
 } from "@hotelos/database";
-import { Ids } from "@hotelos/shared";
+import { Ids, type HotelId } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
 import {
@@ -21,6 +27,35 @@ import {
 import { detectFoodRelatedProcurement } from "../../application/evaluate-kashrut-procurement-gate.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
+
+function assertAutonomyAccess(
+  c: Context,
+  principal: AuthPrincipal,
+  hotelId: HotelId,
+  money: boolean,
+): Response | null {
+  if (!canAccessHotel(principal, hotelId)) {
+    return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+  }
+  if (money) {
+    if (!canOperateProcurement(principal)) {
+      return sendError(
+        c,
+        403,
+        "ROLE_REQUIRED",
+        "Money Suggest requires a procurement/management role",
+      );
+    }
+  } else if (!canDecideOpsHitl(principal)) {
+    return sendError(
+      c,
+      403,
+      "ROLE_REQUIRED",
+      "Suggest requires an ops/management role",
+    );
+  }
+  return null;
+}
 
 export type AutonomyRouteDeps = {
   readonly approvals: ApprovalRepository;
@@ -191,6 +226,11 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
       const principal = c.get("principal");
       const body = suggestSchema.parse(await c.req.json());
       const hotelId = Ids.hotel(body.hotelId);
+      const moneySuggest =
+        body.kind === "procurement_draft" ||
+        body.kind === "maintenance_quote_accept";
+      const denied = assertAutonomyAccess(c, principal, hotelId, moneySuggest);
+      if (denied) return denied;
       const now = new Date().toISOString();
 
       if (body.kind === "department_task") {
@@ -431,6 +471,8 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
       const principal = c.get("principal");
       const body = suggestLowStockSchema.parse(await c.req.json());
       const hotelId = Ids.hotel(body.hotelId);
+      const denied = assertAutonomyAccess(c, principal, hotelId, true);
+      if (denied) return denied;
       const now = new Date().toISOString();
 
       const inventory = await deps.procurement.listInventory(
@@ -533,6 +575,8 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
       const principal = c.get("principal");
       const body = suggestDirtyRoomsSchema.parse(await c.req.json());
       const hotelId = Ids.hotel(body.hotelId);
+      const denied = assertAutonomyAccess(c, principal, hotelId, false);
+      if (denied) return denied;
       const now = new Date().toISOString();
 
       const belongs = await deps.rooms.hotelBelongsToTenant(
@@ -626,6 +670,8 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
       const principal = c.get("principal");
       const body = suggestSendPurchaseOrderSchema.parse(await c.req.json());
       const hotelId = Ids.hotel(body.hotelId);
+      const denied = assertAutonomyAccess(c, principal, hotelId, true);
+      if (denied) return denied;
       const now = new Date().toISOString();
 
       const belongs = await deps.rooms.hotelBelongsToTenant(
@@ -736,6 +782,8 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
       const principal = c.get("principal");
       const body = suggestRecruitingStageSchema.parse(await c.req.json());
       const hotelId = Ids.hotel(body.hotelId);
+      const denied = assertAutonomyAccess(c, principal, hotelId, false);
+      if (denied) return denied;
       const now = new Date().toISOString();
 
       const found = await deps.recruiting.findCandidateInHotel(
@@ -832,6 +880,8 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
       const principal = c.get("principal");
       const body = suggestTodaysArrivalsSchema.parse(await c.req.json());
       const hotelId = Ids.hotel(body.hotelId);
+      const denied = assertAutonomyAccess(c, principal, hotelId, false);
+      if (denied) return denied;
       const now = new Date().toISOString();
       const checkInDate = body.checkInDate ?? now.slice(0, 10);
 
@@ -932,6 +982,8 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
       const principal = c.get("principal");
       const body = suggestFeedbackFollowupSchema.parse(await c.req.json());
       const hotelId = Ids.hotel(body.hotelId);
+      const denied = assertAutonomyAccess(c, principal, hotelId, false);
+      if (denied) return denied;
       const now = new Date().toISOString();
 
       const item = await deps.feedback.findByIdInHotel(

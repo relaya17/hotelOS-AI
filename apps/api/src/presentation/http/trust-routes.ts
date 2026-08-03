@@ -6,7 +6,11 @@ import type {
   UserRepository,
 } from "@hotelos/database";
 import { hashVoiceSample } from "@hotelos/database";
-import type { JwtTokenService } from "@hotelos/auth";
+import {
+  canAccessHotel,
+  canOperateProcurement,
+  type JwtTokenService,
+} from "@hotelos/auth";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
@@ -363,7 +367,18 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
   routes.post("/payments/intents", async (c) => {
     try {
       const principal = c.get("principal");
+      if (!canOperateProcurement(principal)) {
+        return sendError(
+          c,
+          403,
+          "ROLE_REQUIRED",
+          "Creating payment intents requires a procurement/management role",
+        );
+      }
       const body = paymentSchema.parse(await c.req.json());
+      if (body.hotelId && !canAccessHotel(principal, Ids.hotel(body.hotelId))) {
+        return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+      }
       const intent = await deps.trust.createPaymentIntent({
         id: randomUUID(),
         tenantId: principal.scope.tenantId,
@@ -396,6 +411,14 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
   routes.post("/payments/intents/:id/confirm", async (c) => {
     try {
       const principal = c.get("principal");
+      if (!canOperateProcurement(principal)) {
+        return sendError(
+          c,
+          403,
+          "ROLE_REQUIRED",
+          "Confirming payments requires a procurement/management role",
+        );
+      }
       const confirmed = await deps.trust.confirmPaymentIntent(
         principal.scope.tenantId,
         c.req.param("id"),

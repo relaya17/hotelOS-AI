@@ -152,6 +152,10 @@ export type ProcurementRepository = {
     hotelId: HotelId,
     orderId: string,
   ) => Promise<PersistedPurchaseOrder | null>;
+  findPurchaseOrder: (
+    tenantId: TenantId,
+    orderId: string,
+  ) => Promise<PersistedPurchaseOrder | null>;
   listPurchaseOrderItems: (
     orderId: string,
   ) => Promise<readonly PersistedPurchaseOrderItem[]>;
@@ -258,6 +262,20 @@ export function createProcurementRepository(db: HotelOsDb): ProcurementRepositor
             eq(purchaseOrders.id, orderId),
             eq(purchaseOrders.tenantId, tenantId),
             eq(purchaseOrders.hotelId, hotelId),
+          ),
+        )
+        .get();
+      return row ? mapPurchaseOrder(row) : null;
+    },
+
+    async findPurchaseOrder(tenantId, orderId) {
+      const row = await db
+        .select()
+        .from(purchaseOrders)
+        .where(
+          and(
+            eq(purchaseOrders.id, orderId),
+            eq(purchaseOrders.tenantId, tenantId),
           ),
         )
         .get();

@@ -17,7 +17,12 @@ import type {
   TrustedSourcesRepository,
   TurboRepository,
 } from "@hotelos/database";
-import { canAccessHotel, type JwtTokenService } from "@hotelos/auth";
+import {
+  canAccessHotel,
+  canApproveMoneyAmount,
+  canOperateProcurement,
+  type JwtTokenService,
+} from "@hotelos/auth";
 import type { HotelId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
@@ -33,6 +38,10 @@ import { mapSecurityWebhook } from "../../application/map-security-webhook.js";
 import { listOpsAnomalies } from "../../application/run-anomaly-scan.js";
 import { synthesizeCfoFinanceBrief } from "../../application/synthesize-cfo-finance-brief.js";
 import { synthesizeCioDigest } from "../../application/synthesize-cio-digest.js";
+import {
+  PROCUREMENT_CHAIN_APPROVAL_ILS,
+  PROCUREMENT_HOTEL_APPROVAL_ILS,
+} from "../../application/execute-approval-act.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -421,7 +430,25 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
   routes.post("/maintenance-requests/:id/quotes", async (c) => {
     try {
       const principal = c.get("principal");
+      if (!canOperateProcurement(principal)) {
+        return sendError(
+          c,
+          403,
+          "ROLE_REQUIRED",
+          "Quote create requires a procurement/management role",
+        );
+      }
       const requestId = c.req.param("id");
+      const request = await deps.maintenance.findRequestById(
+        principal.scope.tenantId,
+        requestId,
+      );
+      if (!request) {
+        return sendError(c, 404, "REQUEST_NOT_FOUND", "Maintenance request not found");
+      }
+      if (!canAccessHotel(principal, Ids.hotel(request.hotelId))) {
+        return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+      }
       const body = createQuoteSchema.parse(await c.req.json());
       const created = await deps.maintenance.addQuote({
         id: randomUUID(),
@@ -441,8 +468,22 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
 
   routes.get("/maintenance-requests/:id/quotes", async (c) => {
     try {
+      const principal = c.get("principal");
       const requestId = c.req.param("id");
-      const list = await deps.maintenance.listQuotesForRequest(requestId);
+      const request = await deps.maintenance.findRequestById(
+        principal.scope.tenantId,
+        requestId,
+      );
+      if (!request) {
+        return sendError(c, 404, "REQUEST_NOT_FOUND", "Maintenance request not found");
+      }
+      if (!canAccessHotel(principal, Ids.hotel(request.hotelId))) {
+        return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+      }
+      const list = await deps.maintenance.listQuotesForRequest(
+        principal.scope.tenantId,
+        requestId,
+      );
       return c.json({ data: list });
     } catch (error) {
       return mapUnknownError(c, error);
@@ -454,7 +495,49 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
       const principal = c.get("principal");
       const quoteId = c.req.param("id");
       const body = decideQuoteSchema.parse(await c.req.json());
+      const quote = await deps.maintenance.findQuoteById(
+        principal.scope.tenantId,
+        quoteId,
+      );
+      if (!quote) {
+        return sendError(c, 404, "QUOTE_NOT_FOUND", "Quote not found");
+      }
+      if (quote.maintenanceRequestId) {
+        const request = await deps.maintenance.findRequestById(
+          principal.scope.tenantId,
+          quote.maintenanceRequestId,
+        );
+        if (!request) {
+          return sendError(c, 404, "QUOTE_NOT_FOUND", "Quote not found");
+        }
+        if (!canAccessHotel(principal, Ids.hotel(request.hotelId))) {
+          return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+        }
+      }
+      if (
+        body.status === "accepted" &&
+        !canApproveMoneyAmount(principal, quote.amount, {
+          hotelIls: PROCUREMENT_HOTEL_APPROVAL_ILS,
+          chainIls: PROCUREMENT_CHAIN_APPROVAL_ILS,
+        })
+      ) {
+        return sendError(
+          c,
+          403,
+          "MONEY_ROLE_REQUIRED",
+          "Accepting a quote requires a money-approver role for this amount",
+        );
+      }
+      if (body.status === "rejected" && !canOperateProcurement(principal)) {
+        return sendError(
+          c,
+          403,
+          "ROLE_REQUIRED",
+          "Rejecting a quote requires a procurement/management role",
+        );
+      }
       const updated = await deps.maintenance.decideQuote(
+        principal.scope.tenantId,
         quoteId,
         body.status,
         principal.userId,
@@ -489,6 +572,14 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
   routes.post("/inventory", async (c) => {
     try {
       const principal = c.get("principal");
+      if (!canOperateProcurement(principal)) {
+        return sendError(
+          c,
+          403,
+          "ROLE_REQUIRED",
+          "Inventory create requires a procurement/management role",
+        );
+      }
       const resolved = await resolveHotelId(c);
       if (!resolved.ok) return resolved.response;
       const body = createInventoryItemSchema.parse(await c.req.json());
@@ -542,6 +633,14 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
   routes.post("/purchase-orders", async (c) => {
     try {
       const principal = c.get("principal");
+      if (!canOperateProcurement(principal)) {
+        return sendError(
+          c,
+          403,
+          "ROLE_REQUIRED",
+          "Creating a purchase order requires a procurement/management role",
+        );
+      }
       const resolved = await resolveHotelId(c);
       if (!resolved.ok) return resolved.response;
       const body = createPurchaseOrderSchema.parse(await c.req.json());
@@ -588,7 +687,25 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
   routes.post("/purchase-orders/:id/receive", async (c) => {
     try {
       const principal = c.get("principal");
+      if (!canOperateProcurement(principal)) {
+        return sendError(
+          c,
+          403,
+          "ROLE_REQUIRED",
+          "Receiving a purchase order requires a procurement/management role",
+        );
+      }
       const orderId = c.req.param("id");
+      const existing = await deps.procurement.findPurchaseOrder(
+        principal.scope.tenantId,
+        orderId,
+      );
+      if (!existing) {
+        return sendError(c, 404, "ORDER_NOT_FOUND", "Purchase order not found");
+      }
+      if (!canAccessHotel(principal, Ids.hotel(existing.hotelId))) {
+        return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+      }
       const updated = await deps.procurement.receivePurchaseOrder(
         principal.scope.tenantId,
         orderId,

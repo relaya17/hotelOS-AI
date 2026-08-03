@@ -190,16 +190,32 @@ export async function seedDemoTenant(
         displayName: "Demo Admin",
         passwordHash,
         // Includes dedicated `hr` so local demo can review תעודת יושר (PO: not admin alone).
-        rolesJson: JSON.stringify(["admin", "executive", "hr"]),
+        rolesJson: JSON.stringify([
+          "admin",
+          "executive",
+          "hr",
+          "gm",
+          "procurement",
+          "cfo",
+        ]),
         createdAt: now,
       })
       .run();
   } else {
     const roles = parseRolesJson(existingUser.rolesJson);
-    if (!roles.includes("hr")) {
+    const requiredRoles = [
+      "admin",
+      "executive",
+      "hr",
+      "gm",
+      "procurement",
+      "cfo",
+    ] as const;
+    const missing = requiredRoles.filter((role) => !roles.includes(role));
+    if (missing.length > 0) {
       await db
         .update(users)
-        .set({ rolesJson: JSON.stringify([...roles, "hr"]) })
+        .set({ rolesJson: JSON.stringify([...roles, ...missing]) })
         .where(eq(users.id, userId))
         .run();
     }

@@ -685,6 +685,7 @@ export async function executeApprovalAct(
     }
 
     const quote = await deps.maintenance.decideQuote(
+      Ids.tenant(approval.tenantId),
       quoteAccept.quoteId,
       "accepted",
       decidedByUserId,
