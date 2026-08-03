@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AttendancePage, LegalFooter } from "@hotelos/features";
+import { LegalFooter } from "@hotelos/features";
 import { Button, CookieBanner, SkipLink } from "@hotelos/ui";
 import {
   APP_URLS,
@@ -15,13 +15,12 @@ import {
 } from "@hotelos/web-client";
 import { DashboardPage } from "./dashboard-page.js";
 import { FacilitiesPage } from "./facilities-page.js";
-import { InvitePage } from "./invite-page.js";
 import { KashrutPage } from "./kashrut-page.js";
 import { LoginPage } from "./login-page.js";
 
 const DEMO_TENANT_ID = "11111111-1111-4111-8111-111111111111";
 
-type View = "ops" | "facilities" | "kashrut" | "attendance";
+type View = "ops" | "facilities" | "kashrut";
 
 function readInviteToken(): string | undefined {
   const fromQuery = new URLSearchParams(window.location.search).get("invite");
@@ -29,11 +28,25 @@ function readInviteToken(): string | undefined {
   return undefined;
 }
 
+function readInitialView(): View {
+  const params = new URLSearchParams(window.location.search);
+  const panel = params.get("panel");
+  if (params.get("hotelId") || (panel && panel.length > 0)) {
+    return "facilities";
+  }
+  return "ops";
+}
+
 export function App() {
   const [user, setUser] = useState<StoredUser | null>(null);
   const [booting, setBooting] = useState(true);
-  const [view, setView] = useState<View>("ops");
+  const [view, setView] = useState<View>(readInitialView);
   const inviteToken = readInviteToken();
+
+  useEffect(() => {
+    if (!inviteToken) return;
+    window.location.replace(`${APP_URLS.work}/invite/${inviteToken}`);
+  }, [inviteToken]);
 
   useEffect(() => {
     if (booting || inviteToken || !user) return;
@@ -86,16 +99,13 @@ export function App() {
     };
   }, []);
 
-  if (booting) {
-    return <main className="boot">HotelOS AI · Admin</main>;
-  }
-
-  if (inviteToken) {
+  if (booting || inviteToken) {
     return (
-      <>
-        <SkipLink />
-        <InvitePage token={inviteToken} />
-      </>
+      <main className="boot">
+        {inviteToken
+          ? "מעביר לפורטל העובדים…"
+          : "HotelOS AI · Admin"}
+      </main>
     );
   }
 
@@ -118,7 +128,6 @@ export function App() {
                   ["ops", "חדרים והזמנות"],
                   ["facilities", "מחלקות ותפעול"],
                   ["kashrut", "כשרות"],
-                  ["attendance", "נוכחות מהטלפון"],
                 ] as const
               ).map(([key, label]) => (
                 <button
@@ -138,6 +147,9 @@ export function App() {
               ))}
             </div>
             <div className="admin-nav__actions">
+              <a className="link" href={APP_URLS.work}>
+                Work · עובדים
+              </a>
               <a className="link" href={APP_URLS.executive}>
                 Executive
               </a>
@@ -168,15 +180,6 @@ export function App() {
           {view === "kashrut" ? (
             <main id="main-content" className="kashrut-wrap" tabIndex={-1}>
               <KashrutPage />
-            </main>
-          ) : null}
-          {view === "attendance" ? (
-            <main
-              id="main-content"
-              className="attendance-wrap"
-              tabIndex={-1}
-            >
-              <AttendancePage />
             </main>
           ) : null}
           <LegalFooter legalUrl={(doc) => APP_URLS.legal(doc)} />
@@ -212,7 +215,7 @@ export function App() {
         .admin-nav__actions{display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap;justify-content:flex-end}
         .link{color:var(--color-sea-deep);font-weight:600;white-space:nowrap;font-size:var(--text-small);text-decoration:none}
         .link:hover{text-decoration:underline}
-        .attendance-wrap,.facilities-wrap,.kashrut-wrap{
+        .facilities-wrap,.kashrut-wrap{
           width:min(100%,var(--content-max));
           margin-inline:auto;
           padding:var(--space-page);

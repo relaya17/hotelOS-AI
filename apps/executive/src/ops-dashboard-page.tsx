@@ -206,12 +206,20 @@ export function OpsDashboardPage() {
                   </dd>
                 </div>
               </dl>
-              <a
-                className="open-ops"
-                href={`${APP_URLS.admin}?hotelId=${hotel.hotelId}`}
-              >
-                פתח תפעול מלון זה
-              </a>
+              <div className="hotel-card__links">
+                <a
+                  className="open-ops"
+                  href={`${APP_URLS.admin}?hotelId=${hotel.hotelId}`}
+                >
+                  פתח תפעול מלון זה
+                </a>
+                <a
+                  className="open-ops open-ops--twin"
+                  href={`${APP_URLS.admin}?hotelId=${hotel.hotelId}&panel=twin`}
+                >
+                  Digital Twin
+                </a>
+              </div>
             </li>
           ))}
         </ul>
@@ -242,7 +250,9 @@ export function OpsDashboardPage() {
         .metrics div { display:grid; gap:.15rem; }
         .metrics dt { font-size:var(--text-small); color:var(--color-ink-soft); }
         .metrics dd { margin:0; font-weight:700; }
+        .hotel-card__links { display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:center; }
         .open-ops { display:inline-block; font-weight:700; color:var(--color-sea-deep); }
+        .open-ops--twin { font-weight:600; opacity:0.9; }
         .state { margin:0; color:var(--color-ink-soft); font-weight:500; }
         .state--error { color:var(--color-danger); }
         @media (max-width:1100px){ .kpi-row{ grid-template-columns:repeat(3,minmax(0,1fr)); } }

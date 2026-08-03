@@ -5,7 +5,7 @@ import {
   tUi,
   type LocaleCode,
 } from "@hotelos/i18n";
-import { AttendancePage, LegalFooter } from "@hotelos/features";
+import { LegalFooter } from "@hotelos/features";
 import { Button, CookieBanner, SkipLink } from "@hotelos/ui";
 import {
   APP_URLS,
@@ -41,7 +41,6 @@ type View =
   | { readonly kind: "chat" }
   | { readonly kind: "automations" }
   | { readonly kind: "voice" }
-  | { readonly kind: "attendance" }
   | { readonly kind: "trust" }
   | { readonly kind: "ops" }
   | { readonly kind: "cio" }
@@ -86,7 +85,6 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
     ["chat", tUi(locale, "nav.chat")],
     ["automations", tUi(locale, "nav.automations")],
     ["voice", tUi(locale, "nav.voice")],
-    ["attendance", tUi(locale, "nav.attendance")],
     ["trust", tUi(locale, "nav.trust")],
   ] as const;
 
@@ -116,6 +114,9 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
                 ))}
               </select>
             </label>
+            <a className="nav__ops" href={APP_URLS.work}>
+              {tUi(locale, "action.openWork")}
+            </a>
             <a className="nav__ops" href={APP_URLS.admin}>
               {tUi(locale, "action.openHotelOps")}
             </a>
@@ -202,7 +203,6 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
           <TurboAutomationsPage locale={locale} />
         ) : null}
         {view.kind === "voice" ? <TurboVoicePage locale={locale} /> : null}
-        {view.kind === "attendance" ? <AttendancePage /> : null}
         {view.kind === "trust" ? <TrustPaymentsPage /> : null}
       </main>
 

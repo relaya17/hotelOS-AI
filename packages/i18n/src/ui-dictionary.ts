@@ -17,6 +17,7 @@ export type UiMessageKey =
   | "nav.finance"
   | "nav.approvals"
   | "action.logout"
+  | "action.openWork"
   | "action.openHotelOps"
   | "chat.title"
   | "chat.send"
@@ -54,6 +55,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.finance": "סוכן כספים",
     "nav.approvals": "אישורי AI",
     "action.logout": "התנתקות",
+    "action.openWork": "פורטל עובדים",
     "action.openHotelOps": "תפעול מלון",
     "chat.title": "צ׳אט פנימי לעובדים",
     "chat.send": "שלח הוראה",
@@ -84,6 +86,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.finance": "Finance Doctor",
     "nav.approvals": "AI approvals",
     "action.logout": "Sign out",
+    "action.openWork": "Employee portal",
     "action.openHotelOps": "Hotel operations",
     "chat.title": "Internal staff chat",
     "chat.send": "Send instruction",
@@ -114,6 +117,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.finance": "وكيل الماليات",
     "nav.approvals": "موافقات الذكاء الاصطناعي",
     "action.logout": "تسجيل الخروج",
+    "action.openWork": "بوابة الموظفين",
     "action.openHotelOps": "تشغيل الفندق",
     "chat.title": "دردشة الموظفين الداخلية",
     "chat.send": "إرسال تعليمات",
@@ -144,6 +148,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.finance": "Финансовый агент",
     "nav.approvals": "Одобрения ИИ",
     "action.logout": "Выйти",
+    "action.openWork": "Портал сотрудников",
     "action.openHotelOps": "Операции отеля",
     "chat.title": "Внутренний чат сотрудников",
     "chat.send": "Отправить указание",
@@ -174,6 +179,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.finance": "Agente financiero",
     "nav.approvals": "Aprobaciones de IA",
     "action.logout": "Cerrar sesión",
+    "action.openWork": "Portal de empleados",
     "action.openHotelOps": "Operaciones del hotel",
     "chat.title": "Chat interno del personal",
     "chat.send": "Enviar instrucción",
@@ -204,6 +210,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.finance": "ที่ปรึกษาการเงิน",
     "nav.approvals": "การอนุมัติ AI",
     "action.logout": "ออกจากระบบ",
+    "action.openWork": "พอร์ทัลพนักงาน",
     "action.openHotelOps": "ปฏิบัติการโรงแรม",
     "chat.title": "แชทภายในพนักงาน",
     "chat.send": "ส่งคำสั่ง",
@@ -234,6 +241,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.finance": "财务智能体",
     "nav.approvals": "AI 审批",
     "action.logout": "退出登录",
+    "action.openWork": "员工门户",
     "action.openHotelOps": "酒店运营",
     "chat.title": "内部员工聊天",
     "chat.send": "发送指令",
@@ -264,6 +272,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.finance": "वित्त एजेंट",
     "nav.approvals": "AI अनुमोदन",
     "action.logout": "साइन आउट",
+    "action.openWork": "कर्मचारी पोर्टल",
     "action.openHotelOps": "होटल संचालन",
     "chat.title": "आंतरिक स्टाफ चैट",
     "chat.send": "निर्देश भेजें",
@@ -294,6 +303,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.finance": "Finans ajanı",
     "nav.approvals": "AI onayları",
     "action.logout": "Çıkış yap",
+    "action.openWork": "Çalışan portalı",
     "action.openHotelOps": "Otel operasyonları",
     "chat.title": "Dahili personel sohbeti",
     "chat.send": "Talimat gönder",
@@ -324,6 +334,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.finance": "Χρηματοοικονομικός πράκτορας",
     "nav.approvals": "Εγκρίσεις AI",
     "action.logout": "Αποσύνδεση",
+    "action.openWork": "Πύλη εργαζομένων",
     "action.openHotelOps": "Λειτουργίες ξενοδοχείου",
     "chat.title": "Εσωτερική συνομιλία προσωπικού",
     "chat.send": "Αποστολή οδηγίας",

@@ -41,13 +41,19 @@ const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "hr", label: "עובדים ותכתובת" },
   { key: "approvals", label: "אישורי AI" },
   { key: "knowledge", label: "ידע ארגוני" },
-  { key: "twin", label: "Digital Twin" },
+  { key: "twin", label: "Digital Twin · מצב חדרים" },
   { key: "simulator", label: "סימולטור" },
 ];
 
 function readHotelIdFromUrl(): string | undefined {
   const value = new URLSearchParams(window.location.search).get("hotelId");
   return value && value.length > 0 ? value : undefined;
+}
+
+function readPanelFromUrl(): SubView | undefined {
+  const value = new URLSearchParams(window.location.search).get("panel");
+  if (!value) return undefined;
+  return tabs.some((tab) => tab.key === value) ? (value as SubView) : undefined;
 }
 
 export function FacilitiesPage() {
@@ -57,7 +63,9 @@ export function FacilitiesPage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
-  const [view, setView] = useState<SubView>("briefing");
+  const [view, setView] = useState<SubView>(
+    () => readPanelFromUrl() ?? "briefing",
+  );
 
   useEffect(() => {
     let cancelled = false;

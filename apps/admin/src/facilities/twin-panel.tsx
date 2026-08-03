@@ -45,9 +45,10 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
 
   return (
     <section>
-      <h2>Digital Twin · חדרים</h2>
+      <h2>Digital Twin · מצב חדרים</h2>
       <p className="muted">
-        מיזוג מצב HotelOS עם מחבר PMS (קריאה בלבד — demo / Mews / Opera stub).
+        משטח תפעולי (ops) בלבד — מיזוג מצב HotelOS עם מחבר PMS (קריאה בלבד —
+        demo / Mews / Opera stub). לא מחליף PMS ולא שייך לפורטל העובדים.
       </p>
       <Button type="button" onClick={() => void onSync()}>
         סנכרון PMS

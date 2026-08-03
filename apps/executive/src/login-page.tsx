@@ -113,6 +113,7 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
         <p className="auth-apps">
           אפליקציות נפרדות:{" "}
           <a href={APP_URLS.admin}>תפעול מלון</a> ·{" "}
+          <a href={APP_URLS.work}>עובדים</a> ·{" "}
           <a href={APP_URLS.guest}>אורחים</a>
         </p>
       </section>

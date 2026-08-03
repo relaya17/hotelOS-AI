@@ -257,6 +257,10 @@ export function HrPanel({ hotelId }: HrPanelProps) {
   return (
     <section className="hr-panel">
       <h2>משאבי אנוש · הרשמה ותכתובת</h2>
+      <p className="hint">
+        ניהול עובדים והזמנות כאן. נוכחות והרשמה עצמית של עובד — בפורטל{" "}
+        <a href={APP_URLS.work}>Work</a>.
+      </p>
       {error ? <p className="error">{error}</p> : null}
 
       <form className="stack" onSubmit={(e) => void onInvite(e)}>
