@@ -4,7 +4,9 @@ import type { PmsConnector } from "@hotelos/connectors";
 import type {
   AuditRepository,
   BookingRepository,
+  EquipmentRepository,
   FeedbackRepository,
+  EnergyRepository,
   GuestProfileRepository,
   GuestStayRepository,
   HotelRepository,
@@ -29,6 +31,8 @@ import { ingestPmsReservation } from "../../application/ingest-pms-reservation.j
 import { ingestSecurityWebhook } from "../../application/ingest-security-webhook.js";
 import { ingestSentryWebhook } from "../../application/ingest-sentry-webhook.js";
 import { ingestReputationReview } from "../../application/ingest-reputation-review.js";
+import { ingestEnergyReading } from "../../application/ingest-energy-reading.js";
+import { ingestEquipmentSignal } from "../../application/ingest-equipment-signal.js";
 import { listPublicAvailability } from "../../application/public-availability.js";
 import { quoteRoomStay } from "../../application/room-rates.js";
 import { handleWhatsAppInbound } from "../../application/handle-whatsapp-inbound.js";
@@ -75,6 +79,10 @@ export type PublicRouteDeps = {
    * Required in production when OTA review ingest is enabled.
    */
   readonly reputationIngestSecret?: string;
+  readonly energyIngestSecret?: string;
+  readonly energy?: EnergyRepository;
+  readonly equipmentIngestSecret?: string;
+  readonly equipment?: EquipmentRepository;
   readonly isProduction?: boolean;
 };
 
@@ -248,6 +256,32 @@ function reputationIngestAuthorized(
     secret,
     isProduction,
     "x-hotelos-reputation-secret",
+  );
+}
+
+function energyIngestAuthorized(
+  c: { req: { header: (name: string) => string | undefined } },
+  secret: string | undefined,
+  isProduction: boolean | undefined,
+): boolean {
+  return sharedSecretAuthorized(
+    c,
+    secret,
+    isProduction,
+    "x-hotelos-energy-secret",
+  );
+}
+
+function equipmentIngestAuthorized(
+  c: { req: { header: (name: string) => string | undefined } },
+  secret: string | undefined,
+  isProduction: boolean | undefined,
+): boolean {
+  return sharedSecretAuthorized(
+    c,
+    secret,
+    isProduction,
+    "x-hotelos-equipment-secret",
   );
 }
 
@@ -453,6 +487,117 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
         return sendError(c, status, result.code, result.message);
       }
       return c.json({ data: result }, result.duplicate ? 200 : 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  const energyIngestSchema = z.object({
+    hotelId: z.string().uuid(),
+    meterKind: z.enum(["electric", "hvac", "water", "generic"]),
+    kwh: z.number().nonnegative().optional().nullable(),
+    recordedAt: z.string().datetime(),
+    source: z.string().trim().min(1).max(120),
+  });
+
+  /**
+   * BMS / utility meter webhook (no JWT).
+   * Authorization: Bearer $ENERGY_INGEST_SECRET (or X-HotelOS-Energy-Secret).
+   */
+  routes.post("/energy/ingest", async (c) => {
+    try {
+      if (
+        !energyIngestAuthorized(
+          c,
+          deps.energyIngestSecret,
+          deps.isProduction,
+        )
+      ) {
+        return sendError(
+          c,
+          401,
+          "UNAUTHORIZED",
+          "Invalid or missing energy ingest secret",
+        );
+      }
+      if (!deps.energy) {
+        return sendError(c, 503, "UNAVAILABLE", "Energy ingest not configured");
+      }
+
+      const body = energyIngestSchema.parse(await c.req.json());
+      const result = await ingestEnergyReading(
+        {
+          hotels: deps.hotels,
+          energy: deps.energy,
+        },
+        {
+          hotelId: Ids.hotel(body.hotelId),
+          meterKind: body.meterKind,
+          kwh: body.kwh ?? null,
+          recordedAt: body.recordedAt,
+          source: body.source,
+        },
+      );
+      if (!result.ok) {
+        const status = result.code === "HOTEL_NOT_FOUND" ? 404 : 500;
+        return sendError(c, status, result.code, result.message);
+      }
+      return c.json({ data: result }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /**
+   * Equipment sensor webhook stub (no JWT).
+   * Authorization: Bearer $EQUIPMENT_INGEST_SECRET (or X-HotelOS-Equipment-Secret).
+   */
+  routes.post("/equipment/ingest", async (c) => {
+    try {
+      if (
+        !equipmentIngestAuthorized(
+          c,
+          deps.equipmentIngestSecret,
+          deps.isProduction,
+        )
+      ) {
+        return sendError(
+          c,
+          401,
+          "UNAUTHORIZED",
+          "Invalid or missing equipment ingest secret",
+        );
+      }
+      if (!deps.equipment) {
+        return sendError(
+          c,
+          503,
+          "UNAVAILABLE",
+          "Equipment ingest not configured",
+        );
+      }
+
+      const result = await ingestEquipmentSignal(
+        {
+          hotels: deps.hotels,
+          equipment: deps.equipment,
+          audit: deps.audit,
+        },
+        {
+          body: await c.req.json(),
+          publicIngest: true,
+        },
+      );
+      if (!result.ok) {
+        const status =
+          result.code === "HOTEL_NOT_FOUND" || result.code === "ASSET_NOT_FOUND"
+            ? 404
+            : result.code === "INVALID_PAYLOAD"
+              ? 400
+              : 500;
+        return sendError(c, status, result.code, result.message);
+      }
+      return c.json({ data: result }, 201);
     } catch (error) {
       return mapUnknownError(c, error);
     }

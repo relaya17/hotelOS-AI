@@ -151,7 +151,7 @@ pnpm test:a11y-e2e
 | פקודה | תפקיד |
 |--------|--------|
 | `pnpm check:vercel-api` | Preflight ל־env של ה־API (Turso, JWT, secrets) |
-| `pnpm generate:ops-secrets` | יצירת `CRON_SECRET` / `SECURITY_INGEST_SECRET` / `SENTRY_INGEST_SECRET` |
+| `pnpm generate:ops-secrets` | יצירת secrets לתפעול (cron, VMS, Sentry, reputation, equipment, energy) |
 | `pnpm ping:turso` | בדיקת חיבור ל־Turso |
 
 ## Trust · ציות · נוכחות
@@ -264,7 +264,7 @@ Runbooks נוספים:
 | [`docs/openapi/README.md`](docs/openapi/README.md) | OpenAPI inventory |
 | [`docs/planning/hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md) | מיצוב HIP + התממשקות מודולרית מעל PMS |
 | [`docs/planning/pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md) | מדדי ROI לפיילוט (תדריך −70%, תקלות, upsell…) |
-| [`docs/planning/must-have-growth.md`](docs/planning/must-have-growth.md) | Reputation · Upsell · Incidents · Revenue/Forecast |
+| [`docs/planning/must-have-growth.md`](docs/planning/must-have-growth.md) | Reputation · Upsell · Incidents · Revenue · Energy · Predictive Maint · Pilot ROI |
 | [`docs/planning/smart-integrations-and-hardening.md`](docs/planning/smart-integrations-and-hardening.md) | Hardening + אינטגרציות חכמות |
 | [`docs/planning/employee-hr-module.md`](docs/planning/employee-hr-module.md) | תכנון HR |
 | [`docs/planning/facilities-ops-module.md`](docs/planning/facilities-ops-module.md) | תכנון תפעול מחלקות |

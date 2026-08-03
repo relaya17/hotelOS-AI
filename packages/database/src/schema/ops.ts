@@ -436,6 +436,159 @@ export const revenueSuggestions = sqliteTable(
   ],
 );
 
+/**
+ * Optional meter readings from BMS / utility webhooks (no live BMS required for MVP).
+ * Ingest via POST /v1/public/energy/ingest with ENERGY_INGEST_SECRET.
+ */
+export const energyReadings = sqliteTable(
+  "energy_readings",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    meterKind: text("meter_kind").notNull(),
+    kwh: integer("kwh"),
+    recordedAt: text("recorded_at").notNull(),
+    source: text("source").notNull(),
+  },
+  (table) => [
+    index("energy_readings_tenant_idx").on(table.tenantId),
+    index("energy_readings_hotel_idx").on(table.hotelId),
+    index("energy_readings_hotel_recorded_idx").on(
+      table.hotelId,
+      table.recordedAt,
+    ),
+  ],
+);
+
+/**
+ * Daily HVAC/electricity suggestions from occupancy heuristics (HITL — no BMS writeback).
+ */
+export const energySuggestions = sqliteTable(
+  "energy_suggestions",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    periodDate: text("period_date").notNull(),
+    occupancyPct: integer("occupancy_pct").notNull(),
+    suggestionHe: text("suggestion_he").notNull(),
+    estimatedSavingPct: integer("estimated_saving_pct").notNull(),
+    status: text("status").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("energy_suggestions_tenant_idx").on(table.tenantId),
+    index("energy_suggestions_hotel_idx").on(table.hotelId),
+    index("energy_suggestions_hotel_status_idx").on(
+      table.hotelId,
+      table.status,
+    ),
+    index("energy_suggestions_hotel_period_idx").on(
+      table.hotelId,
+      table.periodDate,
+    ),
+  ],
+);
+
+/**
+ * Equipment assets for predictive maintenance MVP (no live IoT required).
+ * Signals ingested via webhook stub or manual entry; predictions from rules engine.
+ */
+export const equipmentAssets = sqliteTable(
+  "equipment_assets",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    code: text("code").notNull(),
+    nameHe: text("name_he").notNull(),
+    category: text("category").notNull(),
+    locationHe: text("location_he").notNull(),
+    installDate: text("install_date"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("equipment_assets_tenant_idx").on(table.tenantId),
+    index("equipment_assets_hotel_idx").on(table.hotelId),
+    index("equipment_assets_hotel_code_idx").on(table.hotelId, table.code),
+  ],
+);
+
+export const equipmentSignals = sqliteTable(
+  "equipment_signals",
+  {
+    id: text("id").primaryKey(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => equipmentAssets.id),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    signalType: text("signal_type").notNull(),
+    valueNum: integer("value_num"),
+    valueText: text("value_text"),
+    recordedAt: text("recorded_at").notNull(),
+    source: text("source").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("equipment_signals_tenant_idx").on(table.tenantId),
+    index("equipment_signals_hotel_idx").on(table.hotelId),
+    index("equipment_signals_asset_idx").on(table.assetId),
+    index("equipment_signals_asset_recorded_idx").on(
+      table.assetId,
+      table.recordedAt,
+    ),
+  ],
+);
+
+export const maintenancePredictions = sqliteTable(
+  "maintenance_predictions",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    hotelId: text("hotel_id")
+      .notNull()
+      .references(() => hotels.id),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => equipmentAssets.id),
+    riskScore: integer("risk_score").notNull(),
+    rationaleHe: text("rationale_he").notNull(),
+    recommendedActionHe: text("recommended_action_he").notNull(),
+    status: text("status").notNull(),
+    taskId: text("task_id").references(() => departmentTasks.id),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("maintenance_predictions_tenant_idx").on(table.tenantId),
+    index("maintenance_predictions_hotel_idx").on(table.hotelId),
+    index("maintenance_predictions_hotel_status_idx").on(
+      table.hotelId,
+      table.status,
+    ),
+    index("maintenance_predictions_asset_idx").on(table.assetId),
+  ],
+);
+
 /** Guest outbound notifications (WhatsApp/SMS) — sync send on enqueue + optional cron drain. */
 export const notificationOutbox = sqliteTable(
   "notification_outbox",

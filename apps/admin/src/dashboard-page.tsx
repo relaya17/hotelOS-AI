@@ -13,6 +13,7 @@ import {
   type StoredUser,
 } from "@hotelos/web-client";
 import { BookingUpsellPanel } from "./booking-upsell-panel.js";
+import { EnergyPanel } from "./energy-panel.js";
 
 export type DashboardPageProps = {
   readonly user: StoredUser;
@@ -337,6 +338,8 @@ export function DashboardPage({ user, hideChrome = true }: DashboardPageProps) {
           </ul>
         ) : null}
       </section>
+
+      {selectedHotelId ? <EnergyPanel hotelId={selectedHotelId} /> : null}
 
       <section className="card">
         <h2>הזמנות</h2>

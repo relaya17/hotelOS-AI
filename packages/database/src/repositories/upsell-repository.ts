@@ -142,6 +142,10 @@ export type UpsellRepository = {
     hotelId: HotelId,
     bookingId: BookingId,
   ) => Promise<readonly PersistedUpsellOffer[]>;
+  listByHotel: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+  ) => Promise<readonly PersistedUpsellOffer[]>;
   listSuggestedForGuest: (
     bookingId: BookingId,
     guestEmail: string,
@@ -254,6 +258,21 @@ export function createUpsellRepository(db: HotelOsDb): UpsellRepository {
             eq(upsellOffers.tenantId, tenantId),
             eq(upsellOffers.hotelId, hotelId),
             eq(upsellOffers.bookingId, bookingId),
+          ),
+        )
+        .orderBy(desc(upsellOffers.suggestedAt))
+        .all();
+      return rows.map(mapOffer);
+    },
+
+    async listByHotel(tenantId, hotelId) {
+      const rows = await db
+        .select()
+        .from(upsellOffers)
+        .where(
+          and(
+            eq(upsellOffers.tenantId, tenantId),
+            eq(upsellOffers.hotelId, hotelId),
           ),
         )
         .orderBy(desc(upsellOffers.suggestedAt))

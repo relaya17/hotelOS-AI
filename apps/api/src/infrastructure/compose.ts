@@ -20,6 +20,7 @@ import {
   createBookingRepository,
   createBriefingRepository,
   createDb,
+  createEquipmentRepository,
   createFeedbackRepository,
   createGuestStayRepository,
   createHotelRepository,
@@ -34,6 +35,7 @@ import {
   createRecruitingRepository,
   createRefreshSessionRepository,
   createRevenueSuggestionsRepository,
+  createEnergyRepository,
   createRoomRepository,
   createTrustedSourcesRepository,
   createTrustedSourceSnapshotsRepository,
@@ -128,6 +130,8 @@ export async function composeApp() {
   const upsells = createUpsellRepository(db);
   const recruiting = createRecruitingRepository(db);
   const revenueSuggestions = createRevenueSuggestionsRepository(db);
+  const energy = createEnergyRepository(db);
+  const equipment = createEquipmentRepository(db);
   const orgComms = createOrgCommsRepository(db);
   const trustedSources = createTrustedSourcesRepository(db);
   const trustedSourceSnapshots = createTrustedSourceSnapshotsRepository(db);
@@ -265,6 +269,14 @@ export async function composeApp() {
       ...(env.REPUTATION_INGEST_SECRET.trim()
         ? { reputationIngestSecret: env.REPUTATION_INGEST_SECRET.trim() }
         : {}),
+      ...(env.ENERGY_INGEST_SECRET.trim()
+        ? { energyIngestSecret: env.ENERGY_INGEST_SECRET.trim() }
+        : {}),
+      ...(env.EQUIPMENT_INGEST_SECRET.trim()
+        ? { equipmentIngestSecret: env.EQUIPMENT_INGEST_SECRET.trim() }
+        : {}),
+      energy,
+      equipment,
     },
     agents: { agents, tokens },
     briefing: {
@@ -309,7 +321,10 @@ export async function composeApp() {
       hotels,
       overview,
       bookings,
+      briefing,
+      upsells,
       revenueSuggestions,
+      equipment,
       kashrut,
       turbo,
       gateway,
@@ -322,6 +337,14 @@ export async function composeApp() {
     upsells: {
       upsells,
       gateway,
+      audit,
+      tokens,
+    },
+    energy: {
+      energy,
+      overview,
+      bookings,
+      rooms,
       audit,
       tokens,
     },

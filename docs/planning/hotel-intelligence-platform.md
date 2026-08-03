@@ -10,7 +10,7 @@
 | פרויקט מיגרציה של שנים | פיילוט דומיין אחד (למשל ביקורות / תדריכים / VMS) |
 | סיכון תפעולי גבוה | HITL על כסף; connectors לפי בחירה |
 
-HotelOS = **Hotel Intelligence Platform**: תדריכים, משימות, אנומליות, מוניטין, upsell, אירועים, תחזית — מעל/ליד ה־PMS.
+HotelOS = **Hotel Intelligence Platform**: תדריכים, משימות, אנומליות, מוניטין, upsell, אירועים, תחזית, אנרגיה, תחזוקה חזויה — מעל/ליד ה־PMS.
 
 ## התממשקות מודולרית (בוחרים תחומים)
 
@@ -24,7 +24,8 @@ HotelOS = **Hotel Intelligence Platform**: תדריכים, משימות, אנו�
 | Reputation | Google, Booking, Tripadvisor | MVP |
 | Payments | external PCI gateway | MVP |
 | Messaging | WhatsApp outbox | MVP |
-| Energy / BMS | IoT | planned |
+| Energy / BMS | meter webhook + occupancy heuristics | MVP |
+| Predictive Maintenance | sensor webhook stub + history rules | MVP |
 | Access / keys | Assa, Salto… | deferred (PO) |
 
 הרשת בוחרת **רק** את הדומיינים הרלוונטיים לפיילוט — אין חובה לחבר הכל.

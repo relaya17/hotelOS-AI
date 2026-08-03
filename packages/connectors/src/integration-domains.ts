@@ -42,8 +42,8 @@ export const INTEGRATION_DOMAINS = [
   {
     id: "energy",
     titleHe: "אנרגיה / BMS",
-    examples: ["BMS / IoT (planned)"],
-    status: "planned",
+    examples: ["meter webhook → /v1/public/energy/ingest", "occupancy HVAC suggestions"],
+    status: "mvp",
   },
   {
     id: "access",

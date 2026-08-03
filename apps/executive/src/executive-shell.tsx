@@ -23,6 +23,7 @@ import { FinanceDoctorPage } from "./finance-doctor-page.js";
 import { IncidentCenterPage } from "./incident-center-page.js";
 import { KnowledgeCommandPage } from "./knowledge-command-page.js";
 import { OpsDashboardPage } from "./ops-dashboard-page.js";
+import { PilotRoiPage } from "./pilot-roi-page.js";
 import { TrustPaymentsPage } from "./trust-payments-page.js";
 import { TurboAccountingPage } from "./turbo-accounting-page.js";
 import { TurboAutomationsPage } from "./turbo-automations-page.js";
@@ -46,6 +47,7 @@ type View =
   | { readonly kind: "ops" }
   | { readonly kind: "incidents" }
   | { readonly kind: "cio" }
+  | { readonly kind: "pilot-roi" }
   | { readonly kind: "finance" }
   | { readonly kind: "approvals" }
   | { readonly kind: "knowledge" };
@@ -81,6 +83,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
     ["incidents", tUi(locale, "nav.incidents")],
     ["knowledge", tUi(locale, "nav.knowledge")],
     ["cio", tUi(locale, "nav.cio")],
+    ["pilot-roi", "מדדי פיילוט"],
     ["finance", tUi(locale, "nav.finance")],
     ["approvals", tUi(locale, "nav.approvals")],
     ["briefings", tUi(locale, "nav.briefings")],
@@ -186,6 +189,7 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
           />
         ) : null}
         {view.kind === "cio" ? <CioDigestPage /> : null}
+        {view.kind === "pilot-roi" ? <PilotRoiPage /> : null}
         {view.kind === "finance" ? <FinanceDoctorPage /> : null}
         {view.kind === "approvals" ? <AiApprovalsPage /> : null}
         {view.kind === "briefings" ? (

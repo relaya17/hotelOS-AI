@@ -3,6 +3,10 @@ export {
   IncidentCenterPanel,
   type IncidentCenterPanelProps,
 } from "./incident-center-panel.js";
+export {
+  PredictiveMaintenancePanel,
+  type PredictiveMaintenancePanelProps,
+} from "./predictive-maintenance-panel.js";
 export { LegalFooter, type LegalFooterProps } from "./legal-footer.js";
 export {
   staffGoogleLogin,

@@ -4,7 +4,9 @@ import type { AiGateway } from "@hotelos/ai-gateway";
 import type {
   AuditRepository,
   BookingRepository,
+  BriefingRepository,
   CompanyKnowledgeRepository,
+  EquipmentRepository,
   FeedbackRepository,
   HotelRepository,
   KashrutRepository,
@@ -19,6 +21,7 @@ import type {
   TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
   TurboRepository,
+  UpsellRepository,
 } from "@hotelos/database";
 import {
   canAccessHotel,
@@ -31,6 +34,7 @@ import type { HotelId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { buildCioDigest, CIO_ROLES } from "../../application/build-cio-digest.js";
+import { buildPilotRoiMetrics } from "../../application/build-pilot-roi-metrics.js";
 import { buildOpsForecast } from "../../application/build-ops-forecast.js";
 import {
   buildCfoFinanceBrief,
@@ -39,6 +43,7 @@ import {
 } from "../../application/build-cfo-finance-brief.js";
 import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
 import { buildIncidentCenter } from "../../application/build-incident-center.js";
+import { runPredictiveMaintenanceScan } from "../../application/detect-predictive-maintenance.js";
 import { ingestTrustedMarketFeeds } from "../../application/ingest-trusted-market-feeds.js";
 import { mapSecurityWebhook } from "../../application/map-security-webhook.js";
 import { ingestReputationReview } from "../../application/ingest-reputation-review.js";
@@ -69,7 +74,10 @@ export type OpsRouteDeps = {
   readonly hotels: HotelRepository;
   readonly overview: OverviewRepository;
   readonly bookings: BookingRepository;
+  readonly briefing: BriefingRepository;
+  readonly upsells: UpsellRepository;
   readonly revenueSuggestions: RevenueSuggestionsRepository;
+  readonly equipment: EquipmentRepository;
   readonly kashrut: KashrutRepository;
   readonly turbo: TurboRepository;
   readonly gateway: AiGateway;
@@ -1863,6 +1871,249 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         return sendError(c, 404, "NO_DATA", "Hotel or overview not found");
       }
       return c.json({ data: forecast });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  // ---- Predictive maintenance (equipment assets + rule-based predictions) ----
+
+  const createEquipmentAssetSchema = z.object({
+    code: z.string().trim().min(1).max(40),
+    nameHe: z.string().trim().min(2).max(120),
+    category: z.enum(["hvac", "elevator", "boiler", "other"]),
+    locationHe: z.string().trim().min(2).max(120),
+    installDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  });
+
+  const decidePredictionSchema = z.object({
+    status: z.enum(["acknowledged", "dismissed", "converted"]),
+  });
+
+  routes.get("/equipment/assets", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
+
+      const assets = await deps.equipment.listAssetsByHotel(
+        principal.scope.tenantId,
+        resolved.hotelId,
+      );
+      return c.json({ data: assets });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/equipment/assets", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
+
+      const body = createEquipmentAssetSchema.parse(await c.req.json());
+      const now = new Date().toISOString();
+      const asset = await deps.equipment.createAsset({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: resolved.hotelId,
+        code: body.code,
+        nameHe: body.nameHe,
+        category: body.category,
+        locationHe: body.locationHe,
+        ...(body.installDate !== undefined ? { installDate: body.installDate } : {}),
+        createdAt: now,
+      });
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: resolved.hotelId,
+        actorUserId: principal.userId,
+        action: "equipment.asset.create",
+        resourceType: "equipment_asset",
+        resourceId: asset.id,
+        metadata: { code: asset.code, category: asset.category },
+        createdAt: now,
+      });
+
+      return c.json({ data: asset }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/equipment/scan", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
+
+      const result = await runPredictiveMaintenanceScan(
+        {
+          equipment: deps.equipment,
+          maintenance: deps.maintenance,
+          ops: deps.ops,
+        },
+        {
+          tenantId: principal.scope.tenantId,
+          hotelId: resolved.hotelId,
+          actorUserId: principal.userId,
+        },
+      );
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: resolved.hotelId,
+        actorUserId: principal.userId,
+        action: "equipment.predictive.scan",
+        resourceType: "maintenance_predictions",
+        resourceId: resolved.hotelId,
+        metadata: {
+          predictionCount: result.predictionCount,
+          tasksCreated: result.tasksCreated,
+        },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({ data: result });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.get("/equipment/predictions", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
+
+      const statusRaw = c.req.query("status");
+      const statusParsed =
+        statusRaw === "open" ||
+        statusRaw === "acknowledged" ||
+        statusRaw === "dismissed" ||
+        statusRaw === "converted"
+          ? statusRaw
+          : undefined;
+
+      const predictions = await deps.equipment.listPredictionsByHotel(
+        principal.scope.tenantId,
+        resolved.hotelId,
+        statusParsed,
+      );
+      return c.json({ data: predictions });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/equipment/predictions/:id/decide", async (c) => {
+    try {
+      const principal = c.get("principal");
+      if (!canDecideOpsHitl(principal)) {
+        return sendError(
+          c,
+          403,
+          "FORBIDDEN",
+          "Predictive maintenance decisions require executive ops approval role",
+        );
+      }
+
+      const resolved = await resolveHotelId(c);
+      if (!resolved.ok) return resolved.response;
+
+      const predictionId = z.string().uuid().parse(c.req.param("id"));
+      const body = decidePredictionSchema.parse(await c.req.json());
+
+      const updated = await deps.equipment.decidePrediction(
+        principal.scope.tenantId,
+        resolved.hotelId,
+        predictionId,
+        body.status,
+      );
+
+      if (!updated) {
+        return sendError(
+          c,
+          404,
+          "PREDICTION_NOT_FOUND",
+          "Prediction not found or already decided",
+        );
+      }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId: resolved.hotelId,
+        actorUserId: principal.userId,
+        action: `equipment.prediction.${body.status}`,
+        resourceType: "maintenance_prediction",
+        resourceId: predictionId,
+        metadata: { riskScore: updated.riskScore, assetId: updated.assetId },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({ data: updated });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  // ---- Pilot ROI scorecard (live metrics, no invented baseline) ----
+
+  const windowDaysSchema = z.coerce.number().int().min(1).max(365).default(30);
+
+  routes.get("/pilot-roi", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const tenantHotels = await deps.hotels.listByTenant(
+        principal.scope.tenantId,
+      );
+      const rawHotelId = c.req.query("hotelId");
+      const windowParsed = windowDaysSchema.safeParse(
+        c.req.query("windowDays") ?? "30",
+      );
+      if (!windowParsed.success) {
+        return sendError(c, 400, "VALIDATION_ERROR", "Invalid windowDays");
+      }
+
+      let hotelId: HotelId | undefined;
+      if (rawHotelId) {
+        const parsed = hotelIdSchema.safeParse(rawHotelId);
+        if (!parsed.success) {
+          return sendError(c, 400, "VALIDATION_ERROR", "Invalid hotelId");
+        }
+        hotelId = Ids.hotel(parsed.data);
+        if (!canAccessHotel(principal, hotelId)) {
+          return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+        }
+        if (!tenantHotels.some((hotel) => hotel.id === hotelId)) {
+          return sendError(c, 404, "HOTEL_NOT_FOUND", "Hotel not found");
+        }
+      }
+
+      const metrics = await buildPilotRoiMetrics(
+        {
+          hotels: deps.hotels,
+          briefing: deps.briefing,
+          ops: deps.ops,
+          bookings: deps.bookings,
+          upsells: deps.upsells,
+          reputation: deps.reputation,
+        },
+        {
+          tenantId: principal.scope.tenantId,
+          ...(hotelId !== undefined ? { hotelId } : {}),
+          windowDays: windowParsed.data,
+        },
+      );
+      if (!metrics) {
+        return sendError(c, 404, "NO_DATA", "No hotels or metrics available");
+      }
+      return c.json({ data: metrics });
     } catch (error) {
       return mapUnknownError(c, error);
     }

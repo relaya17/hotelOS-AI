@@ -2558,6 +2558,161 @@ export async function decideRevenueSuggestion(
   return payload.data;
 }
 
+export type EnergySuggestionStatus = "suggested" | "accepted" | "dismissed";
+
+export type EnergySuggestionDto = {
+  readonly id: string;
+  readonly hotelId: string;
+  readonly periodDate: string;
+  readonly occupancyPct: number;
+  readonly suggestionHe: string;
+  readonly estimatedSavingPct: number;
+  readonly status: EnergySuggestionStatus;
+  readonly createdAt: string;
+};
+
+export type GenerateEnergySuggestionsResultDto = {
+  readonly hotelId: string;
+  readonly hotelName: string;
+  readonly periodDate: string;
+  readonly generatedAt: string;
+  readonly suggestions: readonly EnergySuggestionDto[];
+};
+
+export async function generateEnergySuggestions(
+  hotelId: string,
+): Promise<GenerateEnergySuggestionsResultDto> {
+  const payload = (await authPost(
+    `/v1/ops/energy/suggestions/generate?${hotelQuery(hotelId)}`,
+    {},
+  )) as { data: GenerateEnergySuggestionsResultDto };
+  return payload.data;
+}
+
+export async function fetchEnergySuggestions(
+  hotelId: string,
+  status?: EnergySuggestionStatus,
+): Promise<readonly EnergySuggestionDto[]> {
+  const statusQuery =
+    status !== undefined ? `&status=${encodeURIComponent(status)}` : "";
+  const payload = (await authGet(
+    `/v1/ops/energy/suggestions?${hotelQuery(hotelId)}${statusQuery}`,
+  )) as { data: readonly EnergySuggestionDto[] };
+  return payload.data;
+}
+
+export async function decideEnergySuggestion(
+  hotelId: string,
+  suggestionId: string,
+  decision: "accepted" | "dismissed",
+): Promise<EnergySuggestionDto> {
+  const payload = (await authPost(
+    `/v1/ops/energy/suggestions/${suggestionId}/decide?${hotelQuery(hotelId)}`,
+    { decision },
+  )) as { data: EnergySuggestionDto };
+  return payload.data;
+}
+
+export type EquipmentAssetCategory = "hvac" | "elevator" | "boiler" | "other";
+
+export type EquipmentAssetDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly hotelId: string;
+  readonly code: string;
+  readonly nameHe: string;
+  readonly category: EquipmentAssetCategory;
+  readonly locationHe: string;
+  readonly installDate: string | null;
+  readonly createdAt: string;
+};
+
+export type MaintenancePredictionStatus =
+  | "open"
+  | "acknowledged"
+  | "dismissed"
+  | "converted";
+
+export type MaintenancePredictionDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly hotelId: string;
+  readonly assetId: string;
+  readonly riskScore: number;
+  readonly rationaleHe: string;
+  readonly recommendedActionHe: string;
+  readonly status: MaintenancePredictionStatus;
+  readonly taskId: string | null;
+  readonly createdAt: string;
+};
+
+export type PredictiveMaintenanceScanDto = {
+  readonly hotelId: string;
+  readonly predictionCount: number;
+  readonly tasksCreated: number;
+  readonly predictions: readonly MaintenancePredictionDto[];
+};
+
+export async function fetchEquipmentAssets(
+  hotelId: string,
+): Promise<readonly EquipmentAssetDto[]> {
+  const payload = (await authGet(
+    `/v1/ops/equipment/assets?${hotelQuery(hotelId)}`,
+  )) as { data: readonly EquipmentAssetDto[] };
+  return payload.data;
+}
+
+export async function createEquipmentAsset(
+  hotelId: string,
+  input: {
+    readonly code: string;
+    readonly nameHe: string;
+    readonly category: EquipmentAssetCategory;
+    readonly locationHe: string;
+    readonly installDate?: string;
+  },
+): Promise<EquipmentAssetDto> {
+  const payload = (await authPost(
+    `/v1/ops/equipment/assets?${hotelQuery(hotelId)}`,
+    input,
+  )) as { data: EquipmentAssetDto };
+  return payload.data;
+}
+
+export async function runPredictiveMaintenanceScan(
+  hotelId: string,
+): Promise<PredictiveMaintenanceScanDto> {
+  const payload = (await authPost(
+    `/v1/ops/equipment/scan?${hotelQuery(hotelId)}`,
+    {},
+  )) as { data: PredictiveMaintenanceScanDto };
+  return payload.data;
+}
+
+export async function fetchMaintenancePredictions(
+  hotelId: string,
+  status?: MaintenancePredictionStatus,
+): Promise<readonly MaintenancePredictionDto[]> {
+  const statusQuery =
+    status !== undefined ? `&status=${encodeURIComponent(status)}` : "";
+  const payload = (await authGet(
+    `/v1/ops/equipment/predictions?${hotelQuery(hotelId)}${statusQuery}`,
+  )) as { data: readonly MaintenancePredictionDto[] };
+  return payload.data;
+}
+
+export async function decideMaintenancePrediction(
+  hotelId: string,
+  predictionId: string,
+  status: "acknowledged" | "dismissed" | "converted",
+): Promise<MaintenancePredictionDto> {
+  const payload = (await authPost(
+    `/v1/ops/equipment/predictions/${predictionId}/decide?${hotelQuery(hotelId)}`,
+    { status },
+  )) as { data: MaintenancePredictionDto };
+  return payload.data;
+}
+
 export type OpsForecastDayDto = {
   readonly date: string;
   readonly arrivalsCount: number;
@@ -2612,6 +2767,40 @@ export async function fetchIncidentCenter(
       : "";
   const payload = (await authGet(`/v1/ops/incidents${query}`)) as {
     data: IncidentCenterDto;
+  };
+  return payload.data;
+}
+
+export type PilotRoiMetricsDto = {
+  readonly generatedAt: string;
+  readonly windowDays: number;
+  readonly windowStart: string;
+  readonly hotelId: string | null;
+  readonly hotelName: string | null;
+  readonly morningBriefingProxy: number;
+  readonly medianIncidentHandleHours: number | null;
+  readonly roomPrepMedianMinutes: number | null;
+  readonly autoTasksCreated: number;
+  readonly upsellAcceptedCount: number;
+  readonly upsellAcceptedRate: number | null;
+  readonly negativeReviewResponseHours: number | null;
+  readonly notesHe: readonly string[];
+};
+
+export async function fetchPilotRoiMetrics(input?: {
+  readonly hotelId?: string;
+  readonly windowDays?: number;
+}): Promise<PilotRoiMetricsDto> {
+  const params = new URLSearchParams();
+  if (input?.hotelId) {
+    params.set("hotelId", input.hotelId);
+  }
+  if (input?.windowDays !== undefined) {
+    params.set("windowDays", String(input.windowDays));
+  }
+  const query = params.size > 0 ? `?${params.toString()}` : "";
+  const payload = (await authGet(`/v1/ops/pilot-roi${query}`)) as {
+    data: PilotRoiMetricsDto;
   };
   return payload.data;
 }

@@ -1126,6 +1126,99 @@ export async function migrate(client: Client): Promise<void> {
     CREATE INDEX IF NOT EXISTS revenue_suggestions_hotel_period_idx
       ON revenue_suggestions(hotel_id, period_start);
   `);
+
+  // Energy management — optional meter ingest + occupancy-based HITL suggestions
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS energy_readings (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      meter_kind TEXT NOT NULL,
+      kwh INTEGER,
+      recorded_at TEXT NOT NULL,
+      source TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS energy_readings_tenant_idx ON energy_readings(tenant_id);
+    CREATE INDEX IF NOT EXISTS energy_readings_hotel_idx ON energy_readings(hotel_id);
+    CREATE INDEX IF NOT EXISTS energy_readings_hotel_recorded_idx
+      ON energy_readings(hotel_id, recorded_at);
+
+    CREATE TABLE IF NOT EXISTS energy_suggestions (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      period_date TEXT NOT NULL,
+      occupancy_pct INTEGER NOT NULL,
+      suggestion_he TEXT NOT NULL,
+      estimated_saving_pct INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS energy_suggestions_tenant_idx ON energy_suggestions(tenant_id);
+    CREATE INDEX IF NOT EXISTS energy_suggestions_hotel_idx ON energy_suggestions(hotel_id);
+    CREATE INDEX IF NOT EXISTS energy_suggestions_hotel_status_idx
+      ON energy_suggestions(hotel_id, status);
+    CREATE INDEX IF NOT EXISTS energy_suggestions_hotel_period_idx
+      ON energy_suggestions(hotel_id, period_date);
+  `);
+
+  // Predictive maintenance — equipment assets, signals, rule-based predictions
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS equipment_assets (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      code TEXT NOT NULL,
+      name_he TEXT NOT NULL,
+      category TEXT NOT NULL,
+      location_he TEXT NOT NULL,
+      install_date TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS equipment_assets_tenant_idx ON equipment_assets(tenant_id);
+    CREATE INDEX IF NOT EXISTS equipment_assets_hotel_idx ON equipment_assets(hotel_id);
+    CREATE INDEX IF NOT EXISTS equipment_assets_hotel_code_idx
+      ON equipment_assets(hotel_id, code);
+
+    CREATE TABLE IF NOT EXISTS equipment_signals (
+      id TEXT PRIMARY KEY,
+      asset_id TEXT NOT NULL REFERENCES equipment_assets(id),
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      signal_type TEXT NOT NULL,
+      value_num INTEGER,
+      value_text TEXT,
+      recorded_at TEXT NOT NULL,
+      source TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS equipment_signals_tenant_idx ON equipment_signals(tenant_id);
+    CREATE INDEX IF NOT EXISTS equipment_signals_hotel_idx ON equipment_signals(hotel_id);
+    CREATE INDEX IF NOT EXISTS equipment_signals_asset_idx ON equipment_signals(asset_id);
+    CREATE INDEX IF NOT EXISTS equipment_signals_asset_recorded_idx
+      ON equipment_signals(asset_id, recorded_at);
+
+    CREATE TABLE IF NOT EXISTS maintenance_predictions (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      hotel_id TEXT NOT NULL REFERENCES hotels(id),
+      asset_id TEXT NOT NULL REFERENCES equipment_assets(id),
+      risk_score INTEGER NOT NULL,
+      rationale_he TEXT NOT NULL,
+      recommended_action_he TEXT NOT NULL,
+      status TEXT NOT NULL,
+      task_id TEXT REFERENCES department_tasks(id),
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS maintenance_predictions_tenant_idx
+      ON maintenance_predictions(tenant_id);
+    CREATE INDEX IF NOT EXISTS maintenance_predictions_hotel_idx
+      ON maintenance_predictions(hotel_id);
+    CREATE INDEX IF NOT EXISTS maintenance_predictions_hotel_status_idx
+      ON maintenance_predictions(hotel_id, status);
+    CREATE INDEX IF NOT EXISTS maintenance_predictions_asset_idx
+      ON maintenance_predictions(asset_id);
+  `);
 }
 
 async function ensureColumn(

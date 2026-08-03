@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Button, TextField } from "@hotelos/ui";
+import { PredictiveMaintenancePanel } from "@hotelos/features";
 import {
   createMaintenanceRequest,
   createVendor,
@@ -364,6 +365,8 @@ export function MaintenancePanel({ hotelId }: MaintenancePanelProps) {
 
   return (
     <div className="panel">
+      <PredictiveMaintenancePanel hotelId={hotelId} compact />
+
       {loading ? <p className="state">טוען…</p> : null}
       {error !== undefined ? (
         <p className="state state--error" role="alert">

@@ -131,6 +131,7 @@ describe("suggestGuestUpsells", () => {
         return offer;
       },
       listByBooking: async () => [...stored.values()],
+      listByHotel: async () => [...stored.values()],
       listSuggestedForGuest: async () => [...stored.values()],
       findByIdInHotel: async () => null,
       decide: async () => null,

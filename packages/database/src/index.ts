@@ -166,6 +166,30 @@ export {
   type RevenueSuggestionsRepository,
 } from "./repositories/revenue-suggestions-repository.js";
 export {
+  createEnergyRepository,
+  type CreateEnergyReadingInput,
+  type CreateEnergySuggestionInput,
+  type EnergyMeterKind,
+  type EnergyRepository,
+  type EnergySuggestionStatus,
+  type PersistedEnergyReading,
+  type PersistedEnergySuggestion,
+} from "./repositories/energy-repository.js";
+export {
+  createEquipmentRepository,
+  type CreateEquipmentAssetInput,
+  type CreateEquipmentSignalInput,
+  type CreateMaintenancePredictionInput,
+  type EquipmentAssetCategory,
+  type EquipmentRepository,
+  type EquipmentSignalSource,
+  type EquipmentSignalType,
+  type MaintenancePredictionStatus,
+  type PersistedEquipmentAsset,
+  type PersistedEquipmentSignal,
+  type PersistedMaintenancePrediction,
+} from "./repositories/equipment-repository.js";
+export {
   createReputationRepository,
   type CreateReputationReviewInput,
   type PersistedReputationReview,

@@ -131,6 +131,16 @@ const envSchema = z.object({
    * Empty = public ingest disabled in production; allowed open in non-production.
    */
   REPUTATION_INGEST_SECRET: z.string().optional().default(""),
+  /**
+   * Shared secret for POST /v1/public/energy/ingest (BMS / meter webhooks).
+   * Empty = public ingest disabled in production; allowed open in non-production.
+   */
+  ENERGY_INGEST_SECRET: z.string().optional().default(""),
+  /**
+   * Shared secret for POST /v1/public/equipment/ingest (sensor webhook stub).
+   * Empty = public ingest disabled in production; allowed open in non-production.
+   */
+  EQUIPMENT_INGEST_SECRET: z.string().optional().default(""),
   /** WhatsApp delivery adapter. Empty configuration remains safe demo delivery. */
   WHATSAPP_PROVIDER: z
     .enum(["demo", "http", "meta", "off"])

@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
+import { Button } from "@hotelos/ui";
+import { PredictiveMaintenancePanel } from "@hotelos/features";
 import {
   APP_URLS,
   fetchDailyBriefing,
+  fetchEnergySuggestions,
   fetchOpsDashboard,
   fetchOpsForecast,
   fetchReputationReviews,
+  generateEnergySuggestions,
   type DailyBriefingHotelDto,
+  type EnergySuggestionDto,
   type OpsDashboardHotelDto,
   type OpsForecastDto,
   type ReputationReviewDto,
@@ -32,6 +37,12 @@ export function OpsDashboardPage() {
   const [forecast, setForecast] = useState<OpsForecastDto | null>(null);
   const [forecastLoading, setForecastLoading] = useState(false);
   const [forecastError, setForecastError] = useState<string | undefined>();
+
+  const [energySuggestions, setEnergySuggestions] = useState<
+    readonly EnergySuggestionDto[]
+  >([]);
+  const [energyLoading, setEnergyLoading] = useState(false);
+  const [energyError, setEnergyError] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -134,6 +145,36 @@ export function OpsDashboardPage() {
   }, [hotels]);
 
   useEffect(() => {
+    const firstHotelId = hotels[0]?.hotelId;
+    if (firstHotelId === undefined) {
+      setEnergySuggestions([]);
+      return;
+    }
+    const hotelId: string = firstHotelId;
+    let cancelled = false;
+    async function loadEnergy() {
+      setEnergyLoading(true);
+      setEnergyError(undefined);
+      try {
+        const rows = await fetchEnergySuggestions(hotelId);
+        if (!cancelled) setEnergySuggestions(rows);
+      } catch (loadError) {
+        if (!cancelled) {
+          setEnergyError(
+            loadError instanceof Error ? loadError.message : "שגיאה בטעינת אנרגיה",
+          );
+        }
+      } finally {
+        if (!cancelled) setEnergyLoading(false);
+      }
+    }
+    void loadEnergy();
+    return () => {
+      cancelled = true;
+    };
+  }, [hotels]);
+
+  useEffect(() => {
     let cancelled = false;
     async function loadBriefing() {
       setBriefingLoading(true);
@@ -181,6 +222,23 @@ export function OpsDashboardPage() {
             10,
         ) / 10
       : null;
+
+  async function onGenerateEnergy() {
+    const hotelId = hotels[0]?.hotelId;
+    if (!hotelId) return;
+    setEnergyLoading(true);
+    setEnergyError(undefined);
+    try {
+      const result = await generateEnergySuggestions(hotelId);
+      setEnergySuggestions(result.suggestions);
+    } catch (genError) {
+      setEnergyError(
+        genError instanceof Error ? genError.message : "יצירת הצעות אנרגיה נכשלה",
+      );
+    } finally {
+      setEnergyLoading(false);
+    }
+  }
 
   return (
     <div className="ops-dash">
@@ -247,6 +305,41 @@ export function OpsDashboardPage() {
         ) : null}
       </section>
 
+      <section className="card energy-card" aria-labelledby="ops-energy-heading">
+        <h2 id="ops-energy-heading">אנרגיה</h2>
+        <p className="hint">
+          {hotels[0]?.hotelName ?? "מלון ראשון ברשת"} — HVAC/חשמל לפי תפוסה (HITL).
+        </p>
+        <Button
+          type="button"
+          onClick={() => void onGenerateEnergy()}
+          disabled={energyLoading || hotels.length === 0}
+        >
+          {energyLoading ? "מחשב…" : "צור הצעות אנרגיה"}
+        </Button>
+        {energyLoading ? <p className="state">טוען…</p> : null}
+        {energyError !== undefined ? (
+          <p className="state state--error" role="alert">
+            {energyError}
+          </p>
+        ) : null}
+        {!energyLoading && energySuggestions.length === 0 ? (
+          <p className="hint">אין הצעות אנרגיה — לחצו ליצירה.</p>
+        ) : null}
+        {energySuggestions.length > 0 ? (
+          <ul className="briefing-list">
+            {energySuggestions.slice(0, 5).map((row) => (
+              <li key={row.id}>
+                <strong>{row.periodDate}</strong> — {row.suggestionHe}
+                {row.estimatedSavingPct > 0
+                  ? ` (חיסכון ~${row.estimatedSavingPct}%)`
+                  : ""}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+
       <section className="card reputation-card" aria-labelledby="reputation-heading">
         <h2 id="reputation-heading">ביקורות שליליות אחרונות</h2>
         <p className="hint">
@@ -305,6 +398,12 @@ export function OpsDashboardPage() {
           </ul>
         ) : null}
       </section>
+
+      {hotels[0]?.hotelId !== undefined ? (
+        <section className="card pm-card" aria-labelledby="pm-dash-heading">
+          <PredictiveMaintenancePanel hotelId={hotels[0].hotelId} />
+        </section>
+      ) : null}
 
       {loading ? <p className="state">טוען…</p> : null}
       {error !== undefined ? (

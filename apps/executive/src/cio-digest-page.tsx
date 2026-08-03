@@ -3,11 +3,14 @@ import { Button, TextField } from "@hotelos/ui";
 import {
   createTrustedSource,
   decideRevenueSuggestion,
+  decideEnergySuggestion,
   fetchAiGatewayStatus,
   fetchCioDigest,
+  fetchEnergySuggestions,
   fetchOpsAnomalies,
   fetchOpsForecast,
   fetchRevenueSuggestions,
+  generateEnergySuggestions,
   generateRevenueSuggestions,
   invokeAiGateway,
   listOrgCommsChannels,
@@ -24,6 +27,7 @@ import {
   type OrgCommsChannelDto,
   type OrgCommsMessageDto,
   type RevenueSuggestionDto,
+  type EnergySuggestionDto,
   type SynthesizedCioDigestDto,
   type TrustedSourceCategory,
   type TrustedSourceDto,
@@ -85,6 +89,11 @@ export function CioDigestPage() {
   >([]);
   const [revenueLoading, setRevenueLoading] = useState(false);
   const [revenueBusyId, setRevenueBusyId] = useState<string | undefined>();
+  const [energySuggestions, setEnergySuggestions] = useState<
+    readonly EnergySuggestionDto[]
+  >([]);
+  const [energyLoading, setEnergyLoading] = useState(false);
+  const [energyBusyId, setEnergyBusyId] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -118,6 +127,7 @@ export function CioDigestPage() {
     if (!hotelId) {
       setForecast(null);
       setRevenueSuggestions([]);
+      setEnergySuggestions([]);
       return;
     }
     let cancelled = false;
@@ -125,23 +135,28 @@ export function CioDigestPage() {
       if (!hotelId) return;
       setForecastLoading(true);
       setRevenueLoading(true);
+      setEnergyLoading(true);
       try {
-        const [forecastData, suggestions] = await Promise.all([
+        const [forecastData, suggestions, energyRows] = await Promise.all([
           fetchOpsForecast(hotelId),
           fetchRevenueSuggestions(hotelId),
+          fetchEnergySuggestions(hotelId),
         ]);
         if (cancelled) return;
         setForecast(forecastData);
         setRevenueSuggestions(suggestions);
+        setEnergySuggestions(energyRows);
       } catch {
         if (!cancelled) {
           setForecast(null);
           setRevenueSuggestions([]);
+          setEnergySuggestions([]);
         }
       } finally {
         if (!cancelled) {
           setForecastLoading(false);
           setRevenueLoading(false);
+          setEnergyLoading(false);
         }
       }
     }
@@ -196,6 +211,65 @@ export function CioDigestPage() {
       );
     } finally {
       setRevenueBusyId(undefined);
+    }
+  }
+
+  async function onGenerateEnergySuggestions() {
+    const hotelId = digest?.sections[0]?.hotelId;
+    if (!hotelId) {
+      setError("אין מלון בתדריך — לא ניתן ליצור הצעות אנרגיה");
+      return;
+    }
+    setEnergyLoading(true);
+    setError(undefined);
+    try {
+      const result = await generateEnergySuggestions(hotelId);
+      setEnergySuggestions(result.suggestions);
+      setNotice(
+        `נוצרו ${result.suggestions.length} הצעות אנרגיה ל-${result.periodDate}.`,
+      );
+    } catch (genError) {
+      setError(
+        genError instanceof Error ? genError.message : "יצירת הצעות אנרגיה נכשלה",
+      );
+    } finally {
+      setEnergyLoading(false);
+    }
+  }
+
+  async function onDecideEnergySuggestion(
+    suggestionId: string,
+    decision: "accepted" | "dismissed",
+  ) {
+    const hotelId = digest?.sections[0]?.hotelId;
+    if (!hotelId) {
+      setError("אין מלון בתדריך");
+      return;
+    }
+    setEnergyBusyId(suggestionId);
+    setError(undefined);
+    try {
+      const updated = await decideEnergySuggestion(
+        hotelId,
+        suggestionId,
+        decision,
+      );
+      setEnergySuggestions((prev) =>
+        prev.map((row) => (row.id === updated.id ? updated : row)),
+      );
+      setNotice(
+        decision === "accepted"
+          ? "הצעת אנרגיה אושרה — אין שליטה BMS אוטומטית."
+          : "הצעת אנרגיה נדחתה.",
+      );
+    } catch (decideError) {
+      setError(
+        decideError instanceof Error
+          ? decideError.message
+          : "עדכון סטטוס הצעת אנרגיה נכשל",
+      );
+    } finally {
+      setEnergyBusyId(undefined);
     }
   }
 
@@ -481,6 +555,63 @@ export function CioDigestPage() {
                         void onDecideRevenueSuggestion(row.id, "rejected")
                       }
                       disabled={revenueBusyId === row.id}
+                    >
+                      דחה
+                    </Button>
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card" aria-labelledby="energy-heading">
+        <h2 id="energy-heading">אנרגיה</h2>
+        <p className="hint">
+          HVAC וחשמל לפי תפוסה וקומות ריקות — אישור/דחייה בלבד; אין BMS חובה.
+        </p>
+        <Button
+          type="button"
+          onClick={() => void onGenerateEnergySuggestions()}
+          disabled={energyLoading || !digest?.sections[0]?.hotelId}
+        >
+          {energyLoading ? "מחשב…" : "צור הצעות אנרגיה (יומי)"}
+        </Button>
+        {energySuggestions.length === 0 ? (
+          <p className="hint">אין הצעות אנרגיה שמורות — לחצו ליצירה.</p>
+        ) : (
+          <ul className="revenue-list energy-list">
+            {energySuggestions.map((row) => (
+              <li key={row.id} className="revenue-row energy-row">
+                <div>
+                  <strong>
+                    {row.periodDate} · תפוסה {row.occupancyPct}%
+                    {row.estimatedSavingPct > 0
+                      ? ` · חיסכון ~${row.estimatedSavingPct}%`
+                      : ""}
+                  </strong>
+                  <span>{row.suggestionHe}</span>
+                  <span className="badge">סטטוס: {row.status}</span>
+                </div>
+                {row.status === "suggested" ? (
+                  <div className="revenue-actions energy-actions">
+                    <Button
+                      type="button"
+                      onClick={() =>
+                        void onDecideEnergySuggestion(row.id, "accepted")
+                      }
+                      disabled={energyBusyId === row.id}
+                    >
+                      אשר
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() =>
+                        void onDecideEnergySuggestion(row.id, "dismissed")
+                      }
+                      disabled={energyBusyId === row.id}
                     >
                       דחה
                     </Button>

@@ -46,6 +46,10 @@ import {
   type UpsellRouteDeps,
 } from "./upsell-routes.js";
 import {
+  createEnergyRoutes,
+  type EnergyRouteDeps,
+} from "./energy-routes.js";
+import {
   createOrgCommsRoutes,
   type OrgCommsRouteDeps,
 } from "./org-comms-routes.js";
@@ -109,6 +113,7 @@ export type ApiDependencies = {
   readonly trust: TrustRouteDeps;
   readonly ops: OpsRouteDeps;
   readonly upsells: UpsellRouteDeps;
+  readonly energy: EnergyRouteDeps;
   readonly orgComms: OrgCommsRouteDeps;
   readonly knowledge: KnowledgeRouteDeps;
   readonly kashrut: KashrutRouteDeps;
@@ -254,6 +259,7 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/trust", createTrustRoutes(deps.trust));
   app.route("/v1/ops", createOpsRoutes(deps.ops));
   app.route("/v1/ops/upsells", createUpsellRoutes(deps.upsells));
+  app.route("/v1/ops/energy", createEnergyRoutes(deps.energy));
   app.route("/v1/org-comms", createOrgCommsRoutes(deps.orgComms));
   app.route("/v1/knowledge", createKnowledgeRoutes(deps.knowledge));
   app.route("/v1/kashrut", createKashrutRoutes(deps.kashrut));
