@@ -1985,6 +1985,83 @@ export async function synthesizeCioDigest(
   return payload.data;
 }
 
+export type CfoFinanceBriefDto = {
+  readonly generatedAt: string;
+  readonly tenantName: string;
+  readonly headlineHe: string;
+  readonly hotelBulletsHe: readonly string[];
+  readonly ledgerSummaryHe: readonly string[];
+  readonly anomalyBulletsHe: readonly string[];
+  readonly marketSourcesHe: readonly string[];
+  readonly marketSnapshotsHe: readonly string[];
+  readonly guardrailHe: string;
+};
+
+export type SynthesizedCfoFinanceBriefDto = {
+  readonly brief: CfoFinanceBriefDto;
+  readonly narrativeHe: string;
+  readonly suggestedActionsHe: readonly string[];
+  readonly provider: string;
+  readonly confidence: string;
+  readonly latencyMs: number;
+  readonly requiresHumanApproval: boolean;
+  readonly approvalReasonHe: string | null;
+};
+
+export type TrustedSourceSnapshotDto = {
+  readonly id: string;
+  readonly sourceId: string;
+  readonly fetchedAt: string;
+  readonly title: string;
+  readonly summary: string;
+  readonly status: "ok" | "failed";
+  readonly error: string | null;
+};
+
+export async function fetchCfoFinanceBrief(): Promise<CfoFinanceBriefDto> {
+  const payload = (await authGet("/v1/ops/cfo-finance-brief")) as {
+    data: CfoFinanceBriefDto;
+  };
+  return payload.data;
+}
+
+export async function synthesizeCfoFinanceBrief(input?: {
+  readonly questionHe?: string;
+}): Promise<SynthesizedCfoFinanceBriefDto> {
+  const payload = (await authPost(
+    "/v1/ops/cfo-finance-brief/synthesize",
+    input ?? {},
+  )) as { data: SynthesizedCfoFinanceBriefDto };
+  return payload.data;
+}
+
+export async function refreshCfoMarketFeeds(): Promise<{
+  readonly attempted: number;
+  readonly ok: number;
+  readonly failed: number;
+}> {
+  const payload = (await authPost(
+    "/v1/ops/cfo-finance-brief/refresh-feeds",
+    {},
+  )) as {
+    data: {
+      attempted: number;
+      ok: number;
+      failed: number;
+    };
+  };
+  return payload.data;
+}
+
+export async function fetchCfoMarketSnapshots(): Promise<
+  readonly TrustedSourceSnapshotDto[]
+> {
+  const payload = (await authGet("/v1/ops/cfo-finance-brief/snapshots")) as {
+    data: readonly TrustedSourceSnapshotDto[];
+  };
+  return payload.data;
+}
+
 export type OrgCommsChannelDto = {
   readonly id: string;
   readonly tenantId: string;

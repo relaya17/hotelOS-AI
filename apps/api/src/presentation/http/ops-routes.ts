@@ -12,6 +12,7 @@ import type {
   OverviewRepository,
   ProcurementRepository,
   RecruitingRepository,
+  TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
   TurboRepository,
 } from "@hotelos/database";
@@ -20,9 +21,12 @@ import type { HotelId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { buildCioDigest, CIO_ROLES } from "../../application/build-cio-digest.js";
+import { buildCfoFinanceBrief } from "../../application/build-cfo-finance-brief.js";
 import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
+import { ingestTrustedMarketFeeds } from "../../application/ingest-trusted-market-feeds.js";
 import { mapSecurityWebhook } from "../../application/map-security-webhook.js";
 import { listOpsAnomalies } from "../../application/run-anomaly-scan.js";
+import { synthesizeCfoFinanceBrief } from "../../application/synthesize-cfo-finance-brief.js";
 import { synthesizeCioDigest } from "../../application/synthesize-cio-digest.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
@@ -46,6 +50,7 @@ export type OpsRouteDeps = {
   readonly gateway: AiGateway;
   readonly companyKnowledge: CompanyKnowledgeRepository;
   readonly trustedSources: TrustedSourcesRepository;
+  readonly snapshots: TrustedSourceSnapshotsRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -1213,6 +1218,146 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
       });
 
       return c.json({ data: synthesized });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /** Finance Doctor — deterministic brief (ledger + Trusted market). */
+  routes.get("/cfo-finance-brief", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const tenantHotels = await deps.hotels.listByTenant(principal.scope.tenantId);
+      const scopedHotelIds = (
+        principal.scope.hotelId
+          ? tenantHotels.filter((hotel) => hotel.id === principal.scope.hotelId)
+          : tenantHotels
+      ).map((hotel) => hotel.id);
+
+      const brief = await buildCfoFinanceBrief(
+        {
+          overview: deps.overview,
+          hotels: deps.hotels,
+          turbo: deps.turbo,
+          procurement: deps.procurement,
+          trustedSources: deps.trustedSources,
+          snapshots: deps.snapshots,
+          maintenance: deps.maintenance,
+        },
+        principal.scope.tenantId,
+        scopedHotelIds,
+      );
+      if (!brief) {
+        return sendError(c, 404, "NO_DATA", "No overview data available yet");
+      }
+      return c.json({ data: brief });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /** Finance Doctor — agent.cfo synthesis over brief + Trusted + Company Knowledge. */
+  routes.post("/cfo-finance-brief/synthesize", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = z
+        .object({
+          questionHe: z.string().trim().min(2).max(4000).optional(),
+        })
+        .parse(await c.req.json().catch(() => ({})));
+
+      const tenantHotels = await deps.hotels.listByTenant(principal.scope.tenantId);
+      const scopedHotelIds = (
+        principal.scope.hotelId
+          ? tenantHotels.filter((hotel) => hotel.id === principal.scope.hotelId)
+          : tenantHotels
+      ).map((hotel) => hotel.id);
+
+      const synthesized = await synthesizeCfoFinanceBrief(
+        {
+          overview: deps.overview,
+          hotels: deps.hotels,
+          turbo: deps.turbo,
+          procurement: deps.procurement,
+          trustedSources: deps.trustedSources,
+          snapshots: deps.snapshots,
+          maintenance: deps.maintenance,
+          gateway: deps.gateway,
+          companyKnowledge: deps.companyKnowledge,
+        },
+        {
+          tenantId: principal.scope.tenantId,
+          userId: principal.userId,
+          hotelIds: scopedHotelIds,
+          ...(body.questionHe ? { questionHe: body.questionHe } : {}),
+        },
+      );
+      if (!synthesized) {
+        return sendError(c, 404, "NO_DATA", "No overview data available yet");
+      }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "cfo.finance_brief.synthesize",
+        resourceType: "cfo_finance_brief",
+        resourceId: "agent.cfo",
+        metadata: {
+          provider: synthesized.provider,
+          requiresHumanApproval: synthesized.requiresHumanApproval,
+          suggestedActions: synthesized.suggestedActionsHe.length,
+        },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({ data: synthesized });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /** Refresh allowlisted Trusted market/regulator feeds into snapshots. */
+  routes.post("/cfo-finance-brief/refresh-feeds", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const result = await ingestTrustedMarketFeeds(
+        {
+          trustedSources: deps.trustedSources,
+          snapshots: deps.snapshots,
+        },
+        principal.scope.tenantId,
+      );
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "cfo.market_feeds.refresh",
+        resourceType: "trusted_source_snapshots",
+        resourceId: principal.scope.tenantId,
+        metadata: {
+          attempted: result.attempted,
+          ok: result.ok,
+          failed: result.failed,
+        },
+        createdAt: new Date().toISOString(),
+      });
+
+      return c.json({ data: result });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.get("/cfo-finance-brief/snapshots", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const rows = await deps.snapshots.listLatestByTenant(
+        principal.scope.tenantId,
+        { limit: 30 },
+      );
+      return c.json({ data: rows });
     } catch (error) {
       return mapUnknownError(c, error);
     }

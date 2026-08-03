@@ -539,6 +539,36 @@ async function ensureCioDemoData(
         url: "https://www.gov.il/he/departments/israel_tax_authority/govil-landing-page",
         category: "accounting_standard",
       },
+      {
+        id: "94000000-0000-4000-8000-000000000006",
+        title: "בנק ישראל — נתונים וסטטיסטיקה (שוק / מקרו)",
+        url: "https://www.boi.org.il/he/DataAndStatistics",
+        category: "market_data",
+      },
+      {
+        id: "94000000-0000-4000-8000-000000000007",
+        title: "הלמ״ס — מדדים כלכליים בישראל",
+        url: "https://www.cbs.gov.il",
+        category: "market_data",
+      },
+      {
+        id: "94000000-0000-4000-8000-000000000008",
+        title: "OECD Data — Indicators",
+        url: "https://data.oecd.org",
+        category: "market_data",
+      },
+      {
+        id: "94000000-0000-4000-8000-000000000009",
+        title: "FRED · St. Louis Fed — Economic Data",
+        url: "https://fred.stlouisfed.org",
+        category: "market_data",
+      },
+      {
+        id: "94000000-0000-4000-8000-00000000000a",
+        title: "בורסת תל אביב — מידע רשמי",
+        url: "https://www.tase.co.il",
+        category: "market_data",
+      },
     ];
     for (const source of seedSources) {
       await trustedSources.create({
@@ -551,36 +581,82 @@ async function ensureCioDemoData(
         createdAt: now,
       });
     }
-  } else if (
-    !existingSources.some((source) => source.category === "accounting_standard")
-  ) {
-    // Idempotent upgrade for tenants seeded before stage ז׳ allowlist.
-    const accountingSources: readonly {
-      id: string;
-      title: string;
-      url: string;
-    }[] = [
-      {
-        id: "94000000-0000-4000-8000-000000000004",
-        title: "IFRS Foundation — International Financial Reporting Standards",
-        url: "https://www.ifrs.org",
-      },
-      {
-        id: "94000000-0000-4000-8000-000000000005",
-        title: "רשות המסים — מדריכים וטפסים (מע״מ / ניכויים)",
-        url: "https://www.gov.il/he/departments/israel_tax_authority/govil-landing-page",
-      },
-    ];
-    for (const source of accountingSources) {
-      await trustedSources.create({
-        id: source.id,
-        tenantId,
-        title: source.title,
-        url: source.url,
-        category: "accounting_standard",
-        approvedByUserId: userId,
-        createdAt: now,
-      });
+  } else {
+    // Idempotent upgrades for tenants seeded before finance-doctor allowlist.
+    if (
+      !existingSources.some((source) => source.category === "accounting_standard")
+    ) {
+      const accountingSources: readonly {
+        id: string;
+        title: string;
+        url: string;
+      }[] = [
+        {
+          id: "94000000-0000-4000-8000-000000000004",
+          title: "IFRS Foundation — International Financial Reporting Standards",
+          url: "https://www.ifrs.org",
+        },
+        {
+          id: "94000000-0000-4000-8000-000000000005",
+          title: "רשות המסים — מדריכים וטפסים (מע״מ / ניכויים)",
+          url: "https://www.gov.il/he/departments/israel_tax_authority/govil-landing-page",
+        },
+      ];
+      for (const source of accountingSources) {
+        await trustedSources.create({
+          id: source.id,
+          tenantId,
+          title: source.title,
+          url: source.url,
+          category: "accounting_standard",
+          approvedByUserId: userId,
+          createdAt: now,
+        });
+      }
+    }
+    if (!existingSources.some((source) => source.category === "market_data")) {
+      const marketSources: readonly {
+        id: string;
+        title: string;
+        url: string;
+      }[] = [
+        {
+          id: "94000000-0000-4000-8000-000000000006",
+          title: "בנק ישראל — נתונים וסטטיסטיקה (שוק / מקרו)",
+          url: "https://www.boi.org.il/he/DataAndStatistics",
+        },
+        {
+          id: "94000000-0000-4000-8000-000000000007",
+          title: "הלמ״ס — מדדים כלכליים בישראל",
+          url: "https://www.cbs.gov.il",
+        },
+        {
+          id: "94000000-0000-4000-8000-000000000008",
+          title: "OECD Data — Indicators",
+          url: "https://data.oecd.org",
+        },
+        {
+          id: "94000000-0000-4000-8000-000000000009",
+          title: "FRED · St. Louis Fed — Economic Data",
+          url: "https://fred.stlouisfed.org",
+        },
+        {
+          id: "94000000-0000-4000-8000-00000000000a",
+          title: "בורסת תל אביב — מידע רשמי",
+          url: "https://www.tase.co.il",
+        },
+      ];
+      for (const source of marketSources) {
+        await trustedSources.create({
+          id: source.id,
+          tenantId,
+          title: source.title,
+          url: source.url,
+          category: "market_data",
+          approvedByUserId: userId,
+          createdAt: now,
+        });
+      }
     }
   }
 

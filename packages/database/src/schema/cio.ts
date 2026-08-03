@@ -77,6 +77,35 @@ export const trustedSources = sqliteTable(
 );
 
 /**
+ * Daily/periodic fetch snapshots from approved Trusted Sources only
+ * (finance doctor / agent.cfo — no open-web crawl as truth).
+ */
+export const trustedSourceSnapshots = sqliteTable(
+  "trusted_source_snapshots",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => trustedSources.id),
+    fetchedAt: text("fetched_at").notNull(),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    checksum: text("checksum").notNull(),
+    status: text("status").notNull(),
+    error: text("error"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("trusted_source_snapshots_tenant_idx").on(table.tenantId),
+    index("trusted_source_snapshots_source_idx").on(table.sourceId),
+    index("trusted_source_snapshots_fetched_idx").on(table.fetchedAt),
+  ],
+);
+
+/**
  * "Always can say something" model (ADR 0007 / kashrut-agent.md §"תמיד יכול
  * להגיד"): every kashrut-relevant artifact carries a status the human
  * משגיח or `agent.kashrut` can attach, independent of the target's own flow.

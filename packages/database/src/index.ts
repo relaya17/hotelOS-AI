@@ -172,6 +172,12 @@ export {
   type TrustedSourcesRepository,
 } from "./repositories/trusted-sources-repository.js";
 export {
+  createTrustedSourceSnapshotsRepository,
+  type CreateTrustedSourceSnapshotInput,
+  type PersistedTrustedSourceSnapshot,
+  type TrustedSourceSnapshotsRepository,
+} from "./repositories/trusted-source-snapshots-repository.js";
+export {
   createKashrutRepository,
   type CreateKashrutAnnotationInput,
   type KashrutRepository,

@@ -32,6 +32,7 @@ import {
   createRefreshSessionRepository,
   createRoomRepository,
   createTrustedSourcesRepository,
+  createTrustedSourceSnapshotsRepository,
   createTrustRepository,
   createTurboRepository,
   createUserRepository,
@@ -114,6 +115,7 @@ export async function composeApp() {
   const recruiting = createRecruitingRepository(db);
   const orgComms = createOrgCommsRepository(db);
   const trustedSources = createTrustedSourcesRepository(db);
+  const trustedSourceSnapshots = createTrustedSourceSnapshotsRepository(db);
   const kashrut = createKashrutRepository(db);
   const hr = createHrRepository(db);
   const assessments = createAssessmentRepository(db);
@@ -226,6 +228,7 @@ export async function composeApp() {
       gateway,
       companyKnowledge,
       trustedSources,
+      snapshots: trustedSourceSnapshots,
       tokens,
     },
     orgComms: { orgComms, tokens },
@@ -303,6 +306,18 @@ export async function composeApp() {
         gateway,
         companyKnowledge,
         trustedSources,
+      },
+      cfoDaily: {
+        overview,
+        hotels,
+        turbo,
+        procurement,
+        trustedSources,
+        snapshots: trustedSourceSnapshots,
+        maintenance,
+        orgComms,
+        gateway,
+        companyKnowledge,
       },
       anomalyScan: {
         hotels,

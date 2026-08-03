@@ -1,6 +1,10 @@
 import { Hono } from "hono";
 import { runCioDailyDigest, type RunCioDailyDigestDeps } from "../../application/run-cio-daily-digest.js";
 import {
+  runCfoDailyBrief,
+  type RunCfoDailyBriefDeps,
+} from "../../application/run-cfo-daily-brief.js";
+import {
   runAnomalyScan,
   type RunAnomalyScanDeps,
 } from "../../application/run-anomaly-scan.js";
@@ -13,6 +17,7 @@ import { mapUnknownError, sendError } from "./errors.js";
 export type CronRouteDeps = {
   readonly cronSecret: string;
   readonly cioDaily: RunCioDailyDigestDeps;
+  readonly cfoDaily: RunCfoDailyBriefDeps;
   readonly anomalyScan: RunAnomalyScanDeps;
   readonly notificationOutbox: DrainNotificationOutboxDeps;
 };
@@ -65,6 +70,38 @@ export function createCronRoutes(deps: CronRouteDeps): Hono {
   // Vercel Cron uses GET + Authorization: Bearer $CRON_SECRET
   routes.get("/cio-daily", (c) => runCioDaily(c));
   routes.post("/cio-daily", (c) => runCioDaily(c));
+
+  const runCfoDaily = async (c: Parameters<typeof sendError>[0]) => {
+    if (deps.cronSecret.trim().length === 0) {
+      return sendError(
+        c,
+        503,
+        "CRON_DISABLED",
+        "Set CRON_SECRET to enable scheduled jobs",
+      );
+    }
+    if (!authorizeCron(c, deps.cronSecret)) {
+      return sendError(c, 401, "UNAUTHORIZED", "Invalid cron secret");
+    }
+
+    try {
+      const result = await runCfoDailyBrief(deps.cfoDaily);
+      if (!result) {
+        return sendError(
+          c,
+          404,
+          "CFO_BRIEF_UNAVAILABLE",
+          "No tenant/hotels available for finance brief",
+        );
+      }
+      return c.json({ data: result });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  };
+
+  routes.get("/cfo-daily", (c) => runCfoDaily(c));
+  routes.post("/cfo-daily", (c) => runCfoDaily(c));
 
   const runAnomalies = async (c: Parameters<typeof sendError>[0]) => {
     if (deps.cronSecret.trim().length === 0) {

@@ -13,6 +13,7 @@ export type UiMessageKey =
   | "nav.trust"
   | "nav.ops"
   | "nav.cio"
+  | "nav.finance"
   | "nav.approvals"
   | "action.logout"
   | "action.openHotelOps"
@@ -48,6 +49,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.trust": "Trust · תשלומים",
     "nav.ops": "לוח תפעולי מאוחד",
     "nav.cio": "יועץ־על (CIO)",
+    "nav.finance": "סוכן כספים",
     "nav.approvals": "אישורי AI",
     "action.logout": "התנתקות",
     "action.openHotelOps": "תפעול מלון",
@@ -76,6 +78,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.trust": "Trust · Payments",
     "nav.ops": "Unified ops dashboard",
     "nav.cio": "CIO Advisor",
+    "nav.finance": "Finance Doctor",
     "nav.approvals": "AI approvals",
     "action.logout": "Sign out",
     "action.openHotelOps": "Hotel operations",
@@ -104,6 +107,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.trust": "الثقة · المدفوعات",
     "nav.ops": "لوحة التشغيل الموحدة",
     "nav.cio": "المستشار الأعلى (CIO)",
+    "nav.finance": "وكيل الماليات",
     "nav.approvals": "موافقات الذكاء الاصطناعي",
     "action.logout": "تسجيل الخروج",
     "action.openHotelOps": "تشغيل الفندق",
@@ -132,6 +136,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.trust": "Trust · Платежи",
     "nav.ops": "Единая панель операций",
     "nav.cio": "CIO-советник",
+    "nav.finance": "Финансовый агент",
     "nav.approvals": "Одобрения ИИ",
     "action.logout": "Выйти",
     "action.openHotelOps": "Операции отеля",
@@ -160,6 +165,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.trust": "Trust · Pagos",
     "nav.ops": "Panel operativo unificado",
     "nav.cio": "Asesor CIO",
+    "nav.finance": "Agente financiero",
     "nav.approvals": "Aprobaciones de IA",
     "action.logout": "Cerrar sesión",
     "action.openHotelOps": "Operaciones del hotel",
@@ -188,6 +194,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.trust": "Trust · การชำระเงิน",
     "nav.ops": "แดชบอร์ดปฏิบัติการรวม",
     "nav.cio": "ที่ปรึกษา CIO",
+    "nav.finance": "ที่ปรึกษาการเงิน",
     "nav.approvals": "การอนุมัติ AI",
     "action.logout": "ออกจากระบบ",
     "action.openHotelOps": "ปฏิบัติการโรงแรม",
@@ -216,6 +223,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.trust": "Trust · 支付",
     "nav.ops": "统一运营看板",
     "nav.cio": "CIO 顾问",
+    "nav.finance": "财务智能体",
     "nav.approvals": "AI 审批",
     "action.logout": "退出登录",
     "action.openHotelOps": "酒店运营",
@@ -244,6 +252,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.trust": "Trust · भुगतान",
     "nav.ops": "एकीकृत संचालन डैशबोर्ड",
     "nav.cio": "CIO सलाहकार",
+    "nav.finance": "वित्त एजेंट",
     "nav.approvals": "AI अनुमोदन",
     "action.logout": "साइन आउट",
     "action.openHotelOps": "होटल संचालन",
@@ -272,6 +281,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.trust": "Trust · Ödemeler",
     "nav.ops": "Birleşik operasyon paneli",
     "nav.cio": "CIO Danışmanı",
+    "nav.finance": "Finans ajanı",
     "nav.approvals": "AI onayları",
     "action.logout": "Çıkış yap",
     "action.openHotelOps": "Otel operasyonları",
@@ -300,6 +310,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
     "nav.trust": "Trust · Πληρωμές",
     "nav.ops": "Ενοποιημένος πίνακας λειτουργιών",
     "nav.cio": "Σύμβουλος CIO",
+    "nav.finance": "Χρηματοοικονομικός πράκτορας",
     "nav.approvals": "Εγκρίσεις AI",
     "action.logout": "Αποσύνδεση",
     "action.openHotelOps": "Λειτουργίες ξενοδοχείου",

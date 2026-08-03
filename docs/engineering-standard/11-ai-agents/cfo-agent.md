@@ -23,8 +23,14 @@
 ## מקורות מידע
 
 - **Internal:** ספר חשבונות (`accounting_db`), תקציב, הזמנות רכש, שכר (מצטבר), תזרים
-- **Trusted:** תקני חשבונאות (IFRS), רשויות מס — allowlist בלבד, ציטוט חובה
-- **Company:** SOP כספי, מדיניות תקציב ואישורים של הרשת
+- **Trusted:** תקני חשבונאות (IFRS), רשויות מס, מקורות `market_data` (בנק ישראל / הלמ״ס / OECD / FRED / TASE) — allowlist בלבד, ציטוט חובה
+- **Company:** SOP כספי, מדיניות תקציב ואישורים של הרשת, חוזים שאושרו ל־Knowledge DB
+- **Daily learning:** cron `/v1/cron/cfo-daily` מרענן snapshots מ־Trusted Sources מאושרים בלבד → תדריך Finance Doctor ב־Org Comms `cfo_daily` (אין open-web כ־truth)
+
+## Finance Doctor (UI)
+
+- Executive → **סוכן כספים** — תדריך דטרמיניסטי + סינתזת `agent.cfo` + רענון ידני של feeds
+- API: `GET /v1/ops/cfo-finance-brief`, `POST …/synthesize`, `POST …/refresh-feeds`
 
 ## פעולות מותרות (ללא אישור)
 

@@ -692,6 +692,22 @@ export async function migrate(client: Client): Promise<void> {
     CREATE INDEX IF NOT EXISTS trusted_sources_tenant_idx ON trusted_sources(tenant_id);
     CREATE INDEX IF NOT EXISTS trusted_sources_category_idx ON trusted_sources(category);
 
+    CREATE TABLE IF NOT EXISTS trusted_source_snapshots (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      source_id TEXT NOT NULL REFERENCES trusted_sources(id),
+      fetched_at TEXT NOT NULL,
+      title TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      checksum TEXT NOT NULL,
+      status TEXT NOT NULL,
+      error TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS trusted_source_snapshots_tenant_idx ON trusted_source_snapshots(tenant_id);
+    CREATE INDEX IF NOT EXISTS trusted_source_snapshots_source_idx ON trusted_source_snapshots(source_id);
+    CREATE INDEX IF NOT EXISTS trusted_source_snapshots_fetched_idx ON trusted_source_snapshots(fetched_at);
+
     CREATE TABLE IF NOT EXISTS kashrut_annotations (
       id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL REFERENCES tenants(id),

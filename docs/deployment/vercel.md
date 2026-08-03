@@ -110,6 +110,7 @@ Emergency override without rebuild: open
 `apps/api/vercel.json` defines:
 
 - daily `0 5 * * *` UTC → `/v1/cron/cio-daily` (CEO digest → org-comms `cio_daily`)
+- daily `15 5 * * *` UTC → `/v1/cron/cfo-daily` (Finance Doctor: Trusted market refresh → agent.cfo brief → org-comms `cfo_daily`)
 - every 6 hours `30 */6 * * *` UTC → `/v1/cron/anomaly-scan` (threshold anomalies → department tasks)
 - every 10 minutes `*/10 * * * *` UTC → `/v1/cron/notification-outbox` (retry pending/failed WhatsApp)
 
