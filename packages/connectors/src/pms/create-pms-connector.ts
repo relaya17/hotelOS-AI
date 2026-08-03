@@ -1,13 +1,24 @@
 import type { PmsConnector } from "../types.js";
+import { createClockStubPmsConnector } from "./clock-stub-pms.js";
 import { createDemoPmsConnector } from "./demo-pms.js";
+import { createFidelioStubPmsConnector } from "./fidelio-stub-pms.js";
 import {
   createMewsHttpPmsConnector,
   type MewsHttpConfig,
 } from "./mews-http-pms.js";
 import { createMewsStubPmsConnector } from "./mews-stub-pms.js";
 import { createOperaStubPmsConnector } from "./opera-stub-pms.js";
+import { createProtelStubPmsConnector } from "./protel-stub-pms.js";
 
-export type PmsProviderId = "demo" | "mews_stub" | "mews" | "opera_stub";
+/** Selectable PMS adapters — stubs prove switching; `mews` is live HTTP. */
+export type PmsProviderId =
+  | "demo"
+  | "mews_stub"
+  | "mews"
+  | "opera_stub"
+  | "protel_stub"
+  | "fidelio_stub"
+  | "clock_stub";
 
 export type CreatePmsConnectorOptions = {
   readonly provider?: PmsProviderId;
@@ -41,6 +52,15 @@ export function createPmsConnector(
   }
   if (provider === "opera_stub") {
     return withInventoryNotify(createOperaStubPmsConnector());
+  }
+  if (provider === "protel_stub") {
+    return withInventoryNotify(createProtelStubPmsConnector());
+  }
+  if (provider === "fidelio_stub") {
+    return withInventoryNotify(createFidelioStubPmsConnector());
+  }
+  if (provider === "clock_stub") {
+    return withInventoryNotify(createClockStubPmsConnector());
   }
   if (provider === "mews") {
     if (!options.mews) {

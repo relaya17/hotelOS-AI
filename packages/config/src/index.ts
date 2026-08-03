@@ -86,7 +86,15 @@ const envSchema = z.object({
   SENTRY_DEFAULT_HOTEL_ID: z.string().optional().default(""),
   /** PMS connector for Digital Twin merge. */
   PMS_PROVIDER: z
-    .enum(["demo", "mews_stub", "mews", "opera_stub"])
+    .enum([
+      "demo",
+      "mews_stub",
+      "mews",
+      "opera_stub",
+      "protel_stub",
+      "fidelio_stub",
+      "clock_stub",
+    ])
     .default("demo"),
   /** Mews Connector API — required when PMS_PROVIDER=mews. */
   MEWS_CLIENT_TOKEN: z.string().optional().default(""),

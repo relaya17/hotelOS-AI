@@ -56,4 +56,17 @@ describe("mergeHotelTwin", () => {
     assert.equal(twin.pms?.reservations[0]?.roomNumber, "205");
     assert.equal(twin.pms?.reservations[0]?.status, "in_house");
   });
+
+  it("switches PMS_PROVIDER stubs for Protel / Fidelio / Clock", async () => {
+    for (const [provider, expectedId] of [
+      ["protel_stub", "protel.stub"],
+      ["fidelio_stub", "fidelio.stub"],
+      ["clock_stub", "clock.stub"],
+    ] as const) {
+      const connector = createPmsConnector(provider);
+      assert.equal(connector.providerId, expectedId);
+      const inventory = await connector.fetchInventory("demo-hotel");
+      assert.ok(inventory.rooms.length >= 2);
+    }
+  });
 });

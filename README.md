@@ -1,9 +1,13 @@
 # HotelOS AI
 
-**The AI Intelligence Layer for Hotels**
+**Hotel Intelligence Platform** — *The AI & Operations Layer for Hotels*
 
-מערכת הפעלה למלונות (Turbo OS) — שכבת אינטליגנציה ו־AI מעל תפעול הרשת, המלון והאורח.  
-ארבע אפליקציות פרונט + Backend משותף אחד; כל אחת עם כתובת משלה.
+לא תחליף ל־PMS ביום הראשון. HotelOS היא **שכבת AI ותפעול** שמתחברת מעל המערכות הקיימות  
+(Opera · Protel · Fidelio · Clock PMS · Mews ועוד) — הרשת בוחרת **אילו דומיינים** לחבר בפיילוט.  
+כך יורד חסם האימוץ: בלי rip-and-replace, עם ROI מדיד (תדריכים, תקלות, ניקיון, upsell).
+
+ארבע אפליקציות פרונט + Backend משותף · Turbo OS לרשת · משימות ותובנות למלון ולאורח.  
+מיצוב מפורט + מדדי פיילוט: [`docs/planning/hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md) · [`pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md).
 
 ## האפליקציות
 
@@ -258,13 +262,20 @@ Runbooks נוספים:
 | [`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md) | libSQL/Turso |
 | [`docs/adr/0008-ai-gateway.md`](docs/adr/0008-ai-gateway.md) | AI Gateway |
 | [`docs/openapi/README.md`](docs/openapi/README.md) | OpenAPI inventory |
+| [`docs/planning/hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md) | מיצוב HIP + התממשקות מודולרית מעל PMS |
+| [`docs/planning/pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md) | מדדי ROI לפיילוט (תדריך −70%, תקלות, upsell…) |
+| [`docs/planning/must-have-growth.md`](docs/planning/must-have-growth.md) | Reputation · Upsell · Incidents · Revenue/Forecast |
 | [`docs/planning/smart-integrations-and-hardening.md`](docs/planning/smart-integrations-and-hardening.md) | Hardening + אינטגרציות חכמות |
 | [`docs/planning/employee-hr-module.md`](docs/planning/employee-hr-module.md) | תכנון HR |
 | [`docs/planning/facilities-ops-module.md`](docs/planning/facilities-ops-module.md) | תכנון תפעול מחלקות |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | תרומה לפרויקט |
 
+### PMS / connectors
+
+`PMS_PROVIDER` = `demo` · `mews` · `mews_stub` · `opera_stub` · `protel_stub` · `fidelio_stub` · `clock_stub`  
+קטלוג דומיינים: `@hotelos/connectors` → `INTEGRATION_DOMAINS`.
+
 ## רישיון / סטטוס
 
-פרויקט בפיתוח פעיל — **Intelligence Layer** + Turbo OS + hardening MVP (rate limit, Sentry path, axe CI, anomaly baselines, VMS public ingest).  
-מיצוב: שכבה חכמה מעל/ליד PMS — לא rip-and-replace ביום הראשון.  
-פיילוט שטח (VMS / תיקון 13) ותצורת Vercel/Sentry בפרוד — ראו מסמכי הפריסה למעלה.
+פרויקט בפיתוח פעיל — **Hotel Intelligence Platform** (שכבת AI/תפעול מעל PMS) + Turbo OS + must-have growth MVP.  
+פיילוט: למדוד ROI לפי [`pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md); VMS/תיקון 13 ו־Vercel — במסמכי הפריסה.

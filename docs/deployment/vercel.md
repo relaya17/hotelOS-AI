@@ -87,7 +87,7 @@ each `vercel.json` already assume this.
 | `SENTRY_ENVIRONMENT` | optional — defaults to `NODE_ENV` |
 | `SENTRY_INGEST_SECRET` | **recommended in prod** — shared secret for `POST /v1/public/sentry/ingest` (Sentry webhooks → IT tasks; no JWT). Empty disables public ingest in production. |
 | `SENTRY_DEFAULT_HOTEL_ID` | optional — fallback hotel UUID when Sentry events lack a `hotelId` tag (prefer tagging in SDK; see Error monitoring below) |
-| `PMS_PROVIDER` | optional — `demo` (default), `mews_stub`, `opera_stub`, or `mews` for live Mews Connector API |
+| `PMS_PROVIDER` | optional — `demo` (default), `mews_stub`, `opera_stub`, `protel_stub`, `fidelio_stub`, `clock_stub`, or `mews` (live) — HotelOS sits **above** the PMS |
 | `MEWS_CLIENT_TOKEN` / `MEWS_ACCESS_TOKEN` | required when `PMS_PROVIDER=mews` |
 | `MEWS_PLATFORM_URL` | optional — default `https://api.mews-demo.com` (prod: `https://api.mews.com`) |
 | `PMS_INBOUND_SECRET` | optional — protects `POST /v1/public/pms/inbound` (channel manager → HotelOS) |

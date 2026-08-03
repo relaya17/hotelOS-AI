@@ -10,6 +10,9 @@ export type {
 export { createDemoPmsConnector } from "./pms/demo-pms.js";
 export { createMewsStubPmsConnector } from "./pms/mews-stub-pms.js";
 export { createOperaStubPmsConnector } from "./pms/opera-stub-pms.js";
+export { createProtelStubPmsConnector } from "./pms/protel-stub-pms.js";
+export { createFidelioStubPmsConnector } from "./pms/fidelio-stub-pms.js";
+export { createClockStubPmsConnector } from "./pms/clock-stub-pms.js";
 export {
   createMewsHttpPmsConnector,
   type MewsHttpConfig,
@@ -19,6 +22,11 @@ export {
   type CreatePmsConnectorOptions,
   type PmsProviderId,
 } from "./pms/create-pms-connector.js";
+export {
+  INTEGRATION_DOMAINS,
+  type IntegrationDomainId,
+  type IntegrationDomainStatus,
+} from "./integration-domains.js";
 export {
   mergeHotelTwin,
   type HotelTwinSnapshot,
