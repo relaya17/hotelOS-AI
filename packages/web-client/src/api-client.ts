@@ -1106,6 +1106,8 @@ export async function assertWebAuthnLogin(input: {
   credentialId: string;
   challenge: string;
   clientDataJSON: string;
+  authenticatorData: string;
+  signature: string;
 }): Promise<LoginResponse> {
   const response = await fetch(`${getApiBase()}/v1/trust/webauthn/assert`, {
     method: "POST",
@@ -1148,12 +1150,17 @@ export async function loginWithWebAuthn(input: {
     credentialId: bufferToBase64Url(credential.rawId),
     challenge: challenge.challenge,
     clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+    authenticatorData: bufferToBase64Url(response.authenticatorData),
+    signature: bufferToBase64Url(response.signature),
   });
 }
 
 export async function assertWebAuthnForSession(): Promise<{
   readonly credentialId: string;
   readonly challenge: string;
+  readonly clientDataJSON: string;
+  readonly authenticatorData: string;
+  readonly signature: string;
 } | null> {
   if (!window.PublicKeyCredential) return null;
   try {
@@ -1167,9 +1174,13 @@ export async function assertWebAuthnForSession(): Promise<{
       },
     })) as PublicKeyCredential | null;
     if (!credential) return null;
+    const response = credential.response as AuthenticatorAssertionResponse;
     return {
       credentialId: bufferToBase64Url(credential.rawId),
       challenge: challenge.challenge,
+      clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+      authenticatorData: bufferToBase64Url(response.authenticatorData),
+      signature: bufferToBase64Url(response.signature),
     };
   } catch {
     return null;
@@ -1285,6 +1296,9 @@ export async function clockAttendance(input: {
   voiceSampleBase64?: string;
   webauthnCredentialId?: string;
   webauthnChallenge?: string;
+  webauthnClientDataJSON?: string;
+  webauthnAuthenticatorData?: string;
+  webauthnSignature?: string;
   note?: string;
 }): Promise<AttendanceEventDto & { voiceVerified: boolean; webauthnVerified: boolean }> {
   const payload = (await authPost("/v1/trust/attendance/clock", input)) as {

@@ -229,7 +229,7 @@ export function AttendancePage() {
         signatureId = signature.id;
       }
 
-      let webauthn: { credentialId: string; challenge: string } | null = null;
+      let webauthn: Awaited<ReturnType<typeof assertWebAuthnForSession>> = null;
       if (!fastMode) {
         setClockPhase("biometric");
         webauthn = await assertWebAuthnForSession();
@@ -256,6 +256,9 @@ export function AttendancePage() {
           ? {
               webauthnCredentialId: webauthn.credentialId,
               webauthnChallenge: webauthn.challenge,
+              webauthnClientDataJSON: webauthn.clientDataJSON,
+              webauthnAuthenticatorData: webauthn.authenticatorData,
+              webauthnSignature: webauthn.signature,
             }
           : {}),
       });

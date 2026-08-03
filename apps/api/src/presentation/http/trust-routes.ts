@@ -10,6 +10,10 @@ import type { JwtTokenService } from "@hotelos/auth";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { randomUUID } from "node:crypto";
+import {
+  isUsableWebAuthnPublicKey,
+  verifyWebAuthnAssertion,
+} from "../../domain/webauthn-verify.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -25,6 +29,10 @@ export type TrustRouteDeps = {
   readonly googlePostLoginRedirect: string;
   readonly webauthnRpId: string;
   readonly webauthnRpName: string;
+  /** When false, Google demo login is rejected (default in production). */
+  readonly allowDemoAuth: boolean;
+  /** Allowed WebAuthn clientData.origin values (CORS origins). */
+  readonly webauthnOrigins: readonly string[];
 };
 
 const cookieSchema = z.object({
@@ -65,6 +73,8 @@ const webauthnAssertSchema = z.object({
   credentialId: z.string().min(8).max(512),
   challenge: z.string().min(16).max(200),
   clientDataJSON: z.string().min(8).max(4000),
+  authenticatorData: z.string().min(8).max(8000),
+  signature: z.string().min(8).max(8000),
 });
 
 const webauthnLoginChallengeSchema = z.object({
@@ -89,6 +99,9 @@ const attendanceSchema = z.object({
   voiceSampleBase64: z.string().min(16).max(2_000_000).optional(),
   webauthnCredentialId: z.string().min(8).max(512).optional(),
   webauthnChallenge: z.string().min(16).max(200).optional(),
+  webauthnClientDataJSON: z.string().min(8).max(4000).optional(),
+  webauthnAuthenticatorData: z.string().min(8).max(8000).optional(),
+  webauthnSignature: z.string().min(8).max(8000).optional(),
   note: z.string().trim().max(240).optional(),
 });
 
@@ -126,6 +139,14 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
       return sendError(c, 400, "TENANT_REQUIRED", "tenantId query required");
     }
     if (!deps.googleClientId) {
+      if (!deps.allowDemoAuth) {
+        return sendError(
+          c,
+          503,
+          "GOOGLE_NOT_CONFIGURED",
+          "GOOGLE_CLIENT_ID required; demo Google login is disabled",
+        );
+      }
       return c.json({
         data: {
           mode: "demo",
@@ -192,6 +213,14 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
 
   routes.post("/oauth/google/demo", async (c) => {
     try {
+      if (!deps.allowDemoAuth) {
+        return sendError(
+          c,
+          403,
+          "DEMO_AUTH_DISABLED",
+          "Demo Google login is disabled in this environment",
+        );
+      }
       const body = googleDemoSchema.parse(await c.req.json());
       const user = await deps.users.findByTenantAndEmail(
         Ids.tenant(body.tenantId),
@@ -455,6 +484,14 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
       if (!consumed) {
         return sendError(c, 400, "CHALLENGE_INVALID", "Challenge expired or invalid");
       }
+      if (!isUsableWebAuthnPublicKey(body.publicKeyJwkJson)) {
+        return sendError(
+          c,
+          400,
+          "WEBAUTHN_KEY_INVALID",
+          "Public key must be a complete ES256 (P-256) JWK",
+        );
+      }
       await deps.trust.saveWebAuthnCredential({
         id: randomUUID(),
         tenantId: principal.scope.tenantId,
@@ -488,6 +525,22 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
     try {
       const body = webauthnAssertSchema.parse(await c.req.json());
       const tenantId = Ids.tenant(body.tenantId);
+      const credential = await deps.trust.findWebAuthnCredential(body.credentialId);
+      if (!credential || credential.tenantId !== body.tenantId) {
+        return sendError(c, 404, "CREDENTIAL_NOT_FOUND", "Unknown credential");
+      }
+      const verified = verifyWebAuthnAssertion({
+        publicKeyJwkJson: credential.publicKeyJwkJson,
+        clientDataJSON: body.clientDataJSON,
+        authenticatorData: body.authenticatorData,
+        signature: body.signature,
+        expectedChallenge: body.challenge,
+        expectedRpId: deps.webauthnRpId,
+        allowedOrigins: deps.webauthnOrigins,
+      });
+      if (!verified.ok) {
+        return sendError(c, 401, "WEBAUTHN_INVALID", verified.reason);
+      }
       const consumed = await deps.trust.consumeChallenge(
         tenantId,
         body.challenge,
@@ -495,16 +548,6 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
       );
       if (!consumed) {
         return sendError(c, 400, "CHALLENGE_INVALID", "Challenge expired or invalid");
-      }
-      const clientData = JSON.parse(
-        Buffer.from(body.clientDataJSON, "base64url").toString("utf8"),
-      ) as { challenge?: string; type?: string };
-      if (clientData.challenge !== body.challenge) {
-        return sendError(c, 400, "CHALLENGE_MISMATCH", "Client challenge mismatch");
-      }
-      const credential = await deps.trust.findWebAuthnCredential(body.credentialId);
-      if (!credential || credential.tenantId !== body.tenantId) {
-        return sendError(c, 404, "CREDENTIAL_NOT_FOUND", "Unknown credential");
       }
       const user = await deps.users.findById(Ids.user(credential.userId));
       if (!user) {
@@ -573,19 +616,39 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
         );
       }
       let webauthnVerified = false;
-      if (body.webauthnCredentialId && body.webauthnChallenge) {
-        const consumed = await deps.trust.consumeChallenge(
-          principal.scope.tenantId,
-          body.webauthnChallenge,
-          "webauthn.assert",
-        );
+      if (
+        body.webauthnCredentialId &&
+        body.webauthnChallenge &&
+        body.webauthnClientDataJSON &&
+        body.webauthnAuthenticatorData &&
+        body.webauthnSignature
+      ) {
         const cred = await deps.trust.findWebAuthnCredential(
           body.webauthnCredentialId,
         );
-        webauthnVerified =
-          consumed !== null &&
-          cred !== null &&
-          cred.userId === principal.userId;
+        if (
+          cred &&
+          cred.userId === principal.userId &&
+          cred.tenantId === principal.scope.tenantId
+        ) {
+          const verified = verifyWebAuthnAssertion({
+            publicKeyJwkJson: cred.publicKeyJwkJson,
+            clientDataJSON: body.webauthnClientDataJSON,
+            authenticatorData: body.webauthnAuthenticatorData,
+            signature: body.webauthnSignature,
+            expectedChallenge: body.webauthnChallenge,
+            expectedRpId: deps.webauthnRpId,
+            allowedOrigins: deps.webauthnOrigins,
+          });
+          if (verified.ok) {
+            const consumed = await deps.trust.consumeChallenge(
+              principal.scope.tenantId,
+              body.webauthnChallenge,
+              "webauthn.assert",
+            );
+            webauthnVerified = consumed !== null;
+          }
+        }
       }
 
       const event = await deps.trust.recordAttendance({

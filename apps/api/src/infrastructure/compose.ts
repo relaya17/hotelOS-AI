@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  isDemoAuthEnabled,
+  isDemoSeedEnabled,
   loadEnv,
   parseCorsOrigins,
   withVercelCorsFallback,
@@ -73,7 +75,11 @@ export async function composeApp() {
       ? { authToken: env.DATABASE_AUTH_TOKEN }
       : {}),
   });
-  await seedDemoTenant(db, hashPassword);
+  if (isDemoSeedEnabled(env)) {
+    await seedDemoTenant(db, hashPassword);
+  } else {
+    logger.info("Demo tenant seed skipped (production / ALLOW_DEMO_SEED=false)");
+  }
 
   const users = createUserRepository(db);
   const sessions = createRefreshSessionRepository(db);
@@ -224,6 +230,11 @@ export async function composeApp() {
       googlePostLoginRedirect: env.GOOGLE_POST_LOGIN_REDIRECT,
       webauthnRpId: env.WEBAUTHN_RP_ID,
       webauthnRpName: env.WEBAUTHN_RP_NAME,
+      allowDemoAuth: isDemoAuthEnabled(env),
+      webauthnOrigins: withVercelCorsFallback(
+        parseCorsOrigins(env.CORS_ORIGINS),
+        env.NODE_ENV === "production",
+      ),
     },
     ops: {
       audit,

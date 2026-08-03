@@ -103,20 +103,21 @@ export function TrustPaymentsPage() {
       if (!credential) throw new Error("ביטול הרשמה ביומטרית");
       const response = credential.response as AuthenticatorAttestationResponse;
       const publicKey = response.getPublicKey?.();
-      const publicKeyJwkJson = publicKey
-        ? JSON.stringify(
-            await crypto.subtle.exportKey(
-              "jwk",
-              await crypto.subtle.importKey(
-                "spki",
-                publicKey,
-                { name: "ECDSA", namedCurve: "P-256" },
-                true,
-                ["verify"],
-              ),
-            ),
-          )
-        : JSON.stringify({ kty: "EC", note: "platform-credential" });
+      if (!publicKey) {
+        throw new Error("המכשיר לא החזיר מפתח ציבורי לאימות WebAuthn");
+      }
+      const publicKeyJwkJson = JSON.stringify(
+        await crypto.subtle.exportKey(
+          "jwk",
+          await crypto.subtle.importKey(
+            "spki",
+            publicKey,
+            { name: "ECDSA", namedCurve: "P-256" },
+            true,
+            ["verify"],
+          ),
+        ),
+      );
 
       await registerWebAuthnCredential({
         credentialId: bufferToBase64Url(credential.rawId),

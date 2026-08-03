@@ -40,6 +40,18 @@ const envSchema = z.object({
   WEBAUTHN_RP_ID: z.string().optional().default("localhost"),
   WEBAUTHN_RP_NAME: z.string().optional().default("HotelOS AI"),
   /**
+   * Demo Google login (`POST /v1/trust/oauth/google/demo`).
+   * Empty = enabled outside production, disabled in production.
+   * Set `true` / `false` to force.
+   */
+  ALLOW_DEMO_AUTH: z.enum(["true", "false", ""]).optional().default(""),
+  /**
+   * Seed demo tenant/admin on API boot.
+   * Empty = enabled outside production, disabled in production.
+   * Set `true` / `false` to force.
+   */
+  ALLOW_DEMO_SEED: z.enum(["true", "false", ""]).optional().default(""),
+  /**
    * AI Gateway — OpenAI-compatible Chat Completions.
    * When empty, Gateway uses the built-in deterministic provider (always on).
    */
@@ -105,6 +117,8 @@ export {
   parseCorsOrigins,
   withVercelCorsFallback,
 } from "./cors.js";
+
+export { isDemoAuthEnabled, isDemoSeedEnabled } from "./demo-flags.js";
 
 export function loadEnv(
   source: Record<string, string | undefined> = process.env,
