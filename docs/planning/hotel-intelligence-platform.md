@@ -2,7 +2,8 @@
 
 **מיצוב (GR-016):** לא תחליף PMS ביום הראשון — **שכבת AI ותפעול** שמתחברת מעל המערכות הקיימות.
 
-**שיווק / תוצאות (לא פיצ'רים):** [`gtm-outcomes-pitch.md`](./gtm-outcomes-pitch.md) — כאב→עלות→תוצאה, OS diagram, taglines, מבנה מצגת 20–25 שקפים.
+**שיווק / תוצאות (לא פיצ'רים):** [`gtm-outcomes-pitch.md`](./gtm-outcomes-pitch.md) — כאב→עלות→תוצאה, OS diagram, taglines, מבנה מצגת 20–25 שקפים.  
+**מיצוב תחרותי / wedge:** [`competitive-wedge.md`](./competitive-wedge.md) — חוזקות, פערים, סדר land & expand.
 
 ## למה זה מקטין חסם אימוץ
 

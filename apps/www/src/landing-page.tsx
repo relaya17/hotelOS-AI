@@ -11,6 +11,7 @@ import {
   CEO_BARS,
   CHAT_DEMO,
   DIGITIZATION,
+  FRAGMENTED_STACK,
   ORG_NODES,
   OUTCOMES,
   TAGLINES,
@@ -21,10 +22,10 @@ const PILOT_MAIL =
 
 const NAV_LINKS = [
   { href: "#outcomes", label: "תוצאות" },
+  { href: "#wedge", label: "הבידול" },
   { href: "#intelligence", label: "סוכנים" },
   { href: "#chat", label: "צ׳אט" },
   { href: "#os", label: "מערכת הפעלה" },
-  { href: "#digitization", label: "דיגיטליזציה" },
   { href: "#ceo-value", label: "ערך למנכ״ל" },
   { href: "#faq", label: "שאלות" },
 ] as const;
@@ -248,17 +249,40 @@ export function LandingPage() {
         </RevealSection>
 
         <RevealSection
+          id="wedge"
+          className="section wedge"
+          aria-labelledby="wedge-title"
+        >
+          <p className="eyebrow">למה זה שונה</p>
+          <h2 id="wedge-title">שבע מערכות. מידע אחד חסר.</h2>
+          <p className="section__lead">
+            מלונות רצים על PMS, HR, הנה״ח, CRM, תחזוקה, BI ואפליקציית עובדים —
+            בנפרד. העבודה כפולה; ההחלטות מאוחרות. HotelOS היא שכבת האינטליגנציה
+            שמאחדת — בלי להחליף את התשתית.
+          </p>
+          <ul className="wedge-stack" aria-label="מערכות מפוצלות היום">
+            {FRAGMENTED_STACK.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <p className="wedge-punch">
+            AI שרק עונה בצ׳אט — לא מספיק. אנחנו מפעילים תהליכים, עם אישור אנושי
+            על מה שקריטי.
+          </p>
+        </RevealSection>
+
+        <RevealSection
           id="intelligence"
           className="section intelligence"
           aria-labelledby="intelligence-title"
         >
           <p className="eyebrow">אוטומציה · סוכנים · עתיד</p>
           <h2 id="intelligence-title">
-            האפליקציה שלכם כבר עושה הרבה יותר ממסך יפה
+            רוחב היכולות — אחרי שמוכיחים ערך בפיילוט
           </h2>
           <p className="section__lead">
-            HotelOS AI מריצה שכבת סוכנים מעל התפעול: מציעים, מתרגמים, מתזמנים
-            ומתריעים — ואתם מאשרים מה שקריטי.
+            מתחילים מ־wedge ברור (תדריך מנכ״ל + תמונת תפעול מעל ה־PMS). משם
+            מרחיבים לכספים, תחזוקה חזויה, אורח וצ׳אט — בלי פרויקט החלפת מערכת.
           </p>
           <ul className="cap-grid">
             {CAPABILITIES.map((cap) => (

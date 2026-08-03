@@ -167,4 +167,18 @@ flowchart TB
 | Chat מתורגם | Turbo staff chat |
 
 מיצוב טכני: [`hotel-intelligence-platform.md`](./hotel-intelligence-platform.md)  
-מדדי פיילוט: [`pilot-roi-scorecard.md`](./pilot-roi-scorecard.md)
+מדדי פיילוט: [`pilot-roi-scorecard.md`](./pilot-roi-scorecard.md)  
+מיצוב תחרותי / wedge: [`competitive-wedge.md`](./competitive-wedge.md)
+
+---
+
+## שקף תחרות — למה לא «עוד suite»
+
+| גישת מתחרים נפוצה | HotelOS |
+|-------------------|---------|
+| מחליפים PMS / סוויטה מלאה | שכבה מעל Opera / Protel / Fidelio / Clock |
+| AI שעונה בצ׳אט | AI שמפעיל תהליך (Suggest→Approve→Act) |
+| מערכת לכל מחלקה | תמונה אחת לרשת + צ׳אט מתורגם |
+| מצגת רחבה בלי מדידה | פיילוט עם [`pilot-roi-scorecard.md`](./pilot-roi-scorecard.md) |
+
+**חשוב לזכור:** מוכרים קודם wedge אחד (תדריך + תפעול מעל PMS); את הרוחב מרחיבים אחרי ROI — ראו [`competitive-wedge.md`](./competitive-wedge.md).

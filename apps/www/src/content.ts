@@ -65,42 +65,53 @@ export const OUTCOMES: readonly OutcomeRow[] = [
   },
 ] as const;
 
+/** Systems hotels run separately today — the fragmentation story. */
+export const FRAGMENTED_STACK = [
+  "PMS",
+  "HR",
+  "הנה״ח",
+  "CRM",
+  "תחזוקה",
+  "BI",
+  "אפליקציית עובדים",
+] as const;
+
 export const CAPABILITIES: readonly Capability[] = [
   {
+    id: "layer",
+    title: "שכבה אחת מעל המערכות — לא במקומן",
+    body: "PMS, HR, כספים, תחזוקה ו־BI נשארים. HotelOS מאחד אותות ומציג החלטות למנכ״ל ולעובד — בלי פרויקט החלפת תשתית.",
+    proof: "Intelligence Layer · connectors מודולריים · GR-016",
+  },
+  {
     id: "agents",
-    title: "סוכני AI עם אוטומציה",
-    body: "רשת של סוכנים (CIO, HR, Guest, CFO, Meeting Secretary ועוד) עובדת דרך AI Gateway — לא קריאות LLM פזורות בקוד עסקי.",
+    title: "סוכני AI שמפעילים תהליך — לא רק עונים",
+    body: "רשת סוכנים (CIO, HR, Guest, CFO, Meeting Secretary…) דרך AI Gateway: מציעים, מתזמנים, מתריעים — ואתם מאשרים מה שקריטי.",
     proof: "Suggest → Approve → Act עם human-in-the-loop",
   },
   {
     id: "foresight",
-    title: "רואים \"עתידות\" לפני שהן קורות",
-    body: "תחזית 7 ימים (הגעות, תפוסה, כוח אדם), זיהוי אנומליות תפעול, ותחזוקה חזויה — כדי לנהל מחר היום.",
-    proof: "Forecast · Anomaly detection · Predictive maintenance",
+    title: "Digital Twin · תחזית · תחזוקה חזויה",
+    body: "תמונת מלון חיה, תחזית 7 ימים, אנומליות ותחזוקה חזויה — כדי לנהל מחר היום, לא רק לדווח אתמול.",
+    proof: "Twin · Forecast · Predictive maintenance",
   },
   {
     id: "finance",
-    title: "ניהול כספים חכם",
-    body: "סוכן כספים מכין המלצות וסגירת חודש; רואה חשבון / CFO מאשר. בלי ביצוע כספי אוטונומי עיוור.",
-    proof: "Ledger pack · Trusted sources · Accountant role",
-  },
-  {
-    id: "bookings",
-    title: "הזמנות + הכנסה נלווית",
-    body: "שכבה מעל ההזמנות: upsell לאורח, תיעדוף חדרים, וקישור בין קבלה, משק בית והכנסות.",
-    proof: "Upsell offers · Room prep · Revenue suggestions",
+    title: "כספים ו־Revenue עם שליטה",
+    body: "המלצות תמחור וסגירת חודש עם אישור CFO/רו״ח — בלי ביצוע כספי אוטונומי עיוור.",
+    proof: "Revenue HITL · Ledger · Accountant role",
   },
   {
     id: "chat",
-    title: "צ׳אט רב־לשוני אוטומטי",
-    body: "עובד כותב בעברית / אנגלית / שפה אחרת — הצד השני מקבל הודעה בשפתו. אוטומציות על אותה שיחה: משימות, תזכורות, העברות.",
-    proof: "Turbo i18n · Staff chat · Automations on threads",
+    title: "צ׳אט רב־לשוני + Copilot לעובד",
+    body: "כותבים בשפתכם; הצד השני מקבל בשפתו. על אותה שיחה — משימות ואוטומציות לפי תפקיד.",
+    proof: "Turbo i18n · Staff chat · Role-based agents",
   },
   {
     id: "ops",
-    title: "תפעול שמגיב לבד (עם שליטה)",
-    body: "מוניטין→משימות, מרכז תקלות, אנרגיה, VMS ותדריכי מנכ״ל — אוטומציה שמקצרת זמן ניהול בלי לאבד שליטה.",
-    proof: "Reputation · Incidents · Energy · Meet secretary",
+    title: "תפעול חוצה־רשת",
+    body: "Multi-hotel, מוניטין→משימות, Incident Center, אנרגיה ו־VMS — תובנות לרשת במקום דוחות לכל מלון בנפרד.",
+    proof: "Chain dashboard · Incidents · Energy · VMS",
   },
 ] as const;
 
