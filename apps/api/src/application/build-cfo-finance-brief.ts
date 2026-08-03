@@ -12,6 +12,34 @@ import { buildAccountingContextPack } from "./build-accounting-context-pack.js";
 import { FINANCE_FEED_CATEGORIES } from "./ingest-trusted-market-feeds.js";
 import { listOpsAnomalies } from "./run-anomaly-scan.js";
 
+export const FINANCE_DOCTOR_AUDIENCES = ["owner", "ceo", "cfo"] as const;
+export type FinanceDoctorAudience = (typeof FINANCE_DOCTOR_AUDIENCES)[number];
+
+export const FINANCE_DOCTOR_FOCUSES = [
+  "all",
+  "finance",
+  "procurement",
+  "marketing",
+] as const;
+export type FinanceDoctorFocus = (typeof FINANCE_DOCTOR_FOCUSES)[number];
+
+export const FINANCE_DOCTOR_AUDIENCE_LABELS_HE: Record<
+  FinanceDoctorAudience,
+  string
+> = {
+  owner: "בעלים",
+  ceo: "מנכ״ל",
+  cfo: "מנכ״ל כספים / CFO",
+};
+
+export const FINANCE_DOCTOR_FOCUS_LABELS_HE: Record<FinanceDoctorFocus, string> =
+  {
+    all: "הכל · כסף + קניות + שיווק",
+    finance: "כספים ותזרים",
+    procurement: "קניות ורכש",
+    marketing: "פרסום ושיווק",
+  };
+
 export type CfoFinanceBriefDeps = {
   readonly overview: OverviewRepository;
   readonly hotels: HotelRepository;
@@ -28,6 +56,8 @@ export type CfoFinanceBrief = {
   readonly headlineHe: string;
   readonly hotelBulletsHe: readonly string[];
   readonly ledgerSummaryHe: readonly string[];
+  readonly procurementBulletsHe: readonly string[];
+  readonly marketingBulletsHe: readonly string[];
   readonly anomalyBulletsHe: readonly string[];
   readonly marketSourcesHe: readonly string[];
   readonly marketSnapshotsHe: readonly string[];
@@ -35,8 +65,8 @@ export type CfoFinanceBrief = {
 };
 
 /**
- * Deterministic finance-doctor brief for agent.cfo — ledger + ops money signals
- * + Trusted market allowlist + latest feed snapshots. No LLM.
+ * Deterministic finance-doctor brief — ledger + procurement + growth signals
+ * + Trusted market allowlist + snapshots. No LLM.
  */
 export async function buildCfoFinanceBrief(
   deps: CfoFinanceBriefDeps,
@@ -75,8 +105,14 @@ export async function buildCfoFinanceBrief(
   );
 
   const hotelBulletsHe: string[] = [];
+  const procurementBulletsHe: string[] = [];
+  const marketingBulletsHe: string[] = [];
+
   for (const hotel of scopedHotels) {
-    const orders = await deps.procurement.listPurchaseOrders(tenantId, hotel.id);
+    const [orders, inventory] = await Promise.all([
+      deps.procurement.listPurchaseOrders(tenantId, hotel.id),
+      deps.procurement.listInventory(tenantId, hotel.id),
+    ]);
     const openOrders = orders.filter(
       (order) => order.status !== "received" && order.status !== "cancelled",
     );
@@ -84,12 +120,38 @@ export async function buildCfoFinanceBrief(
       (sum, order) => sum + order.totalAmount,
       0,
     );
+    const lowStock = inventory.filter((item) => item.belowThreshold);
     const occupancyPercent =
       hotel.rooms.total === 0
         ? 0
         : Math.round((hotel.rooms.occupied / hotel.rooms.total) * 100);
+    const vacantRooms = hotel.rooms.vacant;
+
     hotelBulletsHe.push(
       `${hotel.name}: תפוסה ${occupancyPercent}% · הזמנות פעילות ${hotel.bookings.active} · רכש פתוח ${(openPoValue / 100).toLocaleString("he-IL")} ₪ (${openOrders.length})`,
+    );
+
+    procurementBulletsHe.push(
+      openOrders.length > 0
+        ? `${hotel.name}: ${openOrders.length} הזמנות רכש פתוחות · שווי ${(openPoValue / 100).toLocaleString("he-IL")} ₪ · מלאי נמוך: ${lowStock.length} פריטים`
+        : `${hotel.name}: אין הזמנות רכש פתוחות · מלאי נמוך: ${lowStock.length} פריטים`,
+    );
+    if (lowStock.length > 0) {
+      procurementBulletsHe.push(
+        `${hotel.name}: לתעדף רכש — ${lowStock
+          .slice(0, 4)
+          .map((item) => item.name)
+          .join(", ")}${lowStock.length > 4 ? "…" : ""}`,
+      );
+    }
+
+    marketingBulletsHe.push(
+      occupancyPercent < 70
+        ? `${hotel.name}: תפוסה ${occupancyPercent}% · ${vacantRooms} חדרים פנויים — פוטנציאל לקמפיין/פרסום ישיר (באישור)`
+        : `${hotel.name}: תפוסה ${occupancyPercent}% · מיקוד שיווק ב־upsell / החזרת אורחים / ADR`,
+    );
+    marketingBulletsHe.push(
+      `${hotel.name}: ${hotel.bookings.confirmed} הזמנות confirmed · ${hotel.bookings.checkedIn} in-house — בסיס לסגמנט win-back/מבצע`,
     );
   }
 
@@ -109,6 +171,7 @@ export async function buildCfoFinanceBrief(
       (item) =>
         item.type === "large_journal_entry" ||
         item.type === "large_purchase_order" ||
+        item.type === "low_stock" ||
         item.severity === "high" ||
         item.severity === "urgent",
     )
@@ -125,8 +188,8 @@ export async function buildCfoFinanceBrief(
 
   const headlineHe =
     anomalyBulletsHe.length > 0
-      ? `תדריך כספים · ${anomalyBulletsHe.length} אותות לבדיקה · ${scopedHotels.length} מלונות`
-      : `תדריך כספים · מצב יציב יחסית · ${scopedHotels.length} מלונות · עדכון שוק מ־Trusted`;
+      ? `תדריך הנהלה · ${anomalyBulletsHe.length} אותות · כסף / קניות / שיווק`
+      : `תדריך הנהלה · כסף + קניות + שיווק · ${scopedHotels.length} מלונות`;
 
   return {
     generatedAt,
@@ -134,17 +197,19 @@ export async function buildCfoFinanceBrief(
     headlineHe,
     hotelBulletsHe,
     ledgerSummaryHe,
+    procurementBulletsHe,
+    marketingBulletsHe,
     anomalyBulletsHe,
     marketSourcesHe,
     marketSnapshotsHe,
     guardrailHe:
-      "סוכן כספים (agent.cfo) מציע בלבד · אין העברות/סגירת ספרים בלי אישור אנושי · עובדות חיצוניות רק ממקורות Trusted מאושרים.",
+      "יועץ לבעלים / מנכ״ל / CFO · קניות·פרסום·שיווק·תזרים — הצעה בלבד · מעל ₪2,000 או הנחה>5% דורש אישור אדם · Trusted בלבד לעובדות חיצוניות.",
   };
 }
 
 export function formatCfoFinanceBriefPack(brief: CfoFinanceBrief): string {
   const lines = [
-    "Context pack — Finance Doctor / agent.cfo",
+    "Context pack — Finance Doctor (owner / CEO / CFO)",
     `רשת: ${brief.tenantName}`,
     brief.headlineHe,
     `נוצר: ${brief.generatedAt}`,
@@ -154,6 +219,12 @@ export function formatCfoFinanceBriefPack(brief: CfoFinanceBrief): string {
     "",
     "## ספר חשבונות",
     ...brief.ledgerSummaryHe.map((line) => `• ${line}`),
+    "",
+    "## קניות ורכש",
+    ...brief.procurementBulletsHe.map((line) => `• ${line}`),
+    "",
+    "## פרסום ושיווק (אותות תפוסה/ביקוש)",
+    ...brief.marketingBulletsHe.map((line) => `• ${line}`),
   ];
   if (brief.anomalyBulletsHe.length > 0) {
     lines.push(

@@ -38,7 +38,8 @@ export const AGENT_CATALOG: readonly AgentCatalogEntry[] = [
     nameHe: "סוכן כספים",
     nameEn: "CFO Agent",
     domain: "finance",
-    summaryHe: "תזרים, חריגות תקציב ותמיכה בוועדות כספים.",
+    summaryHe:
+      "יועץ לבעלים/מנכ״ל/CFO: תזרים, קניות, פרסום ושיווק — הצעות צמיחה עם אישור אדם.",
     autonomyMode: "suggest",
   },
   {
@@ -78,7 +79,7 @@ export const AGENT_CATALOG: readonly AgentCatalogEntry[] = [
     nameHe: "סוכן רכש",
     nameEn: "Procurement Agent",
     domain: "supply",
-    summaryHe: "מלאי, הזמנות ספקים וחסכונות רכש.",
+    summaryHe: "קניות חכמות: מלאי, הזמנות ספקים וחסכונות — ליווי הנהלה.",
     autonomyMode: "approve",
   },
   {
@@ -86,7 +87,7 @@ export const AGENT_CATALOG: readonly AgentCatalogEntry[] = [
     nameHe: "סוכן שיווק",
     nameEn: "Marketing Agent",
     domain: "growth",
-    summaryHe: "קמפיינים, המרות ישירות ומוניטין דיגיטלי.",
+    summaryHe: "פרסום ושיווק: קמפיינים, מבצעים ומילוי תפוסה — ליווי הנהלה.",
     autonomyMode: "suggest",
   },
   {

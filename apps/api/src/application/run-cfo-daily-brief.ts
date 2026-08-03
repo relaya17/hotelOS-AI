@@ -81,6 +81,8 @@ export async function runCfoDailyBrief(
         tenantId,
         userId: CRON_CFO_ACTOR_USER_ID,
         hotelIds,
+        audience: "ceo",
+        focus: "all",
       },
     );
     if (!synthesized) return null;
@@ -137,6 +139,8 @@ function formatFactsCfoMessage(
     readonly generatedAt: string;
     readonly hotelBulletsHe: readonly string[];
     readonly ledgerSummaryHe: readonly string[];
+    readonly procurementBulletsHe: readonly string[];
+    readonly marketingBulletsHe: readonly string[];
     readonly anomalyBulletsHe: readonly string[];
     readonly marketSnapshotsHe: readonly string[];
     readonly guardrailHe: string;
@@ -144,7 +148,7 @@ function formatFactsCfoMessage(
   ingest: { readonly attempted: number; readonly ok: number; readonly failed: number },
 ): string {
   const lines = [
-    "תדריך יומי · סוכן כספים חכם (Finance Doctor)",
+    "תדריך יומי · יועץ הנהלה (בעלים / מנכ״ל / CFO) · כסף·קניות·שיווק",
     brief.headlineHe,
     `נוצר: ${brief.generatedAt}`,
     `רענון Trusted: ${ingest.ok}/${ingest.attempted} הצליחו · ${ingest.failed} נכשלו`,
@@ -154,6 +158,12 @@ function formatFactsCfoMessage(
     "",
     "## ספר חשבונות",
     ...brief.ledgerSummaryHe.map((line) => `• ${line}`),
+    "",
+    "## קניות ורכש",
+    ...brief.procurementBulletsHe.map((line) => `• ${line}`),
+    "",
+    "## פרסום ושיווק",
+    ...brief.marketingBulletsHe.map((line) => `• ${line}`),
   ];
   if (brief.anomalyBulletsHe.length > 0) {
     lines.push("", "## אנומליות", ...brief.anomalyBulletsHe.map((l) => `• ${l}`));

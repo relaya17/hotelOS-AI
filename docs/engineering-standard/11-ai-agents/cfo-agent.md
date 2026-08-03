@@ -10,6 +10,7 @@
 - זיהוי חריגות תקציב (variance) ואנומליות פיננסיות — כולל חשד לגניבה/אי־דיווח
 - תמיכה בסגירת חודש (ledger close) ובהכנת דוחות להנהלה/רואה חשבון
 - שמש כ"שכבת אישור" הכספית שאליה `agent.cio` מנתב כל בקשה כספית
+- **יועץ הנהלה** לבעלים / מנכ״ל / מנכ״ל כספים: סיוע בקניות (עם `agent.procurement`), בפרסום ובשיווק (עם `agent.marketing`) — ROI, תעדוף הוצאה, והמלצות צמיחה בלבד
 
 ## הרשאות
 
@@ -29,8 +30,10 @@
 
 ## Finance Doctor (UI)
 
-- Executive → **סוכן כספים** — תדריך דטרמיניסטי + סינתזת `agent.cfo` + רענון ידני של feeds
-- API: `GET /v1/ops/cfo-finance-brief`, `POST …/synthesize`, `POST …/refresh-feeds`
+- Executive → **סוכן כספים** — תדריך דטרמיניסטי (כסף + קניות + שיווק) + סינתזה לפי קהל/מיקוד
+- קהל: `owner` | `ceo` | `cfo` · מיקוד: `all` | `finance` | `procurement` | `marketing`
+- ניתוב סוכן: finance/all → `agent.cfo` · procurement → `agent.procurement` · marketing → `agent.marketing`
+- API: `GET /v1/ops/cfo-finance-brief`, `POST …/synthesize` (`audience`,`focus`), `POST …/refresh-feeds`
 
 ## פעולות מותרות (ללא אישור)
 

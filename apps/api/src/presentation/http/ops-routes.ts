@@ -21,7 +21,11 @@ import type { HotelId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { buildCioDigest, CIO_ROLES } from "../../application/build-cio-digest.js";
-import { buildCfoFinanceBrief } from "../../application/build-cfo-finance-brief.js";
+import {
+  buildCfoFinanceBrief,
+  FINANCE_DOCTOR_AUDIENCES,
+  FINANCE_DOCTOR_FOCUSES,
+} from "../../application/build-cfo-finance-brief.js";
 import { buildDailyBriefing } from "../../application/build-daily-briefing.js";
 import { ingestTrustedMarketFeeds } from "../../application/ingest-trusted-market-feeds.js";
 import { mapSecurityWebhook } from "../../application/map-security-webhook.js";
@@ -1256,13 +1260,15 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
     }
   });
 
-  /** Finance Doctor — agent.cfo synthesis over brief + Trusted + Company Knowledge. */
+  /** Finance Doctor — executive advisor (owner/CEO/CFO) over brief + Trusted + Company Knowledge. */
   routes.post("/cfo-finance-brief/synthesize", async (c) => {
     try {
       const principal = c.get("principal");
       const body = z
         .object({
           questionHe: z.string().trim().min(2).max(4000).optional(),
+          audience: z.enum(FINANCE_DOCTOR_AUDIENCES).default("cfo"),
+          focus: z.enum(FINANCE_DOCTOR_FOCUSES).default("all"),
         })
         .parse(await c.req.json().catch(() => ({})));
 
@@ -1289,6 +1295,8 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
           tenantId: principal.scope.tenantId,
           userId: principal.userId,
           hotelIds: scopedHotelIds,
+          audience: body.audience,
+          focus: body.focus,
           ...(body.questionHe ? { questionHe: body.questionHe } : {}),
         },
       );
@@ -1302,9 +1310,11 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         actorUserId: principal.userId,
         action: "cfo.finance_brief.synthesize",
         resourceType: "cfo_finance_brief",
-        resourceId: "agent.cfo",
+        resourceId: synthesized.agentId,
         metadata: {
           provider: synthesized.provider,
+          audience: synthesized.audience,
+          focus: synthesized.focus,
           requiresHumanApproval: synthesized.requiresHumanApproval,
           suggestedActions: synthesized.suggestedActionsHe.length,
         },

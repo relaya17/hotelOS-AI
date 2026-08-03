@@ -1985,12 +1985,21 @@ export async function synthesizeCioDigest(
   return payload.data;
 }
 
+export type FinanceDoctorAudience = "owner" | "ceo" | "cfo";
+export type FinanceDoctorFocus =
+  | "all"
+  | "finance"
+  | "procurement"
+  | "marketing";
+
 export type CfoFinanceBriefDto = {
   readonly generatedAt: string;
   readonly tenantName: string;
   readonly headlineHe: string;
   readonly hotelBulletsHe: readonly string[];
   readonly ledgerSummaryHe: readonly string[];
+  readonly procurementBulletsHe: readonly string[];
+  readonly marketingBulletsHe: readonly string[];
   readonly anomalyBulletsHe: readonly string[];
   readonly marketSourcesHe: readonly string[];
   readonly marketSnapshotsHe: readonly string[];
@@ -1999,6 +2008,9 @@ export type CfoFinanceBriefDto = {
 
 export type SynthesizedCfoFinanceBriefDto = {
   readonly brief: CfoFinanceBriefDto;
+  readonly audience: FinanceDoctorAudience;
+  readonly focus: FinanceDoctorFocus;
+  readonly agentId: string;
   readonly narrativeHe: string;
   readonly suggestedActionsHe: readonly string[];
   readonly provider: string;
@@ -2027,6 +2039,8 @@ export async function fetchCfoFinanceBrief(): Promise<CfoFinanceBriefDto> {
 
 export async function synthesizeCfoFinanceBrief(input?: {
   readonly questionHe?: string;
+  readonly audience?: FinanceDoctorAudience;
+  readonly focus?: FinanceDoctorFocus;
 }): Promise<SynthesizedCfoFinanceBriefDto> {
   const payload = (await authPost(
     "/v1/ops/cfo-finance-brief/synthesize",
