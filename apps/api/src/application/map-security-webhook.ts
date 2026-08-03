@@ -16,7 +16,11 @@ export const hotelOsSecurityEventSchema = z.object({
 
 export type HotelOsSecurityEvent = z.infer<typeof hotelOsSecurityEventSchema>;
 
-export type SecurityWebhookProvider = "generic" | "example_vms" | "milestone";
+export type SecurityWebhookProvider =
+  | "generic"
+  | "example_vms"
+  | "milestone"
+  | "genetec";
 
 /**
  * Map a vendor (or already-canonical) webhook body to HotelOS security event.
@@ -32,6 +36,10 @@ export function mapSecurityWebhook(
 
   if (provider === "milestone") {
     return mapMilestoneWebhook(body);
+  }
+
+  if (provider === "genetec") {
+    return mapGenetecWebhook(body);
   }
 
   // Example VMS shape — replace with real Milestone/Genetec/local adapter later.
@@ -106,6 +114,47 @@ function mapMilestoneWebhook(body: unknown): HotelOsSecurityEvent {
     description: `${parsed.Description}${camera}`,
     priority,
     source: "milestone",
+    ...(parsed.Timestamp !== undefined
+      ? { occurredAt: normalizeTimestamp(parsed.Timestamp) }
+      : {}),
+    ...(parsed.Guid !== undefined ? { externalEventId: parsed.Guid } : {}),
+  });
+}
+
+/**
+ * Genetec Security Center event webhook (simplified pilot shape).
+ * `SiteId` must be the HotelOS hotel UUID (mapped in Genetec custom field).
+ * Severity: Low | Medium | High | Critical.
+ */
+const genetecSchema = z.object({
+  SiteId: z.string().uuid(),
+  Name: z.string().trim().min(2).max(200),
+  Message: z.string().trim().min(1).max(4000),
+  Severity: z.enum(["Low", "Medium", "High", "Critical"]).default("Medium"),
+  Timestamp: z.string().optional(),
+  CameraGuid: z.string().trim().max(80).optional(),
+  Guid: z.string().trim().max(120).optional(),
+});
+
+function mapGenetecWebhook(body: unknown): HotelOsSecurityEvent {
+  const parsed = genetecSchema.parse(body);
+  const priority =
+    parsed.Severity === "Critical"
+      ? "urgent"
+      : parsed.Severity === "High"
+        ? "high"
+        : parsed.Severity === "Medium"
+          ? "medium"
+          : "low";
+  const camera =
+    parsed.CameraGuid !== undefined ? ` מצלמה ${parsed.CameraGuid}.` : "";
+
+  return hotelOsSecurityEventSchema.parse({
+    hotelId: parsed.SiteId,
+    title: parsed.Name,
+    description: `${parsed.Message}${camera}`,
+    priority,
+    source: "genetec",
     ...(parsed.Timestamp !== undefined
       ? { occurredAt: normalizeTimestamp(parsed.Timestamp) }
       : {}),

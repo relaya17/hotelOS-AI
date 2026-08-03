@@ -97,7 +97,7 @@
 | ג' | נגישות WCAG 2.2 AA על 3 האפליקציות הקיימות | נמוכה-בינונית | ✅ MVP CI — skip-link/touch/focus + axe-core smoke על shell fixture; Playwright E2E מלא אופציונלי בהמשך |
 | ד' | תמצית יומית חכמה לכל מנהל (סעיף 4.1, שלב 1) | בינונית | ✅ MVP — CIO digest + Gateway + cron + WhatsApp opt-in (`DIGEST_WHATSAPP_TO`) |
 | ה' | זיהוי אנומליות פיננסיות/תפעוליות (סעיף 4.1, שלב 2) | בינונית-גבוהה | ✅ MVP כללים + baseline סטטיסטי ראשוני — `detect-ops-anomalies` (סף קבוע + `journal_amount_outlier` ממוצע+2σ מ־5 תנועות ומעלה) + cron |
-| ו' | אינטגרציית מצלמות AI מול ה-VMS הקיים במלון פיילוט אחד | גבוהה | 🟡 גנרי + `ingest/:provider` (`example_vms`, `milestone`); חסר פיילוט אמיתי + משפטי |
+| ו' | אינטגרציית מצלמות AI מול ה-VMS הקיים במלון פיילוט אחד | גבוהה | 🟡 קוד מוכן — public ingest + `milestone`/`genetec` + runbook תיקון 13; חסר פיילוט שטח + חתימת עו״ד |
 | ז' | סוכן RAG לחשבונאות/מס עם מקורות מאומתים + human-in-the-loop לביצוע כספי | גבוהה | ✅ MVP שלם — role `accountant` (`canApproveLedgerClose`) + Suggest→Approve→Act ל־ledger close (`autonomy.ledger_close`); ledger pack + IFRS/מס Trusted Sources ל־`agent.cfo` |
 
 ### מה נשאר (מחוץ לקוד / תפעול)

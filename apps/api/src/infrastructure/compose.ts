@@ -241,8 +241,12 @@ export async function composeApp() {
       turbo,
       payments,
       pms,
+      isProduction: env.NODE_ENV === "production",
       ...(env.PMS_INBOUND_SECRET.trim()
         ? { pmsInboundSecret: env.PMS_INBOUND_SECRET.trim() }
+        : {}),
+      ...(env.SECURITY_INGEST_SECRET.trim()
+        ? { securityIngestSecret: env.SECURITY_INGEST_SECRET.trim() }
         : {}),
     },
     agents: { agents, tokens },

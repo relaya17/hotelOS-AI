@@ -24,6 +24,7 @@ import { buildGuestFolio } from "../../application/build-guest-folio.js";
 import { createPublicBooking } from "../../application/create-public-booking.js";
 import { fireAutomationTrigger } from "../../application/fire-automation-trigger.js";
 import { ingestPmsReservation } from "../../application/ingest-pms-reservation.js";
+import { ingestSecurityWebhook } from "../../application/ingest-security-webhook.js";
 import { listPublicAvailability } from "../../application/public-availability.js";
 import { quoteRoomStay } from "../../application/room-rates.js";
 import { handleWhatsAppInbound } from "../../application/handle-whatsapp-inbound.js";
@@ -47,6 +48,12 @@ export type PublicRouteDeps = {
   readonly pms?: PmsConnector;
   /** When set, inbound PMS webhook requires Bearer / X-HotelOS-Pms-Secret. */
   readonly pmsInboundSecret?: string;
+  /**
+   * VMS webhook secret (Bearer / X-HotelOS-Security-Secret).
+   * Required in production; optional in development.
+   */
+  readonly securityIngestSecret?: string;
+  readonly isProduction?: boolean;
 };
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -159,6 +166,23 @@ function pmsInboundAuthorized(
   return token === expected;
 }
 
+function securityIngestAuthorized(
+  c: { req: { header: (name: string) => string | undefined } },
+  secret: string | undefined,
+  isProduction: boolean | undefined,
+): boolean {
+  const expected = secret?.trim();
+  if (!expected) {
+    return isProduction !== true;
+  }
+  const bearer = c.req.header("authorization");
+  const token =
+    bearer?.toLowerCase().startsWith("bearer ")
+      ? bearer.slice(7).trim()
+      : c.req.header("x-hotelos-security-secret")?.trim();
+  return token === expected;
+}
+
 export function createPublicRoutes(deps: PublicRouteDeps): Hono {
   const routes = new Hono();
 
@@ -207,6 +231,58 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
         return sendError(c, status, result.error.code, result.error.message);
       }
       return c.json({ data: result.value }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /**
+   * VMS / AI-CCTV webhook (no JWT). Configure vendor to POST here with
+   * Authorization: Bearer $SECURITY_INGEST_SECRET (or X-HotelOS-Security-Secret).
+   */
+  routes.post("/security/ingest/:provider", async (c) => {
+    try {
+      if (
+        !securityIngestAuthorized(
+          c,
+          deps.securityIngestSecret,
+          deps.isProduction,
+        )
+      ) {
+        return sendError(
+          c,
+          401,
+          "UNAUTHORIZED",
+          "Invalid or missing security ingest secret",
+        );
+      }
+      const providerParsed = z
+        .enum(["generic", "example_vms", "milestone", "genetec"])
+        .safeParse(c.req.param("provider"));
+      if (!providerParsed.success) {
+        return sendError(
+          c,
+          400,
+          "UNKNOWN_PROVIDER",
+          "Supported providers: generic, example_vms, milestone, genetec",
+        );
+      }
+      const result = await ingestSecurityWebhook(
+        {
+          hotels: deps.hotels,
+          ops: deps.ops,
+          audit: deps.audit,
+        },
+        {
+          provider: providerParsed.data,
+          body: await c.req.json(),
+        },
+      );
+      if (!result.ok) {
+        const status = result.code === "HOTEL_NOT_FOUND" ? 404 : 500;
+        return sendError(c, status, result.code, result.message);
+      }
+      return c.json({ data: result }, 201);
     } catch (error) {
       return mapUnknownError(c, error);
     }

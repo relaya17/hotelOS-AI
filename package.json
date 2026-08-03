@@ -16,6 +16,8 @@
     "typecheck": "turbo run typecheck",
     "lint": "eslint .",
     "test": "turbo run test",
+    "check:vercel-api": "node scripts/check-vercel-api-ready.mjs",
+    "ping:turso": "node scripts/ping-turso.mjs",
     "qa": "pnpm install --frozen-lockfile && pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "clean": "turbo run clean && rimraf node_modules"
   },

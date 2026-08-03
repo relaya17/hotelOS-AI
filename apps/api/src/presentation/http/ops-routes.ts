@@ -1074,14 +1074,14 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
   routes.post("/security-events/ingest/:provider", async (c) => {
     try {
       const providerParsed = z
-        .enum(["generic", "example_vms", "milestone"])
+        .enum(["generic", "example_vms", "milestone", "genetec"])
         .safeParse(c.req.param("provider"));
       if (!providerParsed.success) {
         return sendError(
           c,
           400,
           "UNKNOWN_PROVIDER",
-          "Supported providers: generic, example_vms, milestone",
+          "Supported providers: generic, example_vms, milestone, genetec",
         );
       }
       const body = mapSecurityWebhook(

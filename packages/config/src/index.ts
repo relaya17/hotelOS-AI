@@ -103,6 +103,11 @@ const envSchema = z.object({
    * Empty = endpoint accepts unauthenticated demo payloads (dev only).
    */
   PMS_INBOUND_SECRET: z.string().optional().default(""),
+  /**
+   * Shared secret for POST /v1/public/security/ingest/:provider (VMS webhooks).
+   * Empty = public ingest disabled in production; allowed open in non-production.
+   */
+  SECURITY_INGEST_SECRET: z.string().optional().default(""),
   /** WhatsApp delivery adapter. Empty configuration remains safe demo delivery. */
   WHATSAPP_PROVIDER: z
     .enum(["demo", "http", "meta", "off"])

@@ -57,4 +57,19 @@ describe("mapSecurityWebhook", () => {
     assert.equal(event.priority, "low");
     assert.equal(event.externalEventId, undefined);
   });
+
+  it("maps genetec Security Center alarms", () => {
+    const event = mapSecurityWebhook("genetec", {
+      SiteId: "11111111-1111-4111-8111-111111111111",
+      Name: "Intrusion",
+      Message: "Parking lot after hours",
+      Severity: "Critical",
+      CameraGuid: "cam-9",
+      Guid: "evt-gen-1",
+    });
+    assert.equal(event.priority, "urgent");
+    assert.equal(event.source, "genetec");
+    assert.match(event.description, /cam-9/);
+    assert.equal(event.externalEventId, "evt-gen-1");
+  });
 });

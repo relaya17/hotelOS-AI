@@ -3203,9 +3203,9 @@ export async function postSecurityEvent(input: {
   return authPost("/v1/ops/security-events", input);
 }
 
-/** Vendor webhook ingest — `generic`/`example_vms`/`milestone` until pilot VMS is wired. */
+/** Vendor webhook ingest — auth'd ops path; public VMS uses `/v1/public/security/ingest/:provider`. */
 export async function postSecurityWebhookIngest(
-  provider: "generic" | "example_vms" | "milestone",
+  provider: "generic" | "example_vms" | "milestone" | "genetec",
   body: unknown,
 ): Promise<unknown> {
   return authPost(
