@@ -31,7 +31,29 @@ export type PmsHotelInventory = {
   readonly reservations: readonly PmsReservationSnapshot[];
 };
 
+export type PmsInventoryChangeEvent = {
+  readonly hotelId: string;
+  readonly bookingId: string;
+  readonly checkInDate: string;
+  readonly checkOutDate: string;
+  readonly roomType?: string;
+  readonly roomNumber?: string | null;
+  readonly guestName?: string;
+};
+
+export type PmsInventoryNotifyResult = {
+  readonly status: "accepted" | "skipped";
+  readonly detail: string;
+};
+
 export type PmsConnector = {
   readonly providerId: string;
   fetchInventory(externalHotelId: string): Promise<PmsHotelInventory>;
+  /**
+   * Outbound channel/PMS inventory hint after a local booking.
+   * Demo/stubs accept without network; live Mews may no-op until write API is enabled.
+   */
+  notifyInventoryChanged?(
+    event: PmsInventoryChangeEvent,
+  ): Promise<PmsInventoryNotifyResult>;
 };

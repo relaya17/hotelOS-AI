@@ -1,6 +1,8 @@
 export type {
   PmsConnector,
   PmsHotelInventory,
+  PmsInventoryChangeEvent,
+  PmsInventoryNotifyResult,
   PmsReservationSnapshot,
   PmsRoomSnapshot,
   PmsRoomStatus,

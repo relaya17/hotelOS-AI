@@ -1,10 +1,13 @@
 import { randomUUID } from "node:crypto";
+import type { PmsConnector } from "@hotelos/connectors";
 import type {
+  AuditRepository,
   HotelRepository,
   OpsRepository,
   TurboRepository,
 } from "@hotelos/database";
 import { Ids, type HotelId, type TenantId } from "@hotelos/shared";
+import { syncBookingInventory } from "./sync-booking-inventory.js";
 
 export type ExecuteAutomationActionInput = {
   readonly tenantId: TenantId;
@@ -15,6 +18,10 @@ export type ExecuteAutomationActionInput = {
   readonly bookingId?: string;
   readonly guestName?: string;
   readonly actorUserId?: string;
+  readonly checkInDate?: string;
+  readonly checkOutDate?: string;
+  readonly roomType?: string;
+  readonly roomNumber?: string | null;
 };
 
 export type ExecuteAutomationActionResult = {
@@ -82,12 +89,45 @@ export async function executeAutomationAction(
     readonly turbo: TurboRepository;
     readonly ops?: OpsRepository;
     readonly hotels?: HotelRepository;
+    readonly pms?: PmsConnector;
+    readonly audit?: AuditRepository;
   },
   input: ExecuteAutomationActionInput,
 ): Promise<ExecuteAutomationActionResult> {
   const hotelId = await resolveHotelId(deps, input.tenantId, input.hotelId);
 
   switch (input.actionKey) {
+    case "sync.pms_inventory": {
+      if (!hotelId || !input.bookingId || !input.checkInDate || !input.checkOutDate) {
+        return { effect: "logged_only" };
+      }
+      const synced = await syncBookingInventory(
+        {
+          ...(deps.pms ? { pms: deps.pms } : {}),
+          ...(deps.audit ? { audit: deps.audit } : {}),
+        },
+        {
+          tenantId: input.tenantId,
+          hotelId,
+          bookingId: input.bookingId,
+          checkInDate: input.checkInDate,
+          checkOutDate: input.checkOutDate,
+          ...(input.roomType !== undefined ? { roomType: input.roomType } : {}),
+          ...(input.roomNumber !== undefined
+            ? { roomNumber: input.roomNumber }
+            : {}),
+          ...(input.guestName !== undefined
+            ? { guestName: input.guestName }
+            : {}),
+        },
+      );
+      return {
+        effect:
+          synced.status === "accepted"
+            ? "pms_inventory_synced"
+            : "pms_inventory_skipped",
+      };
+    }
     case "notify.reception": {
       if (!deps.ops || !hotelId) {
         return { effect: "logged_only" };

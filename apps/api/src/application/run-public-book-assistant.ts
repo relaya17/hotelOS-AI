@@ -1,3 +1,4 @@
+import type { PmsConnector } from "@hotelos/connectors";
 import type {
   BookingRepository,
   HotelRepository,
@@ -9,6 +10,7 @@ import type {
   OpsRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
+import type { PaymentProvider } from "../infrastructure/payment-provider.js";
 import { quoteRoomStay, ROOM_TYPE_LABELS_HE } from "./room-rates.js";
 import { listPublicAvailability } from "./public-availability.js";
 import { createPublicBooking } from "./create-public-booking.js";
@@ -217,9 +219,11 @@ export async function runPublicBookAssistant(
     readonly bookings: BookingRepository;
     readonly audit: AuditRepository;
     readonly trust: TrustRepository;
+    readonly payments: PaymentProvider;
     readonly guestProfiles?: GuestProfileRepository;
     readonly turbo?: TurboRepository;
     readonly ops?: OpsRepository;
+    readonly pms?: PmsConnector;
   },
   input: {
     readonly message: string;
@@ -318,6 +322,7 @@ export async function runPublicBookAssistant(
         bookings: deps.bookings,
         audit: deps.audit,
         trust: deps.trust,
+        payments: deps.payments,
         ...(deps.guestProfiles ? { guestProfiles: deps.guestProfiles } : {}),
       },
       {
@@ -345,6 +350,9 @@ export async function runPublicBookAssistant(
         {
           turbo: deps.turbo,
           ...(deps.ops ? { ops: deps.ops } : {}),
+          hotels: deps.hotels,
+          ...(deps.pms ? { pms: deps.pms } : {}),
+          audit: deps.audit,
         },
         {
           tenantId: result.value.booking.tenantId,
@@ -353,6 +361,10 @@ export async function runPublicBookAssistant(
           detail: `הזמנה ${result.value.booking.id} · ${result.value.booking.guestName} · ${result.value.booking.checkInDate}`,
           bookingId: result.value.booking.id,
           guestName: result.value.booking.guestName,
+          checkInDate: result.value.booking.checkInDate,
+          checkOutDate: result.value.booking.checkOutDate,
+          roomType: draft.roomType,
+          roomNumber: result.value.booking.roomNumber,
         },
       );
     }

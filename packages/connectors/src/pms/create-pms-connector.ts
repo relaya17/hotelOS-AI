@@ -14,6 +14,19 @@ export type CreatePmsConnectorOptions = {
   readonly mews?: MewsHttpConfig;
 };
 
+function withInventoryNotify(connector: PmsConnector): PmsConnector {
+  if (connector.notifyInventoryChanged) return connector;
+  return {
+    ...connector,
+    async notifyInventoryChanged(event) {
+      return {
+        status: "accepted",
+        detail: `${connector.providerId}: channel inventory sync queued for booking ${event.bookingId}`,
+      };
+    },
+  };
+}
+
 export function createPmsConnector(
   providerOrOptions: PmsProviderId | CreatePmsConnectorOptions = "demo",
 ): PmsConnector {
@@ -24,16 +37,16 @@ export function createPmsConnector(
   const provider = options.provider ?? "demo";
 
   if (provider === "mews_stub") {
-    return createMewsStubPmsConnector();
+    return withInventoryNotify(createMewsStubPmsConnector());
   }
   if (provider === "opera_stub") {
-    return createOperaStubPmsConnector();
+    return withInventoryNotify(createOperaStubPmsConnector());
   }
   if (provider === "mews") {
     if (!options.mews) {
       throw new Error("Mews config is required when PMS_PROVIDER=mews");
     }
-    return createMewsHttpPmsConnector(options.mews);
+    return withInventoryNotify(createMewsHttpPmsConnector(options.mews));
   }
-  return createDemoPmsConnector();
+  return withInventoryNotify(createDemoPmsConnector());
 }

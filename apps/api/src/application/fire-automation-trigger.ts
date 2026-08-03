@@ -1,4 +1,6 @@
+import type { PmsConnector } from "@hotelos/connectors";
 import type {
+  AuditRepository,
   HotelRepository,
   OpsRepository,
   TurboRepository,
@@ -14,6 +16,10 @@ export type FireAutomationTriggerInput = {
   readonly bookingId?: string;
   readonly guestName?: string;
   readonly actorUserId?: string;
+  readonly checkInDate?: string;
+  readonly checkOutDate?: string;
+  readonly roomType?: string;
+  readonly roomNumber?: string | null;
 };
 
 /**
@@ -24,6 +30,8 @@ export async function fireAutomationTrigger(
     readonly turbo: TurboRepository;
     readonly ops?: OpsRepository;
     readonly hotels?: HotelRepository;
+    readonly pms?: PmsConnector;
+    readonly audit?: AuditRepository;
   },
   input: FireAutomationTriggerInput,
 ): Promise<
@@ -70,6 +78,16 @@ export async function fireAutomationTrigger(
       ...(input.guestName !== undefined ? { guestName: input.guestName } : {}),
       ...(input.actorUserId !== undefined
         ? { actorUserId: input.actorUserId }
+        : {}),
+      ...(input.checkInDate !== undefined
+        ? { checkInDate: input.checkInDate }
+        : {}),
+      ...(input.checkOutDate !== undefined
+        ? { checkOutDate: input.checkOutDate }
+        : {}),
+      ...(input.roomType !== undefined ? { roomType: input.roomType } : {}),
+      ...(input.roomNumber !== undefined
+        ? { roomNumber: input.roomNumber }
         : {}),
     });
 

@@ -87,6 +87,22 @@ const envSchema = z.object({
     .optional()
     .default("https://api.mews-demo.com"),
   MEWS_CLIENT_NAME: z.string().optional().default("HotelOS AI 1.0"),
+  /**
+   * Payment path for Trust + public booking.
+   * demo = local PCI-free confirm · stripe_stub = fake clientSecret ·
+   * external = HTTP gateway (card PAN never touches HotelOS).
+   */
+  PAYMENT_PROVIDER: z
+    .enum(["demo", "stripe_stub", "external"])
+    .default("demo"),
+  /** Required when PAYMENT_PROVIDER=external — create/confirm intents at this base URL. */
+  PAYMENT_EXTERNAL_URL: z.string().optional().default(""),
+  PAYMENT_EXTERNAL_TOKEN: z.string().optional().default(""),
+  /**
+   * Optional shared secret for POST /v1/public/pms/inbound (channel manager → HotelOS).
+   * Empty = endpoint accepts unauthenticated demo payloads (dev only).
+   */
+  PMS_INBOUND_SECRET: z.string().optional().default(""),
   /** WhatsApp delivery adapter. Empty configuration remains safe demo delivery. */
   WHATSAPP_PROVIDER: z
     .enum(["demo", "http", "meta", "off"])

@@ -351,6 +351,13 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
           triggerKey: "night.audit.close",
           actionKey: "ledger.sync.internal_or_external",
         },
+        {
+          id: "u1000000-0000-4000-8000-000000000007",
+          name: "New booking → PMS / channel inventory",
+          domain: "distribution",
+          triggerKey: "booking.created",
+          actionKey: "sync.pms_inventory",
+        },
       ] as const;
 
       for (const rule of rules) {

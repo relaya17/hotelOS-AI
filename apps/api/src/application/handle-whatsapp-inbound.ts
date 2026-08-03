@@ -1,3 +1,4 @@
+import type { PmsConnector } from "@hotelos/connectors";
 import type {
   AuditRepository,
   BookingRepository,
@@ -9,6 +10,7 @@ import type {
   TrustRepository,
   TurboRepository,
 } from "@hotelos/database";
+import type { PaymentProvider } from "../infrastructure/payment-provider.js";
 import { runPublicBookAssistant } from "./run-public-book-assistant.js";
 
 export type WhatsAppInboundResult = {
@@ -56,10 +58,12 @@ export async function handleWhatsAppInbound(
     readonly bookings: BookingRepository;
     readonly audit: AuditRepository;
     readonly trust: TrustRepository;
+    readonly payments: PaymentProvider;
     readonly guestStays: GuestStayRepository;
     readonly ops: OpsRepository;
     readonly turbo: TurboRepository;
     readonly guestProfiles?: GuestProfileRepository;
+    readonly pms?: PmsConnector;
   },
   input: {
     readonly from: string;
@@ -94,9 +98,11 @@ export async function handleWhatsAppInbound(
         bookings: deps.bookings,
         audit: deps.audit,
         trust: deps.trust,
+        payments: deps.payments,
         turbo: deps.turbo,
         ops: deps.ops,
         ...(deps.guestProfiles ? { guestProfiles: deps.guestProfiles } : {}),
+        ...(deps.pms ? { pms: deps.pms } : {}),
       },
       {
         message: text,

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { PmsConnector } from "@hotelos/connectors";
 import type {
   AuditRepository,
   HotelRepository,
@@ -27,6 +28,7 @@ export type TurboRouteDeps = {
   readonly tokens: JwtTokenService;
   readonly ops: OpsRepository;
   readonly hotels: HotelRepository;
+  readonly pms?: PmsConnector;
 };
 
 const postChatSchema = z.object({
@@ -166,7 +168,13 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
         );
         if (run) {
           await executeAutomationAction(
-            { turbo: deps.turbo, ops: deps.ops, hotels: deps.hotels },
+            {
+              turbo: deps.turbo,
+              ops: deps.ops,
+              hotels: deps.hotels,
+              ...(deps.pms ? { pms: deps.pms } : {}),
+              audit: deps.audit,
+            },
             {
               tenantId: principal.scope.tenantId,
               actionKey: translateAutomation.actionKey,
@@ -277,7 +285,13 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
         principal.scope.hotelId,
       );
       const effect = await executeAutomationAction(
-        { turbo: deps.turbo, ops: deps.ops, hotels: deps.hotels },
+        {
+          turbo: deps.turbo,
+          ops: deps.ops,
+          hotels: deps.hotels,
+          ...(deps.pms ? { pms: deps.pms } : {}),
+          audit: deps.audit,
+        },
         {
           tenantId: principal.scope.tenantId,
           ...(hotelId !== undefined ? { hotelId } : {}),
@@ -336,7 +350,13 @@ export function createTurboRoutes(deps: TurboRouteDeps): Hono<{
             principal.scope.hotelId,
           );
           const actionResult = await executeAutomationAction(
-            { turbo: deps.turbo, ops: deps.ops, hotels: deps.hotels },
+            {
+              turbo: deps.turbo,
+              ops: deps.ops,
+              hotels: deps.hotels,
+              ...(deps.pms ? { pms: deps.pms } : {}),
+              audit: deps.audit,
+            },
             {
               tenantId: principal.scope.tenantId,
               ...(hotelId !== undefined ? { hotelId } : {}),

@@ -38,6 +38,18 @@ describe("runPublicBookAssistant", () => {
         } } as never,
         audit: { append: async () => undefined } as never,
         trust: {} as never,
+        payments: {
+          name: "demo",
+          createIntent: async () => {
+            throw new Error("should not charge yet");
+          },
+          confirmIntent: async () => {
+            throw new Error("should not charge yet");
+          },
+          charge: async () => {
+            throw new Error("should not charge yet");
+          },
+        },
       },
       {
         message:

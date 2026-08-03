@@ -50,6 +50,7 @@ import { alertOnSensitiveAudit } from "../application/alert-on-sensitive-audit.j
 import { createGetHealth } from "../application/get-health.js";
 import { createApp } from "../presentation/http/create-app.js";
 import { initObservability } from "./observability.js";
+import { createPaymentProvider } from "./payment-provider.js";
 import { createRecordingStorage } from "./recording-storage.js";
 import { createWhatsAppProvider } from "./whatsapp-provider.js";
 import type { AuditRepository } from "@hotelos/database";
@@ -184,6 +185,28 @@ export async function composeApp() {
     backend: recordings.backend,
     root: recordings.root,
   });
+  const payments = createPaymentProvider({
+    provider: env.PAYMENT_PROVIDER,
+    ...(env.PAYMENT_EXTERNAL_URL
+      ? { externalUrl: env.PAYMENT_EXTERNAL_URL }
+      : {}),
+    ...(env.PAYMENT_EXTERNAL_TOKEN
+      ? { externalToken: env.PAYMENT_EXTERNAL_TOKEN }
+      : {}),
+  });
+  const pms = createPmsConnector({
+    provider: env.PMS_PROVIDER,
+    ...(env.PMS_PROVIDER === "mews"
+      ? {
+          mews: {
+            clientToken: env.MEWS_CLIENT_TOKEN,
+            accessToken: env.MEWS_ACCESS_TOKEN,
+            platformUrl: env.MEWS_PLATFORM_URL,
+            clientName: env.MEWS_CLIENT_NAME,
+          },
+        }
+      : {}),
+  });
   const app = createApp({
     getHealth,
     logger,
@@ -216,6 +239,11 @@ export async function composeApp() {
       audit,
       trust,
       turbo,
+      payments,
+      pms,
+      ...(env.PMS_INBOUND_SECRET.trim()
+        ? { pmsInboundSecret: env.PMS_INBOUND_SECRET.trim() }
+        : {}),
     },
     agents: { agents, tokens },
     briefing: {
@@ -229,13 +257,14 @@ export async function composeApp() {
       gateway,
       approvals,
     },
-    turbo: { audit, turbo, users, tokens, ops, hotels },
+    turbo: { audit, turbo, users, tokens, ops, hotels, pms },
     trust: {
       trust,
       users,
       sessions,
       audit,
       tokens,
+      payments,
       googleClientId: env.GOOGLE_CLIENT_ID,
       googleClientSecret: env.GOOGLE_CLIENT_SECRET,
       googleRedirectUri: env.GOOGLE_REDIRECT_URI,
@@ -312,19 +341,7 @@ export async function composeApp() {
     twin: {
       rooms,
       tokens,
-      pms: createPmsConnector({
-        provider: env.PMS_PROVIDER,
-        ...(env.PMS_PROVIDER === "mews"
-          ? {
-              mews: {
-                clientToken: env.MEWS_CLIENT_TOKEN,
-                accessToken: env.MEWS_ACCESS_TOKEN,
-                platformUrl: env.MEWS_PLATFORM_URL,
-                clientName: env.MEWS_CLIENT_NAME,
-              },
-            }
-          : {}),
-      }),
+      pms,
     },
     cron: {
       cronSecret: env.CRON_SECRET,

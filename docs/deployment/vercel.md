@@ -73,6 +73,9 @@ each `vercel.json` already assume this.
 | `PMS_PROVIDER` | optional — `demo` (default), `mews_stub`, `opera_stub`, or `mews` for live Mews Connector API |
 | `MEWS_CLIENT_TOKEN` / `MEWS_ACCESS_TOKEN` | required when `PMS_PROVIDER=mews` |
 | `MEWS_PLATFORM_URL` | optional — default `https://api.mews-demo.com` (prod: `https://api.mews.com`) |
+| `PMS_INBOUND_SECRET` | optional — protects `POST /v1/public/pms/inbound` (channel manager → HotelOS) |
+| `PAYMENT_PROVIDER` | optional — `demo` (default), `stripe_stub`, or `external` HTTP gateway (no PAN in HotelOS) |
+| `PAYMENT_EXTERNAL_URL` / `PAYMENT_EXTERNAL_TOKEN` | required when `PAYMENT_PROVIDER=external` |
 | `WHATSAPP_PROVIDER` | optional — `demo` (default), `http`, `meta`, or `off` |
 | `WHATSAPP_API_TOKEN` / `WHATSAPP_META_PHONE_NUMBER_ID` | required for `meta`; token + URL for `http` |
 

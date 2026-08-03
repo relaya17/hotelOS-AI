@@ -18,6 +18,7 @@ import {
   isUsableWebAuthnPublicKey,
   verifyWebAuthnAssertion,
 } from "../../domain/webauthn-verify.js";
+import type { PaymentProvider } from "../../infrastructure/payment-provider.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -27,6 +28,7 @@ export type TrustRouteDeps = {
   readonly sessions: RefreshSessionRepository;
   readonly audit: AuditRepository;
   readonly tokens: JwtTokenService;
+  readonly payments: PaymentProvider;
   readonly googleClientId: string;
   readonly googleClientSecret: string;
   readonly googleRedirectUri: string;
@@ -379,8 +381,18 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
       if (body.hotelId && !canAccessHotel(principal, Ids.hotel(body.hotelId))) {
         return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
       }
+      const paymentId = randomUUID();
+      const providerIntent = await deps.payments.createIntent({
+        id: paymentId,
+        amountMinor: body.amountMinor,
+        currency: body.currency.toUpperCase(),
+        description: body.description,
+        ...(body.payerEmail !== undefined
+          ? { payerEmail: body.payerEmail }
+          : {}),
+      });
       const intent = await deps.trust.createPaymentIntent({
-        id: randomUUID(),
+        id: paymentId,
         tenantId: principal.scope.tenantId,
         hotelId: body.hotelId ?? principal.scope.hotelId ?? null,
         amountMinor: body.amountMinor,
@@ -388,6 +400,12 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
         description: body.description,
         payerEmail: body.payerEmail ?? null,
         createdAt: new Date().toISOString(),
+        provider: providerIntent.provider,
+        status: providerIntent.status,
+        confirmedAt:
+          providerIntent.status === "succeeded"
+            ? new Date().toISOString()
+            : null,
       });
       await deps.audit.append({
         id: randomUUID(),
@@ -396,13 +414,30 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
         action: "payment.intent.created",
         resourceType: "payment_intent",
         resourceId: intent.id,
-        metadata: { amountMinor: intent.amountMinor, currency: intent.currency },
+        metadata: {
+          amountMinor: intent.amountMinor,
+          currency: intent.currency,
+          provider: intent.provider,
+        },
         createdAt: new Date().toISOString(),
         ...(principal.scope.hotelId !== undefined
           ? { hotelId: principal.scope.hotelId }
           : {}),
       });
-      return c.json({ data: intent }, 201);
+      return c.json(
+        {
+          data: {
+            ...intent,
+            ...(providerIntent.clientSecret
+              ? { clientSecret: providerIntent.clientSecret }
+              : {}),
+            ...(providerIntent.providerRef
+              ? { providerRef: providerIntent.providerRef }
+              : {}),
+          },
+        },
+        201,
+      );
     } catch (error) {
       return mapUnknownError(c, error);
     }
@@ -419,9 +454,11 @@ export function createTrustRoutes(deps: TrustRouteDeps): Hono<{
           "Confirming payments requires a procurement/management role",
         );
       }
+      const paymentId = c.req.param("id");
+      await deps.payments.confirmIntent({ id: paymentId });
       const confirmed = await deps.trust.confirmPaymentIntent(
         principal.scope.tenantId,
-        c.req.param("id"),
+        paymentId,
       );
       if (!confirmed) {
         return sendError(c, 404, "NOT_FOUND", "Payment intent not found");

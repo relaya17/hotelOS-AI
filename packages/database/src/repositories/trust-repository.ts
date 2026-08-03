@@ -32,6 +32,9 @@ export type TrustRepository = {
     readonly description: string;
     readonly payerEmail: string | null;
     readonly createdAt: string;
+    readonly provider?: string;
+    readonly status?: string;
+    readonly confirmedAt?: string | null;
   }) => Promise<{
     readonly id: string;
     readonly status: string;
@@ -198,6 +201,14 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
     },
 
     async createPaymentIntent(input) {
+      const provider = input.provider?.trim() || "hotelos.payments";
+      const status = input.status?.trim() || "requires_confirmation";
+      const confirmedAt =
+        input.confirmedAt !== undefined
+          ? input.confirmedAt
+          : status === "succeeded"
+            ? input.createdAt
+            : null;
       await db.insert(paymentIntents)
         .values({
           id: input.id,
@@ -205,21 +216,21 @@ export function createTrustRepository(db: HotelOsDb): TrustRepository {
           hotelId: input.hotelId,
           amountMinor: String(input.amountMinor),
           currency: input.currency,
-          status: "requires_confirmation",
+          status,
           description: input.description,
           payerEmail: input.payerEmail,
-          provider: "hotelos.payments",
+          provider,
           createdAt: input.createdAt,
-          confirmedAt: null,
+          confirmedAt,
         })
         .run();
       return {
         id: input.id,
-        status: "requires_confirmation",
+        status,
         amountMinor: input.amountMinor,
         currency: input.currency,
         description: input.description,
-        provider: "hotelos.payments",
+        provider,
       };
     },
 

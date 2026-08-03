@@ -9,6 +9,7 @@ import type {
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { err, ok, type Result } from "@hotelos/shared";
+import type { PaymentProvider } from "../infrastructure/payment-provider.js";
 import { pickAvailableRoom } from "./public-availability.js";
 import { quoteRoomStay } from "./room-rates.js";
 
@@ -39,6 +40,7 @@ export type CreatePublicBookingResult = {
     readonly status: string;
     readonly amountMinor: number;
     readonly currency: string;
+    readonly provider: string;
   };
 };
 
@@ -49,6 +51,7 @@ export async function createPublicBooking(
     readonly bookings: BookingRepository;
     readonly audit: AuditRepository;
     readonly trust: TrustRepository;
+    readonly payments: PaymentProvider;
     readonly guestProfiles?: GuestProfileRepository;
   },
   command: CreatePublicBookingCommand,
@@ -106,26 +109,42 @@ export async function createPublicBooking(
   });
 
   const paymentId = randomUUID();
+  const description = `הזמנה ציבורית ${booking.id} · ${quote.roomTypeLabelHe}`;
+  let charged;
+  try {
+    charged = await deps.payments.charge({
+      id: paymentId,
+      amountMinor: quote.amountMinor,
+      currency: quote.currency,
+      description,
+      payerEmail: guestEmail,
+    });
+  } catch {
+    return err({
+      code: "PAYMENT_FAILED",
+      message: "Payment provider charge failed",
+    });
+  }
+  if (charged.status !== "succeeded") {
+    return err({
+      code: "PAYMENT_FAILED",
+      message: "Payment was not confirmed",
+    });
+  }
+
   const intent = await deps.trust.createPaymentIntent({
     id: paymentId,
     tenantId: hotel.tenantId,
     hotelId: hotel.id,
     amountMinor: quote.amountMinor,
     currency: quote.currency,
-    description: `הזמנה ציבורית ${booking.id} · ${quote.roomTypeLabelHe}`,
+    description,
     payerEmail: guestEmail,
     createdAt: now,
+    provider: charged.provider,
+    status: "succeeded",
+    confirmedAt: now,
   });
-  const confirmed = await deps.trust.confirmPaymentIntent(
-    hotel.tenantId,
-    paymentId,
-  );
-  if (!confirmed || confirmed.status !== "succeeded") {
-    return err({
-      code: "PAYMENT_FAILED",
-      message: "Demo payment confirmation failed",
-    });
-  }
 
   await deps.audit.append({
     id: randomUUID(),
@@ -140,6 +159,7 @@ export async function createPublicBooking(
       guestEmail: booking.guestEmail,
       paymentId,
       amountMinor: quote.amountMinor,
+      paymentProvider: charged.provider,
       channel: "public_book",
     },
     createdAt: now,
@@ -167,9 +187,10 @@ export async function createPublicBooking(
     quote,
     payment: {
       id: intent.id,
-      status: confirmed.status,
+      status: intent.status,
       amountMinor: quote.amountMinor,
       currency: quote.currency,
+      provider: intent.provider,
     },
   });
 }

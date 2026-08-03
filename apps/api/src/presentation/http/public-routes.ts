@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { randomUUID } from "node:crypto";
+import type { PmsConnector } from "@hotelos/connectors";
 import type {
   AuditRepository,
   BookingRepository,
@@ -22,10 +23,12 @@ import {
 import { buildGuestFolio } from "../../application/build-guest-folio.js";
 import { createPublicBooking } from "../../application/create-public-booking.js";
 import { fireAutomationTrigger } from "../../application/fire-automation-trigger.js";
+import { ingestPmsReservation } from "../../application/ingest-pms-reservation.js";
 import { listPublicAvailability } from "../../application/public-availability.js";
 import { quoteRoomStay } from "../../application/room-rates.js";
 import { handleWhatsAppInbound } from "../../application/handle-whatsapp-inbound.js";
 import { runPublicBookAssistant } from "../../application/run-public-book-assistant.js";
+import type { PaymentProvider } from "../../infrastructure/payment-provider.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type PublicRouteDeps = {
@@ -40,6 +43,10 @@ export type PublicRouteDeps = {
   readonly audit: AuditRepository;
   readonly trust: TrustRepository;
   readonly turbo: TurboRepository;
+  readonly payments: PaymentProvider;
+  readonly pms?: PmsConnector;
+  /** When set, inbound PMS webhook requires Bearer / X-HotelOS-Pms-Secret. */
+  readonly pmsInboundSecret?: string;
 };
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -126,8 +133,84 @@ const whatsappInboundSchema = z.object({
   hotelId: z.string().uuid().optional(),
 });
 
+const pmsInboundSchema = z.object({
+  hotelId: z.string().uuid(),
+  externalReservationId: z.string().trim().min(2).max(120),
+  guestName: z.string().trim().min(2).max(120),
+  guestEmail: z.string().email().max(200),
+  guestPhone: z.string().trim().min(6).max(40).optional(),
+  checkInDate: dateSchema,
+  checkOutDate: dateSchema,
+  roomType: z.string().trim().min(2).max(40).optional(),
+  roomNumber: z.string().trim().min(1).max(20).optional(),
+});
+
+function pmsInboundAuthorized(
+  c: { req: { header: (name: string) => string | undefined } },
+  secret: string | undefined,
+): boolean {
+  const expected = secret?.trim();
+  if (!expected) return true;
+  const bearer = c.req.header("authorization");
+  const token =
+    bearer?.toLowerCase().startsWith("bearer ")
+      ? bearer.slice(7).trim()
+      : c.req.header("x-hotelos-pms-secret")?.trim();
+  return token === expected;
+}
+
 export function createPublicRoutes(deps: PublicRouteDeps): Hono {
   const routes = new Hono();
+
+  routes.post("/pms/inbound", async (c) => {
+    try {
+      if (!pmsInboundAuthorized(c, deps.pmsInboundSecret)) {
+        return sendError(c, 401, "UNAUTHORIZED", "Invalid PMS inbound secret");
+      }
+      const body = pmsInboundSchema.parse(await c.req.json());
+      const result = await ingestPmsReservation(
+        {
+          hotels: deps.hotels,
+          rooms: deps.rooms,
+          bookings: deps.bookings,
+          audit: deps.audit,
+          turbo: deps.turbo,
+          ops: deps.ops,
+          ...(deps.guestProfiles ? { guestProfiles: deps.guestProfiles } : {}),
+          ...(deps.pms ? { pms: deps.pms } : {}),
+        },
+        {
+          hotelId: body.hotelId,
+          externalReservationId: body.externalReservationId,
+          guestName: body.guestName,
+          guestEmail: body.guestEmail,
+          ...(body.guestPhone !== undefined
+            ? { guestPhone: body.guestPhone }
+            : {}),
+          checkInDate: body.checkInDate,
+          checkOutDate: body.checkOutDate,
+          ...(body.roomType !== undefined ? { roomType: body.roomType } : {}),
+          ...(body.roomNumber !== undefined
+            ? { roomNumber: body.roomNumber }
+            : {}),
+        },
+      );
+      if (!result.ok) {
+        const status =
+          result.error.code === "HOTEL_NOT_FOUND"
+            ? 404
+            : result.error.code === "NO_AVAILABILITY"
+              ? 409
+              : result.error.code === "DUPLICATE"
+                ? 409
+                : 400;
+        return sendError(c, status, result.error.code, result.error.message);
+      }
+      return c.json({ data: result.value }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
 
   routes.post("/whatsapp/inbound", async (c) => {
     try {
@@ -139,10 +222,12 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
           bookings: deps.bookings,
           audit: deps.audit,
           trust: deps.trust,
+          payments: deps.payments,
           guestStays: deps.guestStays,
           ops: deps.ops,
           turbo: deps.turbo,
           ...(deps.guestProfiles ? { guestProfiles: deps.guestProfiles } : {}),
+          ...(deps.pms ? { pms: deps.pms } : {}),
         },
         {
           from: body.from,
@@ -191,9 +276,11 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
           bookings: deps.bookings,
           audit: deps.audit,
           trust: deps.trust,
+          payments: deps.payments,
           turbo: deps.turbo,
           ops: deps.ops,
           ...(deps.guestProfiles ? { guestProfiles: deps.guestProfiles } : {}),
+          ...(deps.pms ? { pms: deps.pms } : {}),
         },
         {
           message: body.message,
@@ -336,6 +423,7 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
           bookings: deps.bookings,
           audit: deps.audit,
           trust: deps.trust,
+          payments: deps.payments,
           ...(deps.guestProfiles ? { guestProfiles: deps.guestProfiles } : {}),
         },
         {
@@ -362,7 +450,13 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
         return sendError(c, status, result.error.code, result.error.message);
       }
       await fireAutomationTrigger(
-        { turbo: deps.turbo, ops: deps.ops },
+        {
+          turbo: deps.turbo,
+          ops: deps.ops,
+          hotels: deps.hotels,
+          ...(deps.pms ? { pms: deps.pms } : {}),
+          audit: deps.audit,
+        },
         {
           tenantId: result.value.booking.tenantId,
           hotelId: result.value.booking.hotelId,
@@ -370,6 +464,10 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
           detail: `הזמנה ${result.value.booking.id} · ${result.value.booking.guestName} · ${result.value.booking.checkInDate}`,
           bookingId: result.value.booking.id,
           guestName: result.value.booking.guestName,
+          checkInDate: result.value.booking.checkInDate,
+          checkOutDate: result.value.booking.checkOutDate,
+          roomType: body.roomType,
+          roomNumber: result.value.booking.roomNumber,
         },
       );
       return c.json(
