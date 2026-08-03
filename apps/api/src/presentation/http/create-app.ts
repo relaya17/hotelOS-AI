@@ -219,7 +219,8 @@ export function createApp(deps: ApiDependencies): Hono {
           level: "guest",
         },
       ],
-      positioning: "Hotel Intelligence Platform — AI & ops layer above existing PMS",
+      positioning:
+        "Intelligence Layer for Hotels — we don't replace your PMS, we make it smarter",
       trust: [
         "terms",
         "cookies",
@@ -244,7 +245,8 @@ export function createApp(deps: ApiDependencies): Hono {
         "department",
         "user",
       ],
-      positioning: "Hotel Intelligence Platform — AI & ops layer above existing PMS",
+      positioning:
+        "Intelligence Layer for Hotels — we don't replace your PMS, we make it smarter",
     }),
   );
 

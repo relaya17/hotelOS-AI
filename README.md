@@ -1,13 +1,22 @@
 # HotelOS AI
 
-**Hotel Intelligence Platform** — *The AI & Operations Layer for Hotels*
+**The Intelligence Layer Above Every Hotel System.**
 
-לא תחליף ל־PMS ביום הראשון. HotelOS היא **שכבת AI ותפעול** שמתחברת מעל המערכות הקיימות  
-(Opera · Protel · Fidelio · Clock PMS · Mews ועוד) — הרשת בוחרת **אילו דומיינים** לחבר בפיילוט.  
-כך יורד חסם האימוץ: בלי rip-and-replace, עם ROI מדיד (תדריכים, תקלות, ניקיון, upsell).
+> HotelOS AI is the Intelligence Layer for Hotels. We connect people, operations, finance, AI, compliance and guest experience into one unified operating system.
 
-ארבע אפליקציות פרונט + Backend משותף · Turbo OS לרשת · משימות ותובנות למלון ולאורח.  
-מיצוב מפורט + מדדי פיילוט: [`docs/planning/hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md) · [`pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md).
+מנהלים קונים **תוצאות** — לא עוד תוכנת הזמנות: פחות זמן על דוחות, חדרים מוכנים בזמן, תקלות שמטופלות, צוות מתואם בכל שפה.  
+**We don't replace your PMS. We make it smarter.** (Opera · Protel · Fidelio · Clock · Mews…) — בוחרים דומיינים לפיילוט, מודדים ROI.
+
+| כאב | תוצאה עם HotelOS |
+|-----|------------------|
+| זמן על דוחות | AI Executive Briefing |
+| מחסור בעובדים | AI HR + תרגום + אוטומציות |
+| חדרים לא מוכנים | Housekeeping AI / תיעדוף |
+| מידע מפוזר | Dashboard אחד לרשת |
+| תקלות באיחור | Alerts + Incident Center |
+| תקשורת בין מחלקות | Chat מתורגם (10 שפות) |
+
+מצגת / GTM: [`docs/planning/gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) · פיילוט: [`pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md) · טכני: [`hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md)
 
 ## האפליקציות
 
@@ -262,8 +271,9 @@ Runbooks נוספים:
 | [`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md) | libSQL/Turso |
 | [`docs/adr/0008-ai-gateway.md`](docs/adr/0008-ai-gateway.md) | AI Gateway |
 | [`docs/openapi/README.md`](docs/openapi/README.md) | OpenAPI inventory |
+| [`docs/planning/gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) | שיווק: תוצאות, OS diagram, מצגת משקיעים |
 | [`docs/planning/hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md) | מיצוב HIP + התממשקות מודולרית מעל PMS |
-| [`docs/planning/pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md) | מדדי ROI לפיילוט (תדריך −70%, תקלות, upsell…) |
+| [`docs/planning/pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md) | מדדי ROI לפיילוט (רק נתונים שנמדדו) |
 | [`docs/planning/must-have-growth.md`](docs/planning/must-have-growth.md) | Reputation · Upsell · Incidents · Revenue · Energy · Predictive Maint · Pilot ROI |
 | [`docs/planning/smart-integrations-and-hardening.md`](docs/planning/smart-integrations-and-hardening.md) | Hardening + אינטגרציות חכמות |
 | [`docs/planning/employee-hr-module.md`](docs/planning/employee-hr-module.md) | תכנון HR |
