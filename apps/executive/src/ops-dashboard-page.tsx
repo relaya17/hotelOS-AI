@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@hotelos/ui";
+import { WedgeDemoStrip } from "./wedge-demo-strip.js";
 import {
   PredictiveMaintenancePanel,
   useIntervalRefresh,
+  useOpsLiveStream,
 } from "@hotelos/features";
 import {
   APP_URLS,
@@ -23,6 +25,7 @@ import {
   type OpsDashboardHotelDto,
   type OpsForecastDto,
   type OpsKnowledgeGraphDto,
+  type OpsDashboardStreamEvent,
   type ReputationReviewDto,
 } from "@hotelos/web-client";
 
@@ -269,6 +272,21 @@ export function OpsDashboardPage() {
     }
   }, [loadBriefing, loadIncidents, loadTwin, loadForecastLive]);
 
+  const handleStreamEvent = useCallback(
+    (event: OpsDashboardStreamEvent) => {
+      if (event.type === "snapshot" || event.type === "reconnect") {
+        void refreshLiveData();
+      }
+    },
+    [refreshLiveData],
+  );
+
+  const { connected: streamConnected } = useOpsLiveStream({
+    hotelId: firstHotelId,
+    onEvent: handleStreamEvent,
+    enabled: firstHotelId !== undefined,
+  });
+
   useEffect(() => {
     void refreshLiveData();
   }, [refreshLiveData]);
@@ -276,6 +294,7 @@ export function OpsDashboardPage() {
   const { prefersReducedMotion, refreshNow } = useIntervalRefresh(
     refreshLiveData,
     REFRESH_MS,
+    { enabled: !streamConnected },
   );
 
   useEffect(() => {
@@ -418,6 +437,8 @@ export function OpsDashboardPage() {
 
   return (
     <div className="ops-dash">
+      <WedgeDemoStrip />
+
       <header className="ops-dash__header">
         <div>
           <p className="hotelos-eyebrow">מבט-על תפעולי · כל המחלקות</p>
@@ -427,6 +448,14 @@ export function OpsDashboardPage() {
           </p>
         </div>
         <div className="ops-dash__actions">
+          {firstHotelId !== undefined ? (
+            <span
+              className={`ops-dash__live-badge${streamConnected ? " ops-dash__live-badge--live" : ""}`}
+              aria-live="polite"
+            >
+              {streamConnected ? "חי" : "רענון 30ש׳"}
+            </span>
+          ) : null}
           {lastRefreshedAt ? (
             <p className="ops-dash__updated" aria-live="polite">
               עודכן{" "}
@@ -453,7 +482,7 @@ export function OpsDashboardPage() {
         </div>
       </header>
 
-      <section className="card briefing-card">
+      <section className="card briefing-card" id="briefing">
         <h2>תדריך יומי לרשת</h2>
         {briefingLoading ? <p className="state">מכין תדריך…</p> : null}
         {briefingError !== undefined ? (
@@ -754,7 +783,11 @@ export function OpsDashboardPage() {
       </section>
 
       {hotels[0]?.hotelId !== undefined ? (
-        <section className="card pm-card" aria-labelledby="pm-dash-heading">
+        <section
+          className="card pm-card"
+          id="pm-panel"
+          aria-labelledby="pm-dash-heading"
+        >
           <PredictiveMaintenancePanel hotelId={hotels[0].hotelId} />
         </section>
       ) : null}
@@ -853,6 +886,8 @@ export function OpsDashboardPage() {
         .ops-dash__header { display:flex; justify-content:space-between; gap:var(--space-4); align-items:start; }
         .ops-dash__header .hotelos-eyebrow { margin-bottom:var(--space-2); }
         .ops-dash__actions { display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-2); justify-content:flex-end; }
+        .ops-dash__live-badge { margin:0; font-size:var(--text-micro); font-weight:700; letter-spacing:.04em; text-transform:uppercase; padding:.25rem .55rem; border-radius:999px; border:1px solid var(--color-line); color:var(--color-ink-soft); background:var(--color-paper); }
+        .ops-dash__live-badge--live { border-color:var(--color-sea-deep); color:var(--color-sea-deep); background:#eef6ff; }
         .ops-dash__updated { margin:0; font-size:var(--text-small); color:var(--color-ink-soft); font-weight:500; }
         .ops-dash__pulse { width:.65rem; height:.65rem; border-radius:50%; background:var(--color-sea-deep); animation:ops-pulse 1s ease-in-out infinite; }
         @keyframes ops-pulse { 0%,100%{ opacity:.35; transform:scale(.9); } 50%{ opacity:1; transform:scale(1); } }

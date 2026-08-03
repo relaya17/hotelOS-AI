@@ -14,6 +14,7 @@ describe("meta OpenAPI routes", () => {
     assert.ok(body.paths["/v1/guests/by-email"]);
     assert.ok(body.paths["/v1/twin/hotels/{hotelId}"]);
     assert.ok(body.paths["/v1/ops/forecast"]);
+    assert.ok(body.paths["/v1/streams/ops-dashboard"]);
   });
 
   it("serves YAML from docs or embed", async () => {

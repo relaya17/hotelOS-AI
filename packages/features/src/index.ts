@@ -27,3 +27,8 @@ export {
   type UseIntervalRefreshOptions,
   type UseIntervalRefreshResult,
 } from "./use-interval-refresh.js";
+export {
+  useOpsLiveStream,
+  type UseOpsLiveStreamOptions,
+  type UseOpsLiveStreamResult,
+} from "./use-ops-live-stream.js";

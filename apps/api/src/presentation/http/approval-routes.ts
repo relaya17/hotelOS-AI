@@ -152,6 +152,12 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
           "Pending approval not found",
         );
       }
+      if (
+        approval.hotelId !== null &&
+        !canAccessHotel(principal, Ids.hotel(approval.hotelId))
+      ) {
+        return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+      }
       const gate = await buildKashrutGate(deps, approval);
       return c.json({ data: gate });
     } catch (error) {

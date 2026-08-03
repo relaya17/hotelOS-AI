@@ -384,7 +384,7 @@ function toErrorMessage(payload: unknown, fallback: string): string {
 
 let refreshInFlight: Promise<boolean> | null = null;
 
-async function tryRefreshSession(): Promise<boolean> {
+export async function tryRefreshSession(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
   refreshInFlight = (async () => {
     const refreshToken = readRefreshToken();

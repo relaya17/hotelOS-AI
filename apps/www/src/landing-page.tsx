@@ -15,6 +15,7 @@ import {
   ORG_NODES,
   OUTCOMES,
   TAGLINES,
+  WORLD_COMPARISON,
 } from "./content.js";
 
 const PILOT_MAIL =
@@ -23,6 +24,7 @@ const PILOT_MAIL =
 const NAV_LINKS = [
   { href: "#outcomes", label: "תוצאות" },
   { href: "#wedge", label: "הבידול" },
+  { href: "#compare", label: "השוואה" },
   { href: "#intelligence", label: "סוכנים" },
   { href: "#chat", label: "צ׳אט" },
   { href: "#os", label: "מערכת הפעלה" },
@@ -266,6 +268,52 @@ export function LandingPage() {
             AI שרק עונה בצ׳אט — לא מספיק. אנחנו מפעילים תהליכים, עם אישור אנושי
             על מה שקריטי.
           </p>
+        </RevealSection>
+
+        <RevealSection
+          id="compare"
+          className="section compare"
+          aria-labelledby="compare-title"
+        >
+          <p className="eyebrow">מול העולם</p>
+          <h2 id="compare-title">
+            Intelligence Layer — לא החלפת מערכות ולא צ׳אט בלבד
+          </h2>
+          <p className="section__lead">
+            השוק מציע בדרך כלל אחת משלוש: suite מלאה, כלי AI נקודתי, או דשבורד
+            שמספר אתמול. HotelOS מתחילה מ-wedge מעל ה-PMS — סוכנים, תמונה חיה
+            ופעולה עם אישור אנושי.
+          </p>
+          <div
+            className="compare-table"
+            role="table"
+            aria-label="השוואת קטגוריות מול Intelligence Layer"
+          >
+            <div className="compare-table__head" role="row">
+              <span role="columnheader">קטגוריה בשוק</span>
+              <span role="columnheader">כאב טיפוסי</span>
+              <span role="columnheader">תשובת HotelOS</span>
+            </div>
+            {WORLD_COMPARISON.map((row) => (
+              <div
+                key={row.id}
+                className={
+                  row.isHotelos
+                    ? "compare-row compare-row--hotelos"
+                    : "compare-row"
+                }
+                role="row"
+              >
+                <span role="cell" className="compare-row__category">
+                  {row.category}
+                </span>
+                <span role="cell">{row.typicalPain}</span>
+                <span role="cell" className="compare-row__answer">
+                  {row.hotelosAnswer}
+                </span>
+              </div>
+            ))}
+          </div>
         </RevealSection>
 
         <RevealSection

@@ -35,6 +35,7 @@ export function createGuestRoutes(deps: GuestRouteDeps): Hono<{
   Variables: AuthVariables;
 }> {
   const routes = new Hono<{ Variables: AuthVariables }>();
+  // Auth: JWT on every route. Hotel ACL enforced per-request via resolveHotelId.
   routes.use("*", requireAuth(deps.tokens));
 
   async function resolveHotelId(c: GuestContext): Promise<HotelIdResult> {

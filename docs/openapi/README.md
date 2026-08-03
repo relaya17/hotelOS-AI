@@ -61,6 +61,14 @@ node -e "const fs=require('fs');const yaml=require('yaml');const p='docs/openapi
 | GET | `/v1/twin/hotels/:hotelId` |
 | POST | `/v1/twin/hotels/:hotelId/pms-sync` |
 
+## Streams (SSE)
+
+| Method | Path |
+|--------|------|
+| GET | `/v1/streams/ops-dashboard?hotelId=` — Bearer only; events `snapshot`, `heartbeat`, `reconnect` |
+
+Auth: `Authorization: Bearer <accessToken>`. Long-lived SSE paths under `/v1/streams/*` use a dedicated connection-open budget (see `STREAM_RATE_LIMIT_POLICY` in `rate-limit.ts`) — not the general 120/min bucket.
+
 ## Turbo / agents / briefings
 
 | Method | Path |

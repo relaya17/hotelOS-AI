@@ -125,6 +125,7 @@ HotelOS AI חייב להיות מבודל ב:
 ### שלב 2 — חוויית משתמש
 
 - מסך Executive ברור, מהיר, מוביל לפעולות ממשיות
+- **מסלול דמו Wedge מודרך** — Briefing → Incidents → Predictive Maintenance → AI Approvals (strip בראש לוח התפעול + hash routes)
 - מסך Incident Center עם חיפוש וסינון פשוט
 - כלי תרגום staff chat / עבודת צוות רב-לשונית
 - עבודה על נגישות וביצועים

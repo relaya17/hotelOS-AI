@@ -37,6 +37,8 @@ tags:
     description: Operations, digest, forecast, tasks — see README inventory for full `/v1/ops/**`
   - name: Twin
     description: Digital twin — PMS merge and overlays
+  - name: Streams
+    description: Server-sent events for live Executive ops dashboard
   - name: Guests
     description: Staff guest 360 lookup
   - name: Autonomy
@@ -631,6 +633,43 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+
+  /v1/streams/ops-dashboard:
+    get:
+      tags: [Streams]
+      summary: Live ops dashboard SSE stream
+      operationId: getOpsDashboardStream
+      description: |
+        Server-sent events for Executive live picture. Bearer auth only
+        (`Authorization` header — never token in query string).
+
+        Events: `snapshot` (full capped payload), `heartbeat` (unchanged data),
+        `reconnect` (~12 min — refresh before JWT TTL 900s).
+
+        Rate limit: `/v1/streams/*` uses a dedicated low budget for connection
+        opens (separate from the general 120/min API bucket). Heartbeats ride
+        the open socket. Cap concurrent streams further at the app/edge layer.
+      parameters:
+        - $ref: "#/components/parameters/hotelIdQuery"
+      responses:
+        "200":
+          description: SSE stream (`text/event-stream`)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  `event: snapshot` — JSON OpsLiveSnapshot
+                  `event: heartbeat` — `{ "at": "<iso>" }`
+                  `event: reconnect` — `{ "reason": "token_ttl", "reconnectAfterMs": 1000 }`
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /v1/twin/hotels/{hotelId}:
     get:

@@ -54,6 +54,8 @@ type View =
 
 const HASH_VIEWS: Partial<Record<string, View["kind"]>> = {
   ops: "ops",
+  "ops-briefing": "ops",
+  "ops-pm": "ops",
   incidents: "incidents",
   knowledge: "knowledge",
   cio: "cio",
@@ -69,6 +71,34 @@ const HASH_VIEWS: Partial<Record<string, View["kind"]>> = {
   portfolio: "portfolio",
 };
 
+const OPS_SCROLL_TARGETS: Partial<Record<string, string>> = {
+  "ops-briefing": "briefing",
+  "ops-pm": "pm-panel",
+};
+
+function parseLocationHash(): { kind: View["kind"]; scrollTarget?: string } {
+  const raw = window.location.hash.slice(1);
+  if (!raw) {
+    return { kind: "portfolio" };
+  }
+  const kind = HASH_VIEWS[raw];
+  if (kind && kind !== "meet") {
+    const scrollTarget = OPS_SCROLL_TARGETS[raw];
+    if (scrollTarget) {
+      return { kind, scrollTarget };
+    }
+    return { kind };
+  }
+  return { kind: "portfolio" };
+}
+
+function navigateToView(kind: View["kind"]): void {
+  const nextHash = `#${kind}`;
+  if (window.location.hash !== nextHash) {
+    window.location.hash = kind;
+  }
+}
+
 const LOCALE_KEY = "hotelos.locale";
 
 function readLocale(): LocaleCode {
@@ -81,6 +111,7 @@ function readLocale(): LocaleCode {
 
 export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
   const [view, setView] = useState<View>({ kind: "portfolio" });
+  const [opsScrollTarget, setOpsScrollTarget] = useState<string | undefined>();
   const [locale, setLocale] = useState<LocaleCode>(readLocale);
 
   useEffect(() => {
@@ -96,10 +127,9 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
 
   useEffect(() => {
     function applyHash() {
-      const kind = HASH_VIEWS[window.location.hash.slice(1)];
-      if (kind && kind !== "meet") {
-        setView({ kind });
-      }
+      const parsed = parseLocationHash();
+      setView({ kind: parsed.kind } as View);
+      setOpsScrollTarget(parsed.scrollTarget);
     }
     applyHash();
     window.addEventListener("hashchange", applyHash);
@@ -107,6 +137,18 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
       window.removeEventListener("hashchange", applyHash);
     };
   }, []);
+
+  useEffect(() => {
+    if (view.kind !== "ops" || !opsScrollTarget) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      document.getElementById(opsScrollTarget)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [view.kind, opsScrollTarget]);
 
   const navItems = [
     ["portfolio", tUi(locale, "nav.portfolio")],
@@ -184,7 +226,10 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
                     ? "hotelos-seg__item hotelos-seg__item--on hotelos-touch-target"
                     : "hotelos-seg__item hotelos-touch-target"
                 }
-                onClick={() => setView({ kind })}
+                onClick={() => {
+                  setView({ kind });
+                  navigateToView(kind);
+                }}
               >
                 {label}
               </button>

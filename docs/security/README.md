@@ -8,11 +8,12 @@
 - JWT access + refresh; logout revoke
 - Tenant isolation on repositories
 - Security headers middleware
-- Rate limiting (`rate-limit.ts`)
+- Rate limiting (`rate-limit.ts`) — includes dedicated AI and stream buckets
 - Cookie consent + legal docs
 - WebAuthn / Google OAuth (config-gated)
 - Audit events on critical writes
 - Agent least privilege (catalog autonomy modes)
+- Guest/approval surfaces: `requireAuth` + hotel ACL; see [live-stream-threat-model.md](./live-stream-threat-model.md)
 
 ## Secrets
 

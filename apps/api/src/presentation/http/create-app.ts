@@ -82,6 +82,10 @@ import {
   type TwinRouteDeps,
 } from "./twin-routes.js";
 import {
+  createStreamRoutes,
+  type StreamRouteDeps,
+} from "./stream-routes.js";
+import {
   createCronRoutes,
   type CronRouteDeps,
 } from "./cron-routes.js";
@@ -133,6 +137,7 @@ export type ApiDependencies = {
   readonly autonomy: AutonomyRouteDeps;
   readonly guests: GuestRouteDeps;
   readonly twin: TwinRouteDeps;
+  readonly streams: StreamRouteDeps;
   readonly cron: CronRouteDeps;
   readonly simulator: SimulatorRouteDeps;
   readonly integrations: IntegrationRouteDeps;
@@ -172,7 +177,7 @@ export function createApp(deps: ApiDependencies): Hono {
       },
       allowHeaders: [
         "Content-Type",
-        "Authorization",
+        "Authorization", // required for JWT on REST + future SSE/live-stream reconnect
         "X-Correlation-Id",
         "X-Tenant-Id",
         "X-HotelOS-Tenant",
@@ -285,6 +290,7 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/hr", createHrRoutes(deps.hr));
   app.route("/v1/correspondence", createCorrespondenceRoutes(deps.correspondence));
   app.route("/v1/twin", createTwinRoutes(deps.twin));
+  app.route("/v1/streams", createStreamRoutes(deps.streams));
   app.route("/v1/integrations", createIntegrationRoutes(deps.integrations));
   app.route("/v1/cron", createCronRoutes(deps.cron));
   app.route("/v1/simulator", createSimulatorRoutes(deps.simulator));

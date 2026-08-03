@@ -11,6 +11,8 @@ export type IntegrationRouteDeps = {
 /**
  * Read-only integration catalog — domains from INTEGRATION_DOMAINS plus live
  * connector hints from server env (no secret writes / fake install).
+ * Auth: requireAuth (tenant-scoped JWT). Hotel ACL not required — catalog is
+ * tenant-wide metadata with no hotel-specific secrets.
  */
 export function createIntegrationRoutes(deps: IntegrationRouteDeps): Hono<{
   Variables: AuthVariables;

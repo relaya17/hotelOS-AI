@@ -48,7 +48,7 @@
 
 | יכולת | מצב בקוד / תכנון | פעולת GTM |
 |--------|------------------|-----------|
-| Digital Twin | ✅ overlays + רענון 30ש׳ בדשבורד Executive | SSE מלא בשלב הבא |
+| Digital Twin | ✅ overlays + **SSE חי** (`GET /v1/streams/ops-dashboard`) + fallback 30ש׳ | concurrent stream caps בענן |
 | Predictive Maintenance | MVP + Twin overlay + Incident summary בדשבורד | דומיין פיילוט ברור |
 | Revenue Optimization | ✅ HITL + forecast + simulator + לוח עונות/אירועים | תמיד עם HITL — אמון CFO |
 | Guest 360 | ✅ API + קליק הגעה בקבלה + שהיות ברשת + משוב | נאמנות/נקודות — roadmap |
@@ -70,7 +70,41 @@
 5. חוסר תובנות חוצות־רשת  
 6. קושי בשפות / צוותים רב־לשוניים  
 
-**ההיפך שלנו (מסר):** AI שמפעיל תהליך (Suggest→Approve→Act) · תמונה אחת לרשת · צ׳אט מתורגם · לא מחליפים PMS.
+**ההיפך שלנו (מסר):** AI שמפעיל תהליך (Suggest→Approve→Act) · תמונה אחידה לרשת · צ׳אט מתורגם · לא מחליפים PMS.
+
+---
+
+## טבלת השוואת קטגוריות
+
+מראה את אותה טבלה שבדף הנחיתה (`#compare` ב־`apps/www`) — בלי שמות ספקים, עם מסר wedge ישיר.
+
+| קטגוריה בשוק | כאב טיפוסי | תשובת HotelOS |
+|--------------|------------|---------------|
+| PMS / suite מלאה | פרויקט החלפה ארוך, התנגדות צוות, ועדיין בלי סוכנים שמפעילים תהליכים | מחברים את ה-PMS הקיים — Intelligence Layer מעל, לא rip-and-replace |
+| כלי AI נקודתי / צ׳אטבוט | עונה על שאלות — לא יוצר משימות, לא מאחד מערכות, בלי אישור אנושי | סוכנים + Suggest → Approve → Act על תדריך, תקלות ותחזוקה |
+| דשבורד BI בלבד | מראה אתמול — לא מציע פעולה; עוד מסך לנתח ידנית | תמונה חיה + תחזית + אוטומציות עם HITL — לא רק גרפים |
+| אפליקציית עובדים מבודדת | צ׳אט פנימי בלי PMS, תחזוקה או כספים — עוד silo במקום תמונה אחת | צ׳אט מתורגם + משימות על אותם אותות מהשכבה — Work Copilot לפי תפקיד |
+| **HotelOS Intelligence Layer** | דורש אינטגרציות אמינות — לא קסם ביום אחד; מתחילים מ-wedge מצומצם | פיילוט: תדריך מנכ״ל + תקלות + תחזוקה חזויה — land & expand אחרי הוכחה |
+
+**Digital Twin / SSE:** `GET /v1/streams/ops-dashboard` עם Bearer + ACL מלון/דייר, budget נפרד לחיבורים, ומעבר אוטומטי ל־polling אם הזרם נופל. ראו [`docs/security/live-stream-threat-model.md`](../security/live-stream-threat-model.md).
+
+### זרימת ערך (מסגרת, לא ROI)
+
+```mermaid
+flowchart LR
+  subgraph sources["מקורות היום"]
+    Excel["Excel / WhatsApp"]
+    PMS["PMS"]
+  end
+  IL["Intelligence Layer"]
+  Twin["Digital Twin · תחזית"]
+  HITL["Suggest → Approve → Act"]
+
+  Excel --> PMS
+  PMS --> IL
+  IL --> Twin
+  IL --> HITL
+```
 
 ---
 

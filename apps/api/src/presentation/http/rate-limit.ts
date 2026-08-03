@@ -31,6 +31,18 @@ export const AI_RATE_LIMIT_POLICY: SlidingWindowPolicy = {
   windowMs: 60_000,
 };
 
+/**
+ * Live ops SSE (`GET /v1/streams/*`) — separate low budget for *connection opens*
+ * (heartbeats ride the open socket and do not re-enter this middleware).
+ * Cap concurrent streams further at the edge/app layer when scaling.
+ */
+export const STREAM_RATE_LIMIT_POLICY: SlidingWindowPolicy = {
+  limit: 10,
+  windowMs: 60_000,
+};
+
+export const SSE_STREAM_PATH_PREFIX = "/v1/streams/";
+
 export type RateLimitOptions = {
   readonly tokens: JwtTokenService;
   readonly now?: () => number;
@@ -126,6 +138,9 @@ export function selectRateLimitPolicy(pathname: string): SlidingWindowPolicy {
   if (pathname.startsWith("/v1/ai/")) {
     return AI_RATE_LIMIT_POLICY;
   }
+  if (pathname.startsWith(SSE_STREAM_PATH_PREFIX)) {
+    return STREAM_RATE_LIMIT_POLICY;
+  }
   if (
     pathname === "/v1/auth/login" ||
     pathname.startsWith("/v1/public/stays/")
@@ -135,7 +150,7 @@ export function selectRateLimitPolicy(pathname: string): SlidingWindowPolicy {
   return DEFAULT_RATE_LIMIT_POLICY;
 }
 
-/** AI calls use a separate bucket so they do not share the general API quota. */
+/** AI/stream calls use separate buckets so they do not share the general API quota. */
 export function rateLimitBucketKey(
   pathname: string,
   ip: string,
@@ -144,6 +159,9 @@ export function rateLimitBucketKey(
   const tenant = tenantId ?? "anonymous";
   if (pathname.startsWith("/v1/ai/")) {
     return `ai:${ip}:${tenant}`;
+  }
+  if (pathname.startsWith(SSE_STREAM_PATH_PREFIX)) {
+    return `stream:${ip}:${tenant}`;
   }
   return `${ip}:${tenant}`;
 }

@@ -412,6 +412,18 @@ export async function composeApp() {
       energy,
       pms,
     },
+    streams: {
+      tokens,
+      hotels,
+      ops,
+      maintenance,
+      equipment,
+      energy,
+      overview,
+      bookings,
+      procurement,
+      feedback,
+    },
     cron: {
       cronSecret: env.CRON_SECRET,
       cioDaily: {

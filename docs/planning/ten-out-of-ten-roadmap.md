@@ -152,6 +152,7 @@
 ### שיווק/הצגה
 - [x] המצגת מדברת על בעיה אחת, לא "כל המערכת" — hero + outcomes מובילים ב־wedge
 - [ ] יש דוגמה תפעולית אחת ברורה — chat demo + CEO bars; חסר walkthrough end-to-end אחד
+- [x] יש מסלול דמו Wedge מודרך ב-Executive — Briefing → Incidents → PM → Approvals (`wedge-demo-strip.tsx`, hash `#ops-briefing` / `#incidents` / `#ops-pm` / `#approvals`)
 - [x] יש מדדי הצלחה כמותיים — Pilot ROI Scorecard + FAQ פיילוט
 - [x] יש מסר ברור: לא מחליפים PMS, אלא מחברים ומשפרים — taglines + wedge + FAQ
 

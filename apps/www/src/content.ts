@@ -13,6 +13,14 @@ export type Capability = {
   readonly proof: string;
 };
 
+export type WorldComparisonRow = {
+  readonly id: string;
+  readonly category: string;
+  readonly typicalPain: string;
+  readonly hotelosAnswer: string;
+  readonly isHotelos?: boolean;
+};
+
 export const OUTCOMES: readonly OutcomeRow[] = [
   {
     id: "briefing",
@@ -62,6 +70,50 @@ export const OUTCOMES: readonly OutcomeRow[] = [
     cost: "טעויות, עיכובים ואובדן הקשר",
     outcome: "צ׳אט: כותבים בשפתכם — הצד השני מקבל בשפתו",
     href: "#chat",
+  },
+] as const;
+
+/** Category comparison vs typical market approaches — no vendor names. */
+export const WORLD_COMPARISON: readonly WorldComparisonRow[] = [
+  {
+    id: "pms-suite",
+    category: "PMS / suite מלאה",
+    typicalPain:
+      "פרויקט החלפה ארוך, התנגדות צוות, ועדיין בלי סוכנים שמפעילים תהליכים",
+    hotelosAnswer:
+      "מחברים את ה-PMS הקיים — Intelligence Layer מעל, לא rip-and-replace",
+  },
+  {
+    id: "point-ai",
+    category: "כלי AI נקודתי / צ׳אטבוט",
+    typicalPain:
+      "עונה על שאלות — לא יוצר משימות, לא מאחד מערכות, בלי אישור אנושי",
+    hotelosAnswer:
+      "סוכנים + Suggest → Approve → Act על תדריך, תקלות ותחזוקה",
+  },
+  {
+    id: "bi-only",
+    category: "דשבורד BI בלבד",
+    typicalPain: "מראה אתמול — לא מציע פעולה; עוד מסך לנתח ידנית",
+    hotelosAnswer:
+      "תמונה חיה + תחזית + אוטומציות עם HITL — לא רק גרפים",
+  },
+  {
+    id: "staff-app",
+    category: "אפליקציית עובדים מבודדת",
+    typicalPain:
+      "צ׳אט פנימי בלי PMS, תחזוקה או כספים — עוד silo במקום תמונה אחת",
+    hotelosAnswer:
+      "צ׳אט מתורגם + משימות על אותם אותות מהשכבה — Work Copilot לפי תפקיד",
+  },
+  {
+    id: "hotelos",
+    category: "HotelOS Intelligence Layer",
+    typicalPain:
+      "דורש אינטגרציות אמינות — לא קסם ביום אחד; מתחילים מ-wedge מצומצם",
+    hotelosAnswer:
+      "פיילוט: תדריך מנכ״ל + תקלות + תחזוקה חזויה — land & expand אחרי הוכחה",
+    isHotelos: true,
   },
 ] as const;
 
