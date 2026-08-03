@@ -69,4 +69,12 @@ describe("mergeHotelTwin", () => {
       assert.ok(inventory.rooms.length >= 2);
     }
   });
+
+  it("preserves HotelOS floor on merged rooms", () => {
+    const twin = mergeHotelTwin({
+      hotelId: "h1",
+      hotelosRooms: [{ roomNumber: "201", status: "occupied", floor: "2" }],
+    });
+    assert.equal(twin.rooms[0]?.floor, "2");
+  });
 });

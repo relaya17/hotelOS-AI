@@ -48,7 +48,7 @@
 
 | יכולת | מצב בקוד / תכנון | פעולת GTM |
 |--------|------------------|-----------|
-| Digital Twin | ✅ overlays + **ציוד חי** (HVAC / מעליות / מים·דודים) + **SSE חי** (`GET /v1/streams/ops-dashboard`) + fallback 30ש׳ | concurrent stream caps בענן |
+| Digital Twin | ✅ Twin Visual 2.5D (קומות+חדרים חיים) + ציוד HVAC/מעליות/מים + SSE | 3D מלא — רק אחרי פיילוט |
 | Predictive Maintenance | MVP + Twin overlay + Incident summary בדשבורד | דומיין פיילוט ברור |
 | Revenue Optimization | ✅ HITL + forecast + simulator + לוח עונות/אירועים | תמיד עם HITL — אמון CFO |
 | Guest 360 | ✅ API + קליק הגעה בקבלה + שהיות ברשת + משוב | נאמנות/נקודות — roadmap |

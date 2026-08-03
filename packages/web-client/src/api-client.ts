@@ -4055,6 +4055,7 @@ export type HotelTwinDto = {
     readonly roomNumber: string;
     readonly status: string;
     readonly source: string;
+    readonly floor?: string;
   }[];
   readonly pms?: {
     readonly providerId: string;

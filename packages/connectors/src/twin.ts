@@ -9,6 +9,8 @@ export type TwinRoomNode = {
   readonly status: PmsRoomStatus;
   readonly source: "hotelos" | "pms" | "merged";
   readonly externalRoomId?: string;
+  /** HotelOS floor label when known (e.g. "1", "2"). */
+  readonly floor?: string;
 };
 
 export type TwinReservationSummary = {
@@ -37,6 +39,7 @@ export function mergeHotelTwin(input: {
   readonly hotelosRooms: readonly {
     readonly roomNumber: string;
     readonly status: string;
+    readonly floor?: string;
   }[];
   readonly pms?: PmsHotelInventory;
 }): HotelTwinSnapshot {
@@ -47,6 +50,9 @@ export function mergeHotelTwin(input: {
       roomNumber: room.roomNumber,
       status: asStatus(room.status),
       source: "hotelos",
+      ...(room.floor !== undefined && room.floor.trim() !== ""
+        ? { floor: room.floor.trim() }
+        : {}),
     });
   }
 
@@ -67,6 +73,7 @@ export function mergeHotelTwin(input: {
         status: room.status === "unknown" ? existing.status : room.status,
         source: "merged",
         externalRoomId: room.externalRoomId,
+        ...(existing.floor !== undefined ? { floor: existing.floor } : {}),
       });
     }
   }

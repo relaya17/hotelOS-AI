@@ -275,6 +275,7 @@ Runbooks נוספים:
 | [`docs/openapi/README.md`](docs/openapi/README.md) | OpenAPI spec + inventory · live at `/v1/meta/openapi.yaml` |
 | [`docs/planning/gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) | שיווק: תוצאות, OS diagram, מצגת משקיעים |
 | [`docs/planning/competitive-wedge.md`](docs/planning/competitive-wedge.md) | מיצוב תחרותי: חוזקות, פערים, סדר land & expand |
+| [`docs/planning/twin-visual-stage-a.md`](docs/planning/twin-visual-stage-a.md) | Twin Visual 2.5D — שלב א׳ מעל Digital Twin החי |
 | [`docs/planning/hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md) | מיצוב HIP + התממשקות מודולרית מעל PMS |
 | [`docs/planning/pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md) | מדדי ROI לפיילוט (רק נתונים שנמדדו) |
 | [`docs/planning/must-have-growth.md`](docs/planning/must-have-growth.md) | Reputation · Upsell · Incidents · Revenue · Energy · Predictive Maint · Pilot ROI |

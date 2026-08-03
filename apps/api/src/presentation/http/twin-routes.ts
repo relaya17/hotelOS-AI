@@ -59,6 +59,7 @@ export function createTwinRoutes(deps: TwinRouteDeps): Hono<{
         hotelosRooms: hotelosRooms.map((room) => ({
           roomNumber: room.number,
           status: room.status,
+          floor: room.floor,
         })),
         ...(inventory !== undefined ? { pms: inventory } : {}),
       });
@@ -103,6 +104,7 @@ export function createTwinRoutes(deps: TwinRouteDeps): Hono<{
         hotelosRooms: hotelosRooms.map((room) => ({
           roomNumber: room.number,
           status: room.status,
+          floor: room.floor,
         })),
         pms: inventory,
       });

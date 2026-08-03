@@ -93,8 +93,14 @@ export async function seedDemoTenant(
   await ensureDemoRooms(db, DEMO_HOTEL_TLV_ID, now, [
     { id: "70000000-0000-4000-8000-000000000101", number: "101", floor: "1", roomType: "standard", status: "vacant" },
     { id: "70000000-0000-4000-8000-000000000102", number: "102", floor: "1", roomType: "standard", status: "dirty" },
+    { id: "70000000-0000-4000-8000-000000000103", number: "103", floor: "1", roomType: "standard", status: "vacant" },
+    { id: "70000000-0000-4000-8000-000000000104", number: "104", floor: "1", roomType: "deluxe", status: "occupied" },
     { id: "70000000-0000-4000-8000-000000000201", number: "201", floor: "2", roomType: "suite", status: "occupied" },
+    { id: "70000000-0000-4000-8000-000000000202", number: "202", floor: "2", roomType: "standard", status: "vacant" },
+    { id: "70000000-0000-4000-8000-000000000203", number: "203", floor: "2", roomType: "standard", status: "dirty" },
     { id: "70000000-0000-4000-8000-000000000301", number: "301", floor: "3", roomType: "deluxe", status: "maintenance" },
+    { id: "70000000-0000-4000-8000-000000000302", number: "302", floor: "3", roomType: "standard", status: "vacant" },
+    { id: "70000000-0000-4000-8000-000000000303", number: "303", floor: "3", roomType: "suite", status: "occupied" },
   ]);
 
   await ensureDemoRooms(db, DEMO_HOTEL_EILAT_ID, now, [
@@ -482,7 +488,7 @@ async function ensureDemoEquipment(db: HotelOsDb, now: string): Promise<void> {
     code: "HVAC-LOBBY",
     nameHe: "מיזוג לובי",
     category: "hvac",
-    locationHe: "לובי קומת כניסה",
+    locationHe: "לובי · קומה 1 · ליד חדר 101",
     createdAt: now,
   });
   await equipment.createAsset({
@@ -492,7 +498,7 @@ async function ensureDemoEquipment(db: HotelOsDb, now: string): Promise<void> {
     code: "ELV-A",
     nameHe: "מעלית A",
     category: "elevator",
-    locationHe: "בית מדרגות מרכזי",
+    locationHe: "בית מדרגות מרכזי · קומות 1–3",
     createdAt: now,
   });
   await equipment.createAsset({
@@ -502,7 +508,7 @@ async function ensureDemoEquipment(db: HotelOsDb, now: string): Promise<void> {
     code: "BOILER-1",
     nameHe: "דוד מים ראשי",
     category: "boiler",
-    locationHe: "חדר מכונות קומה -1",
+    locationHe: "חדר מכונות · משרת קומה 3 / חדר 301",
     createdAt: now,
   });
 

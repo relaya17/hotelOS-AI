@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@hotelos/ui";
+import { TwinVisual, useIntervalRefresh } from "@hotelos/features";
 import {
   fetchHotelTwin,
   syncHotelTwinPms,
@@ -167,6 +168,10 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
     void reload();
   }, [hotelId]);
 
+  useIntervalRefresh(() => {
+    void reload();
+  }, 30_000);
+
   async function onSync() {
     setError(undefined);
     try {
@@ -207,6 +212,7 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
               ? ` · שכבות ${overlays.generatedAt.slice(0, 19)}`
               : ""}
           </p>
+          <TwinVisual twin={twin} />
           <EquipmentSection equipment={equipment} />
           <div className="twin-overlays">
             <OverlaySection
@@ -247,13 +253,6 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
               }
             />
           </div>
-          <ul>
-            {twin.rooms.map((room) => (
-              <li key={room.roomNumber}>
-                חדר {room.roomNumber} · {room.status} · {room.source}
-              </li>
-            ))}
-          </ul>
           {reservations.length > 0 ? (
             <>
               <h3>הזמנות PMS אחרונות</h3>
