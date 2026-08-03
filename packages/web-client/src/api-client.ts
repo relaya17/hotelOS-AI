@@ -1844,6 +1844,15 @@ async function authPatch(path: string, body: unknown): Promise<unknown> {
   return payload;
 }
 
+async function authPut(path: string, body: unknown): Promise<unknown> {
+  const { payload } = await authedFetch(path, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return payload;
+}
+
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type TaskStatus = "open" | "in_progress" | "blocked" | "done" | "cancelled";
 
@@ -4061,6 +4070,29 @@ export type HotelTwinDto = {
     }[];
   };
   readonly overlays?: HotelTwinOverlaysDto;
+  readonly equipment: readonly TwinEquipmentNodeDto[];
+};
+
+export type TwinEquipmentNodeDto = {
+  readonly assetId: string;
+  readonly assetCode: string;
+  readonly nameHe: string;
+  readonly category: "hvac" | "elevator" | "boiler" | "other";
+  readonly locationHe: string;
+  readonly health: "critical" | "warning" | "ok";
+  readonly openPrediction?: {
+    readonly id: string;
+    readonly riskScore: number;
+    readonly rationaleHe: string;
+    readonly status: string;
+  };
+  readonly latestSignals: readonly {
+    readonly id: string;
+    readonly signalType: string;
+    readonly valueNum: number | null;
+    readonly valueText: string | null;
+    readonly recordedAt: string;
+  }[];
 };
 
 export type HotelTwinOverlayItemDto = {
@@ -4071,6 +4103,8 @@ export type HotelTwinOverlayItemDto = {
   readonly riskScore?: number;
   readonly estimatedSavingPct?: number;
   readonly status?: string;
+  readonly assetId?: string;
+  readonly assetCode?: string;
 };
 
 export type HotelTwinOverlaySummaryDto = {
@@ -4078,11 +4112,29 @@ export type HotelTwinOverlaySummaryDto = {
   readonly topItems: readonly HotelTwinOverlayItemDto[];
 };
 
+export type HotelTwinEquipmentSummaryDto = {
+  readonly count: number;
+  readonly byCategory: Readonly<
+    Record<"hvac" | "elevator" | "boiler" | "other", number>
+  >;
+  readonly criticalCount: number;
+  readonly warningCount: number;
+  readonly topItems: readonly {
+    readonly assetId: string;
+    readonly assetCode: string;
+    readonly nameHe: string;
+    readonly category: "hvac" | "elevator" | "boiler" | "other";
+    readonly health: "critical" | "warning" | "ok";
+    readonly riskScore?: number;
+  }[];
+};
+
 export type HotelTwinOverlaysDto = {
   readonly generatedAt: string;
   readonly openIncidents: HotelTwinOverlaySummaryDto;
   readonly predictiveAlerts: HotelTwinOverlaySummaryDto;
   readonly energyHints: HotelTwinOverlaySummaryDto;
+  readonly equipmentSummary: HotelTwinEquipmentSummaryDto;
 };
 
 export async function fetchHotelTwin(hotelId: string): Promise<HotelTwinDto> {
@@ -4124,11 +4176,30 @@ export type IntegrationsCatalogDto = {
     readonly mewsConfigured?: boolean;
     readonly pmsLiveReady?: boolean;
   };
+  readonly enabledForHotel?: readonly string[];
 };
 
-export async function fetchIntegrationsCatalog(): Promise<IntegrationsCatalogDto> {
-  const payload = (await authGet("/v1/integrations/catalog")) as {
+export async function fetchIntegrationsCatalog(
+  hotelId?: string,
+): Promise<IntegrationsCatalogDto> {
+  const path =
+    hotelId !== undefined
+      ? `/v1/integrations/catalog?hotelId=${encodeURIComponent(hotelId)}`
+      : "/v1/integrations/catalog";
+  const payload = (await authGet(path)) as {
     data: IntegrationsCatalogDto;
+  };
+  return payload.data;
+}
+
+export async function putHotelIntegrationDomains(
+  hotelId: string,
+  enabled: readonly string[],
+): Promise<{ readonly hotelId: string; readonly enabled: readonly string[] }> {
+  const payload = (await authPut(`/v1/integrations/hotels/${hotelId}/domains`, {
+    enabled,
+  })) as {
+    data: { hotelId: string; enabled: readonly string[] };
   };
   return payload.data;
 }

@@ -66,6 +66,8 @@ function createDeps(): Parameters<typeof buildOpsLiveSnapshot>[0] {
     } as unknown as MaintenanceRepository,
     equipment: {
       listOpenPredictionsByHotel: async () => [],
+      listAssetsByHotel: async () => [],
+      listSignalsByAsset: async () => [],
     } as unknown as EquipmentRepository,
     energy: {
       listSuggestionsByHotel: async () => [],

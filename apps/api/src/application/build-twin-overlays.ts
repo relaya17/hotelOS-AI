@@ -7,6 +7,11 @@ import type {
 } from "@hotelos/database";
 import type { HotelId, TenantId } from "@hotelos/shared";
 import { buildIncidentCenter } from "./build-incident-center.js";
+import {
+  buildTwinEquipment,
+  buildTwinEquipmentSummary,
+  type TwinEquipmentSummary,
+} from "./build-twin-equipment.js";
 
 export const TWIN_OVERLAY_TOP_ITEMS = 5;
 
@@ -18,6 +23,8 @@ export type TwinOverlayItem = {
   readonly riskScore?: number;
   readonly estimatedSavingPct?: number;
   readonly status?: string;
+  readonly assetId?: string;
+  readonly assetCode?: string;
 };
 
 export type TwinOverlaySummary = {
@@ -30,6 +37,7 @@ export type HotelTwinOverlays = {
   readonly openIncidents: TwinOverlaySummary;
   readonly predictiveAlerts: TwinOverlaySummary;
   readonly energyHints: TwinOverlaySummary;
+  readonly equipmentSummary: TwinEquipmentSummary;
 };
 
 export type BuildTwinOverlaysDeps = {
@@ -60,19 +68,25 @@ export async function buildTwinOverlays(
   tenantId: TenantId,
   hotelId: HotelId,
 ): Promise<HotelTwinOverlays> {
-  const [incidentCenter, predictions, energySuggestions] = await Promise.all([
-    buildIncidentCenter(
-      {
-        ops: deps.ops,
-        maintenance: deps.maintenance,
-        hotels: deps.hotels,
-      },
-      tenantId,
-      [hotelId],
-    ),
-    deps.equipment.listOpenPredictionsByHotel(tenantId, hotelId),
-    deps.energy.listSuggestionsByHotel(tenantId, hotelId, "suggested"),
-  ]);
+  const [incidentCenter, predictions, energySuggestions, twinEquipment] =
+    await Promise.all([
+      buildIncidentCenter(
+        {
+          ops: deps.ops,
+          maintenance: deps.maintenance,
+          hotels: deps.hotels,
+        },
+        tenantId,
+        [hotelId],
+      ),
+      deps.equipment.listOpenPredictionsByHotel(tenantId, hotelId),
+      deps.energy.listSuggestionsByHotel(tenantId, hotelId, "suggested"),
+      buildTwinEquipment({ equipment: deps.equipment }, tenantId, hotelId),
+    ]);
+
+  const assetCodeById = new Map(
+    twinEquipment.assets.map((asset) => [asset.assetId, asset.assetCode]),
+  );
 
   const sortedPredictions = [...predictions].sort(
     (a, b) =>
@@ -107,6 +121,10 @@ export async function buildTwinOverlays(
         title: prediction.rationaleHe,
         riskScore: prediction.riskScore,
         status: prediction.status,
+        assetId: prediction.assetId,
+        ...(assetCodeById.has(prediction.assetId)
+          ? { assetCode: assetCodeById.get(prediction.assetId)! }
+          : {}),
       }),
     ),
     energyHints: topItems(
@@ -119,5 +137,6 @@ export async function buildTwinOverlays(
         status: suggestion.status,
       }),
     ),
+    equipmentSummary: buildTwinEquipmentSummary(twinEquipment.assets),
   };
 }

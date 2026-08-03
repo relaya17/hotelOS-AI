@@ -28,6 +28,7 @@ const demoHotel: PersistedHotel = {
   timezone: "Asia/Jerusalem",
   currency: "ILS",
   kashrutEnabled: false,
+  enabledIntegrationDomains: [],
 };
 
 function hotelsOk(): HotelRepository {

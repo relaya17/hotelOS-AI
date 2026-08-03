@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { Button } from "@hotelos/ui";
 import {
   fetchHotelTwin,
   fetchIntegrationsCatalog,
+  putHotelIntegrationDomains,
   type IntegrationDomainDto,
   type IntegrationDomainStatus,
   type IntegrationsCatalogDto,
@@ -23,16 +25,41 @@ function statusBadgeClass(status: IntegrationDomainStatus): string {
   return "badge badge--mvp";
 }
 
-function DomainCard({ domain }: { readonly domain: IntegrationDomainDto }) {
+function DomainCard({
+  domain,
+  enabled,
+  locked,
+  onToggle,
+}: {
+  readonly domain: IntegrationDomainDto;
+  readonly enabled: boolean;
+  readonly locked: boolean;
+  readonly onToggle: (domainId: string, next: boolean) => void;
+}) {
   return (
-    <article className="integration-card">
+    <article
+      className={`integration-card${locked ? " integration-card--locked" : ""}`}
+    >
       <header className="integration-card__header">
-        <h3>{domain.titleHe}</h3>
+        <label className="integration-card__toggle">
+          <input
+            type="checkbox"
+            checked={enabled}
+            disabled={locked}
+            onChange={(event) => onToggle(domain.id, event.target.checked)}
+          />
+          <h3>{domain.titleHe}</h3>
+        </label>
         <span className={statusBadgeClass(domain.status)}>
-          {STATUS_LABELS[domain.status]}
+          {locked ? "נעול" : STATUS_LABELS[domain.status]}
         </span>
       </header>
       <p className="integration-card__id">{domain.id}</p>
+      {locked ? (
+        <p className="integration-card__lock-note">
+          דומיין דחוי — לא ניתן להפעלה בפיילוט.
+        </p>
+      ) : null}
       <ul className="integration-card__examples">
         {domain.examples.map((example) => (
           <li key={example}>{example}</li>
@@ -46,8 +73,11 @@ export function IntegrationsMarketplacePanel({
   hotelId,
 }: IntegrationsMarketplacePanelProps) {
   const [catalog, setCatalog] = useState<IntegrationsCatalogDto | null>(null);
+  const [enabledIds, setEnabledIds] = useState<readonly string[]>([]);
   const [twinPmsProvider, setTwinPmsProvider] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savedNote, setSavedNote] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
@@ -55,13 +85,15 @@ export function IntegrationsMarketplacePanel({
     async function load() {
       setLoading(true);
       setError(undefined);
+      setSavedNote(undefined);
       try {
         const [catalogData, twin] = await Promise.all([
-          fetchIntegrationsCatalog(),
+          fetchIntegrationsCatalog(hotelId),
           fetchHotelTwin(hotelId).catch(() => null),
         ]);
         if (cancelled) return;
         setCatalog(catalogData);
+        setEnabledIds(catalogData.enabledForHotel ?? []);
         setTwinPmsProvider(twin?.pms?.providerId);
       } catch (loadError) {
         if (!cancelled) {
@@ -79,6 +111,30 @@ export function IntegrationsMarketplacePanel({
     };
   }, [hotelId]);
 
+  function onToggle(domainId: string, next: boolean) {
+    setSavedNote(undefined);
+    setEnabledIds((current) =>
+      next
+        ? [...new Set([...current, domainId])]
+        : current.filter((id) => id !== domainId),
+    );
+  }
+
+  async function onSave() {
+    setSaving(true);
+    setError(undefined);
+    setSavedNote(undefined);
+    try {
+      const result = await putHotelIntegrationDomains(hotelId, enabledIds);
+      setEnabledIds(result.enabled);
+      setSavedNote("העדפות דומיינים נשמרו.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "שמירה נכשלה");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading) return <p>טוען קטלוג אינטגרציות…</p>;
 
   const envPms = catalog?.live.pmsProvider;
@@ -88,14 +144,21 @@ export function IntegrationsMarketplacePanel({
     <section className="integrations-marketplace">
       <h2>שוק אינטגרציות · קטלוג מודולים</h2>
       <p className="muted">
-        קטלוג קריאה בלבד — בוחרים דומיינים לפיילוט; אין התקנה מזויפת או שמירת
-        סודות מהממשק. חיבור live = קונפיגורציה / פרויקט ספק.
+        בוחרים דומיינים לפיילוט — העדפה בלבד, ללא שמירת סודות או התקנה מזויפת.
+        חיבור live = קונפיגורציה / פרויקט ספק.
       </p>
       {error ? (
         <p className="error" role="alert">
           {error}
         </p>
       ) : null}
+      {savedNote ? <p className="hint">{savedNote}</p> : null}
+
+      <div className="integrations-marketplace__actions">
+        <Button type="button" disabled={saving} onClick={() => void onSave()}>
+          {saving ? "שומר…" : "שמירת העדפות"}
+        </Button>
+      </div>
 
       <div className="integrations-marketplace__live">
         <h3>PMS פעיל</h3>
@@ -132,7 +195,13 @@ export function IntegrationsMarketplacePanel({
 
       <div className="integrations-marketplace__grid">
         {catalog?.domains.map((domain) => (
-          <DomainCard key={domain.id} domain={domain} />
+          <DomainCard
+            key={domain.id}
+            domain={domain}
+            enabled={enabledIds.includes(domain.id)}
+            locked={domain.status === "deferred"}
+            onToggle={onToggle}
+          />
         ))}
       </div>
 
@@ -140,7 +209,8 @@ export function IntegrationsMarketplacePanel({
         .integrations-marketplace { display: grid; gap: var(--space-4, 1rem); }
         .muted { opacity: .75; margin: 0; }
         .error { color: var(--color-danger, #8b1e1e); margin: 0; }
-        .hint { opacity: .8; font-size: var(--text-small, .875rem); }
+        .hint { opacity: .8; font-size: var(--text-small, .875rem); margin: 0; }
+        .integrations-marketplace__actions { display: flex; gap: .75rem; }
         .integrations-marketplace__live {
           padding: .85rem 1rem;
           border: 1px solid var(--color-line-strong, rgb(16 36 31 / 12%));
@@ -162,18 +232,31 @@ export function IntegrationsMarketplacePanel({
           display: grid;
           gap: .5rem;
         }
+        .integration-card--locked { opacity: .72; background: rgb(16 36 31 / 2%); }
         .integration-card__header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
           gap: .5rem;
         }
-        .integration-card__header h3 { margin: 0; font-size: 1rem; line-height: 1.3; }
+        .integration-card__toggle {
+          display: flex;
+          align-items: flex-start;
+          gap: .5rem;
+          cursor: pointer;
+        }
+        .integration-card__toggle input { margin-top: .2rem; }
+        .integration-card__toggle h3 { margin: 0; font-size: 1rem; line-height: 1.3; }
         .integration-card__id {
           margin: 0;
           font-size: var(--text-small, .875rem);
           opacity: .65;
           font-family: var(--font-mono, monospace);
+        }
+        .integration-card__lock-note {
+          margin: 0;
+          font-size: var(--text-small, .875rem);
+          opacity: .75;
         }
         .integration-card__examples {
           margin: 0;

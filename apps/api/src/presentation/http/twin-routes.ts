@@ -17,6 +17,7 @@ import type {
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { buildTwinOverlays } from "../../application/build-twin-overlays.js";
+import { buildTwinEquipment } from "../../application/build-twin-equipment.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -61,18 +62,25 @@ export function createTwinRoutes(deps: TwinRouteDeps): Hono<{
         })),
         ...(inventory !== undefined ? { pms: inventory } : {}),
       });
-      const overlays = await buildTwinOverlays(
-        {
-          ops: deps.ops,
-          maintenance: deps.maintenance,
-          hotels: deps.hotels,
-          equipment: deps.equipment,
-          energy: deps.energy,
-        },
-        principal.scope.tenantId,
-        hotelId,
-      );
-      return c.json({ data: { ...twin, overlays } });
+      const [overlays, equipment] = await Promise.all([
+        buildTwinOverlays(
+          {
+            ops: deps.ops,
+            maintenance: deps.maintenance,
+            hotels: deps.hotels,
+            equipment: deps.equipment,
+            energy: deps.energy,
+          },
+          principal.scope.tenantId,
+          hotelId,
+        ),
+        buildTwinEquipment(
+          { equipment: deps.equipment },
+          principal.scope.tenantId,
+          hotelId,
+        ),
+      ]);
+      return c.json({ data: { ...twin, overlays, equipment } });
     } catch (error) {
       return mapUnknownError(c, error);
     }
@@ -98,20 +106,27 @@ export function createTwinRoutes(deps: TwinRouteDeps): Hono<{
         })),
         pms: inventory,
       });
-      const overlays = await buildTwinOverlays(
-        {
-          ops: deps.ops,
-          maintenance: deps.maintenance,
-          hotels: deps.hotels,
-          equipment: deps.equipment,
-          energy: deps.energy,
-        },
-        principal.scope.tenantId,
-        hotelId,
-      );
+      const [overlays, equipment] = await Promise.all([
+        buildTwinOverlays(
+          {
+            ops: deps.ops,
+            maintenance: deps.maintenance,
+            hotels: deps.hotels,
+            equipment: deps.equipment,
+            energy: deps.energy,
+          },
+          principal.scope.tenantId,
+          hotelId,
+        ),
+        buildTwinEquipment(
+          { equipment: deps.equipment },
+          principal.scope.tenantId,
+          hotelId,
+        ),
+      ]);
       return c.json({
         data: {
-          twin: { ...twin, overlays },
+          twin: { ...twin, overlays, equipment },
           sync: {
             providerId: inventory.providerId,
             mode: "read_merge_only",

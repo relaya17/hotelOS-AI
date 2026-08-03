@@ -388,6 +388,9 @@ importers:
 
   packages/database:
     dependencies:
+      '@hotelos/connectors':
+        specifier: workspace:*
+        version: link:../connectors
       '@hotelos/shared':
         specifier: workspace:*
         version: link:../shared

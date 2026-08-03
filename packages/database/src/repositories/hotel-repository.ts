@@ -1,4 +1,8 @@
 import { and, eq } from "drizzle-orm";
+import {
+  resolveEnabledIntegrationDomains,
+  type IntegrationDomainId,
+} from "@hotelos/connectors";
 import type { HotelId, TenantId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
 import type { HotelOsDb } from "../client.js";
@@ -12,6 +16,7 @@ export type PersistedHotel = {
   readonly timezone: string;
   readonly currency: string;
   readonly kashrutEnabled: boolean;
+  readonly enabledIntegrationDomains: readonly IntegrationDomainId[];
 };
 
 export type HotelRepository = {
@@ -24,6 +29,15 @@ export type HotelRepository = {
     hotelId: HotelId,
     enabled: boolean,
   ) => Promise<PersistedHotel | null>;
+  getEnabledIntegrationDomains: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+  ) => Promise<readonly IntegrationDomainId[] | null>;
+  setEnabledIntegrationDomains: (
+    tenantId: TenantId,
+    hotelId: HotelId,
+    enabled: readonly IntegrationDomainId[],
+  ) => Promise<PersistedHotel | null>;
 };
 
 function mapHotel(row: typeof hotels.$inferSelect): PersistedHotel {
@@ -35,6 +49,9 @@ function mapHotel(row: typeof hotels.$inferSelect): PersistedHotel {
     timezone: row.timezone,
     currency: row.currency,
     kashrutEnabled: row.kashrutEnabled === 1,
+    enabledIntegrationDomains: resolveEnabledIntegrationDomains(
+      row.enabledIntegrationDomains,
+    ),
   };
 }
 
@@ -78,6 +95,35 @@ export function createHotelRepository(db: HotelOsDb): HotelRepository {
         .where(eq(hotels.id, hotelId))
         .run();
       return mapHotel({ ...existing, kashrutEnabled: enabled ? 1 : 0 });
+    },
+
+    async getEnabledIntegrationDomains(tenantId, hotelId) {
+      const row = await db
+        .select({ enabledIntegrationDomains: hotels.enabledIntegrationDomains })
+        .from(hotels)
+        .where(and(eq(hotels.id, hotelId), eq(hotels.tenantId, tenantId)))
+        .get();
+      if (!row) {
+        return null;
+      }
+      return resolveEnabledIntegrationDomains(row.enabledIntegrationDomains);
+    },
+
+    async setEnabledIntegrationDomains(tenantId, hotelId, enabled) {
+      const existing = await db
+        .select()
+        .from(hotels)
+        .where(and(eq(hotels.id, hotelId), eq(hotels.tenantId, tenantId)))
+        .get();
+      if (!existing) {
+        return null;
+      }
+      const stored = JSON.stringify([...enabled]);
+      await db.update(hotels)
+        .set({ enabledIntegrationDomains: stored })
+        .where(eq(hotels.id, hotelId))
+        .run();
+      return mapHotel({ ...existing, enabledIntegrationDomains: stored });
     },
   };
 }

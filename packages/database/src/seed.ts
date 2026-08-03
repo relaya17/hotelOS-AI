@@ -3,6 +3,7 @@ import { Ids } from "@hotelos/shared";
 import type { HotelOsDb } from "./client.js";
 import { createAgentRepository } from "./repositories/agent-repository.js";
 import { createBriefingRepository } from "./repositories/briefing-repository.js";
+import { createEquipmentRepository } from "./repositories/equipment-repository.js";
 import { createFeedbackRepository } from "./repositories/feedback-repository.js";
 import { createKashrutRepository } from "./repositories/kashrut-repository.js";
 import { createMaintenanceRepository } from "./repositories/maintenance-repository.js";
@@ -242,6 +243,7 @@ export async function seedDemoTenant(
   });
 
   await ensureOpsDemoData(db, now, userId);
+  await ensureDemoEquipment(db, now);
   await ensureCioDemoData(db, now, userId);
 }
 
@@ -458,6 +460,96 @@ async function ensureOpsDemoData(
   }
 
   void maintenanceDept;
+}
+
+async function ensureDemoEquipment(db: HotelOsDb, now: string): Promise<void> {
+  const tenantId = Ids.tenant(DEMO_TENANT_ID);
+  const hotelTlv = Ids.hotel(DEMO_HOTEL_TLV_ID);
+  const equipment = createEquipmentRepository(db);
+  const existing = await equipment.listAssetsByHotel(tenantId, hotelTlv);
+  if (existing.length > 0) {
+    return;
+  }
+
+  const hvacId = "a1000000-0000-4000-8000-000000000001";
+  const elevatorId = "a1000000-0000-4000-8000-000000000002";
+  const boilerId = "a1000000-0000-4000-8000-000000000003";
+
+  await equipment.createAsset({
+    id: hvacId,
+    tenantId,
+    hotelId: hotelTlv,
+    code: "HVAC-LOBBY",
+    nameHe: "מיזוג לובי",
+    category: "hvac",
+    locationHe: "לובי קומת כניסה",
+    createdAt: now,
+  });
+  await equipment.createAsset({
+    id: elevatorId,
+    tenantId,
+    hotelId: hotelTlv,
+    code: "ELV-A",
+    nameHe: "מעלית A",
+    category: "elevator",
+    locationHe: "בית מדרגות מרכזי",
+    createdAt: now,
+  });
+  await equipment.createAsset({
+    id: boilerId,
+    tenantId,
+    hotelId: hotelTlv,
+    code: "BOILER-1",
+    nameHe: "דוד מים ראשי",
+    category: "boiler",
+    locationHe: "חדר מכונות קומה -1",
+    createdAt: now,
+  });
+
+  await equipment.createSignal({
+    id: "b1000000-0000-4000-8000-000000000001",
+    assetId: hvacId,
+    tenantId,
+    hotelId: hotelTlv,
+    signalType: "temp_c",
+    valueNum: 22.5,
+    recordedAt: now,
+    source: "webhook",
+    createdAt: now,
+  });
+  await equipment.createSignal({
+    id: "b1000000-0000-4000-8000-000000000002",
+    assetId: hvacId,
+    tenantId,
+    hotelId: hotelTlv,
+    signalType: "runtime_hours",
+    valueNum: 4200,
+    recordedAt: now,
+    source: "webhook",
+    createdAt: now,
+  });
+  await equipment.createSignal({
+    id: "b1000000-0000-4000-8000-000000000003",
+    assetId: elevatorId,
+    tenantId,
+    hotelId: hotelTlv,
+    signalType: "vibration",
+    valueNum: 2.1,
+    recordedAt: now,
+    source: "webhook",
+    createdAt: now,
+  });
+  await equipment.createSignal({
+    id: "b1000000-0000-4000-8000-000000000004",
+    assetId: boilerId,
+    tenantId,
+    hotelId: hotelTlv,
+    signalType: "temp_c",
+    valueNum: 78,
+    recordedAt: now,
+    source: "webhook",
+    createdAt: now,
+  });
 }
 
 /** ADR 0007 — org comms channels, trusted knowledge sources, sample kashrut note. */

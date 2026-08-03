@@ -18,7 +18,7 @@ HotelOS = **Hotel Intelligence Platform**: תדריכים, משימות, אנו�
 ## התממשקות מודולרית (בוחרים תחומים)
 
 מקור קטלוג בקוד: `packages/connectors/src/integration-domains.ts`  
-**UI:** Admin → תפעול מלון → לשונית «אינטגרציות» (`integrations-marketplace-panel.tsx`) — קריאה בלבד + PMS פעיל מ־env/Twin.
+**UI:** Admin → תפעול מלון → לשונית «אינטגרציות» — toggles לפי דומיין + `PUT /v1/integrations/hotels/:hotelId/domains` (העדפה בלבד, ללא סודות).
 
 | דומיין | דוגמאות ספקים | מצב |
 |--------|----------------|-----|

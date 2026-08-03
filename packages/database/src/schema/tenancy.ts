@@ -35,6 +35,8 @@ export const hotels = sqliteTable(
     currency: text("currency").notNull(),
     /** ADR 0007 — enables the `agent.kashrut` seat + kashrut annotations for this hotel. */
     kashrutEnabled: integer("kashrut_enabled").notNull().default(0),
+    /** JSON array of integration domain ids — null = all non-deferred domains enabled. */
+    enabledIntegrationDomains: text("enabled_integration_domains"),
     createdAt: text("created_at").notNull(),
   },
   (table) => [

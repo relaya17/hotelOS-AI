@@ -9,6 +9,7 @@ import {
   type MaintenanceRepository,
   type OpsRepository,
   type PersistedEnergySuggestion,
+  type PersistedEquipmentAsset,
   type PersistedHotel,
   type PersistedMaintenancePrediction,
 } from "@hotelos/database";
@@ -29,6 +30,7 @@ const demoHotel: PersistedHotel = {
   timezone: "Asia/Jerusalem",
   currency: "ILS",
   kashrutEnabled: false,
+  enabledIntegrationDomains: [],
 };
 
 function prediction(
@@ -67,6 +69,7 @@ function energySuggestion(
 function createDeps(input: {
   readonly predictions?: readonly PersistedMaintenancePrediction[];
   readonly energy?: readonly PersistedEnergySuggestion[];
+  readonly assets?: readonly PersistedEquipmentAsset[];
 }): Parameters<typeof buildTwinOverlays>[0] {
   const deptIds: Record<string, string> = {
     security: "dept-sec",
@@ -100,6 +103,8 @@ function createDeps(input: {
     } as unknown as MaintenanceRepository,
     equipment: {
       listOpenPredictionsByHotel: async () => input.predictions ?? [],
+      listAssetsByHotel: async () => input.assets ?? [],
+      listSignalsByAsset: async () => [],
     } as unknown as EquipmentRepository,
     energy: {
       listSuggestionsByHotel: async (
@@ -133,7 +138,43 @@ describe("buildTwinOverlays", () => {
     assert.equal(overlays.predictiveAlerts.topItems[0]?.id, "pm-high");
     assert.equal(overlays.energyHints.count, 2);
     assert.equal(overlays.energyHints.topItems[0]?.id, "e-1");
+    assert.equal(overlays.equipmentSummary.count, 0);
     assert.ok(overlays.generatedAt.length > 0);
+  });
+
+  it("enriches predictive alerts with asset codes and equipment summary", async () => {
+    const overlays = await buildTwinOverlays(
+      createDeps({
+        predictions: [
+          prediction({
+            id: "pm-1",
+            assetId: "asset-boiler",
+            riskScore: 80,
+          }),
+        ],
+        assets: [
+          {
+            id: "asset-boiler",
+            tenantId,
+            hotelId,
+            code: "BOILER-1",
+            nameHe: "דוד",
+            category: "boiler",
+            locationHe: "מרתף",
+            installDate: null,
+            createdAt: "2026-08-03T10:00:00.000Z",
+          },
+        ],
+      }),
+      tenantId,
+      hotelId,
+    );
+
+    assert.equal(overlays.predictiveAlerts.topItems[0]?.assetId, "asset-boiler");
+    assert.equal(overlays.predictiveAlerts.topItems[0]?.assetCode, "BOILER-1");
+    assert.equal(overlays.equipmentSummary.count, 1);
+    assert.equal(overlays.equipmentSummary.byCategory.boiler, 1);
+    assert.equal(overlays.equipmentSummary.criticalCount, 1);
   });
 
   it("caps topItems at TWIN_OVERLAY_TOP_ITEMS", async () => {

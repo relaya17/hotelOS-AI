@@ -1,14 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@hotelos/ui";
 import {
   fetchHotelTwin,
   syncHotelTwinPms,
   type HotelTwinDto,
   type HotelTwinOverlaySummaryDto,
+  type TwinEquipmentNodeDto,
 } from "@hotelos/web-client";
 
 export type TwinPanelProps = {
   readonly hotelId: string;
+};
+
+const CATEGORY_LABEL: Record<TwinEquipmentNodeDto["category"], string> = {
+  hvac: "מזגנים",
+  elevator: "מעליות",
+  boiler: "מים ודודי",
+  other: "אחר",
+};
+
+const HEALTH_LABEL: Record<TwinEquipmentNodeDto["health"], string> = {
+  critical: "קריטי",
+  warning: "אזהרה",
+  ok: "תקין",
 };
 
 function OverlaySection({
@@ -50,6 +64,87 @@ function OverlaySection({
   );
 }
 
+function EquipmentSection({
+  equipment,
+}: {
+  readonly equipment: readonly TwinEquipmentNodeDto[];
+}) {
+  const grouped = useMemo(() => {
+    const groups: Record<
+      TwinEquipmentNodeDto["category"],
+      TwinEquipmentNodeDto[]
+    > = {
+      hvac: [],
+      elevator: [],
+      boiler: [],
+      other: [],
+    };
+    for (const node of equipment) {
+      groups[node.category].push(node);
+    }
+    return groups;
+  }, [equipment]);
+
+  if (equipment.length === 0) {
+    return (
+      <section className="twin-equipment">
+        <h3>ציוד חי</h3>
+        <p className="hint">
+          אין נכסי ציוד רשומים למלון. הוסיפו נכסים דרך ingest או הריצו סריקת
+          תחזוקה חיזויית בלשונית «תחזוקה, תיקונים ושיפוצים» כדי לאכלס נכסים
+          וחיזויים.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="twin-equipment">
+      <h3>
+        ציוד חי{" "}
+        <span className="badge">{equipment.length}</span>
+      </h3>
+      {(
+        Object.entries(grouped) as [
+          TwinEquipmentNodeDto["category"],
+          TwinEquipmentNodeDto[],
+        ][]
+      ).map(([category, nodes]) =>
+        nodes.length === 0 ? null : (
+          <div key={category} className="twin-equipment__group">
+            <h4>{CATEGORY_LABEL[category]}</h4>
+            <ul className="twin-equipment__list">
+              {nodes.map((node) => (
+                <li key={node.assetId}>
+                  <div className="twin-equipment__row">
+                    <strong>
+                      {node.assetCode} · {node.nameHe}
+                    </strong>
+                    <span
+                      className={`twin-health twin-health--${node.health}`}
+                    >
+                      {HEALTH_LABEL[node.health]}
+                    </span>
+                  </div>
+                  <span className="twin-overlay__meta">
+                    {node.locationHe}
+                    {node.openPrediction
+                      ? ` · סיכון ${node.openPrediction.riskScore}`
+                      : ""}
+                    {node.latestSignals.length > 0
+                      ? ` · ${node.latestSignals.length} אותות אחרונים`
+                      : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ),
+      )}
+    </section>
+  );
+}
+
 export function TwinPanel({ hotelId }: TwinPanelProps) {
   const [twin, setTwin] = useState<HotelTwinDto | null>(null);
   const [note, setNote] = useState<string | undefined>();
@@ -87,6 +182,7 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
 
   const reservations = twin?.pms?.reservations ?? [];
   const overlays = twin?.overlays;
+  const equipment = twin?.equipment ?? [];
 
   return (
     <section>
@@ -111,6 +207,7 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
               ? ` · שכבות ${overlays.generatedAt.slice(0, 19)}`
               : ""}
           </p>
+          <EquipmentSection equipment={equipment} />
           <div className="twin-overlays">
             <OverlaySection
               title="אירועים פתוחים"
@@ -129,9 +226,15 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
                 overlays?.predictiveAlerts.count ? "badge--warn" : undefined
               }
               renderMeta={(item) =>
-                item.riskScore !== undefined
-                  ? `סיכון ${item.riskScore} · ${item.status ?? "open"}`
-                  : (item.status ?? "")
+                [
+                  item.assetCode,
+                  item.riskScore !== undefined
+                    ? `סיכון ${item.riskScore}`
+                    : undefined,
+                  item.status,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
               }
             />
             <OverlaySection
@@ -180,6 +283,16 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
         .twin-overlay h3{margin:0 0 .5rem;font-size:1rem;display:flex;align-items:center;gap:.5rem}
         .twin-overlay__list{margin:0;padding-inline-start:1.1rem;display:grid;gap:.35rem}
         .twin-overlay__meta{display:block;font-size:var(--text-small, .875rem);opacity:.8}
+        .twin-equipment{margin:1rem 0;padding:.75rem;border:1px solid var(--color-line-strong, rgb(16 36 31 / 12%));border-radius:var(--radius-sm, 8px);background:#fff}
+        .twin-equipment h3{margin:0 0 .75rem;font-size:1rem;display:flex;align-items:center;gap:.5rem}
+        .twin-equipment h4{margin:0 0 .35rem;font-size:var(--text-small, .875rem);opacity:.85}
+        .twin-equipment__group + .twin-equipment__group{margin-top:.75rem;padding-top:.75rem;border-top:1px solid rgb(16 36 31 / 8%)}
+        .twin-equipment__list{margin:0;padding-inline-start:1.1rem;display:grid;gap:.45rem}
+        .twin-equipment__row{display:flex;justify-content:space-between;gap:.5rem;align-items:center;flex-wrap:wrap}
+        .twin-health{padding:.1rem .45rem;border-radius:var(--radius-sm, 6px);font-size:var(--text-micro, .75rem);font-weight:700}
+        .twin-health--ok{background:rgb(16 120 80 / 12%);color:#107850}
+        .twin-health--warning{background:var(--color-danger-soft, #fde8e8);color:#9a5b00}
+        .twin-health--critical{background:var(--color-danger-soft, #fde8e8);color:var(--color-danger, #8b1e1e)}
         .badge{padding:.15rem .5rem;border-radius:var(--radius-sm, 6px);background:rgb(16 36 31 / 8%);font-weight:700;font-size:var(--text-small, .875rem)}
         .badge--warn{background:var(--color-danger-soft, #fde8e8);color:var(--color-danger, #8b1e1e)}
       `}</style>

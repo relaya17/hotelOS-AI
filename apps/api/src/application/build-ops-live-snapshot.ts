@@ -72,6 +72,7 @@ export function hashOpsLiveSnapshot(snapshot: OpsLiveSnapshot): string {
       openIncidents: snapshot.twinOverlays.openIncidents,
       predictiveAlerts: snapshot.twinOverlays.predictiveAlerts,
       energyHints: snapshot.twinOverlays.energyHints,
+      equipmentSummary: snapshot.twinOverlays.equipmentSummary,
     },
     forecastSummary: snapshot.forecastSummary,
     briefingHint: snapshot.briefingHint,

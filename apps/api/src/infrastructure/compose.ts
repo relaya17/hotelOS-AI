@@ -493,6 +493,8 @@ export async function composeApp() {
         Boolean(env.MEWS_CLIENT_TOKEN?.trim()) &&
         Boolean(env.MEWS_ACCESS_TOKEN?.trim()),
       tokens,
+      hotels,
+      audit,
     },
   });
 

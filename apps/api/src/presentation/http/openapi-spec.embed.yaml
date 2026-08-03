@@ -742,16 +742,66 @@ paths:
       operationId: getIntegrationsCatalog
       description: |
         Read-only marketplace catalog from `@hotelos/connectors` INTEGRATION_DOMAINS
-        plus live `pmsProvider` from server config. No secret install flow.
+        plus live `pmsProvider` from server config. Optional `hotelId` returns
+        `enabledForHotel` (resolved preference — no secrets).
+      parameters:
+        - name: hotelId
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
       responses:
         "200":
-          description: Domain catalog + live PMS hint
+          description: Domain catalog + live PMS hint (+ enabledForHotel when hotelId set)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DataEnvelope"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/integrations/hotels/{hotelId}/domains:
+    put:
+      tags: [Integrations]
+      summary: Set enabled integration domains for a hotel
+      operationId: putHotelIntegrationDomains
+      description: |
+        Pilot preference only — validates domain ids against INTEGRATION_DOMAINS
+        (deferred ids rejected). Does not store connector secrets.
+      parameters:
+        - name: hotelId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled:
+                  type: array
+                  items: { type: string }
+      responses:
+        "200":
+          description: Updated enabled domain ids
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /v1/autonomy/suggest:
     post:

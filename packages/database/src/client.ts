@@ -79,6 +79,7 @@ export async function migrate(client: Client): Promise<void> {
       timezone TEXT NOT NULL,
       currency TEXT NOT NULL,
       kashrut_enabled INTEGER NOT NULL DEFAULT 0,
+      enabled_integration_domains TEXT,
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS hotels_tenant_idx ON hotels(tenant_id);
@@ -925,6 +926,12 @@ export async function migrate(client: Client): Promise<void> {
     "kashrut_enabled",
     "kashrut_enabled INTEGER NOT NULL DEFAULT 0",
   );
+  await ensureColumn(
+    client,
+    "hotels",
+    "enabled_integration_domains",
+    "enabled_integration_domains TEXT",
+  );
 
   // HR module (PO-approved) — extend employee_profiles for self-registration.
   await ensureColumn(client, "employee_profiles", "employee_code", "employee_code TEXT");
@@ -1163,7 +1170,7 @@ export async function migrate(client: Client): Promise<void> {
   `);
 
   // Predictive maintenance — equipment assets, signals, rule-based predictions
-  await client.execute(`
+  await client.executeMultiple(`
     CREATE TABLE IF NOT EXISTS equipment_assets (
       id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL REFERENCES tenants(id),

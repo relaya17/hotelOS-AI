@@ -65,3 +65,64 @@ export const INTEGRATION_DOMAINS = [
 export type IntegrationDomainId = (typeof INTEGRATION_DOMAINS)[number]["id"];
 export type IntegrationDomainStatus =
   (typeof INTEGRATION_DOMAINS)[number]["status"];
+
+const INTEGRATION_DOMAIN_IDS = new Set<IntegrationDomainId>(
+  INTEGRATION_DOMAINS.map((domain) => domain.id),
+);
+
+/** Sensible pilot default when hotel explicitly saves an empty enabled list. */
+export const DEFAULT_PILOT_INTEGRATION_DOMAIN_IDS = [
+  "pms",
+  "predictive_maintenance",
+  "reputation",
+] as const satisfies readonly IntegrationDomainId[];
+
+/** Non-deferred domains — used when `enabled_integration_domains` is null (never configured). */
+export const ALL_PILOT_INTEGRATION_DOMAIN_IDS = INTEGRATION_DOMAINS.filter(
+  (domain) => domain.status !== "deferred",
+).map((domain) => domain.id);
+
+export function isIntegrationDomainId(
+  value: string,
+): value is IntegrationDomainId {
+  return INTEGRATION_DOMAIN_IDS.has(value as IntegrationDomainId);
+}
+
+export function isConfigurableIntegrationDomainId(
+  value: string,
+): value is IntegrationDomainId {
+  if (!isIntegrationDomainId(value)) {
+    return false;
+  }
+  const domain = INTEGRATION_DOMAINS.find((row) => row.id === value);
+  return domain !== undefined && domain.status !== "deferred";
+}
+
+/**
+ * Resolve hotel preference JSON to enabled domain ids.
+ * - null/undefined (column never set): all non-deferred domains
+ * - `[]` (explicit empty): DEFAULT_PILOT_INTEGRATION_DOMAIN_IDS
+ */
+export function resolveEnabledIntegrationDomains(
+  stored: string | null | undefined,
+): readonly IntegrationDomainId[] {
+  if (stored === null || stored === undefined) {
+    return ALL_PILOT_INTEGRATION_DOMAIN_IDS;
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stored);
+  } catch {
+    return [...DEFAULT_PILOT_INTEGRATION_DOMAIN_IDS];
+  }
+  if (!Array.isArray(parsed)) {
+    return [...DEFAULT_PILOT_INTEGRATION_DOMAIN_IDS];
+  }
+  if (parsed.length === 0) {
+    return [...DEFAULT_PILOT_INTEGRATION_DOMAIN_IDS];
+  }
+  return parsed.filter(
+    (id): id is IntegrationDomainId =>
+      typeof id === "string" && isIntegrationDomainId(id),
+  );
+}
