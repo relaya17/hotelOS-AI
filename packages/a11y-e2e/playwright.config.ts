@@ -20,7 +20,11 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: LOGIN_APP_TARGETS.map((app) => ({
-    command: `pnpm --filter ${app.packageName} build && pnpm --filter ${app.packageName} exec vite preview --port ${app.previewPort} --strictPort --host 127.0.0.1`,
+    // In CI, apps are pre-built by the workflow. Parallel `pnpm build` here races
+    // the store and exits immediately (exit 2). Locally, build then preview.
+    command: isCi
+      ? `pnpm --filter ${app.packageName} exec vite preview --port ${app.previewPort} --strictPort --host 127.0.0.1`
+      : `pnpm --filter ${app.packageName} build && pnpm --filter ${app.packageName} exec vite preview --port ${app.previewPort} --strictPort --host 127.0.0.1`,
     url: loginPreviewUrl(app.previewPort),
     cwd: repoRoot,
     reuseExistingServer: !isCi,
