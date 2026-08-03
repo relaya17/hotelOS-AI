@@ -324,6 +324,7 @@ export async function composeApp() {
       recruiting,
       hotels,
       kashrut,
+      turbo,
       tokens,
     },
     autonomy: {
@@ -336,6 +337,7 @@ export async function composeApp() {
       bookings,
       recruiting,
       feedback,
+      turbo,
       tokens,
     },
     twin: {
@@ -358,6 +360,11 @@ export async function composeApp() {
         gateway,
         companyKnowledge,
         trustedSources,
+        notifications,
+        whatsapp,
+        ...(env.DIGEST_WHATSAPP_TO.trim()
+          ? { digestWhatsAppTo: env.DIGEST_WHATSAPP_TO.trim() }
+          : {}),
       },
       cfoDaily: {
         overview,

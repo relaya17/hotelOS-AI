@@ -2,17 +2,21 @@ import type { AiGateway } from "@hotelos/ai-gateway";
 import type {
   CompanyKnowledgeRepository,
   HotelRepository,
+  NotificationRepository,
   OrgCommsRepository,
   TrustedSourcesRepository,
 } from "@hotelos/database";
 import { DEMO_CHAIN_ID, DEMO_TENANT_ID } from "@hotelos/database";
-import { Ids } from "@hotelos/shared";
+import { Ids, type HotelId, type TenantId } from "@hotelos/shared";
 import { randomUUID } from "node:crypto";
+import type { WhatsAppProvider } from "../infrastructure/whatsapp-provider.js";
+import { normalizeWhatsAppTo } from "../infrastructure/whatsapp-provider.js";
 import {
   buildCioDigest,
   type CioDigestDeps,
   type CioRole,
 } from "./build-cio-digest.js";
+import { deliverQueuedNotification } from "./enqueue-room-invite-notification.js";
 import { synthesizeCioDigest } from "./synthesize-cio-digest.js";
 
 /** Stable actor for scheduled Gateway invokes (not a login user). */
@@ -26,6 +30,11 @@ export type RunCioDailyDigestDeps = CioDigestDeps & {
   readonly gateway?: AiGateway;
   readonly companyKnowledge?: CompanyKnowledgeRepository;
   readonly trustedSources?: TrustedSourcesRepository;
+  /** Stage ד' follow-up (PO decision 2) — scheduled WhatsApp copy of the digest. */
+  readonly notifications?: NotificationRepository;
+  readonly whatsapp?: WhatsAppProvider;
+  /** Recipient for the WhatsApp digest copy; empty/absent = in-app only. */
+  readonly digestWhatsAppTo?: string;
 };
 
 export type CioDailyDigestResult = {
@@ -36,6 +45,7 @@ export type CioDailyDigestResult = {
   readonly headlineHe: string;
   readonly narrativeIncluded: boolean;
   readonly provider: string | null;
+  readonly whatsappQueued: boolean;
 };
 
 /**
@@ -113,6 +123,13 @@ export async function runCioDailyDigest(
   });
   if (!message) return null;
 
+  const whatsappQueued = await enqueueDigestWhatsAppCopy(deps, {
+    tenantId,
+    hotelId: Ids.hotel(hotelRows[0]!.id),
+    headlineHe,
+    generatedAtIso: now,
+  });
+
   return {
     tenantId: String(tenantId),
     role,
@@ -121,7 +138,49 @@ export async function runCioDailyDigest(
     headlineHe,
     narrativeIncluded,
     provider,
+    whatsappQueued,
   };
+}
+
+/**
+ * Best-effort WhatsApp copy of the digest headline (in-app inbox stays the
+ * source of truth). Never fails the digest run when delivery is unavailable.
+ */
+async function enqueueDigestWhatsAppCopy(
+  deps: RunCioDailyDigestDeps,
+  input: {
+    readonly tenantId: TenantId;
+    readonly hotelId: HotelId;
+    readonly headlineHe: string;
+    readonly generatedAtIso: string;
+  },
+): Promise<boolean> {
+  const to = deps.digestWhatsAppTo?.trim();
+  if (!to || !deps.notifications || !deps.whatsapp) return false;
+
+  try {
+    const notification = await deps.notifications.enqueue({
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      hotelId: input.hotelId,
+      channel: "whatsapp",
+      eventKey: "cio_daily.digest",
+      toAddress: normalizeWhatsAppTo(to),
+      body: [
+        "תדריך CIO יומי",
+        input.headlineHe,
+        `נשלח: ${new Date(input.generatedAtIso).toLocaleString("he-IL")}`,
+        "לפרטים המלאים: תיבת הודעות ארגון (cio_daily).",
+      ].join("\n"),
+      status: "pending",
+      provider: deps.whatsapp.name,
+      createdAt: input.generatedAtIso,
+    });
+    await deliverQueuedNotification(deps.notifications, deps.whatsapp, notification);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function formatDigestMessage(digest: {

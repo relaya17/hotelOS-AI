@@ -317,6 +317,21 @@ export async function migrate(client: Client): Promise<void> {
     CREATE INDEX IF NOT EXISTS journal_entries_tenant_idx ON journal_entries(tenant_id);
     CREATE INDEX IF NOT EXISTS journal_entries_account_idx ON journal_entries(account_id);
 
+    CREATE TABLE IF NOT EXISTS accounting_periods (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      period_key TEXT NOT NULL,
+      status TEXT NOT NULL,
+      closed_at TEXT,
+      closed_by_user_id TEXT REFERENCES users(id),
+      approval_id TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS accounting_periods_tenant_idx ON accounting_periods(tenant_id);
+    CREATE INDEX IF NOT EXISTS accounting_periods_tenant_key_idx
+      ON accounting_periods(tenant_id, period_key);
+
     CREATE TABLE IF NOT EXISTS automations (
       id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL REFERENCES tenants(id),

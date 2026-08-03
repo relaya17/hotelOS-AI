@@ -3163,6 +3163,36 @@ export async function suggestAutonomySendPurchaseOrder(input: {
   };
 }
 
+/**
+ * Suggest closing a fiscal month's ledger (stage ז׳ HITL). Approve requires
+ * an accountant/CFO role — admin alone is not enough (see `canApproveLedgerClose`).
+ */
+export async function suggestAutonomyLedgerClose(input: {
+  readonly hotelId: string;
+  /** YYYY-MM */
+  readonly periodKey: string;
+  readonly agentId?: string;
+}): Promise<{
+  readonly approvalId: string;
+  readonly periodKey: string;
+  readonly periodStatus: string;
+}> {
+  const payload = (await authPost(
+    "/v1/autonomy/suggest-ledger-close",
+    input,
+  )) as {
+    data: {
+      approval: { id: string };
+      period: { periodKey: string; status: string };
+    };
+  };
+  return {
+    approvalId: payload.data.approval.id,
+    periodKey: payload.data.period.periodKey,
+    periodStatus: payload.data.period.status,
+  };
+}
+
 export async function postSecurityEvent(input: {
   readonly hotelId: string;
   readonly title: string;
@@ -3173,9 +3203,9 @@ export async function postSecurityEvent(input: {
   return authPost("/v1/ops/security-events", input);
 }
 
-/** Vendor webhook ingest — `generic` or `example_vms` until pilot VMS is wired. */
+/** Vendor webhook ingest — `generic`/`example_vms`/`milestone` until pilot VMS is wired. */
 export async function postSecurityWebhookIngest(
-  provider: "generic" | "example_vms",
+  provider: "generic" | "example_vms" | "milestone",
   body: unknown,
 ): Promise<unknown> {
   return authPost(

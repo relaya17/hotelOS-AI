@@ -72,6 +72,8 @@ export {
 export { AGENT_CATALOG } from "./catalog/agent-catalog.js";
 export {
   createTurboRepository,
+  type AccountingPeriod,
+  type AccountingPeriodStatus,
   type AutomationRule,
   type AutomationRun,
   type EmployeeProfile,

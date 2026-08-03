@@ -60,3 +60,11 @@ export function canAccessSensitiveHrDocuments(
 ): boolean {
   return hasAnyRole(principal, ["hr"]);
 }
+
+/**
+ * Ledger-close HITL (stage ז׳ / PO): human accountant or CFO must approve.
+ * Admin alone is not enough — mirrors HR sensitive-doc gate pattern.
+ */
+export function canApproveLedgerClose(principal: AuthPrincipal): boolean {
+  return hasAnyRole(principal, ["accountant", "cfo"]);
+}

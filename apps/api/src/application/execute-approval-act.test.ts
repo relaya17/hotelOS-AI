@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
+  AccountingPeriod,
   MaintenanceRepository,
   OpsRepository,
   PersistedApprovalRequest,
@@ -10,6 +11,7 @@ import type {
   PersistedVendorQuote,
   ProcurementRepository,
   RecruitingRepository,
+  TurboRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { executeApprovalAct } from "./execute-approval-act.js";
@@ -33,6 +35,7 @@ describe("executeApprovalAct", () => {
         "maintenance",
         "front_office",
         "hr",
+        "finance",
       ].includes(code)
         ? { id: `dept-${code}`, hotelId: "h1", code, name: code }
         : null,
@@ -178,7 +181,46 @@ describe("executeApprovalAct", () => {
     },
   } as unknown as RecruitingRepository;
 
-  const deps = { ops, procurement, maintenance, recruiting };
+  const accountingPeriods = new Map<string, AccountingPeriod>([
+    [
+      "2026-06",
+      {
+        id: "period-2026-06",
+        tenantId: "00000000-0000-4000-8000-000000000001",
+        periodKey: "2026-06",
+        status: "pending_close",
+        closedAt: null,
+        closedByUserId: null,
+        approvalId: "appr-1",
+        createdAt: "2026-06-01T00:00:00.000Z",
+        updatedAt: "2026-07-01T00:00:00.000Z",
+      },
+    ],
+  ]);
+  const turbo = {
+    closeAccountingPeriod: async (input: {
+      readonly tenantId: unknown;
+      readonly periodKey: string;
+      readonly closedByUserId: unknown;
+      readonly approvalId: string;
+      readonly closedAt: string;
+    }) => {
+      const existing = accountingPeriods.get(input.periodKey);
+      if (!existing) return null;
+      const closed: AccountingPeriod = {
+        ...existing,
+        status: "closed",
+        closedAt: input.closedAt,
+        closedByUserId: String(input.closedByUserId),
+        approvalId: input.approvalId,
+        updatedAt: input.closedAt,
+      };
+      accountingPeriods.set(input.periodKey, closed);
+      return closed;
+    },
+  } as unknown as TurboRepository;
+
+  const deps = { ops, procurement, maintenance, recruiting, turbo };
 
   const baseApproval: PersistedApprovalRequest = {
     id: "appr-1",
@@ -473,5 +515,52 @@ describe("executeApprovalAct", () => {
     assert.equal(createdTasks.length, 2);
     assert.ok(createdTasks.every((t) => t.taskType === "arrival_prep"));
     assert.ok(createdTasks.every((t) => t.departmentId === "dept-front_office"));
+  });
+
+  it("closes the accounting period and opens a finance follow-up task", async () => {
+    createdTasks.length = 0;
+    const result = await executeApprovalAct(
+      deps,
+      {
+        ...baseApproval,
+        agentId: "agent.cfo",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.ledger_close",
+          hotelId: "00000000-0000-4000-8000-000000000010",
+          periodKey: "2026-06",
+        }),
+      },
+      Ids.user("00000000-0000-4000-8000-000000000099"),
+      "2026-07-19T01:00:00.000Z",
+    );
+    assert.equal(result.status, "executed");
+    if (result.status !== "executed") return;
+    assert.equal(result.action, "close_accounting_period");
+    assert.equal(result.period?.status, "closed");
+    assert.ok(
+      createdTasks.some(
+        (t) =>
+          t.taskType === "ledger_period_closed_followup" &&
+          t.departmentId === "dept-finance",
+      ),
+    );
+  });
+
+  it("fails Act when the accounting period does not exist", async () => {
+    const result = await executeApprovalAct(
+      deps,
+      {
+        ...baseApproval,
+        agentId: "agent.cfo",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.ledger_close",
+          hotelId: "00000000-0000-4000-8000-000000000010",
+          periodKey: "2099-01",
+        }),
+      },
+      Ids.user("00000000-0000-4000-8000-000000000099"),
+      "2026-07-19T01:00:00.000Z",
+    );
+    assert.equal(result.status, "failed");
   });
 });

@@ -124,6 +124,12 @@ const envSchema = z.object({
   WHATSAPP_META_TEMPLATE_NAME: z.string().optional().default(""),
   /** Template language code (e.g. he, en_US). */
   WHATSAPP_META_TEMPLATE_LANGUAGE: z.string().optional().default("he"),
+  /**
+   * Optional phone number (E.164 or Israeli local) that also receives the
+   * scheduled CIO daily digest over WhatsApp. Empty = in-app inbox only
+   * (org-comms `cio_daily` channel) — stage ד' follow-up (PO decision 2).
+   */
+  DIGEST_WHATSAPP_TO: z.string().optional().default(""),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

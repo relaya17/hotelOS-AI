@@ -3,6 +3,7 @@ import type { TenantId, UserId } from "@hotelos/shared";
 import { randomUUID } from "node:crypto";
 import type { HotelOsDb } from "../client.js";
 import {
+  accountingPeriods,
   automationRuns,
   automations,
   employeeProfiles,
@@ -50,6 +51,20 @@ export type JournalEntry = {
   readonly sourceSystem: string;
 };
 
+export type AccountingPeriodStatus = "open" | "pending_close" | "closed";
+
+export type AccountingPeriod = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly periodKey: string;
+  readonly status: AccountingPeriodStatus;
+  readonly closedAt: string | null;
+  readonly closedByUserId: string | null;
+  readonly approvalId: string | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+};
+
 export type AutomationRule = {
   readonly id: string;
   readonly name: string;
@@ -94,6 +109,32 @@ export type TurboRepository = {
   }) => Promise<StaffChatMessage>;
   listAccounts: (tenantId: TenantId) => Promise<readonly LedgerAccount[]>;
   listJournal: (tenantId: TenantId) => Promise<readonly JournalEntry[]>;
+  listAccountingPeriods: (
+    tenantId: TenantId,
+  ) => Promise<readonly AccountingPeriod[]>;
+  getAccountingPeriod: (
+    tenantId: TenantId,
+    periodKey: string,
+  ) => Promise<AccountingPeriod | null>;
+  ensureAccountingPeriod: (input: {
+    readonly id: string;
+    readonly tenantId: TenantId;
+    readonly periodKey: string;
+    readonly createdAt: string;
+  }) => Promise<AccountingPeriod>;
+  markAccountingPeriodPendingClose: (input: {
+    readonly tenantId: TenantId;
+    readonly periodKey: string;
+    readonly approvalId: string;
+    readonly updatedAt: string;
+  }) => Promise<AccountingPeriod | null>;
+  closeAccountingPeriod: (input: {
+    readonly tenantId: TenantId;
+    readonly periodKey: string;
+    readonly closedByUserId: UserId;
+    readonly approvalId: string;
+    readonly closedAt: string;
+  }) => Promise<AccountingPeriod | null>;
   listAutomations: (tenantId: TenantId) => Promise<readonly AutomationRule[]>;
   setAutomationEnabled: (
     tenantId: TenantId,
@@ -120,6 +161,22 @@ function parseTranslations(json: string): Record<string, string> {
   } catch {
     return {};
   }
+}
+
+function mapAccountingPeriod(
+  row: typeof accountingPeriods.$inferSelect,
+): AccountingPeriod {
+  return {
+    id: row.id,
+    tenantId: row.tenantId,
+    periodKey: row.periodKey,
+    status: row.status as AccountingPeriodStatus,
+    closedAt: row.closedAt ?? null,
+    closedByUserId: row.closedByUserId ?? null,
+    approvalId: row.approvalId ?? null,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 export function createTurboRepository(db: HotelOsDb): TurboRepository {
@@ -536,6 +593,150 @@ export function createTurboRepository(db: HotelOsDb): TurboRepository {
         entryDate: row.entry.entryDate,
         sourceSystem: row.entry.sourceSystem,
       }));
+    },
+
+    async listAccountingPeriods(tenantId) {
+      const rows = await db
+        .select()
+        .from(accountingPeriods)
+        .where(eq(accountingPeriods.tenantId, tenantId))
+        .orderBy(desc(accountingPeriods.periodKey))
+        .all();
+      return rows.map(mapAccountingPeriod);
+    },
+
+    async getAccountingPeriod(tenantId, periodKey) {
+      const row = await db
+        .select()
+        .from(accountingPeriods)
+        .where(
+          and(
+            eq(accountingPeriods.tenantId, tenantId),
+            eq(accountingPeriods.periodKey, periodKey),
+          ),
+        )
+        .get();
+      return row ? mapAccountingPeriod(row) : null;
+    },
+
+    async ensureAccountingPeriod(input) {
+      const existing = await db
+        .select()
+        .from(accountingPeriods)
+        .where(
+          and(
+            eq(accountingPeriods.tenantId, input.tenantId),
+            eq(accountingPeriods.periodKey, input.periodKey),
+          ),
+        )
+        .get();
+      if (existing) return mapAccountingPeriod(existing);
+      await db
+        .insert(accountingPeriods)
+        .values({
+          id: input.id,
+          tenantId: input.tenantId,
+          periodKey: input.periodKey,
+          status: "open",
+          closedAt: null,
+          closedByUserId: null,
+          approvalId: null,
+          createdAt: input.createdAt,
+          updatedAt: input.createdAt,
+        })
+        .run();
+      return {
+        id: input.id,
+        tenantId: input.tenantId,
+        periodKey: input.periodKey,
+        status: "open" as const,
+        closedAt: null,
+        closedByUserId: null,
+        approvalId: null,
+        createdAt: input.createdAt,
+        updatedAt: input.createdAt,
+      };
+    },
+
+    async markAccountingPeriodPendingClose(input) {
+      const existing = await db
+        .select()
+        .from(accountingPeriods)
+        .where(
+          and(
+            eq(accountingPeriods.tenantId, input.tenantId),
+            eq(accountingPeriods.periodKey, input.periodKey),
+          ),
+        )
+        .get();
+      if (!existing || existing.status === "closed") return null;
+      await db
+        .update(accountingPeriods)
+        .set({
+          status: "pending_close",
+          approvalId: input.approvalId,
+          updatedAt: input.updatedAt,
+        })
+        .where(
+          and(
+            eq(accountingPeriods.tenantId, input.tenantId),
+            eq(accountingPeriods.periodKey, input.periodKey),
+          ),
+        )
+        .run();
+      const row = await db
+        .select()
+        .from(accountingPeriods)
+        .where(
+          and(
+            eq(accountingPeriods.tenantId, input.tenantId),
+            eq(accountingPeriods.periodKey, input.periodKey),
+          ),
+        )
+        .get();
+      return row ? mapAccountingPeriod(row) : null;
+    },
+
+    async closeAccountingPeriod(input) {
+      const existing = await db
+        .select()
+        .from(accountingPeriods)
+        .where(
+          and(
+            eq(accountingPeriods.tenantId, input.tenantId),
+            eq(accountingPeriods.periodKey, input.periodKey),
+          ),
+        )
+        .get();
+      if (!existing) return null;
+      if (existing.status === "closed") return mapAccountingPeriod(existing);
+      await db
+        .update(accountingPeriods)
+        .set({
+          status: "closed",
+          closedAt: input.closedAt,
+          closedByUserId: input.closedByUserId,
+          approvalId: input.approvalId,
+          updatedAt: input.closedAt,
+        })
+        .where(
+          and(
+            eq(accountingPeriods.tenantId, input.tenantId),
+            eq(accountingPeriods.periodKey, input.periodKey),
+          ),
+        )
+        .run();
+      const row = await db
+        .select()
+        .from(accountingPeriods)
+        .where(
+          and(
+            eq(accountingPeriods.tenantId, input.tenantId),
+            eq(accountingPeriods.periodKey, input.periodKey),
+          ),
+        )
+        .get();
+      return row ? mapAccountingPeriod(row) : null;
     },
 
     async listAutomations(tenantId) {

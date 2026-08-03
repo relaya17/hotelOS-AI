@@ -197,6 +197,7 @@ export async function seedDemoTenant(
           "gm",
           "procurement",
           "cfo",
+          "accountant",
         ]),
         createdAt: now,
       })
@@ -210,6 +211,7 @@ export async function seedDemoTenant(
       "gm",
       "procurement",
       "cfo",
+      "accountant",
     ] as const;
     const missing = requiredRoles.filter((role) => !roles.includes(role));
     if (missing.length > 0) {

@@ -84,5 +84,8 @@ export default tseslint.config(
       "packages/web-client/src/*.test.ts",
     ],
     ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+      globals: { ...globals.node },
+    },
   },
 );

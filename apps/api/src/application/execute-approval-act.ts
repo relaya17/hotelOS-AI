@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type {
+  AccountingPeriod,
   CandidateStage,
   MaintenanceRepository,
   OpsRepository,
@@ -11,6 +12,7 @@ import type {
   ProcurementRepository,
   RecruitingRepository,
   TaskPriority,
+  TurboRepository,
 } from "@hotelos/database";
 import type { HotelId, TenantId, UserId } from "@hotelos/shared";
 import { Ids } from "@hotelos/shared";
@@ -20,6 +22,7 @@ export type ExecuteApprovalActDeps = {
   readonly procurement: ProcurementRepository;
   readonly maintenance: MaintenanceRepository;
   readonly recruiting: RecruitingRepository;
+  readonly turbo: TurboRepository;
 };
 
 export type ApprovalActResult =
@@ -36,14 +39,16 @@ export type ApprovalActResult =
         | "accept_maintenance_quote"
         | "create_housekeeping_clean_tasks"
         | "create_reception_arrival_tasks"
-        | "update_recruiting_stage";
+        | "update_recruiting_stage"
+        | "close_accounting_period";
       readonly resourceType:
         | "department_task"
         | "purchase_order"
         | "vendor_quote"
         | "housekeeping_batch"
         | "reception_arrival_batch"
-        | "job_candidate";
+        | "job_candidate"
+        | "accounting_period";
       readonly resourceId: string;
       readonly summaryHe: string;
       readonly task?: PersistedDepartmentTask;
@@ -51,6 +56,7 @@ export type ApprovalActResult =
       readonly quote?: PersistedVendorQuote;
       readonly candidate?: PersistedJobCandidate;
       readonly taskCount?: number;
+      readonly period?: AccountingPeriod;
     }
   | {
       readonly status: "failed";
@@ -154,6 +160,17 @@ type AutonomyRecruitingStagePayload = {
   readonly candidateName: string;
   readonly fromStage: string;
   readonly stage: "offer" | "hired";
+};
+
+/**
+ * Stage ז׳ ledger-close HITL — accountant/CFO Approve required (see
+ * `canApproveLedgerClose`); admin alone is not enough. Act closes the fiscal
+ * month once and opens a finance follow-up task; no autonomous re-close.
+ */
+type AutonomyLedgerClosePayload = {
+  readonly kind: "autonomy.ledger_close";
+  readonly hotelId: string;
+  readonly periodKey: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -418,6 +435,35 @@ function asRecruitingStagePayload(
     fromStage: value["fromStage"],
     stage: value["stage"],
   };
+}
+
+function asLedgerClosePayload(
+  value: unknown,
+): AutonomyLedgerClosePayload | null {
+  if (!isRecord(value) || value["kind"] !== "autonomy.ledger_close") {
+    return null;
+  }
+  if (
+    typeof value["hotelId"] !== "string" ||
+    typeof value["periodKey"] !== "string"
+  ) {
+    return null;
+  }
+  return {
+    kind: "autonomy.ledger_close",
+    hotelId: value["hotelId"],
+    periodKey: value["periodKey"],
+  };
+}
+
+/** RBAC helper for approval-routes: ledger-close Approve requires accountant/CFO. */
+export function isLedgerCloseApprovalPayload(payloadJson: string): boolean {
+  try {
+    const payload = JSON.parse(payloadJson) as { kind?: unknown };
+    return payload.kind === "autonomy.ledger_close";
+  } catch {
+    return false;
+  }
 }
 
 async function createTaskForDepartment(
@@ -866,6 +912,50 @@ export async function executeApprovalAct(
       resourceId: candidate.id,
       summaryHe: `בוצע Act — ${recruitingStage.candidateName} סומן/ה כ«${stageHe}» (+ משימת HR).`,
       candidate,
+    };
+  }
+
+  const ledgerClose = asLedgerClosePayload(payload);
+  if (ledgerClose) {
+    const period = await deps.turbo.closeAccountingPeriod({
+      tenantId: Ids.tenant(approval.tenantId),
+      periodKey: ledgerClose.periodKey,
+      closedByUserId: decidedByUserId,
+      approvalId: approval.id,
+      closedAt: now,
+    });
+    if (!period) {
+      return {
+        status: "failed",
+        reasonHe: `תקופה חשבונאית ${ledgerClose.periodKey} לא נמצאה — Act נכשל.`,
+      };
+    }
+
+    await createTaskForDepartment(deps.ops, {
+      tenantId: Ids.tenant(approval.tenantId),
+      hotelId: Ids.hotel(ledgerClose.hotelId),
+      departmentCode: "finance",
+      taskType: "ledger_period_closed_followup",
+      title: `ספרים נסגרו — ${ledgerClose.periodKey}`,
+      description: [
+        "תקופה חשבונאית נסגרה אחרי HITL מלא (Suggest→Approve→Act).",
+        `תקופה: ${ledgerClose.periodKey}`,
+        `אושר ע״י: ${decidedByUserId} (רואה חשבון/CFO).`,
+        "אין פתיחה מחדש אוטומטית — נדרש Suggest חדש לתיקון רטרואקטיבי.",
+        `מזהה אישור: ${approval.id}`,
+      ].join("\n"),
+      priority: "medium",
+      createdByUserId: decidedByUserId,
+      now,
+    });
+
+    return {
+      status: "executed",
+      action: "close_accounting_period",
+      resourceType: "accounting_period",
+      resourceId: period.id,
+      summaryHe: `בוצע Act — תקופה ${ledgerClose.periodKey} נסגרה (HITL רואה חשבון/CFO).`,
+      period,
     };
   }
 

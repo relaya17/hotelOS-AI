@@ -16,7 +16,7 @@ export const hotelOsSecurityEventSchema = z.object({
 
 export type HotelOsSecurityEvent = z.infer<typeof hotelOsSecurityEventSchema>;
 
-export type SecurityWebhookProvider = "generic" | "example_vms";
+export type SecurityWebhookProvider = "generic" | "example_vms" | "milestone";
 
 /**
  * Map a vendor (or already-canonical) webhook body to HotelOS security event.
@@ -28,6 +28,10 @@ export function mapSecurityWebhook(
 ): HotelOsSecurityEvent {
   if (provider === "generic") {
     return hotelOsSecurityEventSchema.parse(body);
+  }
+
+  if (provider === "milestone") {
+    return mapMilestoneWebhook(body);
   }
 
   // Example VMS shape — replace with real Milestone/Genetec/local adapter later.
@@ -66,6 +70,46 @@ export function mapSecurityWebhook(
     ...(parsed.event_id !== undefined
       ? { externalEventId: parsed.event_id }
       : {}),
+  });
+}
+
+/**
+ * Milestone XProtect Alarm/Notification webhook — pilot candidate VMS (PO
+ * decision 1: connector-agnostic first, vendor adapter TBD per hotel).
+ * Priority 0–3 ascending severity (0=Low … 3=Urgent), per Milestone alarm config.
+ */
+const milestoneSchema = z.object({
+  SiteId: z.string().uuid(),
+  Name: z.string().trim().min(2).max(200),
+  Description: z.string().trim().min(1).max(4000),
+  Priority: z.number().int().min(0).max(3),
+  Timestamp: z.string().optional(),
+  CameraId: z.string().trim().max(80).optional(),
+  Guid: z.string().trim().max(120).optional(),
+});
+
+function mapMilestoneWebhook(body: unknown): HotelOsSecurityEvent {
+  const parsed = milestoneSchema.parse(body);
+  const priority =
+    parsed.Priority >= 3
+      ? "urgent"
+      : parsed.Priority === 2
+        ? "high"
+        : parsed.Priority === 1
+          ? "medium"
+          : "low";
+  const camera = parsed.CameraId !== undefined ? ` מצלמה ${parsed.CameraId}.` : "";
+
+  return hotelOsSecurityEventSchema.parse({
+    hotelId: parsed.SiteId,
+    title: parsed.Name,
+    description: `${parsed.Description}${camera}`,
+    priority,
+    source: "milestone",
+    ...(parsed.Timestamp !== undefined
+      ? { occurredAt: normalizeTimestamp(parsed.Timestamp) }
+      : {}),
+    ...(parsed.Guid !== undefined ? { externalEventId: parsed.Guid } : {}),
   });
 }
 

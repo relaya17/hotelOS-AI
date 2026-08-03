@@ -4,6 +4,7 @@ import { Ids } from "@hotelos/shared";
 import {
   canAccessHotel,
   canAccessSensitiveHrDocuments,
+  canApproveLedgerClose,
   hasAnyRole,
   type AuthPrincipal,
 } from "./tenancy.js";
@@ -61,4 +62,17 @@ test("sensitive HR docs require dedicated hr role (not admin)", () => {
   };
   assert.equal(canAccessSensitiveHrDocuments(adminOnly), false);
   assert.equal(canAccessSensitiveHrDocuments(hrUser), true);
+});
+
+test("canApproveLedgerClose requires accountant or cfo", () => {
+  const adminOnly: AuthPrincipal = {
+    userId: Ids.user("11111111-1111-4111-8111-111111111111"),
+    roles: ["admin"],
+    scope: { tenantId: Ids.tenant("11111111-1111-4111-8111-111111111111") },
+  };
+  const cfo: AuthPrincipal = { ...adminOnly, roles: ["cfo"] };
+  const accountant: AuthPrincipal = { ...adminOnly, roles: ["accountant"] };
+  assert.equal(canApproveLedgerClose(adminOnly), false);
+  assert.equal(canApproveLedgerClose(cfo), true);
+  assert.equal(canApproveLedgerClose(accountant), true);
 });

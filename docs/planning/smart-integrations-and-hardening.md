@@ -1,7 +1,7 @@
 # תכנון — מצלמות AI, כרטיסים חכמים לדלתות, ניטור שגיאות, נגישות, אבטחה וסוכן פנימי לפתרון בעיות
 
 **סטטוס:** ביישום פעיל (MVP חלקי–מלא לפי שלבים)  
-**תאריך:** 2026-07-17 · **עדכון סטטוס:** 2026-07-19
+**תאריך:** 2026-07-17 · **עדכון סטטוס:** 2026-08-03
 
 ## רקע ומטרה
 
@@ -94,20 +94,34 @@
 |---|---|---|---|
 | א' | Rate limiting + audit log על ה-API הקיים | נמוכה | ✅ MVP — RL + audit + alerting (IT task על פעולות רגישות) |
 | ב' | ניטור שגיאות עם Sentry (טיר חינמי) + חיווט ל-`department_tasks` | נמוכה | ✅ MVP — API + 3 Vite apps + `error-events`→IT; חסר DSN פרוד / webhook Sentry |
-| ג' | נגישות WCAG 2.2 AA על 3 האפליקציות הקיימות | נמוכה-בינונית | 🟡 חלקי — skip-link, touch 44px, focus SPA + בדיקות יסוד ב־CI; axe E2E / jsx-a11y ממתינים (eslint-plugin-jsx-a11y טרם תומך ESLint 10) |
-| ד' | תמצית יומית חכמה לכל מנהל (סעיף 4.1, שלב 1) | בינונית | ✅ MVP — CIO digest + Gateway + cron; WhatsApp בשלב הבא (PO) |
-| ה' | זיהוי אנומליות פיננסיות/תפעוליות (סעיף 4.1, שלב 2) | בינונית-גבוהה | ✅ MVP כללים — `detect-ops-anomalies` + cron; חסר baselines סטטיסטיים |
-| ו' | אינטגרציית מצלמות AI מול ה-VMS הקיים במלון פיילוט אחד | גבוהה | 🟡 גנרי + `ingest/:provider` (`example_vms`); חסר adapter ספק אמיתי + פיילוט + משפטי |
-| ז' | סוכן RAG לחשבונאות/מס עם מקורות מאומתים + human-in-the-loop לביצוע כספי | גבוהה | 🟡 MVP pack — ledger pack + IFRS/מס Trusted Sources ל־`agent.cfo`; חסר role accountant + ledger-close HITL |
+| ג' | נגישות WCAG 2.2 AA על 3 האפליקציות הקיימות | נמוכה-בינונית | ✅ MVP CI — skip-link/touch/focus + axe-core smoke על shell fixture; Playwright E2E מלא אופציונלי בהמשך |
+| ד' | תמצית יומית חכמה לכל מנהל (סעיף 4.1, שלב 1) | בינונית | ✅ MVP — CIO digest + Gateway + cron + WhatsApp opt-in (`DIGEST_WHATSAPP_TO`) |
+| ה' | זיהוי אנומליות פיננסיות/תפעוליות (סעיף 4.1, שלב 2) | בינונית-גבוהה | ✅ MVP כללים + baseline סטטיסטי ראשוני — `detect-ops-anomalies` (סף קבוע + `journal_amount_outlier` ממוצע+2σ מ־5 תנועות ומעלה) + cron |
+| ו' | אינטגרציית מצלמות AI מול ה-VMS הקיים במלון פיילוט אחד | גבוהה | 🟡 גנרי + `ingest/:provider` (`example_vms`, `milestone`); חסר פיילוט אמיתי + משפטי |
+| ז' | סוכן RAG לחשבונאות/מס עם מקורות מאומתים + human-in-the-loop לביצוע כספי | גבוהה | ✅ MVP שלם — role `accountant` (`canApproveLedgerClose`) + Suggest→Approve→Act ל־ledger close (`autonomy.ledger_close`); ledger pack + IFRS/מס Trusted Sources ל־`agent.cfo` |
 
-### מה נשאר (סדר מומלץ)
+### מה נשאר (מחוץ לקוד / תפעול)
 
-1. **ג׳ (השלמה)** — axe E2E במסכי ליבה (כש־jsx-a11y/ESLint 10 יתייצב)  
-2. **ו׳** — החלפת `example_vms` ב־adapter לספק הפיילוט + ייעוץ משפטי תיקון 13 לפני הפעלה  
-3. **ה׳ (העמקה)** — baselines סטטיסטיים כשיש היסטוריה  
-4. **ז׳ (השלמה)** — role `accountant` + Suggest→Approve→Act ל־ledger close  
-5. **ד׳ (המשך)** — WhatsApp מתוזמן (לא חוסם MVP)  
-6. **מחוץ לסקופ** — מנעולים חכמים (נדחה PO); self-healing אוטונומי מלא
+1. **ו׳ (שטח)** — פיילוט מלון מול VMS אמיתי + ייעוץ משפטי תיקון 13 (adapter `milestone` מוכן בקוד)  
+2. **ה׳ (העמקה)** — היסטוריית זמן ארוכה יותר לכיול baseline (מעבר ל־mean+2σ על יומן נוכחי)  
+3. **ג׳ (אופציונלי)** — Playwright axe על מסכי login חיים  
+4. **Vercel Hobby** — rate-limit על פריסות מרובות; להשהות פרויקטי כפילות / להמתין 24ש׳  
+5. **מחוץ לסקופ** — מנעולים חכמים (נדחה PO); self-healing אוטונומי מלא
+
+### ✅ הושלם — ז׳ ledger-close HITL (2026-08-03)
+
+- `canApproveLedgerClose` ב־`packages/auth` — role `accountant` או `cfo` בלבד; אדמין לבדו אינו מספיק (תואם את דפוס ה־HR הרגיש).
+- `accounting_periods` (סכימה + migration + `TurboRepository`): `open` → `pending_close` → `closed`, עם `approvalId`/`closedByUserId`.
+- `POST /v1/autonomy/suggest-ledger-close` — `agent.cfo` מציע סגירת חודש (`periodKey` בפורמט `YYYY-MM`); ניגש עם `canApproveLedgerClose` **או** `canDecideOpsHitl`; דוחה אם התקופה כבר סגורה/ממתינה.
+- `POST /v1/ai/approvals/:id/decide` — Approve לסוג `autonomy.ledger_close` דורש **בנוסף** `canApproveLedgerClose` (רואה חשבון/CFO) — לא מספיק admin/GM כמו HITL תפעולי רגיל.
+- Act (`executeApprovalAct`) סוגר את התקופה בפועל דרך `turbo.closeAccountingPeriod` ופותח משימת מעקב במחלקת הכספים — ללא פתיחה מחדש אוטומטית.
+- לקוח: `suggestAutonomyLedgerClose` (`packages/web-client`) + כפתור "הצע סגירת [חודש קודם]" ב־`apps/executive/src/turbo-accounting-page.tsx`.
+
+### ✅ נוסף — חיזוקים משלימים (2026-08-03)
+
+- **ו׳ (מצלמות):** ספק Milestone XProtect (`SiteId`/`Name`/`Description`/`Priority` 0–3/`CameraId?`/`Guid?`) נוסף ל־`mapSecurityWebhook` ול־`POST /v1/ops/security-events/ingest/:provider`.
+- **ה׳ (אנומליות):** `journal_amount_outlier` — זיהוי סטטיסטי (ממוצע + 2σ) על סכומי יומן, פעיל מ־5 תנועות ומעלה; משלים (לא מחליף) את סף ה־₪ הקבוע הקיים.
+- **ד׳ (תמצית יומית):** WhatsApp מתוזמן ל־CIO daily digest — `DIGEST_WHATSAPP_TO` (env אופציונלי) + `notifications`/`whatsapp` ב־`run-cio-daily-digest`; ריק = תיבת In-app בלבד (ללא שינוי בברירת המחדל).
 
 ## החלטות PO (2026-07-18)
 
@@ -119,7 +133,7 @@ Product Owner אישרה את כל המסמך ("הכל אמור להיות של�
 | 2 | ערוץ הגשת התמצית היומית | **In-app first** (בתוך Admin/Executive הקיים — badge/feed, תואם לתדריך `agent.cio`), **WhatsApp מתוזמן לשלב הבא** (לא MVP). מייל/SMS לא בעדיפות ראשונה. |
 | 3 | שכבת אישור אנושי ל־RAG חשבונאות | **רואה חשבון אנושי מאשר תמיד** — מדובר בתפקיד/role ייעודי (`accountant` / CFO) שמאשר כל סגירת ספרים (ledger close) מעבר לסוף חודש; הסוכן (`agent.cfo` + RAG חשבונאות) רק מכין טיוטה/המלצה ומצטט מקור. אין ביצוע/סגירה אוטונומית בלי אישור זה — עקבי עם עקרון human-in-the-loop המלא שהוגדר כבר בסעיף 4.1 למעלה. |
 
-מסכם: אין blocker PO שנותר למודול זה. שלבים א׳–ב׳ + ד׳–ה׳ ב־MVP בקוד; ז׳ התחיל (ledger + Trusted pack ל־CFO). ההמשך: ג׳ (axe), ו׳ (VMS ספק), ז׳ HITL ledger-close.
+מסכם: אין blocker PO שנותר למודול זה. שלבים א׳–ב׳ + ד׳–ז׳ ב־MVP בקוד (כולל ledger-close HITL מלא). ההמשך: ג׳ (axe E2E), ו׳ (פיילוט VMS אמיתי בשטח).
 
 ## מקורות
 

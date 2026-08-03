@@ -30,4 +30,31 @@ describe("mapSecurityWebhook", () => {
     assert.match(event.description, /CAM-12/);
     assert.equal(event.externalEventId, "evt-99");
   });
+
+  it("maps milestone XProtect alarms into HotelOS priority", () => {
+    const event = mapSecurityWebhook("milestone", {
+      SiteId: "11111111-1111-4111-8111-111111111111",
+      Name: "Motion in restricted area",
+      Description: "Movement detected in service parking",
+      Priority: 3,
+      CameraId: "CAM-07",
+      Guid: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      Timestamp: "2026-07-19T10:00:00Z",
+    });
+    assert.equal(event.priority, "urgent");
+    assert.equal(event.source, "milestone");
+    assert.match(event.description, /CAM-07/);
+    assert.equal(event.externalEventId, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  });
+
+  it("maps low-priority milestone alarms without optional fields", () => {
+    const event = mapSecurityWebhook("milestone", {
+      SiteId: "11111111-1111-4111-8111-111111111111",
+      Name: "Door held open",
+      Description: "Service door open longer than 60s",
+      Priority: 0,
+    });
+    assert.equal(event.priority, "low");
+    assert.equal(event.externalEventId, undefined);
+  });
 });

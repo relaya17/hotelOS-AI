@@ -78,14 +78,19 @@ each `vercel.json` already assume this.
 | `PAYMENT_EXTERNAL_URL` / `PAYMENT_EXTERNAL_TOKEN` | required when `PAYMENT_PROVIDER=external` |
 | `WHATSAPP_PROVIDER` | optional — `demo` (default), `http`, `meta`, or `off` |
 | `WHATSAPP_API_TOKEN` / `WHATSAPP_META_PHONE_NUMBER_ID` | required for `meta`; token + URL for `http` |
+| `DIGEST_WHATSAPP_TO` | optional — phone number (E.164 or Israeli local) that also receives the scheduled CIO daily digest over WhatsApp; empty = in-app inbox only |
 
 Deploy this project first; note its URL (e.g. `https://hotelos-api.vercel.app`).
 
-### Rate limits / duplicate Git projects
+### Rate limits / duplicate Git projects (Hobby plan)
 
 Vercel Hobby can return **Deployment rate limited — retry in 24 hours** when many
 projects are connected to the same GitHub repo and fire on every `main` push
 (five `*-eight` apps + leftover projects like `hotel` / `hotel-os-ai-admin`).
+Hobby also caps **serverless function execution** (duration + concurrent
+invocations) more tightly than Pro — combined with a misconfigured
+`NODEJS_HELPERS` this can look like double the real request volume, since
+Vercel's Node helper wraps (and re-invokes) the request before Hono sees it.
 
 Mitigations:
 
@@ -96,6 +101,14 @@ Mitigations:
    releases instead of rapid consecutive pushes.
 3. After a rate-limit window, redeploy API first (`hotel-os-ai-api-eight`), then
    the four frontends.
+4. **Always set `NODEJS_HELPERS=0`** on the API project (see the env table
+   above and `apps/api/api/index.ts`). Without it, Vercel's Node.js builder
+   wraps the request/response before Hono sees it, which both breaks
+   streaming/edge-style handling and inflates function invocation counts —
+   worth checking first if Hobby's function quota is hit unexpectedly.
+5. HotelOS's own `rate-limit.ts` (separate budget for `/v1/ai/*`) runs
+   in-process and does **not** reduce Vercel's platform-level Hobby limits —
+   the two are independent layers; both matter for capacity planning.
 
 ## 3. Frontend project env vars (`executive`, `admin`, `guest`, `work`)
 

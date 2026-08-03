@@ -1,6 +1,7 @@
 import { Hono, type Context } from "hono";
 import {
   canAccessHotel,
+  canApproveLedgerClose,
   canDecideOpsHitl,
   canOperateProcurement,
   type AuthPrincipal,
@@ -16,6 +17,7 @@ import type {
   ProcurementRepository,
   RecruitingRepository,
   RoomRepository,
+  TurboRepository,
 } from "@hotelos/database";
 import { Ids, type HotelId } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
@@ -67,6 +69,7 @@ export type AutonomyRouteDeps = {
   readonly bookings: BookingRepository;
   readonly recruiting: RecruitingRepository;
   readonly feedback: FeedbackRepository;
+  readonly turbo: TurboRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -173,6 +176,13 @@ const suggestMaintenanceQuoteAcceptSchema = z.object({
   agentId: z.string().trim().min(3).max(80).default("agent.maintenance"),
   summaryHe: z.string().trim().min(2).max(240).optional(),
   reasonHe: z.string().trim().min(2).max(500).optional(),
+});
+
+const suggestLedgerCloseSchema = z.object({
+  hotelId: z.string().uuid(),
+  /** YYYY-MM fiscal month key. */
+  periodKey: z.string().regex(/^\d{4}-\d{2}$/),
+  agentId: z.string().trim().min(3).max(80).default("agent.cfo"),
 });
 
 const suggestSchema = z.discriminatedUnion("kind", [
@@ -1067,6 +1077,115 @@ export function createAutonomyRoutes(deps: AutonomyRouteDeps): Hono<{
             rating: item.rating,
             nextStepHe:
               "Approve בתיבת אישורי AI → Act ייפתח משימת מעקב במחלקה (ללא הודעה לאורח)",
+          },
+        },
+        201,
+      );
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /**
+   * Suggest ledger close for a fiscal month — stage ז׳ HITL.
+   * Full human-in-the-loop: Act never runs without accountant/CFO Approve
+   * (see `canApproveLedgerClose`); admin alone is not enough there.
+   */
+  routes.post("/suggest-ledger-close", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = suggestLedgerCloseSchema.parse(await c.req.json());
+      const hotelId = Ids.hotel(body.hotelId);
+      if (!canAccessHotel(principal, hotelId)) {
+        return sendError(c, 403, "FORBIDDEN", "No access to this hotel");
+      }
+      if (!canApproveLedgerClose(principal) && !canDecideOpsHitl(principal)) {
+        return sendError(
+          c,
+          403,
+          "ROLE_REQUIRED",
+          "Ledger-close Suggest requires an accountant/CFO or ops/management role",
+        );
+      }
+      const now = new Date().toISOString();
+
+      const period = await deps.turbo.ensureAccountingPeriod({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        periodKey: body.periodKey,
+        createdAt: now,
+      });
+      if (period.status === "closed") {
+        return sendError(
+          c,
+          409,
+          "PERIOD_ALREADY_CLOSED",
+          `Period ${body.periodKey} is already closed`,
+        );
+      }
+      if (period.status === "pending_close") {
+        return sendError(
+          c,
+          409,
+          "PERIOD_PENDING_CLOSE",
+          `Period ${body.periodKey} already has a pending close approval`,
+        );
+      }
+
+      const created = await deps.approvals.create({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        hotelId,
+        agentId: body.agentId,
+        requestedByUserId: principal.userId,
+        summaryHe: `סגירת ספרים לחודש ${body.periodKey}`,
+        reasonHe:
+          "הצעת agent.cfo — נדרש אישור רואה חשבון/CFO לפני סגירת תקופה חשבונאית (HITL מלא; אין ביצוע כספי אוטונומי).",
+        payloadJson: JSON.stringify({
+          kind: "autonomy.ledger_close",
+          hotelId: body.hotelId,
+          periodKey: body.periodKey,
+        }),
+        createdAt: now,
+      });
+
+      const marked = await deps.turbo.markAccountingPeriodPendingClose({
+        tenantId: principal.scope.tenantId,
+        periodKey: body.periodKey,
+        approvalId: created.id,
+        updatedAt: now,
+      });
+      if (!marked) {
+        return sendError(
+          c,
+          500,
+          "PERIOD_UPDATE_FAILED",
+          "Failed to mark period pending close",
+        );
+      }
+
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "autonomy.suggest_ledger_close",
+        resourceType: "ai_approval_request",
+        resourceId: created.id,
+        metadata: {
+          periodKey: body.periodKey,
+          agentId: body.agentId,
+        },
+        createdAt: now,
+      });
+
+      return c.json(
+        {
+          data: {
+            approval: created,
+            period: marked,
+            autonomyStep: "suggest",
+            nextStepHe:
+              "Approve בתיבת אישורי AI (רואה חשבון/CFO בלבד) → Act יסגור את התקופה + משימת מעקב כספים",
           },
         },
         201,

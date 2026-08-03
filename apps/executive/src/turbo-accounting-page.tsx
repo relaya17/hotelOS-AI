@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
+import { Button } from "@hotelos/ui";
 import { tUi, type LocaleCode } from "@hotelos/i18n";
-import { fetchAccounting, type AccountingDto } from "@hotelos/web-client";
+import {
+  fetchAccounting,
+  listHotels,
+  suggestAutonomyLedgerClose,
+  type AccountingDto,
+  type HotelDto,
+} from "@hotelos/web-client";
 
 export type TurboAccountingPageProps = {
   readonly locale: LocaleCode;
@@ -12,16 +19,35 @@ function formatMoney(minor: number, currency: string): string {
   })} ${currency}`;
 }
 
+/** Previous calendar month key (YYYY-MM), e.g. run in August → "2026-07". */
+function previousCalendarMonthKey(now: Date = new Date()): string {
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth(); // 0-based; -1 = previous month
+  const previous = new Date(Date.UTC(year, month - 1, 1));
+  const yyyy = previous.getUTCFullYear();
+  const mm = String(previous.getUTCMonth() + 1).padStart(2, "0");
+  return `${yyyy}-${mm}`;
+}
+
 export function TurboAccountingPage({ locale }: TurboAccountingPageProps) {
   const [data, setData] = useState<AccountingDto | null>(null);
+  const [hotels, setHotels] = useState<readonly HotelDto[]>([]);
   const [error, setError] = useState<string | undefined>();
+  const [notice, setNotice] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const next = await fetchAccounting();
-        if (!cancelled) setData(next);
+        const [next, hotelRows] = await Promise.all([
+          fetchAccounting(),
+          listHotels(),
+        ]);
+        if (!cancelled) {
+          setData(next);
+          setHotels(hotelRows);
+        }
       } catch (loadError) {
         if (!cancelled) {
           setError(
@@ -36,6 +62,33 @@ export function TurboAccountingPage({ locale }: TurboAccountingPageProps) {
     };
   }, []);
 
+  const primaryHotelId = hotels[0]?.id;
+  const periodKey = previousCalendarMonthKey();
+
+  async function handleSuggestLedgerClose() {
+    if (!primaryHotelId) return;
+    try {
+      setBusy(true);
+      setError(undefined);
+      setNotice(undefined);
+      const result = await suggestAutonomyLedgerClose({
+        hotelId: primaryHotelId,
+        periodKey,
+      });
+      setNotice(
+        `Suggest נשלח: סגירת ${result.periodKey} · ממתין לאישור רואה חשבון/CFO (${result.approvalId.slice(0, 8)}…).`,
+      );
+    } catch (suggestError) {
+      setError(
+        suggestError instanceof Error
+          ? suggestError.message
+          : "שליחת Suggest נכשלה",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="page">
       <header>
@@ -49,6 +102,28 @@ export function TurboAccountingPage({ locale }: TurboAccountingPageProps) {
           {error}
         </p>
       ) : null}
+      {notice !== undefined ? (
+        <p className="notice" role="status">
+          {notice}
+        </p>
+      ) : null}
+
+      <section className="card">
+        <h2>סגירת ספרים חודשית (stage ז׳)</h2>
+        <p className="hint">
+          HITL מלא — הסוכן (agent.cfo) רק מציע; רואה חשבון/CFO חייב לאשר
+          לפני סגירה בפועל. אדמין בלבד אינו מספיק.
+        </p>
+        <Button
+          type="button"
+          disabled={busy || !primaryHotelId}
+          onClick={() => void handleSuggestLedgerClose()}
+        >
+          {busy
+            ? "שולח…"
+            : `הצע סגירת ${periodKey} (החודש הקודם)`}
+        </Button>
+      </section>
 
       {data ? (
         <>
@@ -115,6 +190,7 @@ export function TurboAccountingPage({ locale }: TurboAccountingPageProps) {
         .table span{color:var(--color-ink-soft);font-size:var(--text-small)}
         code{font-size:.85em;background:rgb(15 106 92 / 10%);padding:.1rem .35rem;border-radius:.25rem;margin-inline-end:.35rem}
         .err{color:var(--color-danger)}
+        .notice{color:var(--color-sea-deep);font-weight:600}
       `}</style>
     </div>
   );

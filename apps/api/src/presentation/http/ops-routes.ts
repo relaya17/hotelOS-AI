@@ -1070,18 +1070,18 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
     }
   });
 
-  /** Vendor adapter entry — e.g. POST /security-events/ingest/example_vms */
+  /** Vendor adapter entry — e.g. POST /security-events/ingest/example_vms or /milestone */
   routes.post("/security-events/ingest/:provider", async (c) => {
     try {
       const providerParsed = z
-        .enum(["generic", "example_vms"])
+        .enum(["generic", "example_vms", "milestone"])
         .safeParse(c.req.param("provider"));
       if (!providerParsed.success) {
         return sendError(
           c,
           400,
           "UNKNOWN_PROVIDER",
-          "Supported providers: generic, example_vms",
+          "Supported providers: generic, example_vms, milestone",
         );
       }
       const body = mapSecurityWebhook(

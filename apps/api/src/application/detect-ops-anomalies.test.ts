@@ -114,4 +114,28 @@ describe("detectOpsAnomalies", () => {
     });
     assert.equal(findings.length, 0);
   });
+
+  it("flags a journal amount as a statistical outlier (mean + 2σ) with 5+ rows", () => {
+    const journal = [
+      { id: "j1", memo: "a", debit: 1000, credit: 0, entryDate: "2026-07-14", accountName: "קופה" },
+      { id: "j2", memo: "b", debit: 1050, credit: 0, entryDate: "2026-07-15", accountName: "קופה" },
+      { id: "j3", memo: "c", debit: 950, credit: 0, entryDate: "2026-07-16", accountName: "קופה" },
+      { id: "j4", memo: "d", debit: 1020, credit: 0, entryDate: "2026-07-17", accountName: "קופה" },
+      { id: "j5", memo: "e", debit: 980, credit: 0, entryDate: "2026-07-17", accountName: "קופה" },
+      { id: "j6", memo: "outlier", debit: 5_000, credit: 0, entryDate: "2026-07-18", accountName: "קופה" },
+    ];
+    const findings = detectOpsAnomalies({ nowIso: now, hotels: [], journal });
+    const outliers = findings.filter((f) => f.type === "journal_amount_outlier");
+    assert.equal(outliers.length, 1);
+    assert.equal(outliers[0]?.resourceId, "j6");
+  });
+
+  it("does not run statistical outlier detection with fewer than 5 journal rows", () => {
+    const journal = [
+      { id: "j1", memo: "a", debit: 1000, credit: 0, entryDate: "2026-07-14", accountName: "קופה" },
+      { id: "j2", memo: "outlier", debit: 50_000, credit: 0, entryDate: "2026-07-18", accountName: "קופה" },
+    ];
+    const findings = detectOpsAnomalies({ nowIso: now, hotels: [], journal });
+    assert.equal(findings.some((f) => f.type === "journal_amount_outlier"), false);
+  });
 });

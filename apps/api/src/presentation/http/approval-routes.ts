@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import {
   canAccessHotel,
+  canApproveLedgerClose,
   canApproveMoneyAmount,
   canDecideOpsHitl,
   type JwtTokenService,
@@ -14,6 +15,7 @@ import type {
   OpsRepository,
   ProcurementRepository,
   RecruitingRepository,
+  TurboRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
@@ -28,6 +30,7 @@ import {
 } from "../../application/evaluate-kashrut-procurement-gate.js";
 import {
   executeApprovalAct,
+  isLedgerCloseApprovalPayload,
   PROCUREMENT_CHAIN_APPROVAL_ILS,
   PROCUREMENT_HOTEL_APPROVAL_ILS,
 } from "../../application/execute-approval-act.js";
@@ -43,6 +46,7 @@ export type ApprovalRouteDeps = {
   readonly recruiting: RecruitingRepository;
   readonly hotels: HotelRepository;
   readonly kashrut: KashrutRepository;
+  readonly turbo: TurboRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -129,6 +133,18 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
         );
       }
 
+      if (
+        isLedgerCloseApprovalPayload(pending.payloadJson) &&
+        !canApproveLedgerClose(principal)
+      ) {
+        return sendError(
+          c,
+          403,
+          "LEDGER_CLOSE_ROLE_REQUIRED",
+          "Ledger-close approval requires an accountant or CFO role — admin alone is not enough",
+        );
+      }
+
       if (isMoneyApprovalPayload(pending.payloadJson)) {
         const amountIls = estimateApprovalAmountIls(pending.payloadJson);
         if (
@@ -196,6 +212,7 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
                 procurement: deps.procurement,
                 maintenance: deps.maintenance,
                 recruiting: deps.recruiting,
+                turbo: deps.turbo,
               },
               updated,
               principal.userId,

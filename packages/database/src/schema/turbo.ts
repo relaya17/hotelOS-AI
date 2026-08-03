@@ -87,6 +87,28 @@ export const journalEntries = sqliteTable(
   ],
 );
 
+/** Fiscal month periods — open until accountant/CFO HITL closes (stage ז׳). */
+export const accountingPeriods = sqliteTable(
+  "accounting_periods",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    periodKey: text("period_key").notNull(),
+    status: text("status").notNull(),
+    closedAt: text("closed_at"),
+    closedByUserId: text("closed_by_user_id").references(() => users.id),
+    approvalId: text("approval_id"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("accounting_periods_tenant_idx").on(table.tenantId),
+    index("accounting_periods_tenant_key_idx").on(table.tenantId, table.periodKey),
+  ],
+);
+
 export const automations = sqliteTable(
   "automations",
   {

@@ -9,7 +9,11 @@ export type OpsAnomalyType =
   | "stale_urgent_maintenance"
   | "large_purchase_order"
   | "large_journal_entry"
-  | "same_day_maintenance_close";
+  | "same_day_maintenance_close"
+  | "journal_amount_outlier";
+
+/** Minimum journal rows before statistical (mean+2σ) outlier detection kicks in. */
+export const JOURNAL_OUTLIER_MIN_ROWS = 5;
 
 export type OpsAnomalySeverity = "low" | "medium" | "high" | "urgent";
 
@@ -151,7 +155,8 @@ export function detectOpsAnomalies(input: {
     }
   }
 
-  for (const entry of input.journal ?? []) {
+  const journalRows = input.journal ?? [];
+  for (const entry of journalRows) {
     const amount = Math.max(entry.debit, entry.credit);
     if (amount < ANOMALY_AMOUNT_THRESHOLD_MINOR) continue;
     findings.push({
@@ -168,7 +173,48 @@ export function detectOpsAnomalies(input: {
     });
   }
 
+  findings.push(...detectJournalAmountOutliers(journalRows, detectedAt));
+
   return findings.sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
+}
+
+/**
+ * Statistical baseline (mean + 2σ) over journal amounts — Stage ה' depth
+ * follow-up. Needs at least `JOURNAL_OUTLIER_MIN_ROWS` rows to be meaningful;
+ * complements the fixed `large_journal_entry` threshold, not a replacement.
+ */
+function detectJournalAmountOutliers(
+  journal: readonly AnomalyJournalRow[],
+  detectedAt: string,
+): readonly OpsAnomaly[] {
+  if (journal.length < JOURNAL_OUTLIER_MIN_ROWS) return [];
+  const amounts = journal.map((entry) => Math.max(entry.debit, entry.credit));
+  const mean = amounts.reduce((sum, value) => sum + value, 0) / amounts.length;
+  const variance =
+    amounts.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
+    amounts.length;
+  const stddev = Math.sqrt(variance);
+  if (stddev <= 0) return [];
+  const threshold = mean + 2 * stddev;
+
+  const findings: OpsAnomaly[] = [];
+  for (const entry of journal) {
+    const amount = Math.max(entry.debit, entry.credit);
+    if (amount <= threshold) continue;
+    findings.push({
+      fingerprint: `journal_amount_outlier:${entry.id}`,
+      type: "journal_amount_outlier",
+      severity: "high",
+      hotelId: null,
+      titleHe: `תנועת יומן חריגה סטטיסטית (מעל ממוצע + 2σ)`,
+      evidenceHe: `${entry.accountName}: ${(amount / 100).toLocaleString("he-IL")} מול ממוצע ${(mean / 100).toLocaleString("he-IL")} ± ${(stddev / 100).toLocaleString("he-IL")} (σ, n=${amounts.length}) · ${entry.memo || "ללא תיאור"} (${entry.entryDate}).`,
+      detectedAt,
+      amountMinor: amount,
+      resourceType: "journal_entry",
+      resourceId: entry.id,
+    });
+  }
+  return findings;
 }
 
 function sameUtcDay(aIso: string, bIso: string): boolean {
