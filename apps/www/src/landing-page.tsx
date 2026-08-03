@@ -137,15 +137,9 @@ export function LandingPage() {
           aria-label="HotelOS AI — ראש העמוד"
           onClick={closeMenu}
         >
-          <img
-            className="top__mark"
-            src="/icon-192.png"
-            width={36}
-            height={36}
-            alt=""
-            decoding="async"
-          />
-          <span>HotelOS AI</span>
+          <span className="top__brand-text">
+            HotelOS <span className="top__brand-ai">AI</span>
+          </span>
         </a>
 
         <button
@@ -182,18 +176,20 @@ export function LandingPage() {
           <div className="hero__media" aria-hidden="true" />
           <div className="hero__veil" aria-hidden="true" />
           <div className="hero__copy">
-            <img
-              className="hero__logo"
-              src="/logo-lockup.svg"
-              width={720}
-              height={120}
-              alt="HotelOS AI"
-              decoding="async"
-              fetchPriority="high"
-            />
-            <p id="hero-brand" className="hero__brand visually-hidden">
-              HotelOS AI
-            </p>
+            <div className="hero__identity">
+              <p id="hero-brand" className="hero__wordmark">
+                HotelOS <span className="hero__wordmark-ai">AI</span>
+              </p>
+              <img
+                className="hero__mark"
+                src="/brand-mark.svg"
+                width={64}
+                height={72}
+                alt=""
+                decoding="async"
+                fetchPriority="high"
+              />
+            </div>
             <h1 className="hero__title">
               The Intelligence Layer for Hotels
             </h1>
