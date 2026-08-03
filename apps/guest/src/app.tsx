@@ -47,9 +47,11 @@ function SiteFooter() {
         <a href={APP_URLS.legal("privacy")}>פרטיות</a>
       </p>
       <p className="site-footer__staff">
-        <a href={APP_URLS.admin}>ops</a>
+        <a href={APP_URLS.work}>work</a>
         {" · "}
-        <a href={APP_URLS.executive}>hq</a>
+        <a href={APP_URLS.ops}>ops</a>
+        {" · "}
+        <a href={APP_URLS.hq}>hq</a>
       </p>
       <style>{`
         .site-footer {

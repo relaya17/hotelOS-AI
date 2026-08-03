@@ -1,0 +1,239 @@
+import { useEffect, useState } from "react";
+import { AttendancePage } from "@hotelos/features";
+import { Button, CookieBanner, SkipLink } from "@hotelos/ui";
+import {
+  APP_URLS,
+  clearSession,
+  fetchMe,
+  getConsentSubjectKey,
+  readAccessToken,
+  readStoredUser,
+  saveCookieConsent,
+  type StoredUser,
+} from "@hotelos/web-client";
+import { HrAgentPanel } from "./hr-agent-panel.js";
+import { InvitePage } from "./invite-page.js";
+import { LoginPage } from "./login-page.js";
+
+type WorkTab = "attendance" | "agent";
+
+function readInviteToken(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get("invite");
+  if (fromQuery && fromQuery.trim().length > 0) return fromQuery.trim();
+  const path = window.location.pathname;
+  const match = path.match(/^\/invite\/([^/]+)\/?$/);
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
+}
+
+function WorkCookieBanner() {
+  return (
+    <CookieBanner
+      legalCookiesUrl={APP_URLS.legal("cookies")}
+      onConsent={(consent) => {
+        void saveCookieConsent({
+          subjectKey: getConsentSubjectKey("work"),
+          necessary: consent.necessary,
+          functional: consent.functional,
+        });
+      }}
+    />
+  );
+}
+
+export function App() {
+  const [inviteToken, setInviteToken] = useState<string | null>(readInviteToken);
+  const [user, setUser] = useState<StoredUser | null>(null);
+  const [booting, setBooting] = useState(true);
+  const [tab, setTab] = useState<WorkTab>("attendance");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function restore() {
+      if (!readAccessToken()) {
+        if (!cancelled) {
+          setUser(null);
+          setBooting(false);
+        }
+        return;
+      }
+      try {
+        const me = await fetchMe();
+        if (!cancelled) {
+          setUser(readStoredUser() ?? {
+            id: me.id,
+            email: me.email,
+            displayName: me.displayName,
+            roles: me.roles,
+            tenantId: me.scope.tenantId,
+            ...(me.scope.hotelId !== undefined
+              ? { hotelId: me.scope.hotelId }
+              : {}),
+          });
+        }
+      } catch {
+        clearSession();
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setBooting(false);
+      }
+    }
+    void restore();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (inviteToken) {
+    return (
+      <>
+        <SkipLink />
+        <InvitePage
+          token={inviteToken}
+          onDone={() => {
+            window.history.replaceState({}, "", "/");
+            setInviteToken(null);
+          }}
+        />
+        <WorkCookieBanner />
+      </>
+    );
+  }
+
+  if (booting) {
+    return (
+      <main className="work-boot">
+        <p>טוען…</p>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <LoginPage onLoggedIn={setUser} />
+        <WorkCookieBanner />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SkipLink />
+      <div className="work-shell">
+        <header className="work-bar">
+          <div>
+            <p className="work-bar__brand">HotelOS Work</p>
+            <p className="work-bar__user">{user.displayName}</p>
+          </div>
+          <nav className="hotelos-seg" aria-label="ניווט עובד">
+            <button
+              type="button"
+              className={
+                tab === "attendance"
+                  ? "hotelos-seg__item hotelos-seg__item--on"
+                  : "hotelos-seg__item"
+              }
+              aria-pressed={tab === "attendance"}
+              onClick={() => setTab("attendance")}
+            >
+              נוכחות
+            </button>
+            <button
+              type="button"
+              className={
+                tab === "agent"
+                  ? "hotelos-seg__item hotelos-seg__item--on"
+                  : "hotelos-seg__item"
+              }
+              aria-pressed={tab === "agent"}
+              onClick={() => setTab("agent")}
+            >
+              סוכן HR
+            </button>
+          </nav>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              clearSession();
+              setUser(null);
+            }}
+          >
+            יציאה
+          </Button>
+        </header>
+
+        <main id="main-content" className="work-main" tabIndex={-1}>
+          {tab === "attendance" ? <AttendancePage /> : <HrAgentPanel />}
+        </main>
+
+        <footer className="work-footer">
+          <a href={APP_URLS.ops}>ops</a>
+          {" · "}
+          <a href={APP_URLS.hq}>hq</a>
+          {" · "}
+          <a href={APP_URLS.book}>book</a>
+        </footer>
+      </div>
+      <WorkCookieBanner />
+      <style>{`
+        .work-boot {
+          min-height: 100vh;
+          display: grid;
+          place-items: center;
+          color: var(--color-ink-soft);
+        }
+        .work-shell {
+          min-height: 100vh;
+          display: grid;
+          grid-template-rows: auto 1fr auto;
+          gap: var(--space-4);
+          padding: clamp(1rem, 3vw, 1.75rem);
+          padding-bottom: clamp(4.5rem, 10vw, 6rem);
+        }
+        .work-bar {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--space-3);
+          position: sticky;
+          top: 0;
+          z-index: 5;
+          background: var(--color-paper);
+          padding-block: 0.5rem;
+        }
+        .work-bar__brand {
+          margin: 0;
+          font-family: var(--font-display);
+          font-size: 1.25rem;
+          color: var(--color-sea-deep);
+        }
+        .work-bar__user {
+          margin: 0.15rem 0 0;
+          color: var(--color-ink-soft);
+          font-size: var(--text-small);
+          font-weight: 500;
+        }
+        .work-main {
+          max-width: 42rem;
+          width: 100%;
+          margin-inline: auto;
+          animation: hotelos-enter var(--motion-med) var(--ease-out) both;
+        }
+        .work-footer {
+          font-size: var(--text-small);
+          color: var(--color-ink-faint);
+          text-align: center;
+        }
+        .work-footer a {
+          color: inherit;
+          font-weight: 600;
+          text-decoration: none;
+        }
+        .work-footer a:hover { text-decoration: underline; }
+      `}</style>
+    </>
+  );
+}

@@ -1,0 +1,9 @@
+{
+  "name": "HotelOS AI Work",
+  "short_name": "HotelOS Work",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f6f5",
+  "theme_color": "#0f6a5c",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

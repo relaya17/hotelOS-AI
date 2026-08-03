@@ -15,8 +15,8 @@ function resolveApiOrigin(requestUrl: URL): string {
     return configured.replace(/\/$/, "");
   }
   const apiHost = requestUrl.hostname
-    .replace(/-(admin|executive|guest|api)-/i, "-api-")
-    .replace(/-(admin|executive|guest|api)\.vercel\./i, "-api.vercel.");
+    .replace(/-(admin|executive|guest|work|api)-/i, "-api-")
+    .replace(/-(admin|executive|guest|work|api)\.vercel\./i, "-api.vercel.");
   return `https://${apiHost}`;
 }
 

@@ -113,8 +113,8 @@ export function LoginPage({ onLoggedIn }: LoginPageProps) {
             אפליקציה נפרדת לתפעול יומיומי: חדרים, הזמנות וצוות — לפי מלון נבחר.
           </p>
           <p className="auth-apps">
-            <a href={APP_URLS.executive}>לוח בקרה לרשת</a> ·{" "}
-            <a href={APP_URLS.guest}>אורחים</a>
+            <a href={APP_URLS.hq}>hq</a> · <a href={APP_URLS.work}>work</a> ·{" "}
+            <a href={APP_URLS.book}>book</a>
           </p>
         </section>
         <section className="auth-panel">

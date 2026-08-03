@@ -103,9 +103,11 @@ export function LandingPage({ onBookIntent, onFindStay }: LandingPageProps) {
           <a href={APP_URLS.legal("privacy")}>פרטיות</a>
         </p>
         <p className="landing-footer__staff">
-          <a href={APP_URLS.admin}>ops</a>
+          <a href={APP_URLS.work}>work</a>
           {" · "}
-          <a href={APP_URLS.executive}>hq</a>
+          <a href={APP_URLS.ops}>ops</a>
+          {" · "}
+          <a href={APP_URLS.hq}>hq</a>
         </p>
       </footer>
 

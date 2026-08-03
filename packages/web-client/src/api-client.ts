@@ -19,11 +19,11 @@ const API_STORAGE_KEY = "hotelos.apiBase";
 /** Map hotel-os-ai-admin-eight.vercel.app → hotel-os-ai-api-eight.vercel.app */
 function mapVercelAppRole(
   host: string,
-  role: "api" | "admin" | "executive" | "guest",
+  role: "api" | "admin" | "executive" | "guest" | "work",
 ): string {
   return host
-    .replace(/-(admin|executive|guest|api)-/i, `-${role}-`)
-    .replace(/-(admin|executive|guest|api)\.vercel\./i, `-${role}.vercel.`);
+    .replace(/-(admin|executive|guest|work|api)-/i, `-${role}-`)
+    .replace(/-(admin|executive|guest|work|api)\.vercel\./i, `-${role}.vercel.`);
 }
 
 function isLocalUrl(url: string): boolean {
@@ -95,7 +95,7 @@ export function describeRemoteApiMisconfig(cause?: unknown): string | undefined 
 }
 
 function resolveAppUrl(
-  role: "executive" | "admin" | "guest",
+  role: "executive" | "admin" | "guest" | "work",
   envKey: string,
   localDefault: string,
 ): string {
@@ -3345,6 +3345,19 @@ export const APP_URLS = {
   },
   get guest(): string {
     return resolveAppUrl("guest", "VITE_APP_URL_GUEST", "http://localhost:5175");
+  },
+  get work(): string {
+    return resolveAppUrl("work", "VITE_APP_URL_WORK", "http://localhost:5176");
+  },
+  /** Canonical aliases for the four audience surfaces. */
+  get hq(): string {
+    return APP_URLS.executive;
+  },
+  get ops(): string {
+    return APP_URLS.admin;
+  },
+  get book(): string {
+    return APP_URLS.guest;
   },
   legal(doc: "terms" | "cookies" | "security" | "privacy"): string {
     return `${APP_URLS.guest}/?doc=${doc}`;

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Button, TextField } from "@hotelos/ui";
 import {
+  APP_URLS,
   assignAssessment,
   createHrInvite,
   createLetterDraft,
@@ -283,10 +284,9 @@ export function HrPanel({ hotelId }: HrPanelProps) {
 
       {lastToken ? (
         <p className="hint">
-          קישור הרשמה (להעברה ידנית):{" "}
+          קישור הרשמה בפורטל עובדים (להעברה ידנית):{" "}
           <code>
-            {window.location.origin}
-            {window.location.pathname}?invite={lastToken}
+            {APP_URLS.work}/invite/{lastToken}
           </code>
         </p>
       ) : null}

@@ -24,7 +24,7 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default(
-      "http://localhost:5173,http://localhost:5174,http://localhost:5175",
+      "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176",
     ),
   GOOGLE_CLIENT_ID: z.string().optional().default(""),
   GOOGLE_CLIENT_SECRET: z.string().optional().default(""),
