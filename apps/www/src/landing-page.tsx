@@ -194,9 +194,10 @@ export function LandingPage() {
               The Intelligence Layer for Hotels
             </h1>
             <p className="hero__lead">
-              סוכני AI, אוטומציות, תחזיות, כספים, הזמנות וצ׳אט רב־לשוני — מעל
-              ה־PMS שלכם. כותבים בשפה אחת; הצד השני מקבל בשפתו. רואים מחר לפני
-              שהוא מגיע.
+              מתחילים מ־wedge ברור מעל ה־PMS: תדריך מנכ״ל יומי, מרכז תקלות עם
+              התראות, ותחזוקה חזויה — תמונה אחת של מה קורה עכשיו ומה צפוי מחר.
+              בלי להחליף Opera / Protel; עם Suggest → Approve → Act על מה
+              שקריטי.
             </p>
             <div className="hero__actions">
               <a className="btn btn--primary" href="#contact">
@@ -277,8 +278,9 @@ export function LandingPage() {
             רוחב היכולות — אחרי שמוכיחים ערך בפיילוט
           </h2>
           <p className="section__lead">
-            מתחילים מ־wedge ברור (תדריך מנכ״ל + תמונת תפעול מעל ה־PMS). משם
-            מרחיבים לכספים, תחזוקה חזויה, אורח וצ׳אט — בלי פרויקט החלפת מערכת.
+            אחרי שה־wedge מוכיח ערך — תדריך, תקלות ותחזוקה חזויה — מרחיבים
+            land &amp; expand לכספים, אורח, צ׳אט מתורגם והזמנות. אותה שכבה מעל
+            ה־PMS; בלי פרויקט החלפת מערכת.
           </p>
           <ul className="cap-grid">
             {CAPABILITIES.map((cap) => (

@@ -8,6 +8,7 @@ import type {
   PersistedReputationReview,
   PersistedUpsellOffer,
   ReputationRepository,
+  RevenueSuggestionsRepository,
   UpsellRepository,
 } from "@hotelos/database";
 import type { HotelId, TenantId } from "@hotelos/shared";
@@ -25,6 +26,7 @@ export type PilotRoiMetrics = {
   readonly upsellAcceptedCount: number;
   readonly upsellAcceptedRate: number | null;
   readonly negativeReviewResponseHours: number | null;
+  readonly revenueSuggestionApprovedRate: number | null;
   readonly notesHe: readonly string[];
 };
 
@@ -35,6 +37,7 @@ export type BuildPilotRoiMetricsDeps = {
   readonly bookings: BookingRepository;
   readonly upsells: UpsellRepository;
   readonly reputation: ReputationRepository;
+  readonly revenueSuggestions: RevenueSuggestionsRepository;
 };
 
 export type BuildPilotRoiMetricsInput = {
@@ -193,6 +196,28 @@ function upsellMetricsInWindow(
   return { acceptedCount, acceptedRate };
 }
 
+function revenueSuggestionMetricsInWindow(
+  suggestions: readonly {
+    readonly status: string;
+    readonly decidedAt: string | null;
+    readonly createdAt: string;
+  }[],
+  windowStartMs: number,
+): number | null {
+  const decided = suggestions.filter((row) => {
+    if (row.status !== "approved" && row.status !== "rejected") {
+      return false;
+    }
+    const anchor = row.decidedAt ?? row.createdAt;
+    return isOnOrAfter(anchor, windowStartMs);
+  });
+  if (decided.length === 0) {
+    return null;
+  }
+  const approved = decided.filter((row) => row.status === "approved").length;
+  return round1(approved / decided.length);
+}
+
 /**
  * Live operational metrics for the pilot ROI scorecard — current period only.
  * Baseline comparison stays manual in docs/planning/pilot-roi-scorecard.md.
@@ -243,6 +268,7 @@ export async function buildPilotRoiMetrics(
   let upsellAcceptedCount = 0;
   let upsellDecidedCount = 0;
   let roomPrepSamples = 0;
+  const revenueSuggestionRates: number[] = [];
 
   for (const hotel of scopedHotels) {
     const hotelId = hotel.id;
@@ -307,6 +333,18 @@ export async function buildPilotRoiMetrics(
     roomPrepSamples += hotelBookings.filter(
       (booking) => booking.roomPrepStatus !== null,
     ).length;
+
+    const suggestions = await deps.revenueSuggestions.listByHotel(
+      input.tenantId,
+      hotelId,
+    );
+    const hotelRate = revenueSuggestionMetricsInWindow(
+      suggestions,
+      windowStartMs,
+    );
+    if (hotelRate !== null) {
+      revenueSuggestionRates.push(hotelRate);
+    }
   }
 
   const upsellAcceptedRate =
@@ -352,6 +390,21 @@ export async function buildPilotRoiMetrics(
     notesHe.push("upsell: אין הצעות upsell עם החלטה בחלון — שיעור null.");
   }
 
+  const revenueSuggestionApprovedRate =
+    revenueSuggestionRates.length === 1
+      ? revenueSuggestionRates[0]!
+      : revenueSuggestionRates.length > 1
+        ? round1(
+            revenueSuggestionRates.reduce((sum, rate) => sum + rate, 0) /
+              revenueSuggestionRates.length,
+          )
+        : null;
+  if (revenueSuggestionApprovedRate === null) {
+    notesHe.push(
+      "revenueSuggestionApprovedRate: אין revenue_suggestions עם approved/rejected בחלון — null.",
+    );
+  }
+
   const primaryHotel = scopedHotels.length === 1 ? scopedHotels[0]! : null;
 
   return {
@@ -367,6 +420,7 @@ export async function buildPilotRoiMetrics(
     upsellAcceptedCount,
     upsellAcceptedRate,
     negativeReviewResponseHours,
+    revenueSuggestionApprovedRate,
     notesHe,
   };
 }

@@ -16,6 +16,7 @@ import type {
   ProcurementRepository,
   RecruitingRepository,
   TurboRepository,
+  PersistedApprovalRequest,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
@@ -34,6 +35,7 @@ import {
   PROCUREMENT_CHAIN_APPROVAL_ILS,
   PROCUREMENT_HOTEL_APPROVAL_ILS,
 } from "../../application/execute-approval-act.js";
+import { parseAndRedactApprovalPayload } from "../../application/redact-approval-payload.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -56,6 +58,51 @@ const decideSchema = z.object({
   kashrutOverrideBlock: z.boolean().optional(),
 });
 
+const recentQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+});
+
+type ApprovalDto = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly hotelId: string | null;
+  readonly agentId: string;
+  readonly summaryHe: string;
+  readonly reasonHe: string;
+  readonly status: string;
+  readonly payload: unknown | null;
+  readonly decidedByUserId: string | null;
+  readonly decidedAt: string | null;
+  readonly createdAt: string;
+};
+
+function toApprovalDto(approval: PersistedApprovalRequest): ApprovalDto {
+  return {
+    id: approval.id,
+    tenantId: approval.tenantId,
+    hotelId: approval.hotelId,
+    agentId: approval.agentId,
+    summaryHe: approval.summaryHe,
+    reasonHe: approval.reasonHe,
+    status: approval.status,
+    payload: parseAndRedactApprovalPayload(approval.payloadJson),
+    decidedByUserId: approval.decidedByUserId,
+    decidedAt: approval.decidedAt,
+    createdAt: approval.createdAt,
+  };
+}
+
+function filterVisibleApprovals(
+  principal: Parameters<typeof canAccessHotel>[0],
+  items: readonly PersistedApprovalRequest[],
+): readonly PersistedApprovalRequest[] {
+  return items.filter(
+    (item) =>
+      item.hotelId === null ||
+      canAccessHotel(principal, Ids.hotel(item.hotelId)),
+  );
+}
+
 export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
   Variables: AuthVariables;
 }> {
@@ -66,11 +113,24 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
     try {
       const principal = c.get("principal");
       const data = await deps.approvals.listPending(principal.scope.tenantId);
-      const visible = data.filter(
-        (item) =>
-          item.hotelId === null ||
-          canAccessHotel(principal, Ids.hotel(item.hotelId)),
+      const visible = filterVisibleApprovals(principal, data).map(toApprovalDto);
+      return c.json({ data: visible });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.get("/recent", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const query = recentQuerySchema.parse({
+        limit: c.req.query("limit"),
+      });
+      const data = await deps.approvals.listRecent(
+        principal.scope.tenantId,
+        { limit: query.limit },
       );
+      const visible = filterVisibleApprovals(principal, data).map(toApprovalDto);
       return c.json({ data: visible });
     } catch (error) {
       return mapUnknownError(c, error);
@@ -266,7 +326,7 @@ export function createApprovalRoutes(deps: ApprovalRouteDeps): Hono<{
         });
       }
 
-      return c.json({ data: updated, act });
+      return c.json({ data: toApprovalDto(updated), act });
     } catch (error) {
       return mapUnknownError(c, error);
     }

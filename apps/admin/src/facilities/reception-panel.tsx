@@ -166,17 +166,18 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
     }
   }
 
-  async function onLookupGuest360() {
-    const email = guestEmail.trim();
-    if (!email) {
+  async function loadGuest360(email: string) {
+    const trimmed = email.trim();
+    if (!trimmed) {
       setGuest360Error("הזינו כתובת אימייל");
       return;
     }
+    setGuestEmail(trimmed);
     setGuest360Loading(true);
     setGuest360Error(undefined);
     setGuest360(undefined);
     try {
-      const profile = await fetchGuest360({ hotelId, email });
+      const profile = await fetchGuest360({ hotelId, email: trimmed });
       setGuest360(profile);
     } catch (lookupError) {
       setGuest360Error(
@@ -185,6 +186,18 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
     } finally {
       setGuest360Loading(false);
     }
+  }
+
+  function onLookupGuest360() {
+    void loadGuest360(guestEmail);
+  }
+
+  function onArrivalSelect(booking: BookingDto) {
+    if (!booking.guestEmail.trim()) {
+      setGuest360Error("אין אימייל להזמנה זו");
+      return;
+    }
+    void loadGuest360(booking.guestEmail);
   }
 
   function formatPreferences(
@@ -264,6 +277,21 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
                 זיכרון שהיות (CRM):{" "}
                 <strong>{guest360.profile?.stayCount ?? 0}</strong>
               </li>
+              {guest360.profile ? (
+                <li>
+                  <span
+                    className={
+                      guest360.profile.marketingConsent
+                        ? "consent-badge consent-badge--yes"
+                        : "consent-badge consent-badge--no"
+                    }
+                  >
+                    {guest360.profile.marketingConsent
+                      ? "הסכמה לשיווק"
+                      : "ללא הסכמה לשיווק"}
+                  </span>
+                </li>
+              ) : null}
             </ul>
             {formatPreferences(guest360.profile?.preferences ?? {}) ? (
               <p className="hint">
@@ -276,7 +304,23 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
             {guest360.profile?.notesHe ? (
               <p className="hint">הערות: {guest360.profile.notesHe}</p>
             ) : null}
-            {guest360.lastFeedback ? (
+            {guest360.feedbackHistory.length > 0 ? (
+              <div className="guest360-feedback">
+                <p className="hint">היסטוריית משוב (עד 3):</p>
+                <ul className="list guest360-stays">
+                  {guest360.feedbackHistory.slice(0, 3).map((item) => (
+                    <li key={item.id} className="muted">
+                      {item.rating}/5
+                      {item.comment
+                        ? ` · ${truncateAt(item.comment, 60)}`
+                        : ""}
+                      {" · "}
+                      {truncateAt(item.submittedAt.replace("T", " "), 16)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : guest360.lastFeedback ? (
               <p className="hint">
                 משוב אחרון: {guest360.lastFeedback.rating}/5
                 {guest360.lastFeedback.comment
@@ -293,14 +337,30 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
               </p>
             ) : null}
             {guest360.staysAtHotel.length > 0 ? (
-              <ul className="list guest360-stays">
-                {guest360.staysAtHotel.slice(0, 3).map((stay) => (
-                  <li key={stay.id} className="muted">
-                    חדר {stay.roomNumber} · {stay.checkInDate}–
-                    {stay.checkOutDate} · {stay.status}
-                  </li>
-                ))}
-              </ul>
+              <>
+                <p className="hint">שהיות במלון (עד 3):</p>
+                <ul className="list guest360-stays">
+                  {guest360.staysAtHotel.slice(0, 3).map((stay) => (
+                    <li key={stay.id} className="muted">
+                      חדר {stay.roomNumber} · {stay.checkInDate}–
+                      {stay.checkOutDate} · {stay.status}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {guest360.staysInChain.length > 0 ? (
+              <>
+                <p className="hint">שהיות ברשת (עד 5):</p>
+                <ul className="list guest360-stays">
+                  {guest360.staysInChain.slice(0, 5).map((stay) => (
+                    <li key={`${stay.hotelId}-${stay.id}`} className="muted">
+                      {stay.hotelName} · חדר {stay.roomNumber} ·{" "}
+                      {stay.checkInDate}–{stay.checkOutDate}
+                    </li>
+                  ))}
+                </ul>
+              </>
             ) : null}
           </div>
         ) : null}
@@ -396,7 +456,12 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
                       checked={selected.has(booking.id)}
                       onChange={() => toggleBooking(booking.id)}
                     />
-                    <span>
+                    <button
+                      type="button"
+                      className="arrival-guest-btn"
+                      aria-label={`טען Guest 360 עבור ${booking.guestName}`}
+                      onClick={() => onArrivalSelect(booking)}
+                    >
                       <strong>{booking.guestName}</strong>
                       <span className="muted">
                         {" "}
@@ -405,7 +470,7 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
                           ? ` · ${prepLabel[booking.roomPrepStatus]}`
                           : ""}
                       </span>
-                    </span>
+                    </button>
                   </label>
                   {!booking.roomPrepStatus ? (
                     <Button
@@ -455,6 +520,12 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
         .guest360-body{display:grid;gap:var(--space-2)}
         .guest360-stats{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:var(--space-3);font-size:var(--text-small)}
         .guest360-stays{margin-top:var(--space-1)}
+        .guest360-feedback{display:grid;gap:var(--space-1)}
+        .consent-badge{display:inline-block;padding:.15rem .5rem;border-radius:999px;font-size:var(--text-small);font-weight:700}
+        .consent-badge--yes{background:color-mix(in srgb,var(--color-sea-deep) 12%,#fff);color:var(--color-sea-deep)}
+        .consent-badge--no{background:color-mix(in srgb,var(--color-ink-soft) 12%,#fff);color:var(--color-ink-soft)}
+        .arrival-guest-btn{display:inline;text-align:inherit;font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;border-radius:var(--radius-sm)}
+        .arrival-guest-btn:hover,.arrival-guest-btn:focus-visible{text-decoration:underline;outline:2px solid var(--color-sea-deep);outline-offset:2px}
       `}</style>
     </div>
   );

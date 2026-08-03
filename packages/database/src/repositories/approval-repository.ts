@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { HotelId, TenantId, UserId } from "@hotelos/shared";
 import type { HotelOsDb } from "../client.js";
 import { aiApprovalRequests } from "../schema/ai.js";
@@ -33,6 +33,10 @@ export type ApprovalRepository = {
     readonly createdAt: string;
   }) => Promise<PersistedApprovalRequest>;
   listPending: (tenantId: TenantId) => Promise<readonly PersistedApprovalRequest[]>;
+  listRecent: (
+    tenantId: TenantId,
+    options?: { readonly limit?: number },
+  ) => Promise<readonly PersistedApprovalRequest[]>;
   getById: (
     tenantId: TenantId,
     id: string,
@@ -105,6 +109,23 @@ export function createApprovalRepository(db: HotelOsDb): ApprovalRepository {
           ),
         )
         .orderBy(desc(aiApprovalRequests.createdAt))
+        .all();
+      return rows.map(mapRow);
+    },
+
+    async listRecent(tenantId, options) {
+      const limit = options?.limit ?? 20;
+      const rows = await db
+        .select()
+        .from(aiApprovalRequests)
+        .where(
+          and(
+            eq(aiApprovalRequests.tenantId, tenantId),
+            inArray(aiApprovalRequests.status, ["approved", "rejected"]),
+          ),
+        )
+        .orderBy(desc(aiApprovalRequests.decidedAt))
+        .limit(limit)
         .all();
       return rows.map(mapRow);
     },

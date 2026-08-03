@@ -5,6 +5,7 @@ import {
   decideAiApproval,
   fetchApprovalKashrutGate,
   listPendingAiApprovals,
+  listRecentAiApprovals,
   type AiApprovalDto,
   type ApprovalActDto,
   type KashrutProcurementGateDto,
@@ -15,8 +16,30 @@ function actMessage(act: ApprovalActDto): string {
   return act.reasonHe;
 }
 
+function approvalStatusHe(status: string): string {
+  if (status === "approved") return "אושר";
+  if (status === "rejected") return "נדחה";
+  return status;
+}
+
+function formatPayload(payload: unknown): string {
+  if (payload === null || payload === undefined) return "—";
+  return JSON.stringify(payload, null, 2);
+}
+
+function ApprovalPayloadPreview({ payload }: { readonly payload: unknown }) {
+  if (payload === null || payload === undefined) return null;
+  return (
+    <details className="payload-preview">
+      <summary>פרטי Payload</summary>
+      <pre>{formatPayload(payload)}</pre>
+    </details>
+  );
+}
+
 export function ApprovalsPanel() {
   const [items, setItems] = useState<readonly AiApprovalDto[]>([]);
+  const [recent, setRecent] = useState<readonly AiApprovalDto[]>([]);
   const [error, setError] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
@@ -31,8 +54,12 @@ export function ApprovalsPanel() {
     setLoading(true);
     setError(undefined);
     try {
-      const list = await listPendingAiApprovals();
+      const [list, recentList] = await Promise.all([
+        listPendingAiApprovals(),
+        listRecentAiApprovals(20),
+      ]);
       setItems(list);
+      setRecent(recentList);
       const gates: Record<string, KashrutProcurementGateDto | undefined> = {};
       await Promise.all(
         list.map(async (item) => {
@@ -133,6 +160,7 @@ export function ApprovalsPanel() {
               <strong>{item.agentId}</strong>
               <p>{item.summaryHe}</p>
               <p className="muted">{item.reasonHe}</p>
+              <ApprovalPayloadPreview payload={item.payload} />
               {gate?.applies ? (
                 <div className="kashrut-gate">
                   <p>
@@ -211,10 +239,41 @@ export function ApprovalsPanel() {
           );
         })}
       </ul>
+
+      <h2>החלטות אחרונות</h2>
+      {recent.length === 0 ? <p className="muted">אין החלטות אחרונות.</p> : null}
+      <ul className="approvals recent">
+        {recent.map((item) => (
+          <li key={item.id}>
+            <div className="row recent-meta">
+              <strong>{item.agentId}</strong>
+              <span className={`status status-${item.status}`}>
+                {approvalStatusHe(item.status)}
+              </span>
+            </div>
+            <p>{item.summaryHe}</p>
+            <p className="muted">
+              {item.decidedAt
+                ? new Date(item.decidedAt).toLocaleString("he-IL")
+                : "—"}
+            </p>
+            <ApprovalPayloadPreview payload={item.payload} />
+          </li>
+        ))}
+      </ul>
+
       <style>{`
         .approvals{list-style:none;padding:0;display:grid;gap:1rem}
         .approvals li{border:1px solid var(--color-line);border-radius:8px;padding:1rem;display:grid;gap:.5rem}
+        .approvals.recent li{background:var(--color-paper-elevated)}
         .row{display:flex;gap:.5rem}
+        .recent-meta{justify-content:space-between;align-items:center;flex-wrap:wrap}
+        .status{font-size:.85rem;font-weight:600;padding:.15rem .5rem;border-radius:999px}
+        .status-approved{color:#1a5c45;background:rgb(26 92 69 / 10%)}
+        .status-rejected{color:#8b1e1e;background:rgb(139 30 30 / 8%)}
+        .payload-preview{border:1px solid rgb(16 36 31 / 12%);border-radius:6px;padding:.5rem .65rem;background:rgb(12 31 26 / 2%)}
+        .payload-preview summary{cursor:pointer;font-size:.9rem;font-weight:600;color:var(--color-ink-soft)}
+        .payload-preview pre{margin:.5rem 0 0;font-size:.78rem;overflow:auto;max-height:14rem;white-space:pre-wrap;word-break:break-word}
         .muted{opacity:.75}
         .error{color:#8b1e1e}
         .notice{color:#1a5c45;background:rgb(26 92 69 / 8%);padding:.65rem;border-radius:8px}

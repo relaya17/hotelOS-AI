@@ -52,6 +52,23 @@ type View =
   | { readonly kind: "approvals" }
   | { readonly kind: "knowledge" };
 
+const HASH_VIEWS: Partial<Record<string, View["kind"]>> = {
+  ops: "ops",
+  incidents: "incidents",
+  knowledge: "knowledge",
+  cio: "cio",
+  "pilot-roi": "pilot-roi",
+  finance: "finance",
+  approvals: "approvals",
+  briefings: "briefings",
+  accounting: "accounting",
+  chat: "chat",
+  automations: "automations",
+  voice: "voice",
+  trust: "trust",
+  portfolio: "portfolio",
+};
+
 const LOCALE_KEY = "hotelos.locale";
 
 function readLocale(): LocaleCode {
@@ -76,6 +93,20 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
     const main = document.getElementById("main-content");
     main?.focus({ preventScroll: true });
   }, [view.kind]);
+
+  useEffect(() => {
+    function applyHash() {
+      const kind = HASH_VIEWS[window.location.hash.slice(1)];
+      if (kind && kind !== "meet") {
+        setView({ kind });
+      }
+    }
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => {
+      window.removeEventListener("hashchange", applyHash);
+    };
+  }, []);
 
   const navItems = [
     ["portfolio", tUi(locale, "nav.portfolio")],

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   APP_URLS,
   fetchIncidentCenter,
@@ -7,6 +7,7 @@ import {
   type IncidentDto,
   type IncidentSeverity,
 } from "@hotelos/web-client";
+import { useIntervalRefresh } from "./use-interval-refresh.js";
 
 export type IncidentCenterPanelProps = {
   /** When set, scope to one hotel (admin). Omit for chain view (executive). */
@@ -112,44 +113,36 @@ export function IncidentCenterPanel({
     };
   }, [fixedHotelId]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(undefined);
-      setStatusMessage("טוען אירועים…");
-      try {
-        const scopedHotelId =
-          selectedHotelId === "all" ? undefined : selectedHotelId;
-        const data = await fetchIncidentCenter(scopedHotelId);
-        if (cancelled) {
-          return;
-        }
-        setIncidents(data.incidents);
-        setGeneratedAt(data.generatedAt);
-        setStatusMessage(
-          data.incidents.length === 0
-            ? "אין אירועים פתוחים כרגע."
-            : `${data.incidents.length} אירועים פתוחים.`,
-        );
-      } catch (loadError) {
-        if (!cancelled) {
-          setError(
-            loadError instanceof Error ? loadError.message : "שגיאה בטעינה",
-          );
-          setStatusMessage("שגיאה בטעינת מרכז האירועים.");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(undefined);
+    setStatusMessage("טוען אירועים…");
+    try {
+      const scopedHotelId =
+        selectedHotelId === "all" ? undefined : selectedHotelId;
+      const data = await fetchIncidentCenter(scopedHotelId);
+      setIncidents(data.incidents);
+      setGeneratedAt(data.generatedAt);
+      setStatusMessage(
+        data.incidents.length === 0
+          ? "אין אירועים פתוחים כרגע."
+          : `${data.incidents.length} אירועים פתוחים.`,
+      );
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error ? loadError.message : "שגיאה בטעינה",
+      );
+      setStatusMessage("שגיאה בטעינת מרכז האירועים.");
+    } finally {
+      setLoading(false);
     }
-    void load();
-    return () => {
-      cancelled = true;
-    };
   }, [selectedHotelId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useIntervalRefresh(load, 30_000);
 
   const filtered = useMemo(() => {
     if (severity === "all") {

@@ -2147,6 +2147,7 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
           bookings: deps.bookings,
           upsells: deps.upsells,
           reputation: deps.reputation,
+          revenueSuggestions: deps.revenueSuggestions,
         },
         {
           tenantId: principal.scope.tenantId,

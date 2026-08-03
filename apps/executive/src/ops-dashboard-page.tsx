@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@hotelos/ui";
-import { PredictiveMaintenancePanel } from "@hotelos/features";
+import {
+  PredictiveMaintenancePanel,
+  useIntervalRefresh,
+} from "@hotelos/features";
 import {
   APP_URLS,
   fetchDailyBriefing,
   fetchEnergySuggestions,
+  fetchHotelTwin,
+  fetchIncidentCenter,
   fetchOpsDashboard,
   fetchOpsForecast,
   fetchOpsKnowledgeGraph,
@@ -12,11 +17,30 @@ import {
   generateEnergySuggestions,
   type DailyBriefingHotelDto,
   type EnergySuggestionDto,
+  type HotelTwinOverlaysDto,
+  type IncidentDto,
+  type IncidentSeverity,
   type OpsDashboardHotelDto,
   type OpsForecastDto,
   type OpsKnowledgeGraphDto,
   type ReputationReviewDto,
 } from "@hotelos/web-client";
+
+const REFRESH_MS = 30_000;
+
+const INCIDENT_SEVERITY_RANK: Record<IncidentSeverity, number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+const INCIDENT_SEVERITY_LABEL: Record<IncidentSeverity, string> = {
+  urgent: "דחוף",
+  high: "גבוה",
+  medium: "בינוני",
+  low: "נמוך",
+};
 
 const KG_EDGE_LABELS_HE: Record<string, string> = {
   has_room: "מכיל חדר",
@@ -68,6 +92,25 @@ export function OpsDashboardPage() {
   );
   const [kgLoading, setKgLoading] = useState(false);
   const [kgError, setKgError] = useState<string | undefined>();
+
+  const [incidents, setIncidents] = useState<readonly IncidentDto[]>([]);
+  const [incidentsGeneratedAt, setIncidentsGeneratedAt] = useState<
+    string | undefined
+  >();
+  const [incidentsLoading, setIncidentsLoading] = useState(true);
+  const [incidentsError, setIncidentsError] = useState<string | undefined>();
+
+  const [twinOverlays, setTwinOverlays] = useState<HotelTwinOverlaysDto | null>(
+    null,
+  );
+  const [twinLoading, setTwinLoading] = useState(false);
+  const [twinError, setTwinError] = useState<string | undefined>();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | undefined>();
+
+  const firstHotelId = hotels[0]?.hotelId;
+  const firstHotelName = hotels[0]?.hotelName;
 
   useEffect(() => {
     let cancelled = false;
@@ -139,35 +182,101 @@ export function OpsDashboardPage() {
     };
   }, [hotels]);
 
-  useEffect(() => {
-    const hotelId = hotels[0]?.hotelId;
-    if (!hotelId) {
+  const loadBriefing = useCallback(async () => {
+    setBriefingLoading(true);
+    setBriefingError(undefined);
+    try {
+      const data = await fetchDailyBriefing();
+      setBriefingHotels(data.hotels);
+      setChainSummaryHe(data.chainSummaryHe ?? undefined);
+    } catch (loadError) {
+      setBriefingError(
+        loadError instanceof Error ? loadError.message : "שגיאה בטעינת התדריך",
+      );
+    } finally {
+      setBriefingLoading(false);
+    }
+  }, []);
+
+  const loadIncidents = useCallback(async () => {
+    setIncidentsLoading(true);
+    setIncidentsError(undefined);
+    try {
+      const data = await fetchIncidentCenter(
+        firstHotelId !== undefined ? firstHotelId : undefined,
+      );
+      setIncidents(data.incidents);
+      setIncidentsGeneratedAt(data.generatedAt);
+    } catch (loadError) {
+      setIncidentsError(
+        loadError instanceof Error ? loadError.message : "שגיאה בטעינת אירועים",
+      );
+    } finally {
+      setIncidentsLoading(false);
+    }
+  }, [firstHotelId]);
+
+  const loadTwin = useCallback(async () => {
+    if (firstHotelId === undefined) {
+      setTwinOverlays(null);
+      return;
+    }
+    setTwinLoading(true);
+    setTwinError(undefined);
+    try {
+      const twin = await fetchHotelTwin(firstHotelId);
+      setTwinOverlays(twin.overlays ?? null);
+    } catch (loadError) {
+      setTwinError(
+        loadError instanceof Error ? loadError.message : "שגיאה בטעינת Twin",
+      );
+    } finally {
+      setTwinLoading(false);
+    }
+  }, [firstHotelId]);
+
+  const loadForecastLive = useCallback(async () => {
+    if (firstHotelId === undefined) {
       setForecast(null);
       return;
     }
-    let cancelled = false;
-    async function loadForecast() {
-      if (!hotelId) return;
-      setForecastLoading(true);
-      setForecastError(undefined);
-      try {
-        const data = await fetchOpsForecast(hotelId);
-        if (!cancelled) setForecast(data);
-      } catch (loadError) {
-        if (!cancelled) {
-          setForecastError(
-            loadError instanceof Error ? loadError.message : "שגיאה בטעינת תחזית",
-          );
-        }
-      } finally {
-        if (!cancelled) setForecastLoading(false);
-      }
+    setForecastLoading(true);
+    setForecastError(undefined);
+    try {
+      const data = await fetchOpsForecast(firstHotelId);
+      setForecast(data);
+    } catch (loadError) {
+      setForecastError(
+        loadError instanceof Error ? loadError.message : "שגיאה בטעינת תחזית",
+      );
+    } finally {
+      setForecastLoading(false);
     }
-    void loadForecast();
-    return () => {
-      cancelled = true;
-    };
-  }, [hotels]);
+  }, [firstHotelId]);
+
+  const refreshLiveData = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        loadBriefing(),
+        loadIncidents(),
+        loadTwin(),
+        loadForecastLive(),
+      ]);
+      setLastRefreshedAt(new Date().toISOString());
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadBriefing, loadIncidents, loadTwin, loadForecastLive]);
+
+  useEffect(() => {
+    void refreshLiveData();
+  }, [refreshLiveData]);
+
+  const { prefersReducedMotion, refreshNow } = useIntervalRefresh(
+    refreshLiveData,
+    REFRESH_MS,
+  );
 
   useEffect(() => {
     const firstHotelId = hotels[0]?.hotelId;
@@ -231,32 +340,6 @@ export function OpsDashboardPage() {
     };
   }, [hotels]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadBriefing() {
-      setBriefingLoading(true);
-      setBriefingError(undefined);
-      try {
-        const data = await fetchDailyBriefing();
-        if (cancelled) return;
-        setBriefingHotels(data.hotels);
-        setChainSummaryHe(data.chainSummaryHe ?? undefined);
-      } catch (loadError) {
-        if (!cancelled) {
-          setBriefingError(
-            loadError instanceof Error ? loadError.message : "שגיאה בטעינת התדריך",
-          );
-        }
-      } finally {
-        if (!cancelled) setBriefingLoading(false);
-      }
-    }
-    void loadBriefing();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const totals = hotels.reduce(
     (acc, hotel) => ({
       openMaintenanceRequests: acc.openMaintenanceRequests + hotel.openMaintenanceRequests,
@@ -294,6 +377,28 @@ export function OpsDashboardPage() {
   );
   const kgSampleEdges = (knowledgeGraph?.edges ?? []).slice(0, 8);
 
+  const incidentCounts = useMemo(() => {
+    const counts = { urgent: 0, high: 0 };
+    for (const incident of incidents) {
+      if (incident.severity === "urgent") counts.urgent += 1;
+      if (incident.severity === "high") counts.high += 1;
+    }
+    return counts;
+  }, [incidents]);
+
+  const topIncidents = useMemo(() => {
+    return [...incidents]
+      .sort((a, b) => {
+        const rank =
+          INCIDENT_SEVERITY_RANK[a.severity] - INCIDENT_SEVERITY_RANK[b.severity];
+        if (rank !== 0) return rank;
+        return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+      })
+      .slice(0, 5);
+  }, [incidents]);
+
+  const liveRefreshing = refreshing || briefingLoading || incidentsLoading;
+
   async function onGenerateEnergy() {
     const hotelId = hotels[0]?.hotelId;
     if (!hotelId) return;
@@ -320,6 +425,31 @@ export function OpsDashboardPage() {
           <p className="sub">
             תחזוקה, רכש, מלאי ומשוב אורחים — בתמונה אחת לכל בתי המלון ברשת.
           </p>
+        </div>
+        <div className="ops-dash__actions">
+          {lastRefreshedAt ? (
+            <p className="ops-dash__updated" aria-live="polite">
+              עודכן{" "}
+              {new Date(lastRefreshedAt).toLocaleTimeString("he-IL", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })}
+            </p>
+          ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={liveRefreshing}
+            onClick={() => {
+              refreshNow();
+            }}
+          >
+            {liveRefreshing ? "מרענן…" : "רענן"}
+          </Button>
+          {!prefersReducedMotion && liveRefreshing ? (
+            <span className="ops-dash__pulse" aria-hidden="true" />
+          ) : null}
         </div>
       </header>
 
@@ -354,6 +484,106 @@ export function OpsDashboardPage() {
           </ul>
         ) : null}
       </section>
+
+      <section className="card incidents-card" aria-labelledby="ops-incidents-heading">
+        <h2 id="ops-incidents-heading">מרכז אירועים — סיכום</h2>
+        <p className="hint">
+          {firstHotelName ?? "כל הרשת"} — דחוף וגבוה, חמישה אירועים מובילים.
+        </p>
+        {incidentsLoading ? <p className="state">טוען אירועים…</p> : null}
+        {incidentsError !== undefined ? (
+          <p className="state state--error" role="alert">
+            {incidentsError}
+          </p>
+        ) : null}
+        {!incidentsLoading && !incidentsError ? (
+          <>
+            <div className="incident-kpi-row" aria-label="סיכום חומרה">
+              <article className="incident-kpi incident-kpi--urgent">
+                <p>דחוף</p>
+                <strong>{incidentCounts.urgent}</strong>
+              </article>
+              <article className="incident-kpi incident-kpi--high">
+                <p>גבוה</p>
+                <strong>{incidentCounts.high}</strong>
+              </article>
+            </div>
+            {topIncidents.length === 0 ? (
+              <p className="hint">אין אירועים פתוחים כרגע.</p>
+            ) : (
+              <ol className="incident-summary-list">
+                {topIncidents.map((incident) => (
+                  <li key={incident.id}>
+                    <span
+                      className={`incident-severity incident-severity--${incident.severity}`}
+                    >
+                      {INCIDENT_SEVERITY_LABEL[incident.severity]}
+                    </span>
+                    <span>{incident.title}</span>
+                    {firstHotelId === undefined ? (
+                      <span className="incident-summary-hotel">
+                        {incident.hotelName}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            )}
+            {incidentsGeneratedAt ? (
+              <p className="ops-meta">
+                נתוני אירועים · עודכן {incidentsGeneratedAt.slice(0, 19)}
+              </p>
+            ) : null}
+            <a className="open-ops" href="#incidents">
+              פתח מרכז אירועים
+            </a>
+          </>
+        ) : null}
+      </section>
+
+      {firstHotelId !== undefined ? (
+        <section className="card twin-card" aria-labelledby="ops-twin-heading">
+          <h2 id="ops-twin-heading">Digital Twin — שכבות</h2>
+          <p className="hint">
+            {firstHotelName} — אירועים, חיזוי תחזוקה והצעות אנרגיה על גבי התאום.
+          </p>
+          {twinLoading ? <p className="state">טוען Twin…</p> : null}
+          {twinError !== undefined ? (
+            <p className="state state--error" role="alert">
+              {twinError}
+            </p>
+          ) : null}
+          {!twinLoading && !twinError ? (
+            <>
+              <div className="twin-kpi-row" aria-label="סיכום שכבות Twin">
+                <article className="twin-kpi">
+                  <p>אירועים פתוחים</p>
+                  <strong>{twinOverlays?.openIncidents.count ?? 0}</strong>
+                </article>
+                <article className="twin-kpi">
+                  <p>תחזוקה חיזויית</p>
+                  <strong>{twinOverlays?.predictiveAlerts.count ?? 0}</strong>
+                </article>
+                <article className="twin-kpi">
+                  <p>הצעות אנרגיה</p>
+                  <strong>{twinOverlays?.energyHints.count ?? 0}</strong>
+                </article>
+              </div>
+              {twinOverlays ? (
+                <p className="ops-meta">
+                  שכבות Twin · עודכן {twinOverlays.generatedAt.slice(0, 19)}
+                </p>
+              ) : null}
+              <a
+                className="open-ops open-ops--twin"
+                href={`${APP_URLS.admin}?hotelId=${firstHotelId}&panel=twin`}
+              >
+                פתח Digital Twin בתפעול
+              </a>
+            </>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="card kg-card" aria-labelledby="ops-kg-heading">
         <h2 id="ops-kg-heading">גרף ידע תפעולי</h2>
@@ -622,6 +852,10 @@ export function OpsDashboardPage() {
         .ops-dash { display:grid; gap:var(--space-5); align-content:start; animation:hotelos-enter var(--motion-med) var(--ease-out) both; }
         .ops-dash__header { display:flex; justify-content:space-between; gap:var(--space-4); align-items:start; }
         .ops-dash__header .hotelos-eyebrow { margin-bottom:var(--space-2); }
+        .ops-dash__actions { display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-2); justify-content:flex-end; }
+        .ops-dash__updated { margin:0; font-size:var(--text-small); color:var(--color-ink-soft); font-weight:500; }
+        .ops-dash__pulse { width:.65rem; height:.65rem; border-radius:50%; background:var(--color-sea-deep); animation:ops-pulse 1s ease-in-out infinite; }
+        @keyframes ops-pulse { 0%,100%{ opacity:.35; transform:scale(.9); } 50%{ opacity:1; transform:scale(1); } }
         h1 { font-size:var(--text-display); margin:0; }
         .sub { margin:var(--space-2) 0 0; color:var(--color-ink-soft); max-width:60ch; font-weight:500; }
         .kpi-row { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:var(--space-3); }
@@ -635,6 +869,24 @@ export function OpsDashboardPage() {
         .chain-summary { margin:0 0 var(--space-3); font-weight:600; }
         .briefing-list { margin:0; padding-inline-start:1.2rem; display:grid; gap:var(--space-2); }
         .briefing-warnings { margin:.3rem 0 0; padding-inline-start:1.1rem; display:grid; gap:.2rem; font-size:var(--text-small); color:var(--color-warn); }
+        .incidents-card, .twin-card { border-color:var(--color-line-strong); }
+        .incident-kpi-row, .twin-kpi-row { display:grid; gap:var(--space-3); margin:var(--space-3) 0; }
+        .incident-kpi-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .twin-kpi-row { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .incident-kpi, .twin-kpi { padding:var(--space-3); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:var(--color-paper); }
+        .incident-kpi p, .twin-kpi p { margin:0; font-size:var(--text-small); color:var(--color-ink-soft); font-weight:500; }
+        .incident-kpi strong, .twin-kpi strong { display:block; margin-top:var(--space-1); font-family:var(--font-display); font-size:1.5rem; }
+        .incident-kpi--urgent strong { color:var(--color-danger); }
+        .incident-kpi--high strong { color:#b45309; }
+        .incident-summary-list { margin:0 0 var(--space-3); padding-inline-start:1.2rem; display:grid; gap:var(--space-2); }
+        .incident-summary-list li { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; font-weight:500; }
+        .incident-severity { font-size:var(--text-micro); font-weight:700; letter-spacing:.03em; text-transform:uppercase; border-radius:999px; padding:.2rem .55rem; }
+        .incident-severity--urgent { background:#fde8e8; color:var(--color-danger); }
+        .incident-severity--high { background:#fff3e0; color:#b45309; }
+        .incident-severity--medium { background:#eef6ff; color:var(--color-sea-deep); }
+        .incident-severity--low { background:#f3f4f6; color:var(--color-ink-soft); }
+        .incident-summary-hotel { font-size:var(--text-small); color:var(--color-ink-soft); font-weight:600; }
+        .ops-meta { margin:0 0 var(--space-2); font-size:var(--text-small); color:var(--color-ink-faint); font-weight:500; }
         .kg-card { border-color:var(--color-line-strong); }
         .kg-meta { margin:0 0 var(--space-3); font-size:var(--text-small); color:var(--color-ink-soft); font-weight:600; }
         .kg-types { list-style:none; margin:0 0 var(--space-3); padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:var(--space-2); }
@@ -668,6 +920,8 @@ export function OpsDashboardPage() {
         @media (max-width:1100px){ .kpi-row{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
         @media (max-width:640px){
           .ops-dash__header{ flex-direction:column; }
+          .ops-dash__actions{ justify-content:flex-start; }
+          .twin-kpi-row{ grid-template-columns:1fr; }
           h1{ font-size:clamp(1.35rem,6vw,2rem); word-break:break-word; }
           .kpi-row{ grid-template-columns:1fr 1fr; }
           .hotel-grid{ grid-template-columns:1fr; }

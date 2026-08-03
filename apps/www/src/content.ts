@@ -22,11 +22,25 @@ export const OUTCOMES: readonly OutcomeRow[] = [
     href: "#intelligence",
   },
   {
+    id: "incidents",
+    pain: "תקלות שלא מטופלות בזמן",
+    cost: "פיצויים ותלונות",
+    outcome: "Incident Center · Predictive Maint · Alerts",
+    href: "#ceo-value",
+  },
+  {
     id: "foresight",
     pain: "החלטות בלי ראיית עתיד",
     cost: "תפוסה, כוח אדם ותחזוקה מגיבים מאוחר",
     outcome: "סוכנים שרואים תחזיות ואנומליות מראש",
     href: "#intelligence",
+  },
+  {
+    id: "rooms",
+    pain: "חדרים לא מוכנים בזמן",
+    cost: "אובדן הכנסות ואי־שביעות רצון",
+    outcome: "Housekeeping AI ותיעדוף משימות",
+    href: "#outcomes",
   },
   {
     id: "finance",
@@ -48,20 +62,6 @@ export const OUTCOMES: readonly OutcomeRow[] = [
     cost: "טעויות, עיכובים ואובדן הקשר",
     outcome: "צ׳אט: כותבים בשפתכם — הצד השני מקבל בשפתו",
     href: "#chat",
-  },
-  {
-    id: "rooms",
-    pain: "חדרים לא מוכנים בזמן",
-    cost: "אובדן הכנסות ואי־שביעות רצון",
-    outcome: "Housekeeping AI ותיעדוף משימות",
-    href: "#outcomes",
-  },
-  {
-    id: "incidents",
-    pain: "תקלות שלא מטופלות בזמן",
-    cost: "פיצויים ותלונות",
-    outcome: "Incident Center · Predictive Maint · Alerts",
-    href: "#ceo-value",
   },
 ] as const;
 

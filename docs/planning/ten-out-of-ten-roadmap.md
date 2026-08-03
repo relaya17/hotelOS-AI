@@ -129,11 +129,11 @@
 ## 10/10 checklist
 
 ### מוצר
-- [ ] יש Wedge ברור אחד
-- [ ] יש תהליך שלם Suggest → Approve → Act
-- [ ] יש תמונה אחת של המלון
-- [ ] יש ROI מדיד לפיילוט
-- [ ] יש ממשק ברור לעובד ומנהל
+- [x] יש Wedge ברור אחד — Executive Briefing + Incident Center + Predictive Maintenance (נחיתה + GTM)
+- [x] יש תהליך שלם Suggest → Approve → Act — קבלה, כספים, HR (HITL)
+- [ ] יש תמונה אחת של המלון — חלקי: Twin + Briefing + Incidents; עדיין לא מסך אחד מאוחד לכל מנהל
+- [x] יש ROI מדיד לפיילוט — `pilot-roi-scorecard.md` + CEO section בנחיתה
+- [ ] יש ממשק ברור לעובד ומנהל — Reception/Guest 360 משתפר; עדיין לא enterprise-grade בכל דומיין
 
 ### אמינות
 - [ ] ניטור שגיאות פעיל
@@ -150,10 +150,10 @@
 - [ ] מרגיש enterprise-grade
 
 ### שיווק/הצגה
-- [ ] המצגת מדברת על בעיה אחת, לא "כל המערכת"
-- [ ] יש דוגמה תפעולית אחת ברורה
-- [ ] יש מדדי הצלחה כמותיים
-- [ ] יש מסר ברור: לא מחליפים PMS, אלא מחברים ומשפרים
+- [x] המצגת מדברת על בעיה אחת, לא "כל המערכת" — hero + outcomes מובילים ב־wedge
+- [ ] יש דוגמה תפעולית אחת ברורה — chat demo + CEO bars; חסר walkthrough end-to-end אחד
+- [x] יש מדדי הצלחה כמותיים — Pilot ROI Scorecard + FAQ פיילוט
+- [x] יש מסר ברור: לא מחליפים PMS, אלא מחברים ומשפרים — taglines + wedge + FAQ
 
 ---
 

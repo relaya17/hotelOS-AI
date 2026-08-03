@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { listHotels, type HotelDto } from "@hotelos/web-client";
-import { IncidentCenterPanel } from "@hotelos/features";
+import { IncidentCenterPanel, PilotRoiPanel } from "@hotelos/features";
 import { ApprovalsPanel } from "./facilities/approvals-panel.js";
 import { DailyBriefingPanel } from "./facilities/daily-briefing-panel.js";
 import { DepartmentsPanel } from "./facilities/departments-panel.js";
@@ -31,7 +31,8 @@ type SubView =
   | "knowledge"
   | "integrations"
   | "twin"
-  | "simulator";
+  | "simulator"
+  | "pilot-roi";
 
 const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "briefing", label: "תדריך יומי" },
@@ -49,6 +50,7 @@ const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "integrations", label: "אינטגרציות" },
   { key: "twin", label: "Digital Twin · מצב חדרים" },
   { key: "simulator", label: "סימולטור" },
+  { key: "pilot-roi", label: "מדדי פיילוט / ROI" },
 ];
 
 function readHotelIdFromUrl(): string | undefined {
@@ -191,6 +193,9 @@ export function FacilitiesPage() {
           {view === "twin" ? <TwinPanel hotelId={selectedHotelId} /> : null}
           {view === "simulator" ? (
             <SimulatorPanel hotelId={selectedHotelId} />
+          ) : null}
+          {view === "pilot-roi" ? (
+            <PilotRoiPanel hotelId={selectedHotelId} compact />
           ) : null}
         </div>
       ) : null}

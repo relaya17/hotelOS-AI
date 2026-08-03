@@ -48,14 +48,16 @@
 
 | יכולת | מצב בקוד / תכנון | פעולת GTM |
 |--------|------------------|-----------|
-| Digital Twin | ✅ תמונת חדרים + overlays (אירועים / PM / אנרגיה) ב־`GET /v1/twin` | realtime (SSE) בשלב הבא |
-| Predictive Maintenance | MVP (sensors + היסטוריה) + מוצג ב־Twin overlay | דומיין פיילוט ברור |
+| Digital Twin | ✅ overlays + רענון 30ש׳ בדשבורד Executive | SSE מלא בשלב הבא |
+| Predictive Maintenance | MVP + Twin overlay + Incident summary בדשבורד | דומיין פיילוט ברור |
 | Revenue Optimization | ✅ HITL + forecast + simulator + לוח עונות/אירועים | תמיד עם HITL — אמון CFO |
-| Guest 360 | ✅ MVP — `GET /v1/guests/by-email` + כרטיס בקבלת Admin | להרחיב העדפות/נאמנות חוצת־רשת |
-| AI Copilot לפי תפקיד | ✅ Work Copilot תפעול + כספים (CFO brief) + Admin | להרחיב משמרת / שטח |
+| Guest 360 | ✅ API + קליק הגעה בקבלה + שהיות ברשת + משוב | נאמנות/נקודות — roadmap |
+| AI Copilot לפי תפקיד | ✅ Work Copilot תפעול + כספים + Admin | להרחיב משמרת / שטח |
 | Knowledge Graph | ✅ MVP — `GET /v1/ops/knowledge-graph` + Executive UI | להרחיב edges מדידים לפיילוט |
 | Marketplace מודולים | ✅ קטלוג read-only ב־Admin + `GET /v1/integrations/catalog` | שלב 2 — enablement / secrets אחרי 2–3 מחברי live |
 | Open API רחב | ✅ OpenAPI 3.1 YAML + `GET /v1/meta/openapi.yaml` | DX / מפתחים אחרי יציבות פיילוט |
+| HITL שקיפות | ✅ payload מסונן + החלטות אחרונות ב־Admin/Executive | audit read API מלא — בהמשך |
+| Pilot ROI | ✅ 7 מדדים + baseline מקומי + Admin tab | מדידה אמיתית בפיילוט בלבד |
 
 ---
 

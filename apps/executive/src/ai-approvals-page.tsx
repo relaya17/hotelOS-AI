@@ -5,6 +5,7 @@ import {
   fetchApprovalKashrutGate,
   listHotels,
   listPendingAiApprovals,
+  listRecentAiApprovals,
   suggestAutonomyDepartmentTask,
   type AiApprovalDto,
   type ApprovalActDto,
@@ -17,8 +18,30 @@ function actMessage(act: ApprovalActDto): string {
   return act.reasonHe;
 }
 
+function approvalStatusHe(status: string): string {
+  if (status === "approved") return "אושר";
+  if (status === "rejected") return "נדחה";
+  return status;
+}
+
+function formatPayload(payload: unknown): string {
+  if (payload === null || payload === undefined) return "—";
+  return JSON.stringify(payload, null, 2);
+}
+
+function ApprovalPayloadPreview({ payload }: { readonly payload: unknown }) {
+  if (payload === null || payload === undefined) return null;
+  return (
+    <details className="payload-preview">
+      <summary>פרטי Payload</summary>
+      <pre>{formatPayload(payload)}</pre>
+    </details>
+  );
+}
+
 export function AiApprovalsPage() {
   const [items, setItems] = useState<readonly AiApprovalDto[]>([]);
+  const [recent, setRecent] = useState<readonly AiApprovalDto[]>([]);
   const [hotels, setHotels] = useState<readonly HotelDto[]>([]);
   const [error, setError] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
@@ -39,11 +62,13 @@ export function AiApprovalsPage() {
     setLoading(true);
     setError(undefined);
     try {
-      const [approvals, hotelList] = await Promise.all([
+      const [approvals, recentList, hotelList] = await Promise.all([
         listPendingAiApprovals(),
+        listRecentAiApprovals(20),
         listHotels(),
       ]);
       setItems(approvals);
+      setRecent(recentList);
       setHotels(hotelList);
       setHotelId((current) => current || hotelList[0]?.id || "");
       const gates: Record<string, KashrutProcurementGateDto | undefined> = {};
@@ -188,6 +213,7 @@ export function AiApprovalsPage() {
               <strong>{item.agentId}</strong>
               <p>{item.summaryHe}</p>
               <p className="muted">{item.reasonHe}</p>
+              <ApprovalPayloadPreview payload={item.payload} />
               {gate?.applies ? (
                 <div className="kashrut-gate">
                   <p>{gate.gateHe}</p>
@@ -242,12 +268,43 @@ export function AiApprovalsPage() {
           );
         })}
       </ul>
+
+      <h2>החלטות אחרונות</h2>
+      {recent.length === 0 ? <p className="muted">אין החלטות אחרונות.</p> : null}
+      <ul className="list recent">
+        {recent.map((item) => (
+          <li key={item.id}>
+            <div className="row recent-meta">
+              <strong>{item.agentId}</strong>
+              <span className={`status status-${item.status}`}>
+                {approvalStatusHe(item.status)}
+              </span>
+            </div>
+            <p>{item.summaryHe}</p>
+            <p className="muted">
+              {item.decidedAt
+                ? new Date(item.decidedAt).toLocaleString("he-IL")
+                : "—"}
+            </p>
+            <ApprovalPayloadPreview payload={item.payload} />
+          </li>
+        ))}
+      </ul>
+
       <style>{`
         .approvals-page{display:grid;gap:var(--space-4);max-width:42rem;animation:hotelos-enter var(--motion-med) var(--ease-out) both}
         .approvals-page h1,.approvals-page h2{margin:0}
         .list{list-style:none;padding:0;display:grid;gap:var(--space-3);margin:0}
         .list li{border:1px solid var(--color-line);border-radius:var(--radius-md);padding:var(--space-4);background:var(--color-paper-elevated);display:grid;gap:var(--space-2);box-shadow:var(--shadow-soft)}
+        .list.recent li{background:rgb(12 31 26 / 2%)}
         .row{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+        .recent-meta{justify-content:space-between;align-items:center}
+        .status{font-size:var(--text-small);font-weight:700;padding:.15rem .55rem;border-radius:999px}
+        .status-approved{color:var(--color-sea-deep);background:var(--color-sea-soft)}
+        .status-rejected{color:var(--color-danger);background:rgb(139 30 30 / 8%)}
+        .payload-preview{border:1px solid var(--color-line);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);background:rgb(12 31 26 / 2%)}
+        .payload-preview summary{cursor:pointer;font-size:var(--text-small);font-weight:600;color:var(--color-ink-soft)}
+        .payload-preview pre{margin:var(--space-2) 0 0;font-size:.78rem;overflow:auto;max-height:14rem;white-space:pre-wrap;word-break:break-word}
         .muted{margin:.35rem 0;color:var(--color-ink-soft);font-weight:500}
         .error{color:var(--color-danger)}
         .notice{color:var(--color-sea-deep);background:var(--color-sea-soft);padding:var(--space-3);border-radius:var(--radius-sm);border:1px solid rgb(14 107 92 / 16%);font-weight:500}

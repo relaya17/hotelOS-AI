@@ -12,8 +12,10 @@ import {
   type PersistedDepartmentTask,
   type PersistedHotel,
   type PersistedReputationReview,
+  type PersistedRevenueSuggestion,
   type PersistedUpsellOffer,
   type ReputationRepository,
+  type RevenueSuggestionsRepository,
   type UpsellRepository,
 } from "@hotelos/database";
 import { Ids, type HotelId, type TenantId } from "@hotelos/shared";
@@ -61,6 +63,7 @@ function createDeps(input: {
   readonly reviews?: readonly PersistedReputationReview[];
   readonly upsells?: readonly PersistedUpsellOffer[];
   readonly bookings?: readonly PersistedBooking[];
+  readonly revenueSuggestions?: readonly PersistedRevenueSuggestion[];
 }): Parameters<typeof buildPilotRoiMetrics>[0] {
   const deptIds: Record<string, string> = {
     security: "dept-sec",
@@ -85,6 +88,9 @@ function createDeps(input: {
     reputation: {
       listByHotel: async () => input.reviews ?? [],
     } as unknown as ReputationRepository,
+    revenueSuggestions: {
+      listByHotel: async () => input.revenueSuggestions ?? [],
+    } as unknown as RevenueSuggestionsRepository,
     ops: {
       ensureStandardDepartments: async () => undefined,
       listDepartments: async () =>
@@ -237,6 +243,36 @@ describe("buildPilotRoiMetrics", () => {
           roomNumber: "101",
         },
       ],
+      revenueSuggestions: [
+        {
+          id: "rev-sug-1",
+          tenantId,
+          hotelId,
+          periodStart: "2026-07-01",
+          periodEnd: "2026-07-07",
+          currentOccupancyPct: 72,
+          suggestedDeltaPct: 5,
+          rationaleHe: "ביקוש גבוה",
+          status: "approved",
+          decidedByUserId: Ids.user("user-1"),
+          decidedAt: "2026-07-16T10:00:00.000Z",
+          createdAt: "2026-07-15T10:00:00.000Z",
+        },
+        {
+          id: "rev-sug-2",
+          tenantId,
+          hotelId,
+          periodStart: "2026-07-08",
+          periodEnd: "2026-07-14",
+          currentOccupancyPct: 68,
+          suggestedDeltaPct: -3,
+          rationaleHe: "עונת שפל",
+          status: "rejected",
+          decidedByUserId: Ids.user("user-1"),
+          decidedAt: "2026-07-18T11:00:00.000Z",
+          createdAt: "2026-07-17T10:00:00.000Z",
+        },
+      ],
     });
 
     const metrics = await buildPilotRoiMetrics(deps, {
@@ -254,6 +290,7 @@ describe("buildPilotRoiMetrics", () => {
     assert.equal(metrics.upsellAcceptedCount, 1);
     assert.equal(metrics.upsellAcceptedRate, 0.5);
     assert.equal(metrics.negativeReviewResponseHours, 12);
+    assert.equal(metrics.revenueSuggestionApprovedRate, 0.5);
     assert.ok(metrics.notesHe.some((note) => note.includes("פרוקסי")));
     assert.ok(metrics.notesHe.some((note) => note.includes("baseline")));
     assert.equal(metrics.windowDays, 30);

@@ -2880,6 +2880,7 @@ export type PilotRoiMetricsDto = {
   readonly upsellAcceptedCount: number;
   readonly upsellAcceptedRate: number | null;
   readonly negativeReviewResponseHours: number | null;
+  readonly revenueSuggestionApprovedRate: number | null;
   readonly notesHe: readonly string[];
 };
 
@@ -3478,6 +3479,9 @@ export type AiApprovalDto = {
   readonly summaryHe: string;
   readonly reasonHe: string;
   readonly status: string;
+  readonly payload?: unknown | null;
+  readonly decidedByUserId?: string | null;
+  readonly decidedAt?: string | null;
   readonly createdAt: string;
 };
 
@@ -3503,6 +3507,15 @@ export async function listPendingAiApprovals(): Promise<
   const payload = (await authGet("/v1/ai/approvals/pending")) as {
     data: AiApprovalDto[];
   };
+  return payload.data;
+}
+
+export async function listRecentAiApprovals(
+  limit = 20,
+): Promise<readonly AiApprovalDto[]> {
+  const payload = (await authGet(
+    `/v1/ai/approvals/recent?limit=${limit}`,
+  )) as { data: AiApprovalDto[] };
   return payload.data;
 }
 
