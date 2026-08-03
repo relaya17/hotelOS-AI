@@ -612,16 +612,25 @@ paths:
   /v1/ops/knowledge-graph:
     get:
       tags: [Ops]
-      summary: Ops knowledge graph (planned)
+      summary: Ops knowledge graph (nodes + edges)
       operationId: getOpsKnowledgeGraph
       description: |
-        **Not yet implemented** — planned ops knowledge graph endpoint.
-        see README inventory.
+        Explicit operational knowledge graph assembled from domain data
+        (hotel, rooms, bookings, guests, incidents, equipment, predictions).
+        Caps apply; not a financial/PMS source of truth (Vol 5 §5.5).
       parameters:
         - $ref: "#/components/parameters/hotelIdQuery"
       responses:
-        "501":
-          description: Not implemented
+        "200":
+          description: Graph snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   /v1/twin/hotels/{hotelId}:
     get:

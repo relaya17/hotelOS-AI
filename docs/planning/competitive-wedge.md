@@ -50,12 +50,12 @@
 |--------|------------------|-----------|
 | Digital Twin | ✅ תמונת חדרים + overlays (אירועים / PM / אנרגיה) ב־`GET /v1/twin` | realtime (SSE) בשלב הבא |
 | Predictive Maintenance | MVP (sensors + היסטוריה) + מוצג ב־Twin overlay | דומיין פיילוט ברור |
-| Revenue Optimization | MVP (suggestions HITL + forecast + simulator) | תמיד עם HITL — אמון CFO |
+| Revenue Optimization | ✅ HITL + forecast + simulator + לוח עונות/אירועים | תמיד עם HITL — אמון CFO |
 | Guest 360 | ✅ MVP — `GET /v1/guests/by-email` + כרטיס בקבלת Admin | להרחיב העדפות/נאמנות חוצת־רשת |
-| AI Copilot לפי תפקיד | ✅ Work «Copilot תפעול» (HK + Reception Suggest→HITL) + Admin | להרחיב כספים/משמרת ב־Work |
-| Knowledge Graph | מוגדר ב־AI Platform (Vol 5); יישום הדרגתי | לא למכור לפני שיש edges מדידים |
+| AI Copilot לפי תפקיד | ✅ Work Copilot תפעול + כספים (CFO brief) + Admin | להרחיב משמרת / שטח |
+| Knowledge Graph | ✅ MVP — `GET /v1/ops/knowledge-graph` + Executive UI | להרחיב edges מדידים לפיילוט |
 | Marketplace מודולים | ✅ קטלוג read-only ב־Admin + `GET /v1/integrations/catalog` | שלב 2 — enablement / secrets אחרי 2–3 מחברי live |
-| Open API רחב | OpenAPI inventory + `/v1/*` | לחזק DX / מפתחים אחרי יציבות פיילוט |
+| Open API רחב | ✅ OpenAPI 3.1 YAML + `GET /v1/meta/openapi.yaml` | DX / מפתחים אחרי יציבות פיילוט |
 
 ---
 
