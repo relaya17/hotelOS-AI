@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { randomUUID } from "node:crypto";
 import type {
   FeedbackRepository,
+  GuestProfileRepository,
   GuestStayRepository,
   HrRepository,
   OpsRepository,
@@ -20,6 +21,7 @@ export type PublicRouteDeps = {
   readonly feedback: FeedbackRepository;
   readonly hr: HrRepository;
   readonly ops: OpsRepository;
+  readonly guestProfiles?: GuestProfileRepository;
 };
 
 const SERVICE_TYPE_META = {
@@ -202,6 +204,26 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
           "NOT_CHECKED_IN",
           "Only checked-in stays can be checked out",
         );
+      }
+
+      if (deps.guestProfiles) {
+        try {
+          const scope = await deps.guestStays.findBookingScope(body.bookingId);
+          if (scope) {
+            await deps.guestProfiles.rememberStay({
+              id: randomUUID(),
+              tenantId: Ids.tenant(scope.tenantId),
+              email: body.email,
+              displayName: result.stay.guestName,
+              phone: result.stay.guestPhone,
+              hotelId: Ids.hotel(result.stay.hotelId),
+              stayAt: new Date().toISOString(),
+              noteHe: "checkout",
+            });
+          }
+        } catch {
+          // Best-effort guest memory.
+        }
       }
 
       return c.json({

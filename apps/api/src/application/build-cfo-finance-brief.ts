@@ -1,4 +1,5 @@
 import type {
+  GuestProfileRepository,
   HotelRepository,
   MaintenanceRepository,
   OverviewRepository,
@@ -12,7 +13,13 @@ import { buildAccountingContextPack } from "./build-accounting-context-pack.js";
 import { FINANCE_FEED_CATEGORIES } from "./ingest-trusted-market-feeds.js";
 import { listOpsAnomalies } from "./run-anomaly-scan.js";
 
-export const FINANCE_DOCTOR_AUDIENCES = ["owner", "ceo", "cfo"] as const;
+export const FINANCE_DOCTOR_AUDIENCES = [
+  "owner",
+  "ceo",
+  "cfo",
+  "gm",
+  "procurement",
+] as const;
 export type FinanceDoctorAudience = (typeof FINANCE_DOCTOR_AUDIENCES)[number];
 
 export const FINANCE_DOCTOR_FOCUSES = [
@@ -20,6 +27,7 @@ export const FINANCE_DOCTOR_FOCUSES = [
   "finance",
   "procurement",
   "marketing",
+  "investment",
 ] as const;
 export type FinanceDoctorFocus = (typeof FINANCE_DOCTOR_FOCUSES)[number];
 
@@ -30,6 +38,8 @@ export const FINANCE_DOCTOR_AUDIENCE_LABELS_HE: Record<
   owner: "בעלים",
   ceo: "מנכ״ל",
   cfo: "מנכ״ל כספים / CFO",
+  gm: "מנהל מלון / GM",
+  procurement: "רכש / קניין",
 };
 
 export const FINANCE_DOCTOR_FOCUS_LABELS_HE: Record<FinanceDoctorFocus, string> =
@@ -38,6 +48,7 @@ export const FINANCE_DOCTOR_FOCUS_LABELS_HE: Record<FinanceDoctorFocus, string> 
     finance: "כספים ותזרים",
     procurement: "קניות ורכש",
     marketing: "פרסום ושיווק",
+    investment: "השקעות (חינוכי)",
   };
 
 export type CfoFinanceBriefDeps = {
@@ -48,16 +59,19 @@ export type CfoFinanceBriefDeps = {
   readonly trustedSources: TrustedSourcesRepository;
   readonly snapshots: TrustedSourceSnapshotsRepository;
   readonly maintenance: MaintenanceRepository;
+  readonly guestProfiles?: GuestProfileRepository;
 };
 
 export type CfoFinanceBrief = {
   readonly generatedAt: string;
   readonly tenantName: string;
   readonly headlineHe: string;
+  readonly hotels: readonly { readonly id: string; readonly name: string }[];
   readonly hotelBulletsHe: readonly string[];
   readonly ledgerSummaryHe: readonly string[];
   readonly procurementBulletsHe: readonly string[];
   readonly marketingBulletsHe: readonly string[];
+  readonly guestMemoryBulletsHe: readonly string[];
   readonly anomalyBulletsHe: readonly string[];
   readonly marketSourcesHe: readonly string[];
   readonly marketSnapshotsHe: readonly string[];
@@ -107,6 +121,10 @@ export async function buildCfoFinanceBrief(
   const hotelBulletsHe: string[] = [];
   const procurementBulletsHe: string[] = [];
   const marketingBulletsHe: string[] = [];
+  const hotels = scopedHotels.map((hotel) => ({
+    id: hotel.id,
+    name: hotel.name,
+  }));
 
   for (const hotel of scopedHotels) {
     const [orders, inventory] = await Promise.all([
@@ -186,24 +204,47 @@ export async function buildCfoFinanceBrief(
       `${snap.title} (${snap.fetchedAt.slice(0, 10)}): ${snap.summary.slice(0, 220)}${snap.summary.length > 220 ? "…" : ""}`,
   );
 
+  const guestMemoryBulletsHe: string[] = [];
+  if (deps.guestProfiles) {
+    const [profileCount, recentGuests] = await Promise.all([
+      deps.guestProfiles.countByTenant(tenantId),
+      deps.guestProfiles.listRecent(tenantId, { limit: 5 }),
+    ]);
+    guestMemoryBulletsHe.push(
+      `זיכרון אורחים: ${profileCount} פרופילים שמורים (אימייל) — לשיפור שירות/שיווק מאושר בלבד.`,
+    );
+    for (const guest of recentGuests) {
+      guestMemoryBulletsHe.push(
+        `${guest.displayName} · ${guest.email} · ${guest.stayCount} שהיות` +
+          (guest.lastStayAt ? ` · אחרונה ${guest.lastStayAt.slice(0, 10)}` : ""),
+      );
+    }
+  } else {
+    guestMemoryBulletsHe.push(
+      "זיכרון אורחים: לא מחובר עדיין במסלול זה.",
+    );
+  }
+
   const headlineHe =
     anomalyBulletsHe.length > 0
-      ? `תדריך הנהלה · ${anomalyBulletsHe.length} אותות · כסף / קניות / שיווק`
-      : `תדריך הנהלה · כסף + קניות + שיווק · ${scopedHotels.length} מלונות`;
+      ? `תדריך הנהלה · ${anomalyBulletsHe.length} אותות · כסף / קניין / שיווק / אורחים`
+      : `תדריך הנהלה · ניהול נכון · ${scopedHotels.length} מלונות`;
 
   return {
     generatedAt,
     tenantName: chain.tenantName,
     headlineHe,
+    hotels,
     hotelBulletsHe,
     ledgerSummaryHe,
     procurementBulletsHe,
     marketingBulletsHe,
+    guestMemoryBulletsHe,
     anomalyBulletsHe,
     marketSourcesHe,
     marketSnapshotsHe,
     guardrailHe:
-      "יועץ לבעלים / מנכ״ל / CFO · קניות·פרסום·שיווק·תזרים — הצעה בלבד · מעל ₪2,000 או הנחה>5% דורש אישור אדם · Trusted בלבד לעובדות חיצוניות.",
+      "יועץ לבעלים/מנכ״ל/CFO/GM/רכש · קניות·פרסום·שיווק·תזרים·השקעות חינוכיות — הצעה בלבד · אין ביצוע מסחר/העברות · מעל ₪2,000 דורש אישור אדם · Trusted בלבד.",
   };
 }
 
@@ -225,6 +266,9 @@ export function formatCfoFinanceBriefPack(brief: CfoFinanceBrief): string {
     "",
     "## פרסום ושיווק (אותות תפוסה/ביקוש)",
     ...brief.marketingBulletsHe.map((line) => `• ${line}`),
+    "",
+    "## זיכרון אורחים (CRM)",
+    ...brief.guestMemoryBulletsHe.map((line) => `• ${line}`),
   ];
   if (brief.anomalyBulletsHe.length > 0) {
     lines.push(

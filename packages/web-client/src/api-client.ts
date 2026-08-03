@@ -1985,21 +1985,29 @@ export async function synthesizeCioDigest(
   return payload.data;
 }
 
-export type FinanceDoctorAudience = "owner" | "ceo" | "cfo";
+export type FinanceDoctorAudience =
+  | "owner"
+  | "ceo"
+  | "cfo"
+  | "gm"
+  | "procurement";
 export type FinanceDoctorFocus =
   | "all"
   | "finance"
   | "procurement"
-  | "marketing";
+  | "marketing"
+  | "investment";
 
 export type CfoFinanceBriefDto = {
   readonly generatedAt: string;
   readonly tenantName: string;
   readonly headlineHe: string;
+  readonly hotels: readonly { readonly id: string; readonly name: string }[];
   readonly hotelBulletsHe: readonly string[];
   readonly ledgerSummaryHe: readonly string[];
   readonly procurementBulletsHe: readonly string[];
   readonly marketingBulletsHe: readonly string[];
+  readonly guestMemoryBulletsHe: readonly string[];
   readonly anomalyBulletsHe: readonly string[];
   readonly marketSourcesHe: readonly string[];
   readonly marketSnapshotsHe: readonly string[];
@@ -2648,17 +2656,24 @@ export function routeBriefingActionToDepartment(
       priority: "urgent",
     };
   }
-  if (/רכש|מלאי|הזמנת רכש|procurement|stock/.test(text)) {
+  if (/רכש|מלאי|הזמנת רכש|קניין|procurement|stock/.test(text)) {
     return {
       departmentCode: "procurement",
       agentId: "agent.procurement",
       priority: "high",
     };
   }
-  if (/תמחור|שיווק|תפוסה נמוכה|revenue|adr/.test(text)) {
+  if (/תמחור|שיווק|פרסום|קמפיין|תפוסה נמוכה|revenue|adr/.test(text)) {
     return {
       departmentCode: "sales_marketing",
-      agentId: "agent.revenue",
+      agentId: "agent.marketing",
+      priority: "medium",
+    };
+  }
+  if (/השקע|בורסה|תזרים|תקציב|investment|ledger/.test(text)) {
+    return {
+      departmentCode: "finance",
+      agentId: "agent.cfo",
       priority: "medium",
     };
   }
@@ -2695,14 +2710,18 @@ export async function suggestAutonomyBriefingAction(input: {
   readonly hotelId: string;
   readonly actionHe: string;
   readonly roleHint?: CioRole;
-  readonly source?: "daily_briefing" | "cio_digest";
+  readonly source?: "daily_briefing" | "cio_digest" | "finance_doctor";
 }): Promise<{ readonly approvalId: string; readonly departmentCode: string }> {
   const routed = routeBriefingActionToDepartment(
     input.actionHe,
     input.roleHint,
   );
   const source =
-    input.source === "cio_digest" ? "תדריך CIO" : "תדריך יומי";
+    input.source === "cio_digest"
+      ? "תדריך CIO"
+      : input.source === "finance_doctor"
+        ? "יועץ הנהלה (Finance Doctor)"
+        : "תדריך יומי";
   const result = await suggestAutonomyDepartmentTask({
     hotelId: input.hotelId,
     departmentCode: routed.departmentCode,

@@ -31,8 +31,10 @@
 ## Finance Doctor (UI)
 
 - Executive → **סוכן כספים** — תדריך דטרמיניסטי (כסף + קניות + שיווק) + סינתזה לפי קהל/מיקוד
-- קהל: `owner` | `ceo` | `cfo` · מיקוד: `all` | `finance` | `procurement` | `marketing`
-- ניתוב סוכן: finance/all → `agent.cfo` · procurement → `agent.procurement` · marketing → `agent.marketing`
+- קהל: `owner` | `ceo` | `cfo` | `gm` | `procurement` · מיקוד: `all` | `finance` | `procurement` | `marketing` | `investment` (חינוכי בלבד — אין מסחר)
+- ניתוב סוכן: finance/all/investment → `agent.cfo` · procurement → `agent.procurement` · marketing → `agent.marketing`
+- זיכרון אורחים: טבלת `guest_profiles` (upsert ב־booking create / checkout)
+- אוטומציה: המלצות → Suggest ב־`/v1/autonomy` (Approve→Act)
 - API: `GET /v1/ops/cfo-finance-brief`, `POST …/synthesize` (`audience`,`focus`), `POST …/refresh-feeds`
 
 ## פעולות מותרות (ללא אישור)

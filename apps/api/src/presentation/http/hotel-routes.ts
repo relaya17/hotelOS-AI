@@ -25,6 +25,7 @@ export type HotelRouteDeps = {
   readonly whatsapp: WhatsAppProvider;
   readonly audit: AuditRepository;
   readonly tokens: JwtTokenService;
+  readonly guestProfiles?: import("@hotelos/database").GuestProfileRepository;
 };
 
 const hotelIdParamSchema = z.string().uuid();
@@ -223,16 +224,22 @@ export function createHotelRoutes(deps: HotelRouteDeps): Hono<{
       const principal = c.get("principal");
       const hotelId = hotelIdParamSchema.parse(c.req.param("hotelId"));
       const body = createBookingSchema.parse(await c.req.json());
-      const result = await createBooking(deps.bookings, deps.audit, principal, {
-        hotelId,
-        roomId: body.roomId,
-        guestName: body.guestName,
-        guestEmail: body.guestEmail,
-        ...(body.guestPhone ? { guestPhone: body.guestPhone } : {}),
-        checkInDate: body.checkInDate,
-        checkOutDate: body.checkOutDate,
-        status: body.status,
-      });
+      const result = await createBooking(
+        deps.bookings,
+        deps.audit,
+        principal,
+        {
+          hotelId,
+          roomId: body.roomId,
+          guestName: body.guestName,
+          guestEmail: body.guestEmail,
+          ...(body.guestPhone ? { guestPhone: body.guestPhone } : {}),
+          checkInDate: body.checkInDate,
+          checkOutDate: body.checkOutDate,
+          status: body.status,
+        },
+        deps.guestProfiles,
+      );
 
       if (!result.ok) {
         const status =

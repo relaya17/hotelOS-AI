@@ -121,6 +121,35 @@ export const bookings = sqliteTable(
   ],
 );
 
+/**
+ * Cross-stay guest memory (CRM foundation) — email-keyed per tenant.
+ * Preferences/notes only; no open marketing without consent + approval.
+ */
+export const guestProfiles = sqliteTable(
+  "guest_profiles",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    email: text("email").notNull(),
+    displayName: text("display_name").notNull(),
+    phone: text("phone"),
+    notesHe: text("notes_he"),
+    preferencesJson: text("preferences_json").notNull().default("{}"),
+    stayCount: integer("stay_count").notNull().default(0),
+    lastHotelId: text("last_hotel_id").references(() => hotels.id),
+    lastStayAt: text("last_stay_at"),
+    marketingConsent: integer("marketing_consent").notNull().default(0),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("guest_profiles_tenant_idx").on(table.tenantId),
+    index("guest_profiles_tenant_email_idx").on(table.tenantId, table.email),
+  ],
+);
+
 export const users = sqliteTable(
   "users",
   {

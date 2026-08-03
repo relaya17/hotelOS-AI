@@ -141,6 +141,7 @@ function formatFactsCfoMessage(
     readonly ledgerSummaryHe: readonly string[];
     readonly procurementBulletsHe: readonly string[];
     readonly marketingBulletsHe: readonly string[];
+    readonly guestMemoryBulletsHe: readonly string[];
     readonly anomalyBulletsHe: readonly string[];
     readonly marketSnapshotsHe: readonly string[];
     readonly guardrailHe: string;
@@ -148,7 +149,7 @@ function formatFactsCfoMessage(
   ingest: { readonly attempted: number; readonly ok: number; readonly failed: number },
 ): string {
   const lines = [
-    "תדריך יומי · יועץ הנהלה (בעלים / מנכ״ל / CFO) · כסף·קניות·שיווק",
+    "תדריך יומי · יועץ הנהלה · ניהול·קניין·שיווק·אורחים",
     brief.headlineHe,
     `נוצר: ${brief.generatedAt}`,
     `רענון Trusted: ${ingest.ok}/${ingest.attempted} הצליחו · ${ingest.failed} נכשלו`,
@@ -164,6 +165,9 @@ function formatFactsCfoMessage(
     "",
     "## פרסום ושיווק",
     ...brief.marketingBulletsHe.map((line) => `• ${line}`),
+    "",
+    "## זיכרון אורחים",
+    ...brief.guestMemoryBulletsHe.map((line) => `• ${line}`),
   ];
   if (brief.anomalyBulletsHe.length > 0) {
     lines.push("", "## אנומליות", ...brief.anomalyBulletsHe.map((l) => `• ${l}`));

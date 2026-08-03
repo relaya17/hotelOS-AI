@@ -33,6 +33,7 @@ import {
   createRoomRepository,
   createTrustedSourcesRepository,
   createTrustedSourceSnapshotsRepository,
+  createGuestProfileRepository,
   createTrustRepository,
   createTurboRepository,
   createUserRepository,
@@ -92,6 +93,7 @@ export async function composeApp() {
   });
   const overview = createOverviewRepository(db);
   const guestStays = createGuestStayRepository(db);
+  const guestProfiles = createGuestProfileRepository(db);
   const agents = createAgentRepository(db);
   const briefing = createBriefingRepository(db);
   const turbo = createTurboRepository(db);
@@ -185,9 +187,18 @@ export async function composeApp() {
     ),
     isProduction: env.NODE_ENV === "production",
     auth: { users, sessions, audit, tokens },
-    hotels: { hotels, rooms, bookings, notifications, whatsapp, audit, tokens },
+    hotels: {
+      hotels,
+      rooms,
+      bookings,
+      notifications,
+      whatsapp,
+      audit,
+      tokens,
+      guestProfiles,
+    },
     overview: { overview, tokens },
-    publicRoutes: { guestStays, feedback, hr, ops },
+    publicRoutes: { guestStays, feedback, hr, ops, guestProfiles },
     agents: { agents, tokens },
     briefing: {
       audit,
@@ -229,6 +240,7 @@ export async function composeApp() {
       companyKnowledge,
       trustedSources,
       snapshots: trustedSourceSnapshots,
+      guestProfiles,
       tokens,
     },
     orgComms: { orgComms, tokens },
@@ -315,6 +327,7 @@ export async function composeApp() {
         trustedSources,
         snapshots: trustedSourceSnapshots,
         maintenance,
+        guestProfiles,
         orgComms,
         gateway,
         companyKnowledge,

@@ -42,6 +42,12 @@ export {
   type OverviewRepository,
 } from "./repositories/overview-repository.js";
 export {
+  createGuestProfileRepository,
+  type GuestProfileRepository,
+  type PersistedGuestProfile,
+  type RememberGuestStayInput,
+} from "./repositories/guest-profile-repository.js";
+export {
   createGuestStayRepository,
   type GuestFolioStay,
   type GuestStay,

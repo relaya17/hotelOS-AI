@@ -128,6 +128,24 @@ export async function migrate(client: Client): Promise<void> {
     CREATE INDEX IF NOT EXISTS bookings_room_idx ON bookings(room_id);
     CREATE INDEX IF NOT EXISTS bookings_hotel_status_idx ON bookings(hotel_id, status);
 
+    CREATE TABLE IF NOT EXISTS guest_profiles (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      email TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      phone TEXT,
+      notes_he TEXT,
+      preferences_json TEXT NOT NULL DEFAULT '{}',
+      stay_count INTEGER NOT NULL DEFAULT 0,
+      last_hotel_id TEXT REFERENCES hotels(id),
+      last_stay_at TEXT,
+      marketing_consent INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS guest_profiles_tenant_idx ON guest_profiles(tenant_id);
+    CREATE INDEX IF NOT EXISTS guest_profiles_tenant_email_idx ON guest_profiles(tenant_id, email);
+
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL REFERENCES tenants(id),
@@ -896,6 +914,31 @@ export async function migrate(client: Client): Promise<void> {
   await client.execute(`
     CREATE INDEX IF NOT EXISTS bookings_hotel_room_prep_idx
       ON bookings(hotel_id, room_prep_status);
+  `);
+
+  // Guest CRM memory (idempotent for DBs created before guest_profiles)
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS guest_profiles (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      email TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      phone TEXT,
+      notes_he TEXT,
+      preferences_json TEXT NOT NULL DEFAULT '{}',
+      stay_count INTEGER NOT NULL DEFAULT 0,
+      last_hotel_id TEXT REFERENCES hotels(id),
+      last_stay_at TEXT,
+      marketing_consent INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS guest_profiles_tenant_idx ON guest_profiles(tenant_id);
+  `);
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS guest_profiles_tenant_email_idx ON guest_profiles(tenant_id, email);
   `);
 
   // WhatsApp outbox retry / backoff

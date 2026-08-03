@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
-import type { BookingRepository } from "@hotelos/database";
-import type { AuditRepository } from "@hotelos/database";
+import type {
+  AuditRepository,
+  BookingRepository,
+  GuestProfileRepository,
+} from "@hotelos/database";
 import type { AuthPrincipal } from "@hotelos/auth";
 import { Ids } from "@hotelos/shared";
 import { err, ok, type Result } from "@hotelos/shared";
@@ -30,6 +33,7 @@ export async function createBooking(
   audit: AuditRepository,
   principal: AuthPrincipal,
   command: CreateBookingCommand,
+  guestProfiles?: GuestProfileRepository,
 ): Promise<Result<Awaited<ReturnType<BookingRepository["create"]>>, CreateBookingError>> {
   const hotelId = Ids.hotel(command.hotelId);
   const roomId = Ids.room(command.roomId);
@@ -100,6 +104,23 @@ export async function createBooking(
     },
     createdAt: new Date().toISOString(),
   });
+
+  if (guestProfiles) {
+    try {
+      await guestProfiles.rememberStay({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        email: created.guestEmail,
+        displayName: created.guestName,
+        phone: created.guestPhone,
+        hotelId,
+        stayAt: new Date().toISOString(),
+        noteHe: `הזמנה ${created.status}`,
+      });
+    } catch {
+      // Never fail booking create if guest memory write fails.
+    }
+  }
 
   return ok(created);
 }

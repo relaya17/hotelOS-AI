@@ -12,6 +12,7 @@ import type {
   OverviewRepository,
   ProcurementRepository,
   RecruitingRepository,
+  GuestProfileRepository,
   TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
   TurboRepository,
@@ -55,6 +56,7 @@ export type OpsRouteDeps = {
   readonly companyKnowledge: CompanyKnowledgeRepository;
   readonly trustedSources: TrustedSourcesRepository;
   readonly snapshots: TrustedSourceSnapshotsRepository;
+  readonly guestProfiles?: GuestProfileRepository;
   readonly tokens: JwtTokenService;
 };
 
@@ -1247,6 +1249,9 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
           trustedSources: deps.trustedSources,
           snapshots: deps.snapshots,
           maintenance: deps.maintenance,
+          ...(deps.guestProfiles
+            ? { guestProfiles: deps.guestProfiles }
+            : {}),
         },
         principal.scope.tenantId,
         scopedHotelIds,
@@ -1290,6 +1295,9 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
           maintenance: deps.maintenance,
           gateway: deps.gateway,
           companyKnowledge: deps.companyKnowledge,
+          ...(deps.guestProfiles
+            ? { guestProfiles: deps.guestProfiles }
+            : {}),
         },
         {
           tenantId: principal.scope.tenantId,

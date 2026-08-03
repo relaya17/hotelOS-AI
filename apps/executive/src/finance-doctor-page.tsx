@@ -4,6 +4,7 @@ import {
   fetchCfoFinanceBrief,
   fetchCfoMarketSnapshots,
   refreshCfoMarketFeeds,
+  suggestAutonomyBriefingAction,
   synthesizeCfoFinanceBrief,
   type CfoFinanceBriefDto,
   type FinanceDoctorAudience,
@@ -16,6 +17,8 @@ const AUDIENCES: readonly { id: FinanceDoctorAudience; label: string }[] = [
   { id: "owner", label: "בעלים" },
   { id: "ceo", label: "מנכ״ל" },
   { id: "cfo", label: "מנכ״ל כספים" },
+  { id: "gm", label: "מנהל מלון" },
+  { id: "procurement", label: "רכש / קניין" },
 ];
 
 const FOCUSES: readonly { id: FinanceDoctorFocus; label: string }[] = [
@@ -23,6 +26,7 @@ const FOCUSES: readonly { id: FinanceDoctorFocus; label: string }[] = [
   { id: "finance", label: "כספים" },
   { id: "procurement", label: "קניות" },
   { id: "marketing", label: "פרסום ושיווק" },
+  { id: "investment", label: "השקעות (חינוכי)" },
 ];
 
 export function FinanceDoctorPage() {
@@ -36,7 +40,10 @@ export function FinanceDoctorPage() {
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
+
+  const primaryHotelId = brief?.hotels[0]?.id;
 
   async function reloadFacts() {
     const [nextBrief, nextSnapshots] = await Promise.all([
@@ -72,12 +79,14 @@ export function FinanceDoctorPage() {
   return (
     <div className="finance-doctor">
       <header>
-        <p className="hotelos-eyebrow">Finance Doctor · בעלים · מנכ״ל · CFO</p>
+        <p className="hotelos-eyebrow">
+          ניהול נכון · קניין · שיווק · זיכרון אורחים · אוטומציה
+        </p>
         <h1>יועץ הנהלה חכם</h1>
         <p className="sub">
-          עוזר בקניות, בפרסום ובשיווק — וגם בתזרים ובצמיחה. מותאם לבעלים,
-          למנכ״ל ולמנכ״ל הכספים. עובדות חיצוניות רק ממקורות Trusted; ביצוע כספי
-          רק אחרי אישור אדם.
+          לבעלים, מנכ״ל, מנכ״ל כספים, מנהל מלון ורכש — קניות, פרסום, שיווק,
+          תזרים, ואוריינות השקעות (חינוכי בלבד). זוכר אורחים במסד נתונים, ושולח
+          המלצות לאישור AI (Suggest→Approve→Act).
         </p>
       </header>
 
@@ -134,6 +143,7 @@ export function FinanceDoctorPage() {
               try {
                 setBusy("refresh");
                 setError(undefined);
+                setNotice(undefined);
                 const result = await refreshCfoMarketFeeds();
                 await reloadFacts();
                 setSmart(null);
@@ -165,6 +175,7 @@ export function FinanceDoctorPage() {
               try {
                 setBusy("synthesize");
                 setError(undefined);
+                setNotice(undefined);
                 const result = await synthesizeCfoFinanceBrief({
                   audience,
                   focus,
@@ -192,16 +203,21 @@ export function FinanceDoctorPage() {
 
       <TextField
         name="finance-question"
-        label="שאלה ספציפית (קנייה / קמפיין / חוזה / תזרים)"
+        label="שאלה (קנייה / קמפיין / השקעה חינוכית / אורח / תזרים)"
         value={question}
         onChange={(event) => setQuestion(event.target.value)}
-        placeholder="לדוגמה: האם לקנות מצעים עכשיו או לדחות? איזה קמפיין ימלא את סוף השבוע?"
+        placeholder="לדוגמה: האם לדחות רכש? איזה קמפיין? מה אומר המקרו על נזילות הרשת?"
       />
 
       {loading ? <p className="state">טוען תדריך…</p> : null}
       {error ? (
         <p className="state state--warn" role="status">
           {error}
+        </p>
+      ) : null}
+      {notice ? (
+        <p className="state state--ok" role="status">
+          {notice}
         </p>
       ) : null}
 
@@ -224,7 +240,7 @@ export function FinanceDoctorPage() {
               <li key={line}>{line}</li>
             ))}
           </ul>
-          <h3>קניות ורכש</h3>
+          <h3>קניות / קניין</h3>
           <ul>
             {brief.procurementBulletsHe.map((line) => (
               <li key={line}>{line}</li>
@@ -233,6 +249,12 @@ export function FinanceDoctorPage() {
           <h3>פרסום ושיווק</h3>
           <ul>
             {brief.marketingBulletsHe.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <h3>זיכרון אורחים</h3>
+          <ul>
+            {brief.guestMemoryBulletsHe.map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>
@@ -267,10 +289,52 @@ export function FinanceDoctorPage() {
           <p className="narrative">{smart.narrativeHe}</p>
           {smart.suggestedActionsHe.length > 0 ? (
             <>
-              <h3>המלצות להיום</h3>
-              <ul>
+              <h3>המלצות להיום — שליחה לאוטומציה (Suggest)</h3>
+              <ul className="action-list">
                 {smart.suggestedActionsHe.map((action) => (
-                  <li key={action}>{action}</li>
+                  <li key={action}>
+                    <span>{action}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={busy !== null || !primaryHotelId}
+                      onClick={() => {
+                        if (!primaryHotelId) return;
+                        void (async () => {
+                          try {
+                            setBusy("suggest");
+                            setError(undefined);
+                            const result = await suggestAutonomyBriefingAction({
+                              hotelId: primaryHotelId,
+                              actionHe: action,
+                              source: "finance_doctor",
+                              roleHint:
+                                audience === "gm" || audience === "procurement"
+                                  ? "ceo"
+                                  : audience === "owner"
+                                    ? "owner"
+                                    : audience === "cfo"
+                                      ? "cfo"
+                                      : "ceo",
+                            });
+                            setNotice(
+                              `Suggest נשלח לאישורי AI → ${result.departmentCode} (${result.approvalId.slice(0, 8)}…).`,
+                            );
+                          } catch (suggestError: unknown) {
+                            setError(
+                              suggestError instanceof Error
+                                ? suggestError.message
+                                : "שליחת Suggest נכשלה",
+                            );
+                          } finally {
+                            setBusy(null);
+                          }
+                        })();
+                      }}
+                    >
+                      Suggest
+                    </Button>
+                  </li>
                 ))}
               </ul>
             </>
@@ -279,6 +343,12 @@ export function FinanceDoctorPage() {
             <p className="guard">
               נדרש אישור אדם
               {smart.approvalReasonHe ? `: ${smart.approvalReasonHe}` : "."}
+            </p>
+          ) : null}
+          {smart.focus === "investment" ? (
+            <p className="guard">
+              השקעות: מידע חינוכי ממקורות Trusted בלבד — אינו ייעוץ השקעות
+              מורשה ואין ביצוע מסחר.
             </p>
           ) : null}
         </section>
@@ -318,7 +388,7 @@ export function FinanceDoctorPage() {
         .finance-doctor { display:grid; gap:var(--space-5); animation:hotelos-enter var(--motion-med) var(--ease-out) both; }
         .finance-doctor .hotelos-eyebrow { margin-bottom:var(--space-2); }
         h1 { font-size:var(--text-display); margin:0; }
-        .sub { margin:var(--space-2) 0 0; color:var(--color-ink-soft); max-width:70ch; font-weight:500; }
+        .sub { margin:var(--space-2) 0 0; color:var(--color-ink-soft); max-width:72ch; font-weight:500; }
         .chooser { display:grid; gap:var(--space-2); }
         .chooser__label { margin:0; font-size:var(--text-small); font-weight:700; color:var(--color-ink-soft); }
         .chooser .hotelos-seg { flex-wrap:wrap; width:fit-content; max-width:100%; }
@@ -328,12 +398,15 @@ export function FinanceDoctorPage() {
         .card h2 { margin:0; font-size:var(--text-title); }
         .card h3 { margin:0; font-size:var(--text-micro); text-transform:uppercase; letter-spacing:var(--tracking-label); color:var(--color-ink-soft); }
         .card ul { margin:0; padding-inline-start:1.2rem; display:grid; gap:.35rem; }
+        .action-list { list-style:none; padding:0; display:grid; gap:var(--space-2); }
+        .action-list li { display:flex; justify-content:space-between; gap:var(--space-3); align-items:center; padding:var(--space-3); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:#fff; }
         .meta { color:var(--color-ink-soft); font-size:var(--text-small); font-weight:500; }
         .guard { margin:0; font-size:var(--text-small); font-weight:600; color:var(--color-sea-deep); }
         .narrative { margin:0; white-space:pre-wrap; line-height:1.55; }
         .hint { margin:0; color:var(--color-ink-soft); font-weight:500; }
         .state { margin:0; color:var(--color-ink-soft); font-weight:500; }
         .state--warn { color:var(--color-warn); }
+        .state--ok { color:var(--color-sea-deep); font-weight:600; }
         .snap-list { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
         .snap-list li { display:grid; gap:.25rem; padding:var(--space-3); border:1px solid var(--color-line); border-radius:var(--radius-sm); background:#fff; }
         .snap-list p { margin:0; font-size:var(--text-small); color:var(--color-ink-soft); }
