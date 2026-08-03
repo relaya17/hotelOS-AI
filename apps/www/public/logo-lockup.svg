@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 120" role="img" aria-label="HotelOS AI">
+  <text
+    x="0"
+    y="78"
+    fill="#e8c89a"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="64"
+    font-weight="600"
+    letter-spacing="-1.5"
+  >HotelOS</text>
+  <text
+    x="268"
+    y="78"
+    fill="#e8c89a"
+    font-family="system-ui, Segoe UI, sans-serif"
+    font-size="42"
+    font-weight="500"
+    letter-spacing="2"
+  >AI</text>
+  <!-- Mark: arch + H -->
+  <g transform="translate(380 18)" fill="none" stroke="#e8c89a" stroke-linecap="round">
+    <path stroke-width="4" d="M12 78V22M52 78V22"/>
+    <path stroke-width="3.2" d="M12 50h40M18 44h28"/>
+    <path stroke-width="3.4" d="M22 62c0-12 7-22 10-22s10 10 10 22"/>
+    <circle cx="32" cy="28" r="3" fill="#6eb5a8" stroke="none"/>
+  </g>
+</svg>

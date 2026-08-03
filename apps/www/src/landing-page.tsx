@@ -92,13 +92,22 @@ export function LandingPage() {
 
       <header className={navSolid ? "top is-solid" : "top"}>
         <a className="top__brand" href="#top" aria-label="HotelOS AI — ראש העמוד">
-          HotelOS AI
+          <img
+            className="top__mark"
+            src="/icon-192.png"
+            width={36}
+            height={36}
+            alt=""
+            decoding="async"
+          />
+          <span>HotelOS AI</span>
         </a>
         <nav className="top__nav" aria-label="ניווט ראשי">
           <a href="#outcomes">תוצאות</a>
           <a href="#os">מערכת הפעלה</a>
           <a href="#digitization">דיגיטליזציה</a>
           <a href="#ceo-value">ערך למנכ״ל</a>
+          <a href="#faq">שאלות</a>
           <a href="#contact" className="top__cta">
             פיילוט
           </a>
@@ -110,7 +119,16 @@ export function LandingPage() {
           <div className="hero__media" aria-hidden="true" />
           <div className="hero__veil" aria-hidden="true" />
           <div className="hero__copy">
-            <p id="hero-brand" className="hero__brand">
+            <img
+              className="hero__logo"
+              src="/logo-lockup.svg"
+              width={720}
+              height={120}
+              alt="HotelOS AI"
+              decoding="async"
+              fetchPriority="high"
+            />
+            <p id="hero-brand" className="hero__brand visually-hidden">
               HotelOS AI
             </p>
             <h1 className="hero__title">
@@ -330,6 +348,43 @@ export function LandingPage() {
                 ))}
               </ul>
             </div>
+          </div>
+        </RevealSection>
+
+        <RevealSection
+          id="faq"
+          className="section faq"
+          aria-labelledby="faq-title"
+        >
+          <p className="eyebrow">שאלות נפוצות</p>
+          <h2 id="faq-title">מה שרשתות שואלות לפני פיילוט</h2>
+          <div className="faq__list">
+            <details className="faq__item" open>
+              <summary>האם HotelOS מחליף את ה־PMS?</summary>
+              <p>
+                לא. אנחנו שכבת אינטליגנציה מעל Opera / Protel / Fidelio / Clock
+                ועוד —{" "}
+                <a href="#taglines">We don&apos;t replace your PMS. We make it smarter.</a>
+              </p>
+            </details>
+            <details className="faq__item">
+              <summary>מה מקבלים בפיילוט?</summary>
+              <p>
+                דומיין אחד־שניים עם מדידת תוצאות: תדריכים, תקלות, ניקיון חדרים,
+                upsell — לפי{" "}
+                <a href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/planning/pilot-roi-scorecard.md">
+                  Pilot ROI Scorecard
+                </a>
+                .
+              </p>
+            </details>
+            <details className="faq__item">
+              <summary>למי זה מיועד?</summary>
+              <p>
+                למנכ״לים, COO ו־CFO של רשתות שקונים{" "}
+                <a href="#outcomes">תוצאות תפעול</a> — לא עוד מסך הזמנות.
+              </p>
+            </details>
           </div>
         </RevealSection>
 

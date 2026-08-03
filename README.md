@@ -254,10 +254,11 @@ Runbooks נוספים:
 
 | אפליקציה | מדיניות |
 |---|---|
+| **www** (`apps/www`, `pnpm dev:www`) | דף שיווק ציבורי: title/description/keywords, Open Graph + Twitter, JSON-LD (Organization / SoftwareApplication / FAQ), `robots.txt`, `sitemap.xml`, PWA icons, `og-image.png` |
 | **Guest** | ציבורית: title/description, Open Graph, JSON-LD, `robots.txt` + `sitemap.xml` |
 | **Executive / Admin / Work** | כלי פנימי — `noindex, nofollow` + `robots.txt` שחוסם הכל |
 
-לפני פרודקשן: לעדכן `canonical` / `og:url` / `sitemap` ב־`apps/guest` לדומיין האמיתי.
+לפני פרודקשן: לוודא ש־`canonical` / `og:url` / `sitemap` ב־`apps/www` ו־`apps/guest` מצביעים לדומיין האמיתי (`www.hotelos.ai`).
 
 ## תיעוד
 
