@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   ANOMALY_AMOUNT_THRESHOLD_MINOR,
+  BASELINE_WINDOW_DAYS,
   detectOpsAnomalies,
 } from "./detect-ops-anomalies.js";
 
@@ -128,6 +129,7 @@ describe("detectOpsAnomalies", () => {
     const outliers = findings.filter((f) => f.type === "journal_amount_outlier");
     assert.equal(outliers.length, 1);
     assert.equal(outliers[0]?.resourceId, "j6");
+    assert.match(outliers[0]?.evidenceHe ?? "", /baseline 90 יום/);
   });
 
   it("does not run statistical outlier detection with fewer than 5 journal rows", () => {
@@ -137,5 +139,87 @@ describe("detectOpsAnomalies", () => {
     ];
     const findings = detectOpsAnomalies({ nowIso: now, hotels: [], journal });
     assert.equal(findings.some((f) => f.type === "journal_amount_outlier"), false);
+  });
+
+  it("does not flag journal outliers outside the recent window", () => {
+    const oldDate = new Date(Date.parse(now) - (BASELINE_WINDOW_DAYS + 5) * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    const journal = [
+      { id: "j1", memo: "a", debit: 1000, credit: 0, entryDate: oldDate, accountName: "קופה" },
+      { id: "j2", memo: "b", debit: 1050, credit: 0, entryDate: oldDate, accountName: "קופה" },
+      { id: "j3", memo: "c", debit: 950, credit: 0, entryDate: oldDate, accountName: "קופה" },
+      { id: "j4", memo: "d", debit: 1020, credit: 0, entryDate: oldDate, accountName: "קופה" },
+      { id: "j5", memo: "e", debit: 980, credit: 0, entryDate: oldDate, accountName: "קופה" },
+      { id: "j6", memo: "old outlier", debit: 50_000, credit: 0, entryDate: oldDate, accountName: "קופה" },
+    ];
+    const findings = detectOpsAnomalies({ nowIso: now, hotels: [], journal });
+    assert.equal(findings.some((f) => f.type === "journal_amount_outlier"), false);
+  });
+
+  it("groups journal outlier baselines per account", () => {
+    const journal = [
+      { id: "j1", memo: "a", debit: 1000, credit: 0, entryDate: "2026-07-14", accountName: "קופה" },
+      { id: "j2", memo: "b", debit: 1050, credit: 0, entryDate: "2026-07-15", accountName: "קופה" },
+      { id: "j3", memo: "c", debit: 950, credit: 0, entryDate: "2026-07-16", accountName: "קופה" },
+      { id: "j4", memo: "d", debit: 1020, credit: 0, entryDate: "2026-07-17", accountName: "קופה" },
+      { id: "j5", memo: "e", debit: 980, credit: 0, entryDate: "2026-07-17", accountName: "קופה" },
+      { id: "j6", memo: "outlier", debit: 5_000, credit: 0, entryDate: "2026-07-18", accountName: "קופה" },
+      { id: "j7", memo: "big payroll", debit: 500_000, credit: 0, entryDate: "2026-07-18", accountName: "שכר" },
+    ];
+    const findings = detectOpsAnomalies({ nowIso: now, hotels: [], journal });
+    const outliers = findings.filter((f) => f.type === "journal_amount_outlier");
+    assert.equal(outliers.length, 1);
+    assert.equal(outliers[0]?.resourceId, "j6");
+  });
+
+  it("flags a purchase order as a statistical outlier with 5+ historical orders", () => {
+    const baseOrders = [
+      { id: "po1", status: "received", totalAmount: 50_000, currency: "ILS", createdAt: "2026-07-10T10:00:00.000Z" },
+      { id: "po2", status: "received", totalAmount: 52_000, currency: "ILS", createdAt: "2026-07-11T10:00:00.000Z" },
+      { id: "po3", status: "received", totalAmount: 48_000, currency: "ILS", createdAt: "2026-07-12T10:00:00.000Z" },
+      { id: "po4", status: "received", totalAmount: 51_000, currency: "ILS", createdAt: "2026-07-13T10:00:00.000Z" },
+      { id: "po5", status: "received", totalAmount: 49_500, currency: "ILS", createdAt: "2026-07-14T10:00:00.000Z" },
+      { id: "po6", status: "submitted", totalAmount: 120_000, currency: "ILS", createdAt: "2026-07-18T10:00:00.000Z" },
+    ];
+    const findings = detectOpsAnomalies({
+      nowIso: now,
+      hotels: [
+        {
+          hotelId: "h1",
+          hotelName: "דמו",
+          inventory: [],
+          maintenance: [],
+          purchaseOrders: baseOrders,
+        },
+      ],
+    });
+    const outliers = findings.filter((f) => f.type === "purchase_order_amount_outlier");
+    assert.equal(outliers.length, 1);
+    assert.equal(outliers[0]?.resourceId, "po6");
+    assert.match(outliers[0]?.evidenceHe ?? "", /baseline 90 יום/);
+  });
+
+  it("skips PO statistical detection when createdAt is missing", () => {
+    const findings = detectOpsAnomalies({
+      nowIso: now,
+      hotels: [
+        {
+          hotelId: "h1",
+          hotelName: "דמו",
+          inventory: [],
+          maintenance: [],
+          purchaseOrders: [
+            { id: "po1", status: "received", totalAmount: 50_000, currency: "ILS" },
+            { id: "po2", status: "received", totalAmount: 52_000, currency: "ILS" },
+            { id: "po3", status: "received", totalAmount: 48_000, currency: "ILS" },
+            { id: "po4", status: "received", totalAmount: 51_000, currency: "ILS" },
+            { id: "po5", status: "received", totalAmount: 49_500, currency: "ILS" },
+            { id: "po6", status: "submitted", totalAmount: 120_000, currency: "ILS" },
+          ],
+        },
+      ],
+    });
+    assert.equal(findings.some((f) => f.type === "purchase_order_amount_outlier"), false);
   });
 });

@@ -1,0 +1,22 @@
+{
+  "name": "@hotelos/a11y-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "node scripts/run.mjs",
+    "test:playwright": "playwright test",
+    "clean": "rimraf playwright-report test-results",
+    "install:browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.32",
+    "axe-core": "^4.12.1",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
+  }
+}

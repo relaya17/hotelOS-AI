@@ -74,6 +74,16 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().optional().default(""),
   /** Optional Sentry environment tag (defaults to NODE_ENV). */
   SENTRY_ENVIRONMENT: z.string().optional().default(""),
+  /**
+   * Shared secret for POST /v1/public/sentry/ingest (Sentry → IT department_tasks).
+   * Empty = public ingest disabled in production; allowed open in non-production.
+   */
+  SENTRY_INGEST_SECRET: z.string().optional().default(""),
+  /**
+   * Optional default hotel UUID for Sentry webhooks when events lack a hotelId tag.
+   * Prefer tagging events in Sentry SDK instead (see docs/deployment/vercel.md).
+   */
+  SENTRY_DEFAULT_HOTEL_ID: z.string().optional().default(""),
   /** PMS connector for Digital Twin merge. */
   PMS_PROVIDER: z
     .enum(["demo", "mews_stub", "mews", "opera_stub"])

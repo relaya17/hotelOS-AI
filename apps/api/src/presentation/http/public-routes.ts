@@ -25,6 +25,7 @@ import { createPublicBooking } from "../../application/create-public-booking.js"
 import { fireAutomationTrigger } from "../../application/fire-automation-trigger.js";
 import { ingestPmsReservation } from "../../application/ingest-pms-reservation.js";
 import { ingestSecurityWebhook } from "../../application/ingest-security-webhook.js";
+import { ingestSentryWebhook } from "../../application/ingest-sentry-webhook.js";
 import { listPublicAvailability } from "../../application/public-availability.js";
 import { quoteRoomStay } from "../../application/room-rates.js";
 import { handleWhatsAppInbound } from "../../application/handle-whatsapp-inbound.js";
@@ -53,6 +54,13 @@ export type PublicRouteDeps = {
    * Required in production; optional in development.
    */
   readonly securityIngestSecret?: string;
+  /**
+   * Sentry webhook secret (Bearer / X-HotelOS-Sentry-Secret).
+   * Required in production when Sentry → HotelOS IT ingest is enabled.
+   */
+  readonly sentryIngestSecret?: string;
+  /** Fallback hotel UUID when Sentry events lack a hotelId tag. */
+  readonly sentryDefaultHotelId?: string;
   readonly isProduction?: boolean;
 };
 
@@ -166,10 +174,11 @@ function pmsInboundAuthorized(
   return token === expected;
 }
 
-function securityIngestAuthorized(
+function sharedSecretAuthorized(
   c: { req: { header: (name: string) => string | undefined } },
   secret: string | undefined,
   isProduction: boolean | undefined,
+  headerName: string,
 ): boolean {
   const expected = secret?.trim();
   if (!expected) {
@@ -179,8 +188,34 @@ function securityIngestAuthorized(
   const token =
     bearer?.toLowerCase().startsWith("bearer ")
       ? bearer.slice(7).trim()
-      : c.req.header("x-hotelos-security-secret")?.trim();
+      : c.req.header(headerName)?.trim();
   return token === expected;
+}
+
+function securityIngestAuthorized(
+  c: { req: { header: (name: string) => string | undefined } },
+  secret: string | undefined,
+  isProduction: boolean | undefined,
+): boolean {
+  return sharedSecretAuthorized(
+    c,
+    secret,
+    isProduction,
+    "x-hotelos-security-secret",
+  );
+}
+
+function sentryIngestAuthorized(
+  c: { req: { header: (name: string) => string | undefined } },
+  secret: string | undefined,
+  isProduction: boolean | undefined,
+): boolean {
+  return sharedSecretAuthorized(
+    c,
+    secret,
+    isProduction,
+    "x-hotelos-sentry-secret",
+  );
 }
 
 export function createPublicRoutes(deps: PublicRouteDeps): Hono {
@@ -281,6 +316,53 @@ export function createPublicRoutes(deps: PublicRouteDeps): Hono {
       if (!result.ok) {
         const status = result.code === "HOTEL_NOT_FOUND" ? 404 : 500;
         return sendError(c, status, result.code, result.message);
+      }
+      return c.json({ data: result }, 201);
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  /**
+   * Sentry / GlitchTip issue or alert webhook (no JWT).
+   * Configure vendor to POST here with
+   * Authorization: Bearer $SENTRY_INGEST_SECRET (or X-HotelOS-Sentry-Secret).
+   */
+  routes.post("/sentry/ingest", async (c) => {
+    try {
+      if (
+        !sentryIngestAuthorized(
+          c,
+          deps.sentryIngestSecret,
+          deps.isProduction,
+        )
+      ) {
+        return sendError(
+          c,
+          401,
+          "UNAUTHORIZED",
+          "Invalid or missing Sentry ingest secret",
+        );
+      }
+      const result = await ingestSentryWebhook(
+        {
+          hotels: deps.hotels,
+          ops: deps.ops,
+          audit: deps.audit,
+        },
+        {
+          body: await c.req.json(),
+          ...(deps.sentryDefaultHotelId !== undefined
+            ? { defaultHotelId: deps.sentryDefaultHotelId }
+            : {}),
+        },
+      );
+      if (!result.ok) {
+        const status = result.code === "HOTEL_NOT_FOUND" ? 404 : 500;
+        return sendError(c, status, result.code, result.message);
+      }
+      if (result.skipped) {
+        return c.json({ data: { skipped: true, reason: result.reason } });
       }
       return c.json({ data: result }, 201);
     } catch (error) {

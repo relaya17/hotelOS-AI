@@ -189,6 +189,8 @@ export async function buildCfoFinanceBrief(
       (item) =>
         item.type === "large_journal_entry" ||
         item.type === "large_purchase_order" ||
+        item.type === "journal_amount_outlier" ||
+        item.type === "purchase_order_amount_outlier" ||
         item.type === "low_stock" ||
         item.severity === "high" ||
         item.severity === "urgent",

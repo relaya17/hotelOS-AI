@@ -67,7 +67,9 @@
 
 **מיושם (2026-07-19):** `SkipLink` + `#main-content` + focus אחרי ניווט SPA; `--touch-min` (44px) על כפתורים/שדות/טאבים; `:focus-visible` + `prefers-reduced-motion` + `forced-colors` ב־`tokens.css`; `aria-modal` בבאנר עוגיות.
 
-**עדיין חסר:** סריקת axe מלאה במסכי ליבה, jsx-a11y ב־CI, הצהרת נגישות מעודכנת.
+**עדיין חסר:** סריקת axe במסכי ליבה מעבר ל-login, jsx-a11y ב־CI, הצהרת נגישות מעודכנת.
+
+**Playwright login axe (2026-08-03):** `@hotelos/a11y-e2e` — `pnpm test:a11y-e2e` (דורש Chromium; `SKIP_A11Y_E2E=1` לדילוג; `RUN_A11Y_E2E=1` לכשל אם דפדפנים חסרים). CI job `a11y-login` אחרי build.
 
 ## 6. רספונסיביות
 
@@ -79,7 +81,12 @@
 
 ## 8. יציבות (Stability)
 
-יש כבר `pnpm qa` (install→typecheck→lint→test→build) ו-health check endpoint. חסר: סביבת **staging** נפרדת מ-production, גיבוי/שחזור אוטומטי ל-DB (Turso/libSQL), ו-uptime monitoring חיצוני (Better Stack / UptimeRobot) שמזין גם הוא את שכבת הסוכן הפנימי מסעיף 4.
+יש כבר `pnpm qa` (install→typecheck→lint→test→build) ו-health check endpoint
+(`GET /v1/health` / `GET /health`). **תיעוד תפעולי** לסביבות, גיבוי Turso
+וניטור uptime — ראו `docs/deployment/staging-production-checklist.md`,
+`turso-backup-restore.md`, `uptime-monitoring.md`. **יישום בפועל** (DB staging
+נפרד, cron ב-Vercel dashboard, monitor חיצוני, drill שחזור) — פעולות אנושיות
+לפי הצ'קליסט.
 
 ## החלטות שכבר התקבלו
 
@@ -93,20 +100,25 @@
 | שלב | מה | עלות/מורכבות | סטטוס (2026-07-19) |
 |---|---|---|---|
 | א' | Rate limiting + audit log על ה-API הקיים | נמוכה | ✅ MVP — RL + audit + alerting (IT task על פעולות רגישות) |
-| ב' | ניטור שגיאות עם Sentry (טיר חינמי) + חיווט ל-`department_tasks` | נמוכה | ✅ MVP — API + 3 Vite apps + `error-events`→IT; חסר DSN פרוד / webhook Sentry |
-| ג' | נגישות WCAG 2.2 AA על 3 האפליקציות הקיימות | נמוכה-בינונית | ✅ MVP CI — skip-link/touch/focus + axe-core smoke על shell fixture; Playwright E2E מלא אופציונלי בהמשך |
+| ב' | ניטור שגיאות עם Sentry (טיר חינמי) + חיווט ל-`department_tasks` | נמוכה | ✅ MVP — SDK (API + 4 Vite apps) + `error-events`→IT + `POST /v1/public/sentry/ingest`; **תפעול:** DSN אמיתי ב-Vercel + webhook ב-Sentry dashboard |
+| ג' | נגישות WCAG 2.2 AA על 3 האפליקציות הקיימות | נמוכה-בינונית | ✅ CI — skip-link/touch/focus + axe-core smoke (shell) + Playwright axe על מסכי login (admin/executive/work, vite preview) |
 | ד' | תמצית יומית חכמה לכל מנהל (סעיף 4.1, שלב 1) | בינונית | ✅ MVP — CIO digest + Gateway + cron + WhatsApp opt-in (`DIGEST_WHATSAPP_TO`) |
-| ה' | זיהוי אנומליות פיננסיות/תפעוליות (סעיף 4.1, שלב 2) | בינונית-גבוהה | ✅ MVP כללים + baseline סטטיסטי ראשוני — `detect-ops-anomalies` (סף קבוע + `journal_amount_outlier` ממוצע+2σ מ־5 תנועות ומעלה) + cron |
+| ה' | זיהוי אנומליות פיננסיות/תפעוליות (סעיף 4.1, שלב 2) | בינונית-גבוהה | ✅ MVP + baseline מורחב — `detect-ops-anomalies` (סף קבוע + `journal_amount_outlier` / `purchase_order_amount_outlier`: mean+2σ על חלון 90 יום, per-account/per-hotel, leave-one-out, דגל על 14 יום אחרונים) + cron |
 | ו' | אינטגרציית מצלמות AI מול ה-VMS הקיים במלון פיילוט אחד | גבוהה | 🟡 קוד מוכן — public ingest + `milestone`/`genetec` + runbook תיקון 13; חסר פיילוט שטח + חתימת עו״ד |
 | ז' | סוכן RAG לחשבונאות/מס עם מקורות מאומתים + human-in-the-loop לביצוע כספי | גבוהה | ✅ MVP שלם — role `accountant` (`canApproveLedgerClose`) + Suggest→Approve→Act ל־ledger close (`autonomy.ledger_close`); ledger pack + IFRS/מס Trusted Sources ל־`agent.cfo` |
 
 ### מה נשאר (מחוץ לקוד / תפעול)
 
-1. **ו׳ (שטח)** — פיילוט מלון מול VMS אמיתי + ייעוץ משפטי תיקון 13 (adapter `milestone` מוכן בקוד)  
-2. **ה׳ (העמקה)** — היסטוריית זמן ארוכה יותר לכיול baseline (מעבר ל־mean+2σ על יומן נוכחי)  
-3. **ג׳ (אופציונלי)** — Playwright axe על מסכי login חיים  
-4. **Vercel Hobby** — rate-limit על פריסות מרובות; להשהות פרויקטי כפילות / להמתין 24ש׳  
-5. **מחוץ לסקופ** — מנעולים חכמים (נדחה PO); self-healing אוטונומי מלא
+**נסגר בתיעוד (2026-08-03):** `docs/deployment/staging-production-checklist.md`, `turso-backup-restore.md`, `uptime-monitoring.md`; `pnpm check:vercel-api`, `pnpm generate:ops-secrets`; alias `GET /v1/health`.
+
+**עדיין דורש אדם:**
+
+1. **ו׳ (שטח)** — פיילוט מלון מול VMS אמיתי + ייעוץ משפטי תיקון 13  
+2. **ה׳ (העמקה — אופציונלי)** — persisted baseline stats / ML מעבר לחלון 90d rolling  
+3. ~~**ג׳ (אופציונלי)** — Playwright axe על מסכי login חיים~~ ✅ `@hotelos/a11y-e2e`  
+4. **Vercel** — `VERCEL_TOKEN` + סנכрон env (`CRON_SECRET`, `SECURITY_INGEST_SECRET`) ל-dashboard; Hobby rate-limit — לא לפרוס ברצף  
+5. **יציבות (ביצוע)** — Turso staging DB נפרד, גיבוי יומי + drill שחזור, monitor חיצוני על `/v1/health`, `SENTRY_DSN` פרוד  
+6. **מחוץ לסקופ** — מנעולים חכמים (נדחה PO); self-healing אוטונומי מלא
 
 ### ✅ הושלם — ז׳ ledger-close HITL (2026-08-03)
 
@@ -120,7 +132,7 @@
 ### ✅ נוסף — חיזוקים משלימים (2026-08-03)
 
 - **ו׳ (מצלמות):** ספק Milestone XProtect (`SiteId`/`Name`/`Description`/`Priority` 0–3/`CameraId?`/`Guid?`) נוסף ל־`mapSecurityWebhook` ול־`POST /v1/ops/security-events/ingest/:provider`.
-- **ה׳ (אנומליות):** `journal_amount_outlier` — זיהוי סטטיסטי (ממוצע + 2σ) על סכומי יומן, פעיל מ־5 תנועות ומעלה; משלים (לא מחליף) את סף ה־₪ הקבוע הקיים.
+- **ה׳ (אנומליות):** baseline מורחב — `journal_amount_outlier` (per-account, חלון 90 יום, leave-one-out, דגל 14 יום) + `purchase_order_amount_outlier` (per-hotel, אותה מתודולוגיה); משלים (לא מחליף) את סף ה־₪ הקבוע.
 - **ד׳ (תמצית יומית):** WhatsApp מתוזמן ל־CIO daily digest — `DIGEST_WHATSAPP_TO` (env אופציונלי) + `notifications`/`whatsapp` ב־`run-cio-daily-digest`; ריק = תיבת In-app בלבד (ללא שינוי בברירת המחדל).
 
 ## החלטות PO (2026-07-18)
@@ -133,7 +145,7 @@ Product Owner אישרה את כל המסמך ("הכל אמור להיות של�
 | 2 | ערוץ הגשת התמצית היומית | **In-app first** (בתוך Admin/Executive הקיים — badge/feed, תואם לתדריך `agent.cio`), **WhatsApp מתוזמן לשלב הבא** (לא MVP). מייל/SMS לא בעדיפות ראשונה. |
 | 3 | שכבת אישור אנושי ל־RAG חשבונאות | **רואה חשבון אנושי מאשר תמיד** — מדובר בתפקיד/role ייעודי (`accountant` / CFO) שמאשר כל סגירת ספרים (ledger close) מעבר לסוף חודש; הסוכן (`agent.cfo` + RAG חשבונאות) רק מכין טיוטה/המלצה ומצטט מקור. אין ביצוע/סגירה אוטונומית בלי אישור זה — עקבי עם עקרון human-in-the-loop המלא שהוגדר כבר בסעיף 4.1 למעלה. |
 
-מסכם: אין blocker PO שנותר למודול זה. שלבים א׳–ב׳ + ד׳–ז׳ ב־MVP בקוד (כולל ledger-close HITL מלא). ההמשך: ג׳ (axe E2E), ו׳ (פיילוט VMS אמיתי בשטח).
+מסכם: אין blocker PO שנותר למודול זה. שלבים א׳–ג׳ + ד׳–ז׳ ב־MVP בקוד (כולל ledger-close HITL מלא). ההמשך: ו׳ (פיילוט VMS אמיתי בשטח), axe על מסכי ליבה נוספים.
 
 ## מקורות
 

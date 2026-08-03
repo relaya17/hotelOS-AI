@@ -185,6 +185,7 @@ export function createApp(deps: ApiDependencies): Hono {
   );
 
   app.get("/health", (c) => c.json(deps.getHealth()));
+  app.get("/v1/health", (c) => c.json(deps.getHealth()));
 
   app.get("/v1/meta/apps", (c) =>
     c.json({

@@ -39,6 +39,7 @@ const jwtR = process.env.JWT_REFRESH_SECRET?.trim() ?? "";
 const helpers = process.env.NODEJS_HELPERS?.trim() ?? "";
 const cors = process.env.CORS_ORIGINS?.trim() ?? "";
 const security = process.env.SECURITY_INGEST_SECRET?.trim() ?? "";
+const sentryIngest = process.env.SENTRY_INGEST_SECRET?.trim() ?? "";
 const cron = process.env.CRON_SECRET?.trim() ?? "";
 
 ok("DATABASE_URL is libsql:// (Turso)", url.startsWith("libsql://"), url.slice(0, 28) + "…");
@@ -51,6 +52,11 @@ ok(
   "SECURITY_INGEST_SECRET (VMS public webhook)",
   security.length >= 16 || process.env.NODE_ENV !== "production",
   security.length ? `len=${security.length}` : "empty — set before prod VMS",
+);
+ok(
+  "SENTRY_INGEST_SECRET (Sentry → IT webhook)",
+  sentryIngest.length >= 16 || process.env.NODE_ENV !== "production",
+  sentryIngest.length ? `len=${sentryIngest.length}` : "empty — set before prod Sentry webhook",
 );
 ok("CRON_SECRET (optional but recommended)", true, cron.length ? `len=${cron.length}` : "empty — crons return 503");
 
@@ -79,5 +85,5 @@ if (failed.length > 0) {
 console.log("\nReady for Vercel API env (still need dashboard sync + rate-limit window).");
 console.log("Set these on Vercel project hotel-os-ai-api-eight (Production):");
 console.log("  DATABASE_URL, DATABASE_AUTH_TOKEN, JWT_*, NODEJS_HELPERS=0, CORS_ORIGINS");
-console.log("  SECURITY_INGEST_SECRET, CRON_SECRET (recommended)");
+console.log("  SECURITY_INGEST_SECRET, SENTRY_INGEST_SECRET, CRON_SECRET (recommended)");
 process.exit(0);

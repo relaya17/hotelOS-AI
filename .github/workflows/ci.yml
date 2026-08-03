@@ -42,3 +42,34 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  a11y-login:
+    name: A11y · Playwright axe (login)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @hotelos/a11y-e2e exec playwright install --with-deps chromium
+
+      - name: Login axe E2E
+        run: pnpm test:a11y-e2e
+        env:
+          RUN_A11Y_E2E: "1"
+          CI: "true"

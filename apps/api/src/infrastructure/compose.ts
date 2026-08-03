@@ -248,6 +248,12 @@ export async function composeApp() {
       ...(env.SECURITY_INGEST_SECRET.trim()
         ? { securityIngestSecret: env.SECURITY_INGEST_SECRET.trim() }
         : {}),
+      ...(env.SENTRY_INGEST_SECRET.trim()
+        ? { sentryIngestSecret: env.SENTRY_INGEST_SECRET.trim() }
+        : {}),
+      ...(env.SENTRY_DEFAULT_HOTEL_ID.trim()
+        ? { sentryDefaultHotelId: env.SENTRY_DEFAULT_HOTEL_ID.trim() }
+        : {}),
     },
     agents: { agents, tokens },
     briefing: {

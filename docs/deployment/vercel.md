@@ -29,6 +29,21 @@ the API project below. Local dev is untouched: `.env` still uses
 See **[four-projects.md](./four-projects.md)**. Frontends use **same-origin**
 `/v1/*` + Edge `middleware.ts` → separate API. Browser never calls `localhost`.
 
+## Ops runbooks (stability)
+
+| Doc | Purpose |
+|---|---|
+| [staging-production-checklist.md](./staging-production-checklist.md) | Staging vs prod gates before go-live |
+| [turso-backup-restore.md](./turso-backup-restore.md) | DB backup / restore pointers |
+| [uptime-monitoring.md](./uptime-monitoring.md) | Better Stack / UptimeRobot on `/v1/health` |
+| [vms-pilot-runbook.md](./vms-pilot-runbook.md) | VMS webhook pilot + תיקון 13 checklist |
+
+Generate recommended secrets locally (prints only; no `.env` write unless `--write`):
+
+```bash
+pnpm generate:ops-secrets
+```
+
 ## 1. Import the repo **five** times (recommended)
 
 Four separate frontends **plus a separate API** is the correct production
@@ -70,6 +85,8 @@ each `vercel.json` already assume this.
 | `CRON_SECRET` | optional — enables `GET/POST /v1/cron/*` (Vercel Cron sends `Authorization: Bearer …`) |
 | `SENTRY_DSN` | optional — Sentry/GlitchTip DSN for API server errors |
 | `SENTRY_ENVIRONMENT` | optional — defaults to `NODE_ENV` |
+| `SENTRY_INGEST_SECRET` | **recommended in prod** — shared secret for `POST /v1/public/sentry/ingest` (Sentry webhooks → IT tasks; no JWT). Empty disables public ingest in production. |
+| `SENTRY_DEFAULT_HOTEL_ID` | optional — fallback hotel UUID when Sentry events lack a `hotelId` tag (prefer tagging in SDK; see Error monitoring below) |
 | `PMS_PROVIDER` | optional — `demo` (default), `mews_stub`, `opera_stub`, or `mews` for live Mews Connector API |
 | `MEWS_CLIENT_TOKEN` / `MEWS_ACCESS_TOKEN` | required when `PMS_PROVIDER=mews` |
 | `MEWS_PLATFORM_URL` | optional — default `https://api.mews-demo.com` (prod: `https://api.mews.com`) |
@@ -175,13 +192,69 @@ Set matching `CRON_SECRET` in the API project env. Without it, cron endpoints re
 
 ## Error monitoring
 
-- **API:** set `SENTRY_DSN` (Sentry SaaS or GlitchTip). Unhandled Hono errors are
-  captured; without a DSN the SDK stays off.
-- **Vite apps (admin / executive / guest):** set `VITE_SENTRY_DSN` (and optional
-  `VITE_SENTRY_ENVIRONMENT`) on each frontend Vercel project. Empty DSN = SDK off.
-- **In-app inbox:** authenticated clients report uncaught browser errors to
-  `POST /v1/ops/error-events`, which creates an **IT** department task (same
-  pattern as security webhooks).
+HotelOS uses the **Sentry SDK protocol** (Sentry SaaS or GlitchTip). Nothing is
+sent until you paste real DSN values from your own Sentry org — never commit DSNs
+to git.
+
+### 1. Create projects and copy DSNs (Sentry dashboard)
+
+1. Sign in at [sentry.io](https://sentry.io) (Developer free tier is enough for MVP).
+2. Create one project per surface you want to monitor (recommended: **Node** for
+   `apps/api`, **React** for each Vite app — or a single browser project shared
+   across frontends).
+3. For each project: **Settings → Client Keys (DSN)** — copy the DSN URL
+   (`https://…@…ingest…sentry.io/…`). This is a *public* client key (safe in
+   Vercel env vars, not in the repo).
+
+### 2. Set DSN env vars on Vercel
+
+| Surface | Vercel project | Variables |
+|---|---|---|
+| API | `hotel-os-ai-api-eight` | `SENTRY_DSN`, optional `SENTRY_ENVIRONMENT=production` |
+| Admin / Executive / Guest / Work | each frontend project | `VITE_SENTRY_DSN`, optional `VITE_SENTRY_ENVIRONMENT=production` |
+
+Redeploy after changing env vars. Empty DSN = SDK stays off (no network calls).
+
+Optional: tag events with `hotelId` so Sentry webhooks route to the right hotel.
+In browser SDK init (via `installBrowserSentry` options later) or Node:
+
+```javascript
+Sentry.setTag("hotelId", "<hotel-uuid>");
+```
+
+If all prod errors belong to one pilot hotel, set `SENTRY_DEFAULT_HOTEL_ID` on the
+API project instead.
+
+### 3. SDK behaviour (already in code)
+
+- **API:** `@sentry/node` in `observability.ts` — unhandled Hono errors captured
+  when `SENTRY_DSN` is set.
+- **Vite apps:** `@sentry/browser` via `installBrowserSentry` in each app's
+  `main.tsx` when `VITE_SENTRY_DSN` is set.
+- **In-app inbox (authenticated):** clients report uncaught browser errors to
+  `POST /v1/ops/error-events` → **IT** department task (works without Sentry).
+
+### 4. Sentry webhook → IT department tasks
+
+Wire Sentry alerts back into HotelOS (same `department_tasks` / IT inbox as above):
+
+1. Generate a random `SENTRY_INGEST_SECRET` (≥16 chars) and set it on the **API**
+   Vercel project (see env table above).
+2. In Sentry: **Settings → Integrations → Create New Integration → Internal
+   Integration** (or use an Issue Alert webhook action).
+3. Webhook URL:
+
+   `https://<your-api-host>/v1/public/sentry/ingest`
+
+4. HTTP header: `Authorization: Bearer <SENTRY_INGEST_SECRET>`  
+   (alternative header: `X-HotelOS-Sentry-Secret: <same secret>`).
+5. Enable **Issue** webhooks (`created`) and/or attach the integration to an
+   **Issue Alert** rule (`triggered`). Resolved/assigned events are ignored.
+6. Ensure events include `hotelId` (SDK tag) or set `SENTRY_DEFAULT_HOTEL_ID` on
+   the API.
+
+Test with a deliberate error after DSN is set; confirm an IT task appears in Admin
+→ Operations → IT (or via `GET /v1/ops/departments/it/tasks?hotelId=…`).
 
 ## Local dev is unaffected
 

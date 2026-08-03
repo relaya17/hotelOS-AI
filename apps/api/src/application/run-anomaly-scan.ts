@@ -123,7 +123,9 @@ async function ensureAnomalyTask(
   );
   const deptCode =
     input.anomaly.type === "large_journal_entry" ||
-    input.anomaly.type === "large_purchase_order"
+    input.anomaly.type === "large_purchase_order" ||
+    input.anomaly.type === "journal_amount_outlier" ||
+    input.anomaly.type === "purchase_order_amount_outlier"
       ? "finance"
       : input.anomaly.type === "stale_urgent_maintenance" ||
           input.anomaly.type === "same_day_maintenance_close"
