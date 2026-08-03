@@ -1,12 +1,15 @@
 import {
   useEffect,
+  useId,
   useRef,
   useState,
   type CSSProperties,
   type ReactNode,
 } from "react";
 import {
+  CAPABILITIES,
   CEO_BARS,
+  CHAT_DEMO,
   DIGITIZATION,
   ORG_NODES,
   OUTCOMES,
@@ -15,6 +18,16 @@ import {
 
 const PILOT_MAIL =
   "mailto:pilot@hotelos.ai?subject=HotelOS%20AI%20Pilot&body=שלום%2C%20אשמח%20לדבר%20על%20פיילוט%20HotelOS%20AI%20לרשת%20שלנו.";
+
+const NAV_LINKS = [
+  { href: "#outcomes", label: "תוצאות" },
+  { href: "#intelligence", label: "סוכנים" },
+  { href: "#chat", label: "צ׳אט" },
+  { href: "#os", label: "מערכת הפעלה" },
+  { href: "#digitization", label: "דיגיטליזציה" },
+  { href: "#ceo-value", label: "ערך למנכ״ל" },
+  { href: "#faq", label: "שאלות" },
+] as const;
 
 function useReveal() {
   const ref = useRef<HTMLElement | null>(null);
@@ -69,6 +82,8 @@ function RevealSection({
 export function LandingPage() {
   const [activeTag, setActiveTag] = useState(0);
   const [navSolid, setNavSolid] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuId = useId();
 
   useEffect(() => {
     const onScroll = () => setNavSolid(window.scrollY > 40);
@@ -84,14 +99,33 @@ export function LandingPage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    document.body.classList.toggle("nav-open", menuOpen);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("nav-open");
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <div className="site">
       <a className="skip" href="#outcomes">
         דלג לתוכן
       </a>
 
-      <header className={navSolid ? "top is-solid" : "top"}>
-        <a className="top__brand" href="#top" aria-label="HotelOS AI — ראש העמוד">
+      <header className={navSolid || menuOpen ? "top is-solid" : "top"}>
+        <a
+          className="top__brand"
+          href="#top"
+          aria-label="HotelOS AI — ראש העמוד"
+          onClick={closeMenu}
+        >
           <img
             className="top__mark"
             src="/icon-192.png"
@@ -102,13 +136,31 @@ export function LandingPage() {
           />
           <span>HotelOS AI</span>
         </a>
-        <nav className="top__nav" aria-label="ניווט ראשי">
-          <a href="#outcomes">תוצאות</a>
-          <a href="#os">מערכת הפעלה</a>
-          <a href="#digitization">דיגיטליזציה</a>
-          <a href="#ceo-value">ערך למנכ״ל</a>
-          <a href="#faq">שאלות</a>
-          <a href="#contact" className="top__cta">
+
+        <button
+          type="button"
+          className={menuOpen ? "top__burger is-open" : "top__burger"}
+          aria-expanded={menuOpen}
+          aria-controls={menuId}
+          aria-label={menuOpen ? "סגור תפריט" : "פתח תפריט"}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
+
+        <nav
+          id={menuId}
+          className={menuOpen ? "top__nav is-open" : "top__nav"}
+          aria-label="ניווט ראשי"
+        >
+          {NAV_LINKS.map((link) => (
+            <a key={link.href} href={link.href} onClick={closeMenu}>
+              {link.label}
+            </a>
+          ))}
+          <a href="#contact" className="top__cta" onClick={closeMenu}>
             פיילוט
           </a>
         </nav>
@@ -135,15 +187,16 @@ export function LandingPage() {
               The Intelligence Layer for Hotels
             </h1>
             <p className="hero__lead">
-              We connect people, operations, finance, AI, compliance and guest
-              experience into one unified operating system.
+              סוכני AI, אוטומציות, תחזיות, כספים, הזמנות וצ׳אט רב־לשוני — מעל
+              ה־PMS שלכם. כותבים בשפה אחת; הצד השני מקבל בשפתו. רואים מחר לפני
+              שהוא מגיע.
             </p>
             <div className="hero__actions">
               <a className="btn btn--primary" href="#contact">
                 בקשת פיילוט לרשת
               </a>
-              <a className="btn btn--ghost" href="#outcomes">
-                ראו את התוצאות
+              <a className="btn btn--ghost" href="#intelligence">
+                מה הסוכנים עושים
               </a>
             </div>
           </div>
@@ -157,8 +210,8 @@ export function LandingPage() {
           <p className="eyebrow">קונים תוצאות — לא תוכנה</p>
           <h2 id="outcomes-title">הכאב. העלות. מה HotelOS עושה.</h2>
           <p className="section__lead">
-            מנהלי מלונות לא מחפשים עוד מסך — הם מחפשים פחות זמן על דוחות, חדרים
-            מוכנים, ותקלות שמטופלות לפני שהאורח מתלונן.
+            לא עוד מסך הזמנות — אלא אוטומציה, סוכנים שצופים קדימה, כספים
+            בהשגחה, ושיח בין מחלקות בלי מחסום שפה.
           </p>
           <div className="outcome-table" role="table" aria-label="כאב עלות תוצאה">
             <div className="outcome-table__head" role="row">
@@ -184,12 +237,74 @@ export function LandingPage() {
           </div>
         </RevealSection>
 
+        <RevealSection
+          id="intelligence"
+          className="section intelligence"
+          aria-labelledby="intelligence-title"
+        >
+          <p className="eyebrow">אוטומציה · סוכנים · עתיד</p>
+          <h2 id="intelligence-title">
+            האפליקציה שלכם כבר עושה הרבה יותר ממסך יפה
+          </h2>
+          <p className="section__lead">
+            HotelOS AI מריצה שכבת סוכנים מעל התפעול: מציעים, מתרגמים, מתזמנים
+            ומתריעים — ואתם מאשרים מה שקריטי.
+          </p>
+          <ul className="cap-grid">
+            {CAPABILITIES.map((cap) => (
+              <li key={cap.id} className="cap">
+                <h3 className="cap__title">{cap.title}</h3>
+                <p className="cap__body">{cap.body}</p>
+                <p className="cap__proof">{cap.proof}</p>
+              </li>
+            ))}
+          </ul>
+        </RevealSection>
+
+        <RevealSection
+          id="chat"
+          className="section chat"
+          aria-labelledby="chat-title"
+        >
+          <p className="eyebrow">צ׳אט + אוטומציה</p>
+          <h2 id="chat-title">כותבים בשפתכם. הם קוראים בשלהם.</h2>
+          <p className="section__lead">
+            אותו הודעה — שתי שפות. ובאותה שיחה: משימה, תזכורת והעברה — בלי
+            להעתיק לוואטסאפ.
+          </p>
+          <div className="chat-demo" aria-label="הדגמת צ׳אט מתורגם">
+            <div className="chat-demo__pane">
+              <p className="chat-demo__meta">
+                <span>{CHAT_DEMO.senderLabel}</span>
+                <span>{CHAT_DEMO.senderLang}</span>
+              </p>
+              <p className="chat-demo__bubble chat-demo__bubble--out">
+                {CHAT_DEMO.outgoing}
+              </p>
+            </div>
+            <div className="chat-demo__bridge" aria-hidden="true">
+              <span>תרגום חי</span>
+              <span>+ אוטומציה</span>
+            </div>
+            <div className="chat-demo__pane">
+              <p className="chat-demo__meta">
+                <span>{CHAT_DEMO.receiverLabel}</span>
+                <span>{CHAT_DEMO.receiverLang}</span>
+              </p>
+              <p className="chat-demo__bubble chat-demo__bubble--in">
+                {CHAT_DEMO.incoming}
+              </p>
+            </div>
+            <p className="chat-demo__auto">{CHAT_DEMO.automation}</p>
+          </div>
+        </RevealSection>
+
         <RevealSection id="os" className="section os" aria-labelledby="os-title">
           <p className="eyebrow">השקף החזק</p>
           <h2 id="os-title">HotelOS AI = Operating System for Hotels</h2>
           <p className="section__lead">
             שכבה אחת בין ההנהלה למחלקות — ולכל אורח. לא מחליפה את ה־PMS; מחברת
-            את הארגון סביבו.
+            את הארגון סביבו עם סוכנים ואוטומציות.
           </p>
           <div className="os-map" aria-hidden="false">
             <div className="os-map__exec">
@@ -202,7 +317,7 @@ export function LandingPage() {
             <div className="os-map__spine" aria-hidden="true" />
             <p className="os-map__core">
               <span>HotelOS AI</span>
-              <small>Intelligence Layer</small>
+              <small>Agents · Automations · Foresight</small>
             </p>
             <div className="os-map__spine" aria-hidden="true" />
             <ul className="os-map__depts">
@@ -247,7 +362,7 @@ export function LandingPage() {
           </ul>
           <p className="taglines__note">
             מסרים שמפחיתים התנגדות — רוב המלונות לא רוצים להחליף את המערכת
-            המרכזית שלהם.
+            המרכזית שלהם. הם רוצים שהיא תעבוד חכם יותר.
           </p>
         </RevealSection>
 
@@ -261,8 +376,8 @@ export function LandingPage() {
             יש לכם PMS. חסרה שכבת האינטליגנציה.
           </h2>
           <p className="section__lead">
-            רוב הרשתות תקועות בין Excel/וואטסאפ לבין מערכת הזמנות — בלי שכבה
-            שמחברת הכול להחלטות בזמן אמת.
+            רוב הרשתות תקועות בין Excel/וואטסאפ לבין מערכת הזמנות — בלי סוכנים,
+            בלי תחזיות, בלי צ׳אט מתורגם שיוצר משימות לבד.
           </p>
           <ol className="digi-bars">
             {DIGITIZATION.map((item) => (
@@ -364,7 +479,25 @@ export function LandingPage() {
               <p>
                 לא. אנחנו שכבת אינטליגנציה מעל Opera / Protel / Fidelio / Clock
                 ועוד —{" "}
-                <a href="#taglines">We don&apos;t replace your PMS. We make it smarter.</a>
+                <a href="#taglines">
+                  We don&apos;t replace your PMS. We make it smarter.
+                </a>
+              </p>
+            </details>
+            <details className="faq__item">
+              <summary>מה הסוכנים באמת עושים?</summary>
+              <p>
+                תדריכים, תחזיות, אנומליות, upsell, תחזוקה חזויה, מזכירת ישיבות,
+                והמלצות כספים — דרך AI Gateway, עם אישור אנושי לפעולות רגישות.{" "}
+                <a href="#intelligence">למפת היכולות</a>.
+              </p>
+            </details>
+            <details className="faq__item">
+              <summary>איך עובד הצ׳אט בין שפות?</summary>
+              <p>
+                כותבים בשפה שלכם; הצד השני מקבל בשפתו. על אותה שיחה אפשר להריץ
+                אוטומציות (משימה, תזכורת, העברה) —{" "}
+                <a href="#chat">ראו הדגמה</a>.
               </p>
             </details>
             <details className="faq__item">
@@ -378,13 +511,6 @@ export function LandingPage() {
                 .
               </p>
             </details>
-            <details className="faq__item">
-              <summary>למי זה מיועד?</summary>
-              <p>
-                למנכ״לים, COO ו־CFO של רשתות שקונים{" "}
-                <a href="#outcomes">תוצאות תפעול</a> — לא עוד מסך הזמנות.
-              </p>
-            </details>
           </div>
         </RevealSection>
 
@@ -395,8 +521,8 @@ export function LandingPage() {
         >
           <h2 id="contact-title">פיילוט לרשת. תוצאות מדידות.</h2>
           <p className="section__lead">
-            מתחילים מדומיין אחד־שניים מעל ה־PMS הקיים שלכם — Opera, Protel,
-            Fidelio, Clock או אחר — ומודדים תדריכים, תקלות, ניקיון ו־upsell.
+            מתחילים מדומיין אחד־שניים מעל ה־PMS הקיים — עם סוכנים, צ׳אט מתורגם
+            ואוטומציות — ומודדים תדריכים, תקלות, ניקיון ו־upsell.
           </p>
           <div className="contact__actions">
             <a className="btn btn--primary" href={PILOT_MAIL}>
@@ -417,9 +543,9 @@ export function LandingPage() {
           <strong>HotelOS AI</strong> — Intelligence Layer for Hotels
         </p>
         <p className="foot__links">
+          <a href="#intelligence">סוכנים</a>
+          <a href="#chat">צ׳אט</a>
           <a href="#outcomes">תוצאות</a>
-          <a href="#os">OS</a>
-          <a href="#taglines">מסרים</a>
           <a href={PILOT_MAIL}>צור קשר</a>
         </p>
       </footer>

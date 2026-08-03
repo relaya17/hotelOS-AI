@@ -32,7 +32,8 @@ html {
   .hero__copy,
   .digi-bars__fill,
   .ceo-bars__fill,
-  .taglines__live {
+  .taglines__live,
+  .top__nav.is-open {
     animation: none !important;
     transition: none !important;
     opacity: 1 !important;
@@ -121,6 +122,7 @@ a {
   letter-spacing: 0.01em;
   text-decoration: none;
   color: var(--brass-hot);
+  z-index: 2;
 }
 
 .top__mark {
@@ -129,6 +131,40 @@ a {
   border-radius: 0.45rem;
   object-fit: cover;
   border: 1px solid rgb(232 200 154 / 35%);
+}
+
+.top__burger {
+  display: none;
+  position: relative;
+  z-index: 2;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid rgb(232 200 154 / 35%);
+  border-radius: 0.55rem;
+  background: rgb(16 20 28 / 72%);
+  cursor: pointer;
+}
+
+.top__burger span {
+  display: block;
+  width: 1.15rem;
+  height: 2px;
+  margin: 0.28rem auto;
+  background: var(--brass-hot);
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+
+.top__burger.is-open span:nth-child(1) {
+  transform: translateY(6.5px) rotate(45deg);
+}
+
+.top__burger.is-open span:nth-child(2) {
+  opacity: 0;
+}
+
+.top__burger.is-open span:nth-child(3) {
+  transform: translateY(-6.5px) rotate(-45deg);
 }
 
 .top__nav {
@@ -156,6 +192,71 @@ a {
   border: 1px solid rgb(212 176 122 / 55%);
   border-radius: 999px;
   color: var(--brass-hot) !important;
+}
+
+/* Mobile: brand on physical left, hamburger on physical right */
+@media (max-width: 860px) {
+  .top {
+    direction: ltr;
+    flex-wrap: wrap;
+  }
+
+  .top__brand {
+    order: 1;
+    margin-inline-end: auto;
+  }
+
+  .top__burger {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    order: 2;
+  }
+
+  .top__nav {
+    display: none;
+    order: 3;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.15rem;
+    padding: 0.75rem 0 0.25rem;
+    direction: rtl;
+    text-align: start;
+  }
+
+  .top__nav.is-open {
+    display: flex;
+    animation: menu-in 0.28s ease both;
+  }
+
+  .top__nav a {
+    padding: 0.85rem 0.35rem;
+    border-bottom: 1px solid var(--line);
+    font-size: 1rem;
+  }
+
+  .top__cta {
+    margin-top: 0.5rem;
+    text-align: center;
+    border-radius: 0.55rem;
+  }
+
+  body.nav-open {
+    overflow: hidden;
+  }
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .hero {
@@ -589,6 +690,95 @@ a {
 .reveal.is-visible .ceo-bars__fill {
   width: var(--level);
   transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cap-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16.5rem, 1fr));
+  gap: 1.25rem 1.5rem;
+}
+
+.cap {
+  padding-block: 0.35rem;
+  border-top: 1px solid var(--line);
+}
+
+.cap__title {
+  margin: 0.85rem 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 650;
+  color: var(--brass-hot);
+}
+
+.cap__body {
+  margin: 0 0 0.55rem;
+  color: var(--mist-dim);
+  font-size: 0.95rem;
+}
+
+.cap__proof {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--jade);
+}
+
+.chat-demo {
+  display: grid;
+  gap: 1rem;
+  max-width: 46rem;
+}
+
+.chat-demo__pane {
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.chat-demo__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: var(--mist-dim);
+}
+
+.chat-demo__bubble {
+  margin: 0;
+  max-width: 36rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.chat-demo__bubble--out {
+  color: var(--mist);
+}
+
+.chat-demo__bubble--in {
+  color: var(--brass-hot);
+}
+
+.chat-demo__bridge {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--jade);
+}
+
+.chat-demo__auto {
+  margin: 0;
+  padding: 0.85rem 0 0;
+  border-top: 1px dashed rgb(110 181 168 / 45%);
+  color: var(--jade);
+  font-size: 0.92rem;
 }
 
 .faq__list {
