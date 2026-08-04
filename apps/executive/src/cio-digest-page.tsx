@@ -478,7 +478,8 @@ export function CioDigestPage() {
                 <li key={bullet}>{bullet}</li>
               ))}
             </ul>
-            <table className="forecast-table">
+            <div className="forecast-table-wrap">
+              <table className="forecast-table">
               <thead>
                 <tr>
                   <th>תאריך</th>
@@ -497,7 +498,8 @@ export function CioDigestPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </>
         ) : null}
         {!forecastLoading && !forecast ? (
@@ -911,7 +913,15 @@ export function CioDigestPage() {
         .anomaly-list span { color:var(--color-ink-soft); font-size:var(--text-small); }
         .category { font-size:var(--text-small); color:var(--color-ink-soft); }
         .gateway-answer { padding:var(--space-3); border-radius:var(--radius-sm); background:var(--color-paper-elevated); display:grid; gap:var(--space-2); white-space:pre-wrap; }
+        .forecast-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; }
+        .forecast-table { width:100%; border-collapse:collapse; min-width:18rem; }
+        .forecast-table th, .forecast-table td { padding:.5rem .65rem; text-align:start; border-bottom:1px solid var(--color-line); font-size:var(--text-small); }
+        .forecast-table th { color:var(--color-ink-soft); font-weight:700; }
         @media (max-width:768px){ .comms{ grid-template-columns:1fr; } }
+        @media (max-width:480px){
+          .compose > :first-child { min-width:0; width:100%; }
+          .action-list li { flex-direction:column; align-items:stretch; }
+        }
       `}</style>
     </div>
   );

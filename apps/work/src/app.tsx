@@ -174,7 +174,7 @@ export function App() {
             <p className="work-bar__brand">HotelOS Work</p>
             <p className="work-bar__user">{user.displayName}</p>
           </div>
-          <nav className="hotelos-seg" aria-label="ניווט עובד">
+          <nav className="hotelos-seg hotelos-nav-scroll" aria-label="ניווט עובד">
             <button
               type="button"
               className={
@@ -284,7 +284,7 @@ export function App() {
           grid-template-rows: auto 1fr auto;
           gap: var(--space-4);
           padding: clamp(1rem, 3vw, 1.75rem);
-          padding-bottom: clamp(4.5rem, 10vw, 6rem);
+          padding-bottom: calc(clamp(4.5rem, 10vw, 6rem) + env(safe-area-inset-bottom, 0px));
         }
         .work-bar {
           display: flex;
@@ -297,6 +297,12 @@ export function App() {
           z-index: 5;
           background: var(--color-paper);
           padding-block: 0.5rem;
+          width: 100%;
+          min-width: 0;
+        }
+        .work-bar .hotelos-nav-scroll,
+        .work-bar .hotelos-seg {
+          max-width: 100%;
         }
         .work-bar__brand {
           margin: 0;

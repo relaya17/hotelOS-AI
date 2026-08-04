@@ -10,6 +10,7 @@ const tokens = readFileSync(join(here, "styles", "tokens.css"), "utf8");
 describe("a11y foundations (Vol. 4 / WCAG 2.2)", () => {
   it("defines a 44px minimum touch target token", () => {
     assert.match(tokens, /--touch-min:\s*2\.75rem/);
+    assert.match(tokens, /\.hotelos-seg__item\s*\{[\s\S]*?min-height:\s*var\(--touch-min\)/);
   });
 
   it("exposes a keyboard skip-link that appears on focus", () => {

@@ -562,8 +562,8 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
         .state--error{color:var(--color-danger)}
         .state--ok{color:var(--color-sea-deep);font-weight:600}
         .guest360-search{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:flex-end}
-        .email-field{display:grid;gap:var(--space-2);font-size:var(--text-small);font-weight:600;color:var(--color-ink-soft);min-width:14rem;flex:1}
-        .email-field input{font:inherit;padding:.55rem .7rem;border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);background:#fff}
+        .email-field{display:grid;gap:var(--space-2);font-size:var(--text-small);font-weight:600;color:var(--color-ink-soft);min-width:min(100%,14rem);flex:1}
+        .email-field input{font:inherit;padding:.55rem .7rem;border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);background:#fff;min-height:var(--touch-min,2.75rem);width:100%}
         .guest360-body{display:grid;gap:var(--space-2)}
         .guest360-stats{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:var(--space-3);font-size:var(--text-small)}
         .guest360-stays{margin-top:var(--space-1)}
@@ -573,6 +573,12 @@ export function ReceptionPanel({ hotelId }: ReceptionPanelProps) {
         .consent-badge--no{background:color-mix(in srgb,var(--color-ink-soft) 12%,#fff);color:var(--color-ink-soft)}
         .arrival-guest-btn{display:inline;text-align:inherit;font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;border-radius:var(--radius-sm)}
         .arrival-guest-btn:hover,.arrival-guest-btn:focus-visible{text-decoration:underline;outline:2px solid var(--color-sea-deep);outline-offset:2px}
+        @media (max-width:480px){
+          .guest360-search{flex-direction:column;align-items:stretch}
+          .email-field{min-width:0;width:100%}
+          .notify-row{grid-template-columns:1fr;gap:.2rem}
+          .date-field{max-width:none;width:100%}
+        }
       `}</style>
     </div>
   );

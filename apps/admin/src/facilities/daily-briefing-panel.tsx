@@ -298,6 +298,7 @@ export function DailyBriefingPanel({ hotelId }: Props) {
         .smart-result { display:grid; gap:var(--space-2); }
         .narrative { margin:0; white-space:pre-wrap; line-height:1.55; }
         @media (max-width:900px){ .metrics{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+        @media (max-width:480px){ .metrics{ grid-template-columns:1fr; } }
       `}</style>
     </div>
   );

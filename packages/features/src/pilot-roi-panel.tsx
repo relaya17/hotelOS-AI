@@ -237,15 +237,15 @@ export function PilotRoiPanel({ hotelId: hotelIdProp, compact }: PilotRoiPanelPr
               <tbody>
                 {rows.map(({ def, current, baselineRaw, userNotes, delta }) => (
                   <tr key={def.id}>
-                    <td>{def.row}</td>
-                    <td>{def.labelHe}</td>
-                    <td>
+                    <td data-label="#">{def.row}</td>
+                    <td data-label="מדד">{def.labelHe}</td>
+                    <td data-label="נוכחי">
                       <span className="pilot-roi__current">{current.display}</span>
                       {current.unit ? (
                         <span className="pilot-roi__unit"> {current.unit}</span>
                       ) : null}
                     </td>
-                    <td>
+                    <td data-label="baseline (שבוע 0)">
                       <input
                         type="text"
                         className="pilot-roi__baseline-input"
@@ -257,8 +257,8 @@ export function PilotRoiPanel({ hotelId: hotelIdProp, compact }: PilotRoiPanelPr
                         }
                       />
                     </td>
-                    <td>{def.targetHe}</td>
-                    <td>
+                    <td data-label="יעד">{def.targetHe}</td>
+                    <td data-label="Δ">
                       {delta ? (
                         <span
                           className={
@@ -281,7 +281,7 @@ export function PilotRoiPanel({ hotelId: hotelIdProp, compact }: PilotRoiPanelPr
                         "—"
                       )}
                     </td>
-                    <td className="pilot-roi__notes-cell">
+                    <td className="pilot-roi__notes-cell" data-label="הערות">
                       <p className="pilot-roi__static-note">{def.staticNotesHe}</p>
                       <input
                         type="text"
@@ -329,7 +329,7 @@ export function PilotRoiPanel({ hotelId: hotelIdProp, compact }: PilotRoiPanelPr
         .pilot-roi__table tr:last-child td { border-bottom: none; }
         .pilot-roi__current { font-weight: 600; }
         .pilot-roi__unit { font-size: var(--text-small); color: var(--color-ink-faint); }
-        .pilot-roi__baseline-input, .pilot-roi__notes-input { width: 100%; min-width: 6rem; font: inherit; font-size: var(--text-small); border: 1px dashed var(--color-line-strong); border-radius: var(--radius-sm); padding: .4rem .55rem; background: #fff; }
+        .pilot-roi__baseline-input, .pilot-roi__notes-input { width: 100%; min-width: 6rem; font: inherit; font-size: var(--text-small); border: 1px dashed var(--color-line-strong); border-radius: var(--radius-sm); padding: .4rem .55rem; background: #fff; min-height: var(--touch-min, 2.75rem); }
         .pilot-roi__baseline-input::placeholder { color: var(--color-ink-faint); font-style: italic; }
         .pilot-roi__notes-cell { min-width: 12rem; }
         .pilot-roi__static-note { margin: 0 0 .35rem; font-size: var(--text-small); color: var(--color-ink-soft); line-height: 1.35; }
@@ -342,6 +342,34 @@ export function PilotRoiPanel({ hotelId: hotelIdProp, compact }: PilotRoiPanelPr
         .pilot-roi__api-notes ul { margin: 0; padding-inline-start: 1.25rem; display: grid; gap: .5rem; }
         .pilot-roi__error { color: var(--color-danger); }
         .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+        @media (max-width: 768px) {
+          .pilot-roi__table { min-width: 0; }
+          .pilot-roi__table thead { display: none; }
+          .pilot-roi__table, .pilot-roi__table tbody, .pilot-roi__table tr, .pilot-roi__table td {
+            display: block;
+            width: 100%;
+          }
+          .pilot-roi__table tr {
+            padding: .85rem .9rem;
+            border-bottom: 1px solid var(--color-border);
+          }
+          .pilot-roi__table tr:last-child { border-bottom: none; }
+          .pilot-roi__table td {
+            border: 0;
+            padding: .35rem 0;
+          }
+          .pilot-roi__table td::before {
+            content: attr(data-label);
+            display: block;
+            font-size: var(--text-micro);
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: var(--color-ink-faint);
+            margin-bottom: .2rem;
+          }
+          .pilot-roi__notes-cell { min-width: 0; }
+        }
         @media (max-width: 640px) {
           .pilot-roi__header { flex-direction: column; }
           .pilot-roi__filters { width: 100%; }

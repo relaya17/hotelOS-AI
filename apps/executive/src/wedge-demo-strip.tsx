@@ -110,6 +110,7 @@ export function WedgeDemoStrip() {
         @media (max-width: 640px) {
           .wedge-strip { flex-direction: column; align-items: stretch; }
           .wedge-strip__steps { justify-content: center; }
+          .wedge-strip__tagline { white-space: normal; }
         }
       `}</style>
     </nav>

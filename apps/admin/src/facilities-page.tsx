@@ -140,7 +140,7 @@ export function FacilitiesPage() {
         </p>
       ) : null}
 
-      <nav className="facilities__tabs hotelos-seg" aria-label="מחלקות תפעול">
+      <nav className="facilities__tabs hotelos-seg hotelos-nav-scroll" aria-label="מחלקות תפעול">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -208,8 +208,15 @@ export function FacilitiesPage() {
         .select-field { display:grid; gap:var(--space-2); }
         .select-field span { font-size:var(--text-small); font-weight:600; color:var(--color-ink-soft); }
         .select-field select { font:inherit; border:1px solid var(--color-line-strong); border-radius:var(--radius-sm); padding:.65rem .85rem; background:#fff; min-height:2.6rem; }
-        .facilities__tabs { flex-wrap:wrap; width:fit-content; max-width:100%; }
+        .facilities__tabs { width:100%; max-width:100%; }
         .facilities__content { display:grid; min-width:0; }
+        @media (min-width:769px){
+          .facilities__tabs { flex-wrap:wrap; width:fit-content; }
+        }
+        @media (max-width:480px){
+          .facilities__header { flex-direction:column; align-items:stretch; }
+          .select-field select { width:100%; min-height:var(--touch-min, 2.75rem); }
+        }
         .state { margin:0; color:var(--color-ink-soft); font-weight:500; }
         .state--error { color:var(--color-danger); }
       `}</style>

@@ -965,6 +965,9 @@ export function OpsDashboardPage() {
           .kpi-row{ grid-template-columns:1fr 1fr; }
           .hotel-grid{ grid-template-columns:1fr; }
         }
+        @media (max-width:480px){
+          .kpi-row{ grid-template-columns:1fr; }
+        }
       `}</style>
     </div>
   );

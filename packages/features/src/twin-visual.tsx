@@ -538,6 +538,7 @@ export function TwinVisual({
           padding: .45rem .7rem;
           cursor: pointer;
           font-size: .82rem;
+          min-height: 2.75rem;
         }
         .twin-visual__action:disabled {
           opacity: .55;
@@ -556,6 +557,24 @@ export function TwinVisual({
           margin: .55rem 0 0 !important;
           font-size: .82rem !important;
           color: var(--tv-crit);
+        }
+        @media (max-width: 480px) {
+          .twin-visual__floor {
+            grid-template-columns: 3.25rem 1fr;
+            gap: .35rem;
+            transform: none;
+          }
+          .twin-visual__room {
+            min-width: 3.8rem;
+            padding: .45rem .4rem;
+            transform: none;
+          }
+          .twin-visual__room:hover,
+          .twin-visual__room:focus-visible {
+            transform: translateY(-2px);
+          }
+          .twin-visual__actions { flex-direction: column; }
+          .twin-visual__action { width: 100%; }
         }
         @media (prefers-reduced-motion: reduce) {
           .twin-visual__room,

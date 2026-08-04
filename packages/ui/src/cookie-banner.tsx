@@ -54,7 +54,7 @@ export function CookieBanner({
         .cookie{
           position:fixed;
           inset-inline:var(--space-3);
-          bottom:var(--space-3);
+          bottom:calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
           z-index:40;
           display:grid;
           gap:var(--space-3);
