@@ -158,7 +158,7 @@ export function BookFlow({ onCancel, onBooked }: BookFlowProps) {
         </h1>
         <p className="book__lede">
           {hotelName
-            ? `${hotelName} · תשלום הדגמה מאובטח (בלי כרטיס אמיתי)`
+            ? `${hotelName} · מצב הדגמה · בלי כרטיס / בלי PAN במערכת`
             : "טוען מלונות…"}
         </p>
       </header>
@@ -301,8 +301,11 @@ export function BookFlow({ onCancel, onBooked }: BookFlowProps) {
             autoComplete="tel"
           />
           <p className="book__pay-note">
-            תשלום הדגמה — לחיצה על «שלם והזמן» מאשרת הזמנה ומעבירה לאזור האישי.
-            אין חיוב כרטיס אמיתי.
+            מצב תשלום: <strong>הדגמה (demo)</strong> — לחיצה על «שלם והזמן»
+            מאשרת הזמנה וכותבת רשומת כוונת תשלום (סכום/מטבע/סטטוס) בלבד. HotelOS
+            אינה אוספת ואינה שומרת מספר כרטיס (PAN). אין כאן שער PCI חי ואין
+            הסמכת PCI-DSS. בסביבת לקוח עם ספק תשלומים חיצוני — החיוב יתבצע אצל
+            הספק; במערכת יישאר רק מזהה עסקה ותיאור.
           </p>
           {error ? <p className="book__error">{error}</p> : null}
           <div className="book__actions">

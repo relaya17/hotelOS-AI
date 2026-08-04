@@ -582,6 +582,8 @@ export function LandingPage() {
             {" · "}
             <a href={APP_URLS.legal("subprocessors")}>ספקי עיבוד</a>
             {" · "}
+            <a href={APP_URLS.legal("dpa")}>תבנית DPA</a>
+            {" · "}
             <a href="/.well-known/security.txt">security.txt</a>
             {" · "}
             <a href="#status">סטטוס API</a>.
@@ -689,6 +691,7 @@ export function LandingPage() {
             <a href="#status">סטטוס API</a>
             <a href={APP_URLS.legal("security")}>מדיניות אבטחה</a>
             <a href={APP_URLS.legal("subprocessors")}>ספקי עיבוד</a>
+            <a href={APP_URLS.legal("dpa")}>תבנית DPA</a>
             <a href={APP_URLS.legal("privacy")}>פרטיות</a>
             <a href={APP_URLS.legal("cookies")}>עוגיות</a>
             <a href="/.well-known/security.txt">security.txt</a>

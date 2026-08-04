@@ -4345,7 +4345,8 @@ export const APP_URLS = {
       | "security"
       | "privacy"
       | "meetings"
-      | "subprocessors",
+      | "subprocessors"
+      | "dpa",
   ): string {
     return `${APP_URLS.guest}/?doc=${doc}`;
   },

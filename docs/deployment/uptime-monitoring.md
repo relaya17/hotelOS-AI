@@ -51,11 +51,23 @@ Docs: [UptimeRobot — creating a monitor](https://uptimerobot.com/help/)
 Add separate monitors (or Better Stack multi-step) for:
 
 - `https://hotel-os-ai-admin-<suffix>.vercel.app/` (200)
-- Executive / Guest / Work homepages
+- Executive / Guest / Work / www marketing homepages
 
 Frontend 404/5xx often means a bad deploy, not API outage.
+
+## In-product live probe (not a hosted status page)
+
+Marketing www exposes `#status`, which calls `GET /v1/health` for **this**
+deployment only (via www Edge `middleware.ts` → API, same pattern as staff
+apps). Set `HOTELOS_API_ORIGIN` on the www Vercel project when the hostname
+does not auto-map to `-api-`.
+
+This is **not** a historical uptime / incident page. For stakeholder history,
+use Better Stack / UptimeRobot status pages (steps above) and link them from
+Trust Center only after they exist.
 
 ## Related
 
 - [staging-production-checklist.md](./staging-production-checklist.md)
 - [vercel.md](./vercel.md)
+- [trust-center-mvp.md](../planning/trust-center-mvp.md)

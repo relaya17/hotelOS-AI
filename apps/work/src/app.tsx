@@ -253,7 +253,18 @@ export function App() {
         </header>
 
         <main id="main-content" className="work-main" tabIndex={-1}>
-          {tab === "attendance" ? <AttendancePage /> : null}
+          {tab === "attendance" ? (
+            <>
+              <p className="work-hint">
+                החתמת נוכחות עם מיקום · אפשר מצב מהיר או אימות מלא
+                (קול/חתימה/Passkey) לפי המדיניות של הרשת. פרטיות:{" "}
+                <a href={APP_URLS.legal("privacy")}>מדיניות פרטיות</a>
+                {" · "}
+                <a href={APP_URLS.legal("security")}>אבטחה</a>.
+              </p>
+              <AttendancePage />
+            </>
+          ) : null}
           {tab === "agent" ? <HrAgentPanel /> : null}
           {tab === "copilot" && user ? <OpsCopilotPanel user={user} /> : null}
           {tab === "finance" && user ? (
@@ -268,6 +279,8 @@ export function App() {
           <a href={APP_URLS.hq}>hq</a>
           {" · "}
           <a href={APP_URLS.book}>book</a>
+          {" · "}
+          <a href={APP_URLS.legal("dpa")}>תבנית DPA</a>
         </footer>
         <LegalFooter legalUrl={(doc) => APP_URLS.legal(doc)} />
       </div>
@@ -322,6 +335,17 @@ export function App() {
           width: 100%;
           margin-inline: auto;
           animation: hotelos-enter var(--motion-med) var(--ease-out) both;
+        }
+        .work-hint {
+          margin: 0 0 var(--space-3);
+          color: var(--color-ink-soft);
+          font-size: var(--text-small);
+          line-height: 1.55;
+          font-weight: 500;
+        }
+        .work-hint a {
+          color: var(--color-sea-deep);
+          font-weight: 700;
         }
         .work-footer {
           font-size: var(--text-small);

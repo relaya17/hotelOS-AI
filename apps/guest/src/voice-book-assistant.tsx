@@ -219,7 +219,7 @@ export function VoiceBookAssistant({
             disabled={busy}
             onClick={() => void sendMessage("כן, אשר הזמנה", { confirm: true })}
           >
-            אשר והזמן (תשלום דמו)
+            אשר והזמן (תשלום דמו — בלי PAN)
           </Button>
         </div>
       ) : null}

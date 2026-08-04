@@ -63,7 +63,8 @@ export function LandingPage({
       >
         <h2 id="book-intent-title">שתי דרכים להזמין</h2>
         <p className="landing-section__lede">
-          בחרו מה נוח לכם — שתי האפשרויות מגיעות לאותו אישור ותשלום דמו, ואז
+          בחרו מה נוח לכם — שתי האפשרויות מגיעות לאותו אישור במצב הדגמה (בלי
+          כרטיס/PAN במערכת), ואז
           לאזור האישי.
         </p>
         <div className="landing-section__actions">
