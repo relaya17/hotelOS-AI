@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Stage ג׳ — Playwright + axe on staff login screens.
+ * Stage ג׳ — Playwright + axe on staff login + public + secured shells.
  *
  * Skips gracefully when Chromium is not installed (local dev without browsers).
  * Set RUN_A11Y_E2E=1 to fail instead of skip when browsers are missing.

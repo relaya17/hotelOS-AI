@@ -47,7 +47,7 @@ jobs:
         run: pnpm build
 
   a11y-login:
-    name: A11y · Playwright axe (login + public)
+    name: A11y · Playwright axe (login + public + secured)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: quality
@@ -74,7 +74,7 @@ jobs:
       - name: Build apps for axe preview
         run: pnpm exec turbo run build --filter=@hotelos/executive --filter=@hotelos/admin --filter=@hotelos/work --filter=@hotelos/www --filter=@hotelos/guest
 
-      - name: Axe E2E (login + www/guest)
+      - name: Axe E2E (login + www/guest + secured shells)
         run: pnpm test:a11y-e2e
         env:
           RUN_A11Y_E2E: "1"
