@@ -22,6 +22,7 @@ export type UiMessageKey =
   | "legal.cookies"
   | "legal.security"
   | "legal.meetings"
+  | "legal.subprocessors"
   | "legal.nav"
   | "action.logout"
   | "action.openWork"
@@ -67,6 +68,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.cookies": "עוגיות",
       "legal.security": "אבטחה",
       "legal.meetings": "מדיניות פגישות והקלטות",
+      "legal.subprocessors": "ספקי עיבוד",
       "legal.nav": "מסמכים משפטיים",
     "action.logout": "התנתקות",
     "action.openWork": "פורטל עובדים",
@@ -105,6 +107,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.cookies": "Cookies",
       "legal.security": "Security",
       "legal.meetings": "Meetings & recordings policy",
+      "legal.subprocessors": "Subprocessors",
       "legal.nav": "Legal documents",
     "action.logout": "Sign out",
     "action.openWork": "Employee portal",
@@ -143,6 +146,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.cookies": "ملفات تعريف الارتباط",
       "legal.security": "الأمان",
       "legal.meetings": "سياسة الاجتماعات والتسجيلات",
+      "legal.subprocessors": "مقدمو المعالجة",
       "legal.nav": "مستندات قانونية",
     "action.logout": "تسجيل الخروج",
     "action.openWork": "بوابة الموظفين",
@@ -181,6 +185,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.cookies": "Файлы cookies",
       "legal.security": "Безопасность",
       "legal.meetings": "Политика встреч и записей",
+      "legal.subprocessors": "Субпроцессоры",
       "legal.nav": "Юридические документы",
     "action.logout": "Выйти",
     "action.openWork": "Портал сотрудников",
@@ -219,6 +224,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.cookies": "Cookies",
       "legal.security": "Seguridad",
       "legal.meetings": "Política de reuniones y grabaciones",
+      "legal.subprocessors": "Subprocesadores",
       "legal.nav": "Documentos legales",
     "action.logout": "Cerrar sesión",
     "action.openWork": "Portal de empleados",
@@ -257,6 +263,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.cookies": "คุกกี้",
       "legal.security": "ความปลอดภัย",
       "legal.meetings": "นโยบายการประชุมและการบันทึก",
+      "legal.subprocessors": "ผู้ประมวลผลช่วง",
       "legal.nav": "เอกสารทางกฎหมาย",
     "action.logout": "ออกจากระบบ",
     "action.openWork": "พอร์ทัลพนักงาน",
@@ -295,6 +302,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.cookies": "Cookie",
       "legal.security": "安全",
       "legal.meetings": "会议与录音政策",
+      "legal.subprocessors": "处理者清单",
       "legal.nav": "法律文件",
     "action.logout": "退出登录",
     "action.openWork": "员工门户",
@@ -333,6 +341,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.cookies": "कुकीज़",
       "legal.security": "सुरक्षा",
       "legal.meetings": "बैठक और रिकॉर्डिंग नीति",
+      "legal.subprocessors": "उप-संसाधक",
       "legal.nav": "कानूनी दस्तावेज़",
     "action.logout": "साइन आउट",
     "action.openWork": "कर्मचारी पोर्टल",
@@ -371,6 +380,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.cookies": "Çerezler",
       "legal.security": "Güvenlik",
       "legal.meetings": "Toplantı ve kayıt politikası",
+      "legal.subprocessors": "Alt işleyiciler",
       "legal.nav": "Yasal belgeler",
     "action.logout": "Çıkış yap",
     "action.openWork": "Çalışan portalı",
@@ -409,6 +419,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.cookies": "Cookies",
       "legal.security": "Ασφάλεια",
       "legal.meetings": "Πολιτική συσκέψεων και καταγραφών",
+      "legal.subprocessors": "Υπεργολάβοι επεξεργασίας",
       "legal.nav": "Νομικά έγγραφα",
     "action.logout": "Αποσύνδεση",
     "action.openWork": "Πύλη εργαζομένων",

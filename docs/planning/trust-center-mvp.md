@@ -7,9 +7,10 @@
 
 | Surface | Where |
 |---------|--------|
-| Legal docs (terms / privacy / cookies / security / meetings) | `@hotelos/legal` → `GET /v1/public/legal` → Guest `/?doc=` |
+| Legal docs (terms / privacy / cookies / security / meetings / subprocessors) | `@hotelos/legal` → `GET /v1/public/legal` → Guest `/?doc=` |
 | Legal footer + cookie banner | www, Admin, Executive, Work, Guest |
-| www trust section `#trust` | Live controls only + link to security policy |
+| www trust section `#trust` | Live controls only + link to security / subprocessors |
+| www status section `#status` | Live `GET /v1/health` probe (not a third-party uptime page) |
 | www footer grid | Product / Trust / Start columns + legal bar |
 | `security.txt` | `apps/www/public/.well-known/security.txt` |
 | HITL Suggest→Approve→Act | Approvals UI + autonomy routes |
@@ -22,11 +23,12 @@
 ## Roadmap (not claimed on www)
 
 - SOC 2 / ISO attestation pack
-- Public status page (uptime)
-- Counsel-signed DPA / subprocessors schedule per customer
+- Counsel-signed DPA per customer (subprocessors schedule above is the public list only)
+- Hosted third-party status page with history (Better Stack / similar)
 - Live external PCI gateway UX (beyond stub/demo)
 - Full cookie category matrix (analytics/marketing) if introduced
 
 ## Public narrative
 
-www `#trust` lists only live controls and links to the Security legal document.
+www `#trust` lists only live controls and links to Security / Subprocessors.  
+www `#status` probes this deployment’s API health and points to the uptime runbook for continuous external monitoring.

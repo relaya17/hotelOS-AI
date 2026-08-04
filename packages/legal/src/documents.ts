@@ -1,4 +1,10 @@
-export type LegalDocumentId = "terms" | "cookies" | "security" | "privacy" | "meetings";
+export type LegalDocumentId =
+  | "terms"
+  | "cookies"
+  | "security"
+  | "privacy"
+  | "meetings"
+  | "subprocessors";
 
 export type LegalDocument = {
   readonly id: LegalDocumentId;
@@ -277,6 +283,39 @@ export const LEGAL_DOCUMENTS: readonly LegalDocument[] = [
       {
         heading: "8. יצירת קשר",
         body: "לשאלות על מדיניות זו: [להשלמה: איש קשר HR/ממונה פרטיות של הרשת המפעילה]. פנייה זמנית: legal@hotelos.ai.",
+      },
+    ],
+  },
+  {
+    id: "subprocessors",
+    titleHe: "לוח ספקי עיבוד (Subprocessors)",
+    titleEn: "Subprocessors Schedule",
+    updatedAt: UPDATED,
+    version: "2026.1",
+    sections: [
+      {
+        heading: "1. מהו מסמך זה",
+        body: "מסמך זה מפרט ספקי עיבוד חיצוניים שעשויים לעבד נתונים עבור HotelOS AI לפי הגדרת המפעיל/הרשת. זה אינו הסכם עיבוד נתונים (DPA) חתום על־ידי עורך־דין — תבנית DPA ללקוח Enterprise תועבר בנפרד. אין להציג רשימה זו כתעודת SOC 2/ISO.",
+      },
+      {
+        heading: "2. אירוח ואחסון ליבה",
+        body: "Vercel — אירוח אפליקציות Frontend ו־API (Serverless/Edge). Turso (libSQL) — מסד נתונים מנוהל עבור נתוני Tenant. Vercel Blob — אחסון קבצי הקלטות/אובייקטים כשמוגדר בקוד (BLOB_READ_WRITE_TOKEN).",
+      },
+      {
+        heading: "3. בינה מלאכותית",
+        body: "ספק מודל שפה חיצוני תואם OpenAI API — רק כאשר מוגדרים כתובת ומפתח ב־AI Gateway של HotelOS. כשלא מוגדר ספק חיצוני, פועל מנוע Fallback פנימי שלא שולח תוכן לספק חיצוני. קריאות AI עוברות אך ורק דרך ה־Gateway (הנדסה: כרך 5).",
+      },
+      {
+        heading: "4. תשלומים והודעות (אופציונלי)",
+        body: "ספק תשלומים חיצוני — כשהרשת מפעילה אותו; HotelOS אינה שומרת PAN. WhatsApp (Meta Cloud API או שער HTTP גנרי) — כשהרשת מפעילה התראות. חיבור PMS חי (למשל Mews) — לפי בחירת הרשת; בסביבות דמו עשויים לפעול מחברי stub פנימיים שאינם אינטגרציה רשמית לספקים המדומים.",
+      },
+      {
+        heading: "5. ניטור (אופציונלי)",
+        body: "Sentry או GlitchTip — דיווח שגיאות כשמוגדר SENTRY_DSN. מוניטור uptime חיצוני (Better Stack / UptimeRobot) עשוי לבדוק GET /v1/health בלי גישה לנתוני לקוח.",
+      },
+      {
+        heading: "6. עדכונים",
+        body: "רשימה זו מתעדכנת כשמוסיפים ספק עיבוד מהותי. גרסה ותאריך מופיעים בראש המסמך. לפנייה: privacy@hotelos.ai · legal@hotelos.ai.",
       },
     ],
   },

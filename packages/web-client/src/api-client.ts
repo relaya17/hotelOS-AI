@@ -22,8 +22,11 @@ function mapVercelAppRole(
   role: "api" | "admin" | "executive" | "guest" | "work",
 ): string {
   return host
-    .replace(/-(admin|executive|guest|work|api)-/i, `-${role}-`)
-    .replace(/-(admin|executive|guest|work|api)\.vercel\./i, `-${role}.vercel.`);
+    .replace(/-(admin|executive|guest|work|www|api)-/i, `-${role}-`)
+    .replace(
+      /-(admin|executive|guest|work|www|api)\.vercel\./i,
+      `-${role}.vercel.`,
+    );
 }
 
 function isLocalUrl(url: string): boolean {
@@ -1497,6 +1500,24 @@ export type LegalDocSummary = {
 export type LegalDocDetail = LegalDocSummary & {
   readonly sections: readonly { readonly heading: string; readonly body: string }[];
 };
+
+export type PublicHealthDto = {
+  readonly status: string;
+  readonly service: string;
+  readonly version: string;
+  readonly recordings?: {
+    readonly backend: string;
+    readonly root: string;
+  };
+};
+
+export async function fetchPublicHealth(): Promise<PublicHealthDto> {
+  const response = await fetch(`${getApiBase()}/v1/health`);
+  if (!response.ok) {
+    throw new Error(`Health check failed (${response.status})`);
+  }
+  return (await response.json()) as PublicHealthDto;
+}
 
 export type AttendanceEventDto = {
   readonly id: string;
@@ -4318,7 +4339,13 @@ export const APP_URLS = {
     return APP_URLS.guest;
   },
   legal(
-    doc: "terms" | "cookies" | "security" | "privacy" | "meetings",
+    doc:
+      | "terms"
+      | "cookies"
+      | "security"
+      | "privacy"
+      | "meetings"
+      | "subprocessors",
   ): string {
     return `${APP_URLS.guest}/?doc=${doc}`;
   },

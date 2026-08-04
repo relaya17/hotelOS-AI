@@ -25,6 +25,7 @@ import {
   TRUST_CONTROLS,
   WORLD_COMPARISON,
 } from "./content.js";
+import { StatusSectionContent } from "./status-section.js";
 
 const PILOT_MAIL =
   "mailto:pilot@hotelos.ai?subject=HotelOS%20AI%20Pilot&body=שלום%2C%20אשמח%20לדבר%20על%20פיילוט%20HotelOS%20AI%20לרשת%20שלנו.";
@@ -38,6 +39,7 @@ const NAV_LINKS = [
   { href: "#os", label: "מערכת הפעלה" },
   { href: "#ceo-value", label: "ערך למנכ״ל" },
   { href: "#trust", label: "אבטחה ואמון" },
+  { href: "#status", label: "סטטוס" },
   { href: "#faq", label: "שאלות" },
 ] as const;
 
@@ -578,8 +580,20 @@ export function LandingPage() {
             הפירוט המלא, כולל מדיניות אימות ונתונים רגישים, במסמך{" "}
             <a href={APP_URLS.legal("security")}>מדיניות האבטחה</a>
             {" · "}
-            <a href="/.well-known/security.txt">security.txt</a>.
+            <a href={APP_URLS.legal("subprocessors")}>ספקי עיבוד</a>
+            {" · "}
+            <a href="/.well-known/security.txt">security.txt</a>
+            {" · "}
+            <a href="#status">סטטוס API</a>.
           </p>
+        </RevealSection>
+
+        <RevealSection
+          id="status"
+          className="section status"
+          aria-labelledby="status-title"
+        >
+          <StatusSectionContent />
         </RevealSection>
 
         <RevealSection
@@ -672,7 +686,9 @@ export function LandingPage() {
           <div className="foot__col">
             <h3>אמון</h3>
             <a href="#trust">בקרות אבטחה</a>
+            <a href="#status">סטטוס API</a>
             <a href={APP_URLS.legal("security")}>מדיניות אבטחה</a>
+            <a href={APP_URLS.legal("subprocessors")}>ספקי עיבוד</a>
             <a href={APP_URLS.legal("privacy")}>פרטיות</a>
             <a href={APP_URLS.legal("cookies")}>עוגיות</a>
             <a href="/.well-known/security.txt">security.txt</a>
