@@ -23,9 +23,24 @@ const SECURED_TARGETS: readonly SecuredTarget[] = [
     ready: /תיבת אישורי AI/,
   },
   {
+    id: "admin",
+    path: "/?panel=hr",
+    ready: /משאבי אנוש/,
+  },
+  {
+    id: "admin",
+    path: "/",
+    ready: /חדרים|הזמנות|מלון פעיל/,
+  },
+  {
     id: "executive",
     path: "/#approvals",
     ready: /אישורי AI ממתינים/,
+  },
+  {
+    id: "executive",
+    path: "/#portfolio",
+    ready: /לוח בקרה לרשת|Demo Tenant|מלונות ברשת/,
   },
   {
     id: "work",
@@ -43,7 +58,8 @@ function previewPortFor(id: SecuredTarget["id"]): number {
 }
 
 for (const target of SECURED_TARGETS) {
-  test.describe(`${target.id} secured shell`, () => {
+  const caseName = `${target.id}${target.path === "/" ? "" : ` ${target.path}`}`;
+  test.describe(`${caseName} secured shell`, () => {
     test("axe: authenticated view has no serious/critical WCAG violations", async ({
       page,
     }) => {
@@ -67,7 +83,7 @@ for (const target of SECURED_TARGETS) {
       expect(
         blocking,
         blocking.length > 0
-          ? `${target.id} secured violations:\n${formatBlockingViolationsDetailed(results)}`
+          ? `${caseName} secured violations:\n${formatBlockingViolationsDetailed(results)}`
           : undefined,
       ).toEqual([]);
     });

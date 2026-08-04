@@ -42,6 +42,14 @@ Platform narrative (capabilities / reliability / stability / innovation): **[sal
 
 **[locale-strategy.md](./locale-strategy.md)** — why `apps/www` is Hebrew-only on purpose while the sales pack is 10 locales, plus the trigger conditions for revisiting.
 
+## Engineering closeout vs review
+
+| Doc | Purpose |
+|-----|---------|
+| [review-gap-status.md](./review-gap-status.md) | What the engineering review closed in code vs still human |
+| [landing-gtm-checklist.md](./landing-gtm-checklist.md) | Meta / JSON-LD / honesty checklist on every www change |
+| [business-fill.md](./business-fill.md) | Founder fill: Calendly, pilot@ monitoring, design partner |
+
 ## Trust path (honest)
 
 | Doc | Purpose |

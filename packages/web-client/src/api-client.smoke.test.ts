@@ -159,3 +159,90 @@ describe("decideAiApproval (HITL)", () => {
     assert.equal(result.act.status === "executed" ? result.act.summaryHe : "", "בוצע");
   });
 });
+
+describe("HR high-risk client calls", () => {
+  it("listHrEmployees GETs /v1/hr/employees with auth", async () => {
+    const memory = new Map<string, string>();
+    Object.defineProperty(globalThis, "sessionStorage", {
+      value: {
+        getItem: (k: string) => (memory.has(k) ? memory.get(k)! : null),
+        setItem: (k: string, v: string) => {
+          memory.set(k, v);
+        },
+        removeItem: (k: string) => {
+          memory.delete(k);
+        },
+      },
+      configurable: true,
+    });
+    memory.set("hotelos.accessToken", "hr-token");
+
+    let seenUrl = "";
+    let seenAuth = "";
+    globalThis.fetch = (async (input, init) => {
+      seenUrl = String(input);
+      const headers = new Headers(init?.headers);
+      seenAuth = headers.get("Authorization") ?? "";
+      return new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: "e1",
+              userId: null,
+              displayName: "Dana",
+              roleLabel: "HK",
+              preferredLocale: "he",
+              hotelId: "h1",
+              employeeCode: null,
+              phone: null,
+              status: "active",
+              departmentId: null,
+              createdAt: "2026-08-04T12:00:00.000Z",
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const { listHrEmployees } = await import("./api/hr.js");
+    const rows = await listHrEmployees("h1");
+    assert.match(seenUrl, /\/v1\/hr\/employees\?/);
+    assert.match(seenAuth, /Bearer hr-token/);
+    assert.equal(rows[0]?.displayName, "Dana");
+  });
+
+  it("reviewHrDocument POSTs review decision", async () => {
+    const memory = new Map<string, string>();
+    Object.defineProperty(globalThis, "sessionStorage", {
+      value: {
+        getItem: (k: string) => (memory.has(k) ? memory.get(k)! : null),
+        setItem: (k: string, v: string) => {
+          memory.set(k, v);
+        },
+        removeItem: (k: string) => {
+          memory.delete(k);
+        },
+      },
+      configurable: true,
+    });
+    memory.set("hotelos.accessToken", "hr-token");
+
+    let seenUrl = "";
+    let seenBody: unknown;
+    globalThis.fetch = (async (input, init) => {
+      seenUrl = String(input);
+      seenBody = JSON.parse(String(init?.body ?? "{}"));
+      return new Response(
+        JSON.stringify({ data: { id: "doc-1", status: "approved" } }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const { reviewHrDocument } = await import("./api/hr.js");
+    const result = await reviewHrDocument("doc-1", { status: "approved" });
+    assert.match(seenUrl, /\/v1\/hr\/documents\/doc-1\/review$/);
+    assert.deepEqual(seenBody, { status: "approved" });
+    assert.equal(result.status, "approved");
+  });
+});

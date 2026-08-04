@@ -179,8 +179,46 @@ export async function installSecuredApiStubs(page: Page): Promise<void> {
       await json(route, 201, { data: { ok: true, policyVersion: "2026.1" } });
       return;
     }
-    if (path.startsWith("/v1/hotels/") && path.endsWith("/rooms") && method === "GET") {
+    if (path === "/v1/hr/employees" && method === "GET") {
+      await json(route, 200, {
+        data: [
+          {
+            id: "e2000000-0000-4000-8000-000000000001",
+            userId: null,
+            displayName: "עובד HR דמו",
+            roleLabel: "Housekeeping",
+            preferredLocale: "he",
+            hotelId: AXE_STUB_HOTEL_ID,
+            employeeCode: "HK-1",
+            phone: null,
+            status: "active",
+            departmentId: null,
+            createdAt: "2026-08-04T12:00:00.000Z",
+          },
+        ],
+      });
+      return;
+    }
+    if (path === "/v1/hr/invites" && method === "GET") {
       await json(route, 200, { data: [] });
+      return;
+    }
+    if (path === "/v1/correspondence/drafts" && method === "GET") {
+      await json(route, 200, { data: [] });
+      return;
+    }
+    if (path.startsWith("/v1/hotels/") && path.endsWith("/rooms") && method === "GET") {
+      await json(route, 200, {
+        data: [
+          {
+            id: "70000000-0000-4000-8000-000000000101",
+            number: "101",
+            floor: "1",
+            roomType: "standard",
+            status: "vacant",
+          },
+        ],
+      });
       return;
     }
     if (path.startsWith("/v1/hotels/") && path.endsWith("/bookings") && method === "GET") {

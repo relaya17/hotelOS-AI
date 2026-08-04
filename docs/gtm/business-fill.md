@@ -44,6 +44,10 @@
 | `VITE_CALENDLY_URL` | |
 | `VITE_DEMO_VIDEO_URL` (אחרי הקלטה) | |
 | מייל pilot@ מנוטר? | כן / לא |
+| התראות על שורות חדשות ב־`marketing_leads` | כן / לא (ops) |
+
+קוד האתר: טופס `#contact` שולח ל־`POST /v1/leads` (שמירה ב־DB). `mailto:pilot@` נשאר גיבוי בלבד.
+עדיין נדרש אימות אנושי שמנטרים את תיבת `pilot@` ו/או יש תהליך על לידים חדשים.
 
 - [ ] תרגול [demo-script-15min.md](./sales-pack/demo-script-15min.md)
 - [ ] הקלטת 90 שנ׳ (wedge בלבד)
