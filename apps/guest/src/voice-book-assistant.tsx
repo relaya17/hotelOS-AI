@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, TextField } from "@hotelos/ui";
 import {
+  fetchPaymentPublicStatus,
   invokePublicBookAssistant,
+  type PaymentPublicStatusDto,
   type PublicBookAssistantResultDto,
   type PublicBookDraftDto,
 } from "@hotelos/web-client";
@@ -56,8 +58,25 @@ export function VoiceBookAssistant({
   const [latest, setLatest] = useState<PublicBookAssistantResultDto | null>(
     null,
   );
+  const [paymentStatus, setPaymentStatus] = useState<
+    PaymentPublicStatusDto | null
+  >(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchPaymentPublicStatus()
+      .then((status) => {
+        if (!cancelled) setPaymentStatus(status);
+      })
+      .catch(() => {
+        if (!cancelled) setPaymentStatus(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -214,12 +233,18 @@ export function VoiceBookAssistant({
             מוכן לאישור · {latest.draft.checkInDate} → {latest.draft.checkOutDate}{" "}
             · {latest.draft.guestName}
           </p>
+          <p className="vba-pay-note">
+            {paymentStatus?.labelHe ?? "טוען מצב תשלום…"}
+          </p>
           <Button
             type="button"
             disabled={busy}
             onClick={() => void sendMessage("כן, אשר הזמנה", { confirm: true })}
           >
-            אשר והזמן (תשלום דמו — בלי PAN)
+            אשר והזמן
+            {paymentStatus
+              ? ` (${paymentStatus.mode === "external" ? "ספק חיצוני" : paymentStatus.mode === "stub" ? "stub" : "דמו"} · בלי PAN)`
+              : " (תשלום)"}
           </Button>
         </div>
       ) : null}
@@ -266,8 +291,9 @@ export function VoiceBookAssistant({
         .vba-bubble--user { justify-self:end; background:color-mix(in oklab, var(--color-sea-deep) 18%, #fff); font-weight:600; }
         .vba-offers { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-2); }
         .vba-offers li { display:grid; grid-template-columns:1fr auto auto; gap:var(--space-2); align-items:center; padding:var(--space-3); border:1px solid var(--color-line); border-radius:var(--radius-sm); }
-        .vba-confirm { display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:center; justify-content:space-between; padding:var(--space-4); border:1px solid var(--color-line-strong); border-radius:var(--radius-md); background:color-mix(in oklab, var(--color-sea-deep) 6%, #fff); }
+        .vba-confirm { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--color-line-strong); border-radius:var(--radius-md); background:color-mix(in oklab, var(--color-sea-deep) 6%, #fff); }
         .vba-confirm p { margin:0; font-weight:600; }
+        .vba-pay-note { font-weight:500 !important; color:var(--color-ink-soft); font-size:var(--text-small); line-height:1.5; }
         .vba__compose { display:grid; gap:var(--space-3); }
         .vba__actions { display:flex; gap:var(--space-2); justify-content:flex-end; }
         .state--err { color:var(--color-danger); margin:0; }

@@ -5,8 +5,10 @@ import {
   createDigitalSignature,
   createPaymentIntent,
   createWebAuthnChallenge,
+  fetchPaymentPublicStatus,
   listPayments,
   registerWebAuthnCredential,
+  type PaymentPublicStatusDto,
 } from "@hotelos/web-client";
 
 function bufferToBase64Url(buffer: ArrayBuffer): string {
@@ -32,6 +34,9 @@ export function TrustPaymentsPage() {
   const [signature, setSignature] = useState<string | null>(null);
   const [message, setMessage] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const [paymentStatus, setPaymentStatus] = useState<
+    PaymentPublicStatusDto | null
+  >(null);
 
   async function reload() {
     setPayments(await listPayments());
@@ -41,6 +46,9 @@ export function TrustPaymentsPage() {
     void reload().catch((loadError: unknown) => {
       setError(loadError instanceof Error ? loadError.message : "Load failed");
     });
+    void fetchPaymentPublicStatus()
+      .then(setPaymentStatus)
+      .catch(() => setPaymentStatus(null));
   }, []);
 
   async function onPay() {
@@ -140,7 +148,15 @@ export function TrustPaymentsPage() {
         <h1>תשלומים וחתימה דיגיטלית</h1>
         <p className="sub">
           מערכת תשלומים פנימית + חתימה + רישום WebAuthn לאימות אצבע/פנים.
+          HotelOS אינה שומרת PAN. סטטוס ספק נוכחי נטען מה־API.
         </p>
+        {paymentStatus ? (
+          <p className="pay-mode" role="status">
+            <strong>{paymentStatus.provider}</strong> · {paymentStatus.labelHe}
+          </p>
+        ) : (
+          <p className="pay-mode">טוען מצב תשלום…</p>
+        )}
       </header>
 
       <section className="card">
@@ -200,6 +216,7 @@ export function TrustPaymentsPage() {
         .eyebrow{margin:0 0 var(--space-2);letter-spacing:.08em;text-transform:uppercase;font-size:var(--text-small);color:var(--color-sea-deep);font-weight:700}
         h1{margin:0;font-size:clamp(1.8rem,3vw,2.6rem)}
         .sub{margin:var(--space-2) 0 0;color:var(--color-ink-soft)}
+        .pay-mode{margin:var(--space-3) 0 0;padding:var(--space-3);border:1px solid var(--color-line);border-radius:var(--radius-sm);background:var(--color-paper-elevated);color:var(--color-ink-soft);font-size:var(--text-small);line-height:1.5}
         .card{background:var(--color-paper-elevated);border:1px solid var(--color-line);border-radius:var(--radius-md);padding:var(--space-4);display:grid;gap:var(--space-3);box-shadow:var(--shadow-soft)}
         .actions{display:flex;gap:var(--space-2);flex-wrap:wrap}
         ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-2)}

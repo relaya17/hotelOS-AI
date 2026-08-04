@@ -30,6 +30,55 @@ export interface PaymentProvider {
   charge(input: CreatePaymentIntentInput): Promise<PaymentIntentResult>;
 }
 
+/** Public, non-secret description of the configured payment mode (no credentials). */
+export type PaymentPublicStatus = {
+  readonly provider: PaymentProviderName;
+  readonly mode: "demo" | "stub" | "external";
+  readonly storesPan: false;
+  readonly pciDssCertified: false;
+  readonly labelHe: string;
+  readonly labelEn: string;
+};
+
+export function describePaymentPublicStatus(
+  payments: Pick<PaymentProvider, "name">,
+): PaymentPublicStatus {
+  if (payments.name === "external") {
+    return {
+      provider: "external",
+      mode: "external",
+      storesPan: false,
+      pciDssCertified: false,
+      labelHe:
+        "תשלום דרך ספק חיצוני שהוגדר לפריסה · HotelOS אינה שומרת PAN · אין מצג PCI-DSS של HotelOS",
+      labelEn:
+        "External payment provider · HotelOS does not store PAN · no HotelOS PCI-DSS claim",
+    };
+  }
+  if (payments.name === "stripe_stub") {
+    return {
+      provider: "stripe_stub",
+      mode: "stub",
+      storesPan: false,
+      pciDssCertified: false,
+      labelHe:
+        "מצב stub (לא Stripe חי) · בלי כרטיס / בלי PAN · לא הסמכת PCI",
+      labelEn:
+        "Stripe stub (not live Stripe) · no card / no PAN · not PCI certified",
+    };
+  }
+  return {
+    provider: "demo",
+    mode: "demo",
+    storesPan: false,
+    pciDssCertified: false,
+    labelHe:
+      "מצב הדגמה · בלי כרטיס אמיתי / בלי PAN במערכת · לא שער PCI חי",
+    labelEn:
+      "Demo mode · no real card / no PAN in HotelOS · not a live PCI gateway",
+  };
+}
+
 export type PaymentProviderConfig = {
   readonly provider: PaymentProviderName;
   readonly externalUrl?: string;

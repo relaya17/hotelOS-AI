@@ -1,5 +1,10 @@
+import { useEffect, useState } from "react";
 import { Button } from "@hotelos/ui";
-import { APP_URLS } from "@hotelos/web-client";
+import {
+  APP_URLS,
+  fetchPaymentPublicStatus,
+  type PaymentPublicStatusDto,
+} from "@hotelos/web-client";
 
 export type LandingPageProps = {
   readonly onVoiceBook: () => void;
@@ -16,6 +21,24 @@ export function LandingPage({
   onFormBook,
   onFindStay,
 }: LandingPageProps) {
+  const [paymentStatus, setPaymentStatus] = useState<
+    PaymentPublicStatusDto | null
+  >(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchPaymentPublicStatus()
+      .then((status) => {
+        if (!cancelled) setPaymentStatus(status);
+      })
+      .catch(() => {
+        if (!cancelled) setPaymentStatus(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="landing">
       <header className="landing-top">
@@ -63,9 +86,8 @@ export function LandingPage({
       >
         <h2 id="book-intent-title">שתי דרכים להזמין</h2>
         <p className="landing-section__lede">
-          בחרו מה נוח לכם — שתי האפשרויות מגיעות לאותו אישור במצב הדגמה (בלי
-          כרטיס/PAN במערכת), ואז
-          לאזור האישי.
+          בחרו מה נוח לכם — שתי האפשרויות מגיעות לאותו אישור (
+          {paymentStatus?.labelHe ?? "טוען מצב תשלום…"}) ואז לאזור האישי.
         </p>
         <div className="landing-section__actions">
           <Button type="button" onClick={onVoiceBook}>

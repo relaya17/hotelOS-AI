@@ -17,7 +17,7 @@
 | WebAuthn / Google OAuth (staff) | Trust / login flows |
 | API rate limits + AI rate budget | API middleware |
 | SSE ops stream ACL (Bearer + hotel scope) | Stream routes + threat model doc |
-| No PAN storage in HotelOS | Config / payment provider architecture + Guest demo copy |
+| No PAN storage in HotelOS | Config / payment provider + `GET /v1/public/payments/status` + Guest/Executive copy |
 | AI only via Gateway | Engineering Standard Vol. 5 |
 | Hybrid keyword + optional embeddings | [rag-embeddings-mvp.md](./rag-embeddings-mvp.md) |
 
@@ -26,7 +26,7 @@
 - SOC 2 / ISO attestation pack
 - Counsel-**signed** DPA per customer (public page is an **unsigned template**)
 - Hosted third-party status page with history (Better Stack / similar)
-- Live external PCI gateway UX (beyond demo/stub — Guest labels demo today)
+- Live external PCI gateway UX (beyond `PAYMENT_PROVIDER=external` + provider-side PCI)
 - Full cookie category matrix (analytics/marketing) if introduced
 - Full Vector DB / chunked RAG (see rag-embeddings-mvp.md)
 
@@ -34,4 +34,4 @@
 
 www `#trust` lists only live controls and links to Security / Subprocessors / DPA template.  
 www `#status` probes this deployment’s API health and points to the uptime runbook for continuous external monitoring.  
-Guest checkout states **demo payment · no PAN in HotelOS**.
+Guest/Executive payment UI reads **provider mode from the API** (`demo` / `stripe_stub` / `external`) and never claims HotelOS PCI-DSS.

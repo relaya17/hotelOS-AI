@@ -2,8 +2,10 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button, TextField } from "@hotelos/ui";
 import {
   createPublicBooking,
+  fetchPaymentPublicStatus,
   fetchPublicAvailability,
   listPublicHotels,
+  type PaymentPublicStatusDto,
   type PublicAvailabilityOfferDto,
   type PublicHotelDto,
 } from "@hotelos/web-client";
@@ -61,6 +63,23 @@ export function BookFlow({ onCancel, onBooked }: BookFlowProps) {
   const [guestPhone, setGuestPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [paymentStatus, setPaymentStatus] = useState<
+    PaymentPublicStatusDto | null
+  >(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchPaymentPublicStatus()
+      .then((status) => {
+        if (!cancelled) setPaymentStatus(status);
+      })
+      .catch(() => {
+        if (!cancelled) setPaymentStatus(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,7 +177,7 @@ export function BookFlow({ onCancel, onBooked }: BookFlowProps) {
         </h1>
         <p className="book__lede">
           {hotelName
-            ? `${hotelName} · מצב הדגמה · בלי כרטיס / בלי PAN במערכת`
+            ? `${hotelName} · ${paymentStatus?.labelHe ?? "טוען מצב תשלום…"}`
             : "טוען מלונות…"}
         </p>
       </header>
@@ -301,11 +320,12 @@ export function BookFlow({ onCancel, onBooked }: BookFlowProps) {
             autoComplete="tel"
           />
           <p className="book__pay-note">
-            מצב תשלום: <strong>הדגמה (demo)</strong> — לחיצה על «שלם והזמן»
-            מאשרת הזמנה וכותבת רשומת כוונת תשלום (סכום/מטבע/סטטוס) בלבד. HotelOS
-            אינה אוספת ואינה שומרת מספר כרטיס (PAN). אין כאן שער PCI חי ואין
-            הסמכת PCI-DSS. בסביבת לקוח עם ספק תשלומים חיצוני — החיוב יתבצע אצל
-            הספק; במערכת יישאר רק מזהה עסקה ותיאור.
+            {paymentStatus
+              ? paymentStatus.labelHe
+              : "טוען מצב תשלום מהשרת…"}{" "}
+            לחיצה על «שלם והזמן» מאשרת הזמנה וכותבת רשומת כוונת תשלום
+            (סכום/מטבע/סטטוס) בלבד. ספק נוכחי:{" "}
+            <code>{paymentStatus?.provider ?? "…"}</code>.
           </p>
           {error ? <p className="book__error">{error}</p> : null}
           <div className="book__actions">

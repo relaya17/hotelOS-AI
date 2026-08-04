@@ -42,6 +42,7 @@ import {
   toPublicUpsellDto,
 } from "../../application/suggest-guest-upsells.js";
 import type { PaymentProvider } from "../../infrastructure/payment-provider.js";
+import { describePaymentPublicStatus } from "../../infrastructure/payment-provider.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type PublicRouteDeps = {
@@ -287,6 +288,10 @@ function equipmentIngestAuthorized(
 
 export function createPublicRoutes(deps: PublicRouteDeps): Hono {
   const routes = new Hono();
+
+  routes.get("/payments/status", (c) =>
+    c.json({ data: describePaymentPublicStatus(deps.payments) }),
+  );
 
   routes.post("/pms/inbound", async (c) => {
     try {

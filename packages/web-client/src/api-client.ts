@@ -1519,6 +1519,24 @@ export async function fetchPublicHealth(): Promise<PublicHealthDto> {
   return (await response.json()) as PublicHealthDto;
 }
 
+export type PaymentPublicStatusDto = {
+  readonly provider: "demo" | "stripe_stub" | "external";
+  readonly mode: "demo" | "stub" | "external";
+  readonly storesPan: false;
+  readonly pciDssCertified: false;
+  readonly labelHe: string;
+  readonly labelEn: string;
+};
+
+export async function fetchPaymentPublicStatus(): Promise<PaymentPublicStatusDto> {
+  const response = await fetch(`${getApiBase()}/v1/public/payments/status`);
+  if (!response.ok) {
+    throw new Error(`Payment status failed (${response.status})`);
+  }
+  const payload = (await response.json()) as { data: PaymentPublicStatusDto };
+  return payload.data;
+}
+
 export type AttendanceEventDto = {
   readonly id: string;
   readonly employeeId: string;
