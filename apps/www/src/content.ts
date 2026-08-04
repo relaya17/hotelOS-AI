@@ -371,6 +371,42 @@ export const DEMO_BEATS = [
   },
 ] as const;
 
+export const PROFIT_LEVERS = [
+  {
+    id: "time",
+    title: "זמן הנהלה חוזר לכסף",
+    body: "תדריך ומעקב תקלות שגוזלים שעות כל שבוע — אחרי baseline מודדים כמה שעות חזרו. זה הבסיס ל־payback מול $5,000 Pilot / $1,000 Network.",
+  },
+  {
+    id: "risk",
+    title: "פחות פיצויים ותלונות",
+    body: "מרכז תקלות + HITL מקצרים זמן תגובה לדחוף. פחות חדר סגור / פיצוי אורח = שורה תחתונה, לא סלוגן.",
+  },
+  {
+    id: "lift",
+    title: "הכנסה נלווית כשבוחרים",
+    body: "Upsell / מוניטין נכנסים רק אם סוגרים אותם בהיקף הפיילוט. לא חובה ביום 1 — land & expand אחרי הוכחה.",
+  },
+] as const;
+
+export const MODULAR_PATHS = [
+  {
+    id: "wedge",
+    title: "מתחילים ב־wedge",
+    body: "תדריך + תקלות + HITL. שלושה מסכים בדמו — לא 16 טאבים. זה מה שמוכיח ריווחיות מהר.",
+  },
+  {
+    id: "expand",
+    title: "מרחיבים דומיין־דומיין",
+    body: "משק בית, קבלה, תחזוקה, HR, Guest — רק אחרי שהאלוף רואה ערך. אפשר Network על חלק מהמערכת.",
+  },
+  {
+    id: "integrate",
+    title: "מתממשקים מעל ה־PMS",
+    body: "ה־PMS נשאר מקור אמת להזמנות. HotelOS שכבה מעל: קריאה/אותות + אישורים — בלי writeback עיוור ובלי החלפת מערכת.",
+  },
+] as const;
+
 export const EXCELLENCE_LINKS = [
   {
     id: "playbook",

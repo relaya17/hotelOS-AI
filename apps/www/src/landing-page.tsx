@@ -23,10 +23,12 @@ import {
   EXCELLENCE_LINKS,
   FRAGMENTED_STACK,
   INTEGRATIONS,
+  MODULAR_PATHS,
   ORG_NODES,
   OUTCOMES,
   PACKAGES,
   PILOT_STEPS,
+  PROFIT_LEVERS,
   TAGLINES,
   TRUST_CONTROLS,
   WORLD_COMPARISON,
@@ -56,6 +58,7 @@ const NAV_LINKS = [
   { href: "#demo", label: "דמו" },
   { href: "#how-pilot", label: "פיילוט" },
   { href: "#packages", label: "חבילות" },
+  { href: "#profit", label: "רווחיות" },
   { href: "#measure", label: "מדידה" },
   { href: "#trust", label: "אמון" },
   { href: "#excellence", label: "מצוינות" },
@@ -861,6 +864,53 @@ export function LandingPage() {
         </RevealSection>
 
         <RevealSection
+          id="profit"
+          className="section profit"
+          aria-labelledby="profit-title"
+        >
+          <p className="eyebrow">רווחיות · מודולריות</p>
+          <h2 id="profit-title">לא קונים «הכל». קונים תוצאה שנמדדת.</h2>
+          <p className="section__lead">
+            מלון מבין שזה ריווחי כשיש baseline, חיסכון בזמן/סיכון, ומחיר USD
+            ברור — לא כשמבטיחים אחוזים במצגת. אפשר להתחיל בחלק מהמערכת ולהתממשק
+            מעל ה־PMS הקיים.
+          </p>
+
+          <h3 className="profit__sub">מה גורם להם להבין שזה משתלם</h3>
+          <ul className="profit-grid">
+            {PROFIT_LEVERS.map((lever) => (
+              <li key={lever.id} className="profit-item">
+                <h4>{lever.title}</h4>
+                <p>{lever.body}</p>
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="profit__sub">הכל או רק חלק — איך מתממשקים נכון</h3>
+          <ul className="modular-grid">
+            {MODULAR_PATHS.map((path) => (
+              <li key={path.id} className="modular-item">
+                <h4>{path.title}</h4>
+                <p>{path.body}</p>
+              </li>
+            ))}
+          </ul>
+
+          <p className="section__note">
+            משוואת שיחה: Pilot $5,000 → מדידה ב־scorecard → Network $1,000 /
+            מלון / חודש רק על מה שרץ.{" "}
+            <a href="#packages">חבילות</a>
+            {" · "}
+            <a href="#how-pilot">פיילוט 4 שבועות</a>
+            {" · "}
+            <a href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/planning/pilot-roi-scorecard.md">
+              Scorecard
+            </a>
+            .
+          </p>
+        </RevealSection>
+
+        <RevealSection
           id="measure"
           className="section measure-section"
           aria-labelledby="measure-title"
@@ -957,6 +1007,14 @@ export function LandingPage() {
               </p>
             </details>
             <details className="faq__item">
+              <summary>חייבים לקחת את כל המערכת?</summary>
+              <p>
+                לא. מתחילים ב־wedge (תדריך + תקלות + HITL), מודדים, ואז מרחיבים
+                דומיין־דומיין. ה־PMS נשאר; מתממשקים מעליו.{" "}
+                <a href="#profit">רווחיות ומודולריות</a>.
+              </p>
+            </details>
+            <details className="faq__item">
               <summary>מה הסוכנים באמת עושים?</summary>
               <p>
                 תדריכים, תחזיות, אנומליות, upsell, תחזוקה חזויה, מזכירת ישיבות,
@@ -1050,6 +1108,7 @@ export function LandingPage() {
             <a href="#demo">דמו</a>
             <a href="#how-pilot">פיילוט</a>
             <a href="#packages">חבילות</a>
+            <a href="#profit">רווחיות</a>
             <a href="#measure">מדידה</a>
             <a href="#excellence">מצוינות / data room</a>
             <a href="/sales-pack/index.html">Sales pack · PDF</a>
