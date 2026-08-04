@@ -8,6 +8,7 @@ import type {
 import type { JwtTokenService } from "@hotelos/auth";
 import { z } from "@hotelos/validation";
 import { chunkCompanyKnowledgeDoc } from "../../application/chunk-company-knowledge-doc.js";
+import { embedCompanyKnowledgeChunks } from "../../application/embed-company-knowledge-chunks.js";
 import { embedCompanyKnowledgeDoc } from "../../application/embed-company-knowledge-doc.js";
 import { reindexCompanyKnowledgeDoc } from "../../application/reindex-company-knowledge-doc.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
@@ -167,8 +168,18 @@ export function createKnowledgeRoutes(deps: KnowledgeRouteDeps): Hono<{
           title: updated.title,
           body: updated.body,
         });
+        await embedCompanyKnowledgeChunks(
+          {
+            companyKnowledge: deps.companyKnowledge,
+            gateway: deps.gateway,
+          },
+          {
+            tenantId: principal.scope.tenantId,
+            docId: updated.id,
+          },
+        );
       } catch {
-        // Keyword pack can still use full body when chunk write fails.
+        // Keyword pack can still use full body when chunk/embed write fails.
       }
       return c.json({ data: updated });
     } catch (error) {
@@ -202,6 +213,7 @@ export function createKnowledgeRoutes(deps: KnowledgeRouteDeps): Hono<{
           doc: result.doc,
           chunkCount: result.chunkCount,
           embedded: result.embedded,
+          chunksEmbedded: result.chunksEmbedded,
         },
       });
     } catch (error) {

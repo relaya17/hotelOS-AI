@@ -5,17 +5,18 @@ import type {
 } from "@hotelos/database";
 import type { TenantId } from "@hotelos/shared";
 import { chunkCompanyKnowledgeDoc } from "./chunk-company-knowledge-doc.js";
+import { embedCompanyKnowledgeChunks } from "./embed-company-knowledge-chunks.js";
 import { embedCompanyKnowledgeDoc } from "./embed-company-knowledge-doc.js";
 
 export type ReindexCompanyKnowledgeResult = {
   readonly doc: PersistedCompanyKnowledgeDoc;
   readonly chunkCount: number;
   readonly embedded: boolean;
+  readonly chunksEmbedded: number;
 };
 
 /**
- * Re-run embed + chunk for an already-approved company knowledge doc.
- * Used for historical docs approved before chunking / for manual refresh.
+ * Re-run doc embed + chunk + chunk embed for an approved knowledge doc.
  */
 export async function reindexCompanyKnowledgeDoc(
   deps: {
@@ -50,9 +51,15 @@ export async function reindexCompanyKnowledgeDoc(
     body: doc.body,
   });
 
+  const chunksEmbedded = await embedCompanyKnowledgeChunks(deps, {
+    tenantId: input.tenantId,
+    docId: doc.id,
+  });
+
   return {
     doc,
     chunkCount,
     embedded,
+    chunksEmbedded,
   };
 }

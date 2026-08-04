@@ -923,7 +923,11 @@ export async function migrate(client: Client): Promise<void> {
       chunk_index INTEGER NOT NULL,
       text TEXT NOT NULL,
       content_hash TEXT NOT NULL,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      embedding_model TEXT,
+      embedding_dims TEXT,
+      embedding_json TEXT,
+      embedded_at TEXT
     );
     CREATE INDEX IF NOT EXISTS company_knowledge_chunks_tenant_idx
       ON company_knowledge_chunks(tenant_id);
@@ -945,6 +949,32 @@ export async function migrate(client: Client): Promise<void> {
     "hotels",
     "enabled_integration_domains",
     "enabled_integration_domains TEXT",
+  );
+
+  // Per-chunk embeddings (after text-chunk MVP)
+  await ensureColumn(
+    client,
+    "company_knowledge_chunks",
+    "embedding_model",
+    "embedding_model TEXT",
+  );
+  await ensureColumn(
+    client,
+    "company_knowledge_chunks",
+    "embedding_dims",
+    "embedding_dims TEXT",
+  );
+  await ensureColumn(
+    client,
+    "company_knowledge_chunks",
+    "embedding_json",
+    "embedding_json TEXT",
+  );
+  await ensureColumn(
+    client,
+    "company_knowledge_chunks",
+    "embedded_at",
+    "embedded_at TEXT",
   );
 
   // HR module (PO-approved) — extend employee_profiles for self-registration.

@@ -10,13 +10,15 @@ vector index + evals ship. Keyword path remains the reliable default.
 |-------|--------|
 | Company Knowledge keyword search → Gateway pack | `build-knowledge-context-pack.ts` |
 | Trusted Sources allowlist → Gateway pack | `build-trusted-sources-context-pack.ts` |
-| Embedding table (one vector per approved doc) | `company_knowledge_embeddings` |
+| Whole-doc embedding table | `company_knowledge_embeddings` |
 | **Text chunks** (paragraph/size split) | `company_knowledge_chunks` — written on approve |
-| Pack snippets prefer best-matching chunk | `build-knowledge-context-pack.ts` |
-| Lazy chunk backfill when pack hits a doc without chunks | `build-knowledge-context-pack.ts` |
-| Manual reindex (embed + chunk) | `POST /v1/knowledge/company-docs/:id/reindex` + Admin «רענון אינדקס» |
+| **Per-chunk embeddings** (nullable columns on chunks) | `embedding_json` / model / dims / embedded_at |
+| Pack snippets prefer best cosine chunk (fallback keyword) | `build-knowledge-context-pack.ts` |
+| Chunk vector search merges docs into packs | `searchChunksByEmbedding` |
+| Lazy chunk (+ optional chunk embed) backfill | `build-knowledge-context-pack.ts` |
+| Manual reindex (doc embed + chunk + chunk embed) | `POST .../reindex` + Admin «רענון אינדקס» |
 | Upsert / cosine search APIs on repository | `company-knowledge-repository.ts` |
-| Embed + chunk on approve (best-effort) | `knowledge-routes.ts` |
+| Embed + chunk + chunk-embed on approve (best-effort) | `knowledge-routes.ts` |
 | OpenAI-compatible `/embeddings` provider | `packages/ai-gateway` |
 
 When embeddings / chunks are unavailable, packs fall back to keyword + body
@@ -24,7 +26,6 @@ prefix — Gateway still never searches the DB itself (Vol. 5 / ADR 0008).
 
 ## Not live (roadmap)
 
-- Per-chunk embeddings (only whole-doc vectors today)
 - Dedicated Vector DB (or Turso vector index) with ANN
 - Batch offline cron reindex for all historical docs (per-doc reindex + lazy pack fill are live)
 - Citation UX per chunk in Admin/Executive
@@ -32,7 +33,7 @@ prefix — Gateway still never searches the DB itself (Vol. 5 / ADR 0008).
 
 ## Public claims
 
-Safe: “Company knowledge uses approved documents; optional embeddings when the
-AI provider supports them; packs can cite document chunks; otherwise keyword
-retrieval.”  
+Safe: “Company knowledge uses approved documents; optional whole-doc and
+per-chunk embeddings when the AI provider supports them; packs can cite the
+best-matching chunk; otherwise keyword retrieval.”  
 Unsafe: “We have enterprise Vector RAG / SOC-backed knowledge graph.”

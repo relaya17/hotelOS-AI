@@ -143,7 +143,10 @@ export function KnowledgePanel() {
                       setError(undefined);
                       window.alert(
                         `רענון הושלם: ${result.chunkCount} chunks` +
-                          (result.embedded ? ", embedding עודכן" : ""),
+                          (result.embedded ? ", embedding מסמך" : "") +
+                          (result.chunksEmbedded > 0
+                            ? `, ${result.chunksEmbedded} chunk embeddings`
+                            : ""),
                       );
                       return reload();
                     })

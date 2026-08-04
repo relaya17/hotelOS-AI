@@ -71,7 +71,7 @@ export const companyKnowledgeEmbeddings = sqliteTable(
   ],
 );
 
-/** Paragraph-ish text chunks for approved docs (keyword pack snippets). */
+/** Paragraph-ish text chunks for approved docs (+ optional per-chunk vectors). */
 export const companyKnowledgeChunks = sqliteTable(
   "company_knowledge_chunks",
   {
@@ -86,6 +86,10 @@ export const companyKnowledgeChunks = sqliteTable(
     text: text("text").notNull(),
     contentHash: text("content_hash").notNull(),
     createdAt: text("created_at").notNull(),
+    embeddingModel: text("embedding_model"),
+    embeddingDims: text("embedding_dims"),
+    embeddingJson: text("embedding_json"),
+    embeddedAt: text("embedded_at"),
   },
   (table) => [
     index("company_knowledge_chunks_tenant_idx").on(table.tenantId),

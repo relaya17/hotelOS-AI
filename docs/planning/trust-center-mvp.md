@@ -28,7 +28,7 @@
 - Hosted third-party status page with history (set `VITE_STATUS_PAGE_URL` once Better Stack / similar exists)
 - Live external PCI gateway UX (beyond `PAYMENT_PROVIDER=external` + provider-side PCI)
 - Full cookie category matrix (analytics/marketing) if introduced
-- Full Vector DB / per-chunk embeddings (text chunks + whole-doc embed live — see rag-embeddings-mvp.md)
+- Full Vector DB / ANN index (text chunks + whole-doc + per-chunk embed live — see rag-embeddings-mvp.md)
 
 ## Public narrative
 

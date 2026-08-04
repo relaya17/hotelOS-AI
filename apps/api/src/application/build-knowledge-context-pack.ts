@@ -1,17 +1,20 @@
 import type { AiGateway } from "@hotelos/ai-gateway";
-import type {
-  CompanyKnowledgeRepository,
-  PersistedCompanyKnowledgeDoc,
+import {
+  cosineSimilarity,
+  type CompanyKnowledgeRepository,
+  type PersistedCompanyKnowledgeChunk,
+  type PersistedCompanyKnowledgeDoc,
 } from "@hotelos/database";
 import type { TenantId } from "@hotelos/shared";
 import { chunkCompanyKnowledgeDoc } from "./chunk-company-knowledge-doc.js";
+import { embedCompanyKnowledgeChunks } from "./embed-company-knowledge-chunks.js";
 
 const MAX_DOCS = 5;
 const MAX_SNIPPET = 400;
 const MAX_PACK = 4000;
 
 /**
- * Hybrid keyword + embedding hits from approved company knowledge.
+ * Hybrid keyword + doc/chunk embedding hits from approved company knowledge.
  * Prefers stored chunks for snippets; lazy-chunks docs that predate the table.
  * Gateway never searches; API builds the pack (Vol. 5 / ADR 0008).
  */
@@ -23,6 +26,7 @@ export async function buildKnowledgeContextPack(
 ): Promise<string | undefined> {
   const terms = extractSearchTerms(message);
   const byId = new Map<string, PersistedCompanyKnowledgeDoc>();
+  let queryVector: readonly number[] | undefined;
 
   for (const term of terms) {
     const hits = await companyKnowledge.search(tenantId, term);
@@ -38,7 +42,7 @@ export async function buildKnowledgeContextPack(
   if (gateway !== undefined && byId.size < MAX_DOCS) {
     try {
       const embedded = await gateway.embed([message.slice(0, 2000)]);
-      const queryVector = embedded.vectors[0];
+      queryVector = embedded.vectors[0];
       if (queryVector && queryVector.length > 0) {
         const semanticHits = await companyKnowledge.searchByEmbedding(
           tenantId,
@@ -50,6 +54,20 @@ export async function buildKnowledgeContextPack(
             byId.set(hit.id, hit);
           }
           if (byId.size >= MAX_DOCS) break;
+        }
+
+        if (byId.size < MAX_DOCS) {
+          const chunkHits = await companyKnowledge.searchChunksByEmbedding(
+            tenantId,
+            queryVector,
+            MAX_DOCS,
+          );
+          for (const hit of chunkHits) {
+            if (!byId.has(hit.doc.id)) {
+              byId.set(hit.doc.id, hit.doc);
+            }
+            if (byId.size >= MAX_DOCS) break;
+          }
         }
       }
     } catch {
@@ -72,6 +90,12 @@ export async function buildKnowledgeContextPack(
         title: doc.title,
         body: doc.body,
       });
+      if (gateway !== undefined) {
+        await embedCompanyKnowledgeChunks(
+          { companyKnowledge, gateway },
+          { tenantId, docId: doc.id },
+        );
+      }
     } catch {
       // Fall back to body prefix for this doc.
     }
@@ -82,10 +106,10 @@ export async function buildKnowledgeContextPack(
     ]);
   }
 
-  const chunksByDoc = new Map<string, string[]>();
+  const chunksByDoc = new Map<string, PersistedCompanyKnowledgeChunk[]>();
   for (const chunk of chunks) {
     const list = chunksByDoc.get(chunk.docId) ?? [];
-    list.push(chunk.text);
+    list.push(chunk);
     chunksByDoc.set(chunk.docId, list);
   }
 
@@ -95,7 +119,12 @@ export async function buildKnowledgeContextPack(
   ];
 
   for (const doc of byId.values()) {
-    const snippet = pickSnippet(doc.body, chunksByDoc.get(doc.id) ?? [], terms);
+    const snippet = pickSnippet(
+      doc.body,
+      chunksByDoc.get(doc.id) ?? [],
+      terms,
+      queryVector,
+    );
     lines.push(`• [${doc.category}] ${doc.title}: ${snippet}`);
   }
 
@@ -108,26 +137,42 @@ export async function buildKnowledgeContextPack(
 
 function pickSnippet(
   body: string,
-  chunkTexts: readonly string[],
+  chunks: readonly PersistedCompanyKnowledgeChunk[],
   terms: readonly string[],
+  queryVector?: readonly number[],
 ): string {
-  if (chunkTexts.length > 0) {
-    let best = chunkTexts[0] ?? body;
+  if (chunks.length > 0) {
+    let best = chunks[0]!;
     let bestScore = -1;
-    for (const text of chunkTexts) {
-      const lower = text.toLowerCase();
-      let score = 0;
-      for (const term of terms) {
-        if (lower.includes(term)) score += 1;
-      }
-      if (score > bestScore) {
-        bestScore = score;
-        best = text;
+
+    if (queryVector && queryVector.length > 0) {
+      for (const chunk of chunks) {
+        if (!chunk.embedding) continue;
+        const score = cosineSimilarity(queryVector, chunk.embedding);
+        if (score > bestScore) {
+          bestScore = score;
+          best = chunk;
+        }
       }
     }
-    return best.length > MAX_SNIPPET
-      ? `${best.slice(0, MAX_SNIPPET)}…`
-      : best;
+
+    if (bestScore < 0) {
+      for (const chunk of chunks) {
+        const lower = chunk.text.toLowerCase();
+        let score = 0;
+        for (const term of terms) {
+          if (lower.includes(term)) score += 1;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          best = chunk;
+        }
+      }
+    }
+
+    return best.text.length > MAX_SNIPPET
+      ? `${best.text.slice(0, MAX_SNIPPET)}…`
+      : best.text;
   }
   return body.length > MAX_SNIPPET
     ? `${body.slice(0, MAX_SNIPPET)}…`

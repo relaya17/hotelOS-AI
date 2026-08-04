@@ -4,11 +4,18 @@ import type { CompanyKnowledgeRepository } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
 import { buildKnowledgeContextPack } from "./build-knowledge-context-pack.js";
 
+const emptyChunkFields = {
+  embedding: null,
+  embeddingModel: null,
+  embeddedAt: null,
+} as const;
+
 describe("buildKnowledgeContextPack", () => {
   it("returns undefined when no approved docs match", async () => {
     const companyKnowledge = {
       search: async () => [],
       searchByEmbedding: async () => [],
+      searchChunksByEmbedding: async () => [],
       listChunksForDocs: async () => [],
     } as unknown as CompanyKnowledgeRepository;
 
@@ -42,6 +49,7 @@ describe("buildKnowledgeContextPack", () => {
         ];
       },
       searchByEmbedding: async () => [],
+      searchChunksByEmbedding: async () => [],
       listChunksForDocs: async () => [],
     } as unknown as CompanyKnowledgeRepository;
 
@@ -73,6 +81,7 @@ describe("buildKnowledgeContextPack", () => {
           createdAt: "2026-01-01T00:00:00.000Z",
         },
       ],
+      searchChunksByEmbedding: async () => [],
       listChunksForDocs: async () => [],
     } as unknown as CompanyKnowledgeRepository;
 
@@ -110,6 +119,7 @@ describe("buildKnowledgeContextPack", () => {
         },
       ],
       searchByEmbedding: async () => [],
+      searchChunksByEmbedding: async () => [],
       listChunksForDocs: async () => [
         {
           id: "c1",
@@ -119,6 +129,7 @@ describe("buildKnowledgeContextPack", () => {
           text: "א".repeat(50),
           contentHash: "h0",
           createdAt: "2026-01-01T00:00:00.000Z",
+          ...emptyChunkFields,
         },
         {
           id: "c2",
@@ -128,6 +139,7 @@ describe("buildKnowledgeContextPack", () => {
           text: "ביטול מאוחר כפוף לקנס מיוחד בסעיף זה.",
           contentHash: "h1",
           createdAt: "2026-01-01T00:00:00.000Z",
+          ...emptyChunkFields,
         },
       ],
     } as unknown as CompanyKnowledgeRepository;
@@ -139,6 +151,69 @@ describe("buildKnowledgeContextPack", () => {
     );
     assert.ok(pack);
     assert.match(pack, /קנס מיוחד/);
+  });
+
+  it("prefers cosine-best chunk when query and chunk vectors exist", async () => {
+    const companyKnowledge = {
+      search: async () => [
+        {
+          id: "doc-1",
+          tenantId: "t1",
+          title: "מדריך",
+          body: "פתיחה כללית.\n\nסעיף קנס על ביטול מאוחר.",
+          category: "policy",
+          status: "approved",
+          createdByUserId: "u1",
+          approvedByUserId: "u1",
+          approvedAt: "2026-01-01T00:00:00.000Z",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+      searchByEmbedding: async () => [],
+      searchChunksByEmbedding: async () => [],
+      listChunksForDocs: async () => [
+        {
+          id: "c1",
+          docId: "doc-1",
+          tenantId: "t1",
+          chunkIndex: 0,
+          text: "פתיחה כללית על המלון.",
+          contentHash: "h0",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          embedding: [1, 0, 0],
+          embeddingModel: "test",
+          embeddedAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "c2",
+          docId: "doc-1",
+          tenantId: "t1",
+          chunkIndex: 1,
+          text: "סעיף קנס על ביטול מאוחר.",
+          contentHash: "h1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          embedding: [0, 1, 0],
+          embeddingModel: "test",
+          embeddedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    } as unknown as CompanyKnowledgeRepository;
+
+    const gateway = {
+      embed: async () => ({
+        vectors: [[0, 1, 0]],
+        model: "test-embed",
+      }),
+    };
+
+    const pack = await buildKnowledgeContextPack(
+      companyKnowledge,
+      Ids.tenant("00000000-0000-4000-8000-000000000001"),
+      "מה קורה?",
+      gateway as never,
+    );
+    assert.ok(pack);
+    assert.match(pack, /קנס על ביטול/);
   });
 
   it("lazy-chunks approved docs that have no stored chunks yet", async () => {
@@ -159,6 +234,7 @@ describe("buildKnowledgeContextPack", () => {
         },
       ],
       searchByEmbedding: async () => [],
+      searchChunksByEmbedding: async () => [],
       listChunksForDocs: async () =>
         replaced === 0
           ? []
@@ -171,6 +247,7 @@ describe("buildKnowledgeContextPack", () => {
                 text: "ביטול עד 24 שעות לפני הגעה.",
                 contentHash: "new",
                 createdAt: "2026-01-02T00:00:00.000Z",
+                ...emptyChunkFields,
               },
             ],
       replaceChunks: async () => {

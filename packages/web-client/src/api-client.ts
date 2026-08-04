@@ -4082,6 +4082,7 @@ export type CompanyKnowledgeReindexDto = {
   readonly doc: CompanyKnowledgeDocDto;
   readonly chunkCount: number;
   readonly embedded: boolean;
+  readonly chunksEmbedded: number;
 };
 
 export async function reindexCompanyKnowledgeDoc(

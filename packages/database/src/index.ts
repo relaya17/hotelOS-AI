@@ -280,6 +280,7 @@ export {
   cosineSimilarity,
   createCompanyKnowledgeRepository,
   splitKnowledgeBodyIntoChunks,
+  type CompanyKnowledgeChunkHit,
   type CompanyKnowledgeRepository,
   type PersistedCompanyKnowledgeChunk,
   type PersistedCompanyKnowledgeDoc,

@@ -38,6 +38,15 @@ export type PersistedCompanyKnowledgeChunk = {
   readonly text: string;
   readonly contentHash: string;
   readonly createdAt: string;
+  readonly embedding: readonly number[] | null;
+  readonly embeddingModel: string | null;
+  readonly embeddedAt: string | null;
+};
+
+export type CompanyKnowledgeChunkHit = {
+  readonly doc: PersistedCompanyKnowledgeDoc;
+  readonly chunk: PersistedCompanyKnowledgeChunk;
+  readonly score: number;
 };
 
 export type CompanyKnowledgeRepository = {
@@ -54,6 +63,11 @@ export type CompanyKnowledgeRepository = {
     queryEmbedding: readonly number[],
     limit?: number,
   ) => Promise<readonly PersistedCompanyKnowledgeDoc[]>;
+  searchChunksByEmbedding: (
+    tenantId: TenantId,
+    queryEmbedding: readonly number[],
+    limit?: number,
+  ) => Promise<readonly CompanyKnowledgeChunkHit[]>;
   create: (input: {
     readonly id: string;
     readonly tenantId: TenantId;
@@ -100,6 +114,15 @@ export type CompanyKnowledgeRepository = {
     tenantId: TenantId,
     docIds: readonly string[],
   ) => Promise<readonly PersistedCompanyKnowledgeChunk[]>;
+  upsertChunkEmbeddings: (input: {
+    readonly tenantId: TenantId;
+    readonly updates: readonly {
+      readonly chunkId: string;
+      readonly model: string;
+      readonly embedding: readonly number[];
+      readonly embeddedAt: string;
+    }[];
+  }) => Promise<void>;
 };
 
 /** Split body into ~maxChars chunks on paragraph / whitespace boundaries. */
@@ -161,6 +184,31 @@ export function splitKnowledgeBodyIntoChunks(
   }
   flush();
   return chunks;
+}
+
+function mapChunkRow(
+  row: typeof companyKnowledgeChunks.$inferSelect,
+): PersistedCompanyKnowledgeChunk {
+  let embedding: readonly number[] | null = null;
+  if (row.embeddingJson) {
+    try {
+      embedding = parseEmbeddingJson(row.embeddingJson);
+    } catch {
+      embedding = null;
+    }
+  }
+  return {
+    id: row.id,
+    docId: row.docId,
+    tenantId: row.tenantId,
+    chunkIndex: row.chunkIndex,
+    text: row.text,
+    contentHash: row.contentHash,
+    createdAt: row.createdAt,
+    embedding,
+    embeddingModel: row.embeddingModel ?? null,
+    embeddedAt: row.embeddedAt ?? null,
+  };
 }
 
 function mapRow(
@@ -294,6 +342,46 @@ export function createCompanyKnowledgeRepository(
         .slice(0, limit);
 
       return scored.map((row) => row.doc);
+    },
+
+    async searchChunksByEmbedding(tenantId, queryEmbedding, limit = 8) {
+      if (queryEmbedding.length === 0) return [];
+      const rows = await db
+        .select({
+          doc: companyKnowledgeDocs,
+          chunk: companyKnowledgeChunks,
+        })
+        .from(companyKnowledgeChunks)
+        .innerJoin(
+          companyKnowledgeDocs,
+          eq(companyKnowledgeChunks.docId, companyKnowledgeDocs.id),
+        )
+        .where(
+          and(
+            eq(companyKnowledgeChunks.tenantId, tenantId),
+            eq(companyKnowledgeDocs.status, "approved"),
+          ),
+        )
+        .all();
+
+      const scored: CompanyKnowledgeChunkHit[] = [];
+      for (const row of rows) {
+        if (!row.chunk.embeddingJson) continue;
+        try {
+          const embedding = parseEmbeddingJson(row.chunk.embeddingJson);
+          const score = cosineSimilarity(queryEmbedding, embedding);
+          if (score < 0.15) continue;
+          scored.push({
+            doc: mapRow(row.doc),
+            chunk: mapChunkRow(row.chunk),
+            score,
+          });
+        } catch {
+          // Skip corrupt embedding rows.
+        }
+      }
+
+      return scored.sort((a, b) => b.score - a.score).slice(0, limit);
     },
 
     async create(input) {
@@ -457,15 +545,27 @@ export function createCompanyKnowledgeRepository(
           asc(companyKnowledgeChunks.chunkIndex),
         )
         .all();
-      return rows.map((row) => ({
-        id: row.id,
-        docId: row.docId,
-        tenantId: row.tenantId,
-        chunkIndex: row.chunkIndex,
-        text: row.text,
-        contentHash: row.contentHash,
-        createdAt: row.createdAt,
-      }));
+      return rows.map(mapChunkRow);
+    },
+
+    async upsertChunkEmbeddings(input) {
+      for (const update of input.updates) {
+        await db
+          .update(companyKnowledgeChunks)
+          .set({
+            embeddingModel: update.model,
+            embeddingDims: String(update.embedding.length),
+            embeddingJson: JSON.stringify(update.embedding),
+            embeddedAt: update.embeddedAt,
+          })
+          .where(
+            and(
+              eq(companyKnowledgeChunks.tenantId, input.tenantId),
+              eq(companyKnowledgeChunks.id, update.chunkId),
+            ),
+          )
+          .run();
+      }
     },
   };
 }
