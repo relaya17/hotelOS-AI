@@ -69,7 +69,8 @@ jobs:
         run: pnpm --filter @hotelos/a11y-e2e exec playwright install --with-deps chromium
 
       - name: Build staff login apps for axe preview
-        run: pnpm --filter @hotelos/executive --filter @hotelos/admin --filter @hotelos/work build
+        # turbo builds workspace deps (e.g. @hotelos/i18n → dist); plain pnpm --filter does not.
+        run: pnpm exec turbo run build --filter=@hotelos/executive --filter=@hotelos/admin --filter=@hotelos/work
 
       - name: Login axe E2E
         run: pnpm test:a11y-e2e
