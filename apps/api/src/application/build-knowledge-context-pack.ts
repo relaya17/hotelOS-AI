@@ -1,4 +1,4 @@
-import type { AiGateway } from "@hotelos/ai-gateway";
+import type { AiCitation, AiGateway } from "@hotelos/ai-gateway";
 import {
   cosineSimilarity,
   type CompanyKnowledgeRepository,
@@ -13,6 +13,11 @@ const MAX_DOCS = 5;
 const MAX_SNIPPET = 400;
 const MAX_PACK = 4000;
 
+export type KnowledgeContextPack = {
+  readonly text: string;
+  readonly citations: readonly AiCitation[];
+};
+
 /**
  * Hybrid keyword + doc/chunk embedding hits from approved company knowledge.
  * Prefers stored chunks for snippets; lazy-chunks docs that predate the table.
@@ -23,7 +28,7 @@ export async function buildKnowledgeContextPack(
   tenantId: TenantId,
   message: string,
   gateway?: AiGateway,
-): Promise<string | undefined> {
+): Promise<KnowledgeContextPack | undefined> {
   const terms = extractSearchTerms(message);
   const byId = new Map<string, PersistedCompanyKnowledgeDoc>();
   let queryVector: readonly number[] | undefined;
@@ -117,22 +122,33 @@ export async function buildKnowledgeContextPack(
     "Context pack — Company Knowledge (approved only)",
     "השתמש רק בעובדות להלן. אל תמציא מדיניות. ציטוט: Company Knowledge.",
   ];
+  const citations: AiCitation[] = [];
 
   for (const doc of byId.values()) {
-    const snippet = pickSnippet(
+    const picked = pickSnippet(
       doc.body,
       chunksByDoc.get(doc.id) ?? [],
       terms,
       queryVector,
     );
-    lines.push(`• [${doc.category}] ${doc.title}: ${snippet}`);
+    lines.push(`• [${doc.category}] ${doc.title}: ${picked.text}`);
+    citations.push({
+      title:
+        picked.chunkIndex !== undefined
+          ? `${doc.title} · קטע ${picked.chunkIndex + 1}`
+          : doc.title,
+      source: "company",
+      ...(picked.snippetPreview
+        ? { snippet: picked.snippetPreview }
+        : {}),
+    });
   }
 
-  let pack = lines.join("\n");
-  if (pack.length > MAX_PACK) {
-    pack = `${pack.slice(0, MAX_PACK)}…`;
+  let text = lines.join("\n");
+  if (text.length > MAX_PACK) {
+    text = `${text.slice(0, MAX_PACK)}…`;
   }
-  return pack;
+  return { text, citations };
 }
 
 function pickSnippet(
@@ -140,7 +156,11 @@ function pickSnippet(
   chunks: readonly PersistedCompanyKnowledgeChunk[],
   terms: readonly string[],
   queryVector?: readonly number[],
-): string {
+): {
+  readonly text: string;
+  readonly chunkIndex?: number;
+  readonly snippetPreview?: string;
+} {
   if (chunks.length > 0) {
     let best = chunks[0]!;
     let bestScore = -1;
@@ -170,13 +190,20 @@ function pickSnippet(
       }
     }
 
-    return best.text.length > MAX_SNIPPET
-      ? `${best.text.slice(0, MAX_SNIPPET)}…`
-      : best.text;
+    const text =
+      best.text.length > MAX_SNIPPET
+        ? `${best.text.slice(0, MAX_SNIPPET)}…`
+        : best.text;
+    return {
+      text,
+      chunkIndex: best.chunkIndex,
+      snippetPreview: best.text.slice(0, 160),
+    };
   }
-  return body.length > MAX_SNIPPET
-    ? `${body.slice(0, MAX_SNIPPET)}…`
-    : body;
+
+  const text =
+    body.length > MAX_SNIPPET ? `${body.slice(0, MAX_SNIPPET)}…` : body;
+  return { text, snippetPreview: body.slice(0, 160) };
 }
 
 function extractSearchTerms(message: string): readonly string[] {

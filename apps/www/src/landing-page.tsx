@@ -74,11 +74,13 @@ function RevealSection({
   className,
   children,
   "aria-labelledby": labelledBy,
+  tabIndex,
 }: {
   readonly id: string;
   readonly className: string;
   readonly children: ReactNode;
   readonly "aria-labelledby": string;
+  readonly tabIndex?: number;
 }) {
   const ref = useReveal();
   return (
@@ -87,6 +89,7 @@ function RevealSection({
       id={id}
       className={`reveal ${className}`}
       aria-labelledby={labelledBy}
+      tabIndex={tabIndex}
     >
       {children}
     </section>
@@ -227,6 +230,7 @@ export function LandingPage() {
           id="outcomes"
           className="section outcomes"
           aria-labelledby="outcomes-title"
+          tabIndex={-1}
         >
           <p className="eyebrow">קונים תוצאות — לא תוכנה</p>
           <h2 id="outcomes-title">הכאב. העלות. מה HotelOS עושה.</h2>

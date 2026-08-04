@@ -1,5 +1,13 @@
 export type AiProviderId = "deterministic" | "openai_compatible";
 
+export type AiCitation = {
+  readonly title: string;
+  readonly url?: string;
+  readonly source: "internal" | "trusted" | "company";
+  /** Optional short excerpt from the cited chunk/source. */
+  readonly snippet?: string;
+};
+
 export type AiGatewayRequest = {
   readonly agentId: string;
   readonly message: string;
@@ -9,12 +17,8 @@ export type AiGatewayRequest = {
   readonly locale?: "he" | "en";
   /** Optional operational context pack (already authorized by caller). */
   readonly contextPack?: string;
-};
-
-export type AiCitation = {
-  readonly title: string;
-  readonly url?: string;
-  readonly source: "internal" | "trusted" | "company";
+  /** Structured citations built by the API when assembling packs. */
+  readonly citations?: readonly AiCitation[];
 };
 
 export type AiGatewayResponse = {

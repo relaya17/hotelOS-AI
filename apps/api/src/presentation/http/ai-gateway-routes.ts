@@ -12,9 +12,13 @@ import { buildAccountingContextPack } from "../../application/build-accounting-c
 import { buildKnowledgeContextPack } from "../../application/build-knowledge-context-pack.js";
 import { buildOpsContextPack } from "../../application/build-ops-context-pack.js";
 import { buildTrustedSourcesContextPack } from "../../application/build-trusted-sources-context-pack.js";
-import { mergeContextPacks } from "../../application/merge-context-packs.js";
+import {
+  mergeCitations,
+  mergeContextPacks,
+} from "../../application/merge-context-packs.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
+import type { AiCitation } from "@hotelos/ai-gateway";
 
 const OPS_AUTO_PACK_AGENTS = new Set([
   "agent.revenue",
@@ -74,6 +78,7 @@ export function createAiGatewayRoutes(deps: AiGatewayRouteDeps): Hono<{
 
     try {
       let contextPack = parsed.data.contextPack;
+      let citations: AiCitation[] = [];
       if (
         contextPack === undefined &&
         OPS_AUTO_PACK_AGENTS.has(parsed.data.agentId)
@@ -103,6 +108,10 @@ export function createAiGatewayRoutes(deps: AiGatewayRouteDeps): Hono<{
           knowledgePack,
           trustedPack,
         );
+        citations = mergeCitations(
+          knowledgePack?.citations,
+          trustedPack?.citations,
+        );
       }
       if (ACCOUNTING_AUTO_PACK_AGENTS.has(parsed.data.agentId)) {
         const accountingPack = await buildAccountingContextPack(
@@ -123,6 +132,7 @@ export function createAiGatewayRoutes(deps: AiGatewayRouteDeps): Hono<{
           ? { locale: parsed.data.locale }
           : {}),
         ...(contextPack !== undefined ? { contextPack } : {}),
+        ...(citations.length > 0 ? { citations } : {}),
       });
       return c.json({ data: result });
     } catch (error) {

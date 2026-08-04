@@ -137,6 +137,15 @@ a {
   top: 1rem;
 }
 
+#outcomes:focus {
+  outline: none;
+}
+
+#outcomes:focus-visible {
+  outline: 2px solid var(--color-accent, #c45c26);
+  outline-offset: 4px;
+}
+
 .site {
   overflow-x: clip;
 }

@@ -12,6 +12,10 @@ import {
   drainNotificationOutbox,
   type DrainNotificationOutboxDeps,
 } from "../../application/drain-notification-outbox.js";
+import {
+  runBatchCompanyKnowledgeReindex,
+  type RunBatchCompanyKnowledgeReindexDeps,
+} from "../../application/run-batch-company-knowledge-reindex.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type CronRouteDeps = {
@@ -20,6 +24,7 @@ export type CronRouteDeps = {
   readonly cfoDaily: RunCfoDailyBriefDeps;
   readonly anomalyScan: RunAnomalyScanDeps;
   readonly notificationOutbox: DrainNotificationOutboxDeps;
+  readonly knowledgeReindex: RunBatchCompanyKnowledgeReindexDeps;
 };
 
 function authorizeCron(c: { req: { header: (name: string) => string | undefined } }, secret: string): boolean {
@@ -160,6 +165,34 @@ export function createCronRoutes(deps: CronRouteDeps): Hono {
 
   routes.get("/notification-outbox", (c) => runNotificationOutbox(c));
   routes.post("/notification-outbox", (c) => runNotificationOutbox(c));
+
+  const runKnowledgeReindex = async (
+    c: Parameters<typeof sendError>[0],
+  ) => {
+    if (deps.cronSecret.trim().length === 0) {
+      return sendError(
+        c,
+        503,
+        "CRON_DISABLED",
+        "Set CRON_SECRET to enable scheduled jobs",
+      );
+    }
+    if (!authorizeCron(c, deps.cronSecret)) {
+      return sendError(c, 401, "UNAUTHORIZED", "Invalid cron secret");
+    }
+
+    try {
+      const result = await runBatchCompanyKnowledgeReindex(
+        deps.knowledgeReindex,
+      );
+      return c.json({ data: result });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  };
+
+  routes.get("/knowledge-reindex", (c) => runKnowledgeReindex(c));
+  routes.post("/knowledge-reindex", (c) => runKnowledgeReindex(c));
 
   return routes;
 }

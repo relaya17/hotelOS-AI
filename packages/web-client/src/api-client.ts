@@ -3224,6 +3224,7 @@ export type AiGatewayInvokeResultDto = {
     readonly title: string;
     readonly url?: string;
     readonly source: "internal" | "trusted" | "company";
+    readonly snippet?: string;
   }[];
   readonly requiresHumanApproval: boolean;
   readonly approvalReasonHe?: string;
@@ -4092,6 +4093,25 @@ export async function reindexCompanyKnowledgeDoc(
     `/v1/knowledge/company-docs/${id}/reindex`,
     {},
   )) as { data: CompanyKnowledgeReindexDto };
+  return payload.data;
+}
+
+export type CompanyKnowledgeChunkDto = {
+  readonly id: string;
+  readonly docId: string;
+  readonly chunkIndex: number;
+  readonly text: string;
+  readonly hasEmbedding: boolean;
+  readonly embeddedAt: string | null;
+  readonly createdAt: string;
+};
+
+export async function listCompanyKnowledgeChunks(
+  docId: string,
+): Promise<readonly CompanyKnowledgeChunkDto[]> {
+  const payload = (await authGet(
+    `/v1/knowledge/company-docs/${docId}/chunks`,
+  )) as { data: CompanyKnowledgeChunkDto[] };
   return payload.data;
 }
 

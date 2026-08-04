@@ -58,10 +58,12 @@ describe("buildKnowledgeContextPack", () => {
       Ids.tenant("00000000-0000-4000-8000-000000000001"),
       "מה מדיניות הביטולים אצלנו?",
     );
-    assert.ok(pack);
-    assert.match(pack, /Company Knowledge/);
-    assert.match(pack, /מדיניות ביטולים/);
-    assert.match(pack, /48 שעות/);
+    assert.ok(pack?.text);
+    assert.match(pack.text, /Company Knowledge/);
+    assert.match(pack.text, /מדיניות ביטולים/);
+    assert.match(pack.text, /48 שעות/);
+    assert.equal(pack.citations.length, 1);
+    assert.equal(pack.citations[0]?.source, "company");
   });
 
   it("merges semantic hits when keyword search finds nothing", async () => {
@@ -98,8 +100,8 @@ describe("buildKnowledgeContextPack", () => {
       "איך מקבלים אורח חדש?",
       gateway as never,
     );
-    assert.ok(pack);
-    assert.match(pack, /נוהל קבלה/);
+    assert.ok(pack?.text);
+    assert.match(pack.text, /נוהל קבלה/);
   });
 
   it("prefers a matching chunk snippet over the body prefix", async () => {
@@ -149,8 +151,8 @@ describe("buildKnowledgeContextPack", () => {
       Ids.tenant("00000000-0000-4000-8000-000000000001"),
       "מה קורה בביטול מאוחר?",
     );
-    assert.ok(pack);
-    assert.match(pack, /קנס מיוחד/);
+    assert.ok(pack?.text);
+    assert.match(pack.text, /קנס מיוחד/);
   });
 
   it("prefers cosine-best chunk when query and chunk vectors exist", async () => {
@@ -212,8 +214,8 @@ describe("buildKnowledgeContextPack", () => {
       "מה קורה?",
       gateway as never,
     );
-    assert.ok(pack);
-    assert.match(pack, /קנס על ביטול/);
+    assert.ok(pack?.text);
+    assert.match(pack.text, /קנס על ביטול/);
   });
 
   it("lazy-chunks approved docs that have no stored chunks yet", async () => {
@@ -260,8 +262,8 @@ describe("buildKnowledgeContextPack", () => {
       Ids.tenant("00000000-0000-4000-8000-000000000001"),
       "מה מדיניות הביטולים?",
     );
-    assert.ok(pack);
+    assert.ok(pack?.text);
     assert.equal(replaced, 1);
-    assert.match(pack, /24 שעות/);
+    assert.match(pack.text, /24 שעות/);
   });
 });

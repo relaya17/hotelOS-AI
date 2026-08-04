@@ -1,3 +1,4 @@
+import type { AiCitation } from "@hotelos/ai-gateway";
 import type { TrustedSourcesRepository } from "@hotelos/database";
 import type { TenantId } from "@hotelos/shared";
 
@@ -16,6 +17,11 @@ const STOP_TERMS = new Set([
   "gov",
 ]);
 
+export type TrustedSourcesContextPack = {
+  readonly text: string;
+  readonly citations: readonly AiCitation[];
+};
+
 /**
  * Keyword hits from approved Trusted Sources allowlist — external facts only.
  * Gateway never searches the open web; API builds the pack (Vol. 5 / ADR 0007).
@@ -24,7 +30,7 @@ export async function buildTrustedSourcesContextPack(
   trustedSources: TrustedSourcesRepository,
   tenantId: TenantId,
   message: string,
-): Promise<string | undefined> {
+): Promise<TrustedSourcesContextPack | undefined> {
   const terms = extractSearchTerms(message);
   if (terms.length === 0) return undefined;
 
@@ -57,18 +63,24 @@ export async function buildTrustedSourcesContextPack(
     "הסתמך רק על מקורות אלה לעובדות חיצוניות. ציטוט: Trusted Source · כותרת · URL.",
     "אל תמציא נתונים ממקורות שאינם ברשימה.",
   ];
+  const citations: AiCitation[] = [];
 
   for (const source of hits) {
     lines.push(
       `• [${source.category}] ${source.title} — ${source.url} (ציטוט: Trusted Source · ${source.title} · ${source.url})`,
     );
+    citations.push({
+      title: source.title,
+      url: source.url,
+      source: "trusted",
+    });
   }
 
-  let pack = lines.join("\n");
-  if (pack.length > MAX_PACK) {
-    pack = `${pack.slice(0, MAX_PACK)}…`;
+  let text = lines.join("\n");
+  if (text.length > MAX_PACK) {
+    text = `${text.slice(0, MAX_PACK)}…`;
   }
-  return pack;
+  return { text, citations };
 }
 
 function extractSearchTerms(message: string): readonly string[] {
@@ -81,7 +93,7 @@ function extractSearchTerms(message: string): readonly string[] {
   const unique: string[] = [];
   for (const token of tokens) {
     if (!unique.includes(token)) unique.push(token);
-    if (unique.length >= 8) break;
+    if (unique.length >= 6) break;
   }
   return unique;
 }

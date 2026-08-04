@@ -479,6 +479,10 @@ export async function composeApp() {
         notifications,
         whatsapp,
       },
+      knowledgeReindex: {
+        companyKnowledge,
+        gateway,
+      },
     },
     simulator: {
       overview,

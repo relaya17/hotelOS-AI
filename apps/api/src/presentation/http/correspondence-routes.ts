@@ -103,6 +103,10 @@ export function createCorrespondenceRoutes(deps: CorrespondenceRouteDeps): Hono<
         locale: "he",
         ...(body.hotelId !== undefined ? { hotelId: body.hotelId } : {}),
         contextPack,
+        citations: [
+          ...(knowledgePack?.citations ?? []),
+          ...(trustedPack?.citations ?? []),
+        ],
       });
 
       const now = new Date().toISOString();

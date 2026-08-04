@@ -159,6 +159,10 @@ export async function synthesizeCfoFinanceBrief(
     userId: input.userId,
     locale: "he",
     contextPack,
+    citations: [
+      ...(knowledgePack?.citations ?? []),
+      ...(trustedPack?.citations ?? []),
+    ],
   });
 
   return {

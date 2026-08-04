@@ -60,11 +60,13 @@ describe("buildTrustedSourcesContextPack", () => {
       Ids.tenant("00000000-0000-4000-8000-000000000001"),
       "מה אומר בנק ישראל על נתוני מקרו וריבית?",
     );
-    assert.ok(pack);
-    assert.match(pack, /Trusted Sources/);
-    assert.match(pack, /בנק ישראל/);
-    assert.match(pack, /boi\.org\.il/);
+    assert.ok(pack?.text);
+    assert.match(pack.text, /Trusted Sources/);
+    assert.match(pack.text, /בנק ישראל/);
+    assert.match(pack.text, /boi\.org\.il/);
     // Stop-term "ישראל" ignored; "בנק"/"מקרו" rank the bank above tax authority.
-    assert.equal(pack.includes("רשות המסים"), false);
+    assert.equal(pack.text.includes("רשות המסים"), false);
+    assert.equal(pack.citations.length, 1);
+    assert.equal(pack.citations[0]?.source, "trusted");
   });
 });

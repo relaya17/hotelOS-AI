@@ -19,7 +19,7 @@
 | SSE ops stream ACL (Bearer + hotel scope) | Stream routes + threat model doc |
 | No PAN storage in HotelOS | Config / payment provider + `GET /v1/public/payments/status` + Guest/Executive copy |
 | AI only via Gateway | Engineering Standard Vol. 5 |
-| Hybrid keyword + optional embeddings + **text chunks** | [rag-embeddings-mvp.md](./rag-embeddings-mvp.md) |
+| Hybrid keyword + optional embeddings + **text chunks** + citations | [rag-embeddings-mvp.md](./rag-embeddings-mvp.md) |
 
 ## Roadmap (not claimed on www)
 
@@ -28,10 +28,14 @@
 - Hosted third-party status page with history (set `VITE_STATUS_PAGE_URL` once Better Stack / similar exists)
 - Live external PCI gateway UX (beyond `PAYMENT_PROVIDER=external` + provider-side PCI)
 - Full cookie category matrix (analytics/marketing) if introduced
-- Full Vector DB / ANN index (text chunks + whole-doc + per-chunk embed live — see rag-embeddings-mvp.md)
+- Full Vector DB / ANN index (text chunks + whole-doc + per-chunk embed + citations live — see rag-embeddings-mvp.md)
 
 ## Public narrative
 
 www `#trust` lists only live controls and links to Security / Subprocessors / DPA template.  
 www `#status` probes this deployment’s API health and points to the uptime runbook for continuous external monitoring.  
 Guest/Executive payment UI reads **provider mode from the API** (`demo` / `stripe_stub` / `external`) and never claims HotelOS PCI-DSS.
+
+## MVP close note
+
+Trust Center **product surfaces** and hybrid RAG **shippable MVP** are closed for honest GTM. Remaining items above are certifications, counsel workflows, or infra scale — not unfinished landing/API honesty work.

@@ -142,14 +142,17 @@ export function createAiGateway(options: CreateAiGatewayOptions): AiGateway {
 
       const requiresHumanApproval =
         agent.autonomyMode === "suggest" || MONEY_HINT.test(request.message);
-      const citations: AiCitation[] = request.contextPack
-        ? [
-            {
-              title: "Authorized context pack",
-              source: "internal",
-            },
-          ]
-        : [];
+      const citations: AiCitation[] =
+        request.citations && request.citations.length > 0
+          ? [...request.citations]
+          : request.contextPack
+            ? [
+                {
+                  title: "Authorized context pack",
+                  source: "internal",
+                },
+              ]
+            : [];
 
       const response: AiGatewayResponse = {
         agentId: agent.id,

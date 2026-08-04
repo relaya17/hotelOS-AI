@@ -20,6 +20,10 @@
     {
       "path": "/v1/cron/notification-outbox",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/v1/cron/knowledge-reindex",
+      "schedule": "0 4 * * *"
     }
   ]
 }

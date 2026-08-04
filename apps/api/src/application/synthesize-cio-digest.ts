@@ -81,6 +81,10 @@ export async function synthesizeCioDigest(
     userId: input.userId,
     locale: "he",
     contextPack,
+    citations: [
+      ...(knowledgePack?.citations ?? []),
+      ...(trustedPack?.citations ?? []),
+    ],
   });
 
   return {

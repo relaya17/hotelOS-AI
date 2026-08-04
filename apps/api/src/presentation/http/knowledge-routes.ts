@@ -141,6 +141,37 @@ export function createKnowledgeRoutes(deps: KnowledgeRouteDeps): Hono<{
     }
   });
 
+  routes.get("/company-docs/:id/chunks", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const docId = c.req.param("id");
+      const doc = await deps.companyKnowledge.getById(
+        principal.scope.tenantId,
+        docId,
+      );
+      if (!doc) {
+        return sendError(c, 404, "DOC_NOT_FOUND", "Document not found");
+      }
+      const chunks = await deps.companyKnowledge.listChunksForDocs(
+        principal.scope.tenantId,
+        [docId],
+      );
+      return c.json({
+        data: chunks.map((chunk) => ({
+          id: chunk.id,
+          docId: chunk.docId,
+          chunkIndex: chunk.chunkIndex,
+          text: chunk.text,
+          hasEmbedding: chunk.embedding !== null,
+          embeddedAt: chunk.embeddedAt,
+          createdAt: chunk.createdAt,
+        })),
+      });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
   routes.post("/company-docs/:id/approve", async (c) => {
     try {
       const principal = c.get("principal");

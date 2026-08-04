@@ -343,6 +343,9 @@ export function KnowledgeCommandPage({
                     ) : (
                       <span>{cite.title}</span>
                     )}
+                    {cite.snippet ? (
+                      <span className="kc-cite-snippet"> — {cite.snippet}</span>
+                    ) : null}
                   </li>
                 ))}
               </ul>
