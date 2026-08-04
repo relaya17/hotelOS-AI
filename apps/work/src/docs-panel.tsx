@@ -99,9 +99,14 @@ export function DocsPanel({ user }: DocsPanelProps) {
       const fileInput = (
         event.currentTarget.elements.namedItem("docFile") as HTMLInputElement
       )?.files?.[0];
-      const contentHash = fileInput
-        ? `local:${fileInput.name}:${fileInput.size}`
-        : undefined;
+      let contentHash: string | undefined;
+      if (fileInput) {
+        const buffer = await fileInput.arrayBuffer();
+        const digest = await crypto.subtle.digest("SHA-256", buffer);
+        contentHash = [...new Uint8Array(digest)]
+          .map((byte) => byte.toString(16).padStart(2, "0"))
+          .join("");
+      }
       await registerHrDocumentFlag(employeeId, {
         docType,
         ...(contentHash !== undefined ? { contentHash } : {}),
@@ -110,7 +115,9 @@ export function DocsPanel({ user }: DocsPanelProps) {
       await reload(employeeId);
       setNotes("");
       setNotice(
-        "המסמך נרשם לבדיקת HR. הקובץ עצמו נשמר כדגל מטא־דאטה (העלאת Blob מלאה בשלב הבא).",
+        contentHash
+          ? "המסמך נרשם לבדיקת HR עם SHA-256 של הקובץ. בינארי לא נשמר ב־Blob למסמכי HR רגישים (מדיניות hash-only) — הקובץ נשאר אצלכם עד אישור HR."
+          : "המסמך נרשם לבדיקת HR כדגל מטא־דאטה (בלי קובץ).",
       );
     } catch (submitError: unknown) {
       setError(
@@ -167,7 +174,7 @@ export function DocsPanel({ user }: DocsPanelProps) {
           </select>
         </label>
         <label className="docs__file">
-          <span>קובץ (אופציונלי להדגמה)</span>
+          <span>קובץ (אופציונלי) — מחושב hash בלבד, לא מועלה לשרת</span>
           <input name="docFile" type="file" accept="image/*,.pdf" />
         </label>
         <TextField

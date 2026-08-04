@@ -1,9 +1,13 @@
 import type { AiCitation } from "@hotelos/ai-gateway";
-import type { TrustedSourcesRepository } from "@hotelos/database";
+import type {
+  TrustedSourceSnapshotsRepository,
+  TrustedSourcesRepository,
+} from "@hotelos/database";
 import type { TenantId } from "@hotelos/shared";
 
 const MAX_SOURCES = 6;
 const MAX_PACK = 3000;
+const MAX_SNIPPET = 400;
 
 /** Very common tokens that match too many Israeli allowlist titles. */
 const STOP_TERMS = new Set([
@@ -24,12 +28,14 @@ export type TrustedSourcesContextPack = {
 
 /**
  * Keyword hits from approved Trusted Sources allowlist — external facts only.
+ * Prefers stored page snapshots when present (fetch cron / CFO ingest).
  * Gateway never searches the open web; API builds the pack (Vol. 5 / ADR 0007).
  */
 export async function buildTrustedSourcesContextPack(
   trustedSources: TrustedSourcesRepository,
   tenantId: TenantId,
   message: string,
+  snapshots?: TrustedSourceSnapshotsRepository,
 ): Promise<TrustedSourcesContextPack | undefined> {
   const terms = extractSearchTerms(message);
   if (terms.length === 0) return undefined;
@@ -58,6 +64,19 @@ export async function buildTrustedSourcesContextPack(
     .slice(0, MAX_SOURCES)
     .map((row) => row.source);
 
+  const snapshotBySource = new Map<string, string>();
+  if (snapshots !== undefined) {
+    const latest = await snapshots.listLatestOkForSources(
+      tenantId,
+      hits.map((source) => source.id),
+    );
+    for (const snap of latest) {
+      if (snap.summary.trim().length > 0) {
+        snapshotBySource.set(snap.sourceId, snap.summary);
+      }
+    }
+  }
+
   const lines = [
     "Context pack — Trusted Sources (approved allowlist only)",
     "הסתמך רק על מקורות אלה לעובדות חיצוניות. ציטוט: Trusted Source · כותרת · URL.",
@@ -66,13 +85,22 @@ export async function buildTrustedSourcesContextPack(
   const citations: AiCitation[] = [];
 
   for (const source of hits) {
+    const snap = snapshotBySource.get(source.id);
+    const snippet = snap
+      ? snap.length > MAX_SNIPPET
+        ? `${snap.slice(0, MAX_SNIPPET)}…`
+        : snap
+      : undefined;
     lines.push(
-      `• [${source.category}] ${source.title} — ${source.url} (ציטוט: Trusted Source · ${source.title} · ${source.url})`,
+      snippet
+        ? `• [${source.category}] ${source.title} — ${source.url}\n  Snapshot: ${snippet}`
+        : `• [${source.category}] ${source.title} — ${source.url} (ציטוט: Trusted Source · ${source.title} · ${source.url})`,
     );
     citations.push({
       title: source.title,
       url: source.url,
       source: "trusted",
+      ...(snippet ? { snippet: snippet.slice(0, 160) } : {}),
     });
   }
 

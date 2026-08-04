@@ -141,6 +141,7 @@ export async function synthesizeCfoFinanceBrief(
       deps.trustedSources,
       input.tenantId,
       searchBlob,
+      deps.snapshots,
     ),
   ]);
 

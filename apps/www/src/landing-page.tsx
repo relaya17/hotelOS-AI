@@ -362,12 +362,12 @@ export function LandingPage() {
           aria-labelledby="chat-title"
         >
           <p className="eyebrow">צ׳אט + אוטומציה</p>
-          <h2 id="chat-title">כותבים בשפתכם. הם קוראים בשלהם.</h2>
+          <h2 id="chat-title">הנהלה מדברת. העובד מקבל משימה.</h2>
           <p className="section__lead">
-            אותו הודעה — שתי שפות. ובאותה שיחה: משימה, תזכורת והעברה — בלי
-            להעתיק לוואטסאפ.
+            הדגמה של צ׳אט מתורגם (משטח Executive). ב־Work — תור משימות, נוכחות
+            ו־Copilot לפי תפקיד, לא צ׳אט דו־כיווני מתורגם מלא ב־MVP.
           </p>
-          <div className="chat-demo" aria-label="הדגמת צ׳אט מתורגם">
+          <div className="chat-demo" aria-label="הדגמת צ׳אט מתורגם (Executive)">
             <div className="chat-demo__pane">
               <p className="chat-demo__meta">
                 <span>{CHAT_DEMO.senderLabel}</span>
@@ -378,7 +378,7 @@ export function LandingPage() {
               </p>
             </div>
             <div className="chat-demo__bridge" aria-hidden="true">
-              <span>תרגום חי</span>
+              <span>תרגום · הדגמה</span>
               <span>+ אוטומציה</span>
             </div>
             <div className="chat-demo__pane">

@@ -12,7 +12,7 @@
 | **Remaining** | Certifications (SOC 2 / ISO attestation) · counsel-signed DPA per customer |
 | **Remaining** | Employee depth |
 | **Remaining** | WCAG full suite (beyond login axe + foundations) |
-| **Remaining** | Trusted fetch (allowlist page fetch → embed for all categories) — **not live**; CFO finance snapshot ingest is live |
+| **Remaining** | Trusted snapshot **embeddings** (page fetch for all allowlist categories is live) |
 
 ## Live today (honest)
 
@@ -40,7 +40,7 @@
 - Live external card-capture UX — `PAYMENT_PROVIDER=external` keeps PAN at the **provider**; HotelOS never claims its own PCI-DSS certification
 - Full cookie category matrix (analytics/marketing) if introduced
 - Full Vector DB / ANN index (hybrid RAG MVP is live — see rag-embeddings-mvp.md)
-- Trusted fetch for all allowlist categories (see rag doc)
+- Trusted-source page **embeddings** (text snapshot fetch for allowlist is live)
 - Employee depth · WCAG full suite
 
 ## Public narrative

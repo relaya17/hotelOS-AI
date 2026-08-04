@@ -44,9 +44,9 @@ jobs:
         run: pnpm build
 
   a11y-login:
-    name: A11y · Playwright axe (login)
+    name: A11y · Playwright axe (login + public)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     needs: quality
 
     steps:
@@ -68,11 +68,10 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm --filter @hotelos/a11y-e2e exec playwright install --with-deps chromium
 
-      - name: Build staff login apps for axe preview
-        # turbo builds workspace deps (e.g. @hotelos/i18n → dist); plain pnpm --filter does not.
-        run: pnpm exec turbo run build --filter=@hotelos/executive --filter=@hotelos/admin --filter=@hotelos/work
+      - name: Build apps for axe preview
+        run: pnpm exec turbo run build --filter=@hotelos/executive --filter=@hotelos/admin --filter=@hotelos/work --filter=@hotelos/www --filter=@hotelos/guest
 
-      - name: Login axe E2E
+      - name: Axe E2E (login + www/guest)
         run: pnpm test:a11y-e2e
         env:
           RUN_A11Y_E2E: "1"

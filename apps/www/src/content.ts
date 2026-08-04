@@ -74,7 +74,7 @@ export const OUTCOMES: readonly OutcomeRow[] = [
     id: "chat",
     pain: "צוותים מדברים בשפות שונות",
     cost: "טעויות, עיכובים ואובדן הקשר",
-    outcome: "צ׳אט: כותבים בשפתכם — הצד השני מקבל בשפתו",
+    outcome: "צ׳אט צוות ב־Executive (i18n) · Work: משימות ו־Copilot לפי תפקיד",
     href: "#chat",
   },
 ] as const;
@@ -110,7 +110,7 @@ export const WORLD_COMPARISON: readonly WorldComparisonRow[] = [
     typicalPain:
       "צ׳אט פנימי בלי PMS, תחזוקה או כספים — עוד silo במקום תמונה אחת",
     hotelosAnswer:
-      "צ׳אט מתורגם + משימות על אותם אותות מהשכבה — Work Copilot לפי תפקיד",
+      "Work: משימות, נוכחות, מסמכי HR ומבחנים + Copilot לפי תפקיד — על אותם אותות מהשכבה",
   },
   {
     id: "hotelos",
@@ -161,9 +161,9 @@ export const CAPABILITIES: readonly Capability[] = [
   },
   {
     id: "chat",
-    title: "צ׳אט רב־לשוני + Copilot לעובד",
-    body: "כותבים בשפתכם; הצד השני מקבל בשפתו. על אותה שיחה — משימות ואוטומציות לפי תפקיד.",
-    proof: "Turbo i18n · Staff chat · Role-based agents",
+    title: "צ׳אט הנהלה + Copilot לעובד",
+    body: "Staff chat רב־לשוני חי ב־Executive (Turbo i18n). ב־Work — משימות מחלקתיות, מבחנים ו־Copilot לפי תפקיד (לא צ׳אט מתורגם מלא לעובד ב־MVP).",
+    proof: "Executive Turbo chat · Work tasks/HR · Role-based agents",
   },
   {
     id: "ops",

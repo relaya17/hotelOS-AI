@@ -4,6 +4,9 @@ import type {
   TrustedSourcesRepository,
 } from "@hotelos/database";
 import type { TenantId } from "@hotelos/shared";
+import { summarizeFeedBody } from "./summarize-trusted-feed-body.js";
+
+export { summarizeFeedBody } from "./summarize-trusted-feed-body.js";
 
 /** Categories eligible for daily finance/economy refresh (allowlist only). */
 export const FINANCE_FEED_CATEGORIES = new Set([
@@ -12,34 +15,42 @@ export const FINANCE_FEED_CATEGORIES = new Set([
   "accounting_standard",
 ]);
 
-const MAX_SUMMARY = 1200;
 const FETCH_TIMEOUT_MS = 12_000;
 
-export type IngestTrustedMarketFeedsDeps = {
+export type IngestTrustedFeedsDeps = {
   readonly trustedSources: TrustedSourcesRepository;
   readonly snapshots: TrustedSourceSnapshotsRepository;
   readonly fetchImpl?: typeof fetch;
 };
 
-export type IngestTrustedMarketFeedsResult = {
+/** @deprecated Use IngestTrustedFeedsDeps */
+export type IngestTrustedMarketFeedsDeps = IngestTrustedFeedsDeps;
+
+export type IngestTrustedFeedsResult = {
   readonly attempted: number;
   readonly ok: number;
   readonly failed: number;
   readonly snapshotIds: readonly string[];
 };
 
+/** @deprecated Use IngestTrustedFeedsResult */
+export type IngestTrustedMarketFeedsResult = IngestTrustedFeedsResult;
+
 /**
- * Fetch approved Trusted Sources (finance categories) and store text snapshots.
- * Legal/policy: allowlist URLs only — never open-web discovery as truth (ADR 0007).
+ * Fetch approved Trusted Sources and store text snapshots.
+ * Allowlist URLs only — never open-web discovery as truth (ADR 0007).
  */
-export async function ingestTrustedMarketFeeds(
-  deps: IngestTrustedMarketFeedsDeps,
+export async function ingestTrustedAllowlistFeeds(
+  deps: IngestTrustedFeedsDeps,
   tenantId: TenantId,
-): Promise<IngestTrustedMarketFeedsResult> {
+  options?: { readonly categories?: ReadonlySet<string> },
+): Promise<IngestTrustedFeedsResult> {
   const fetchImpl = deps.fetchImpl ?? fetch;
-  const sources = (await deps.trustedSources.list(tenantId)).filter((source) =>
-    FINANCE_FEED_CATEGORIES.has(source.category),
-  );
+  const all = await deps.trustedSources.list(tenantId);
+  const sources =
+    options?.categories !== undefined
+      ? all.filter((source) => options.categories!.has(source.category))
+      : all;
 
   const snapshotIds: string[] = [];
   let ok = 0;
@@ -56,8 +67,9 @@ export async function ingestTrustedMarketFeeds(
         redirect: "follow",
         signal: controller.signal,
         headers: {
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "User-Agent": "HotelOS-FinanceDoctor/1.0 (+trusted-source-refresh)",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "User-Agent": "HotelOS-TrustedSources/1.0 (+allowlist-refresh)",
         },
       });
       clearTimeout(timer);
@@ -113,45 +125,12 @@ export async function ingestTrustedMarketFeeds(
   };
 }
 
-export function summarizeFeedBody(
-  raw: string,
-  contentType: string,
-): string {
-  if (contentType.includes("application/json")) {
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      return JSON.stringify(parsed).slice(0, MAX_SUMMARY);
-    } catch {
-      return raw.replace(/\s+/g, " ").trim().slice(0, MAX_SUMMARY);
-    }
-  }
-
-  const withoutScripts = raw
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ");
-  const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(withoutScripts);
-  const metaMatch =
-    /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i.exec(
-      withoutScripts,
-    ) ??
-    /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i.exec(
-      withoutScripts,
-    );
-  const text = withoutScripts
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const parts = [
-    titleMatch?.[1]?.replace(/\s+/g, " ").trim(),
-    metaMatch?.[1]?.replace(/\s+/g, " ").trim(),
-    text,
-  ].filter((part): part is string => Boolean(part && part.length > 0));
-
-  return parts.join(" · ").slice(0, MAX_SUMMARY);
+/** Finance-category subset used by CFO daily brief. */
+export async function ingestTrustedMarketFeeds(
+  deps: IngestTrustedFeedsDeps,
+  tenantId: TenantId,
+): Promise<IngestTrustedFeedsResult> {
+  return ingestTrustedAllowlistFeeds(deps, tenantId, {
+    categories: FINANCE_FEED_CATEGORIES,
+  });
 }

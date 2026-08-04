@@ -16,6 +16,10 @@ import {
   runBatchCompanyKnowledgeReindex,
   type RunBatchCompanyKnowledgeReindexDeps,
 } from "../../application/run-batch-company-knowledge-reindex.js";
+import {
+  runTrustedSourcesRefresh,
+  type RunTrustedSourcesRefreshDeps,
+} from "../../application/run-trusted-sources-refresh.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
 export type CronRouteDeps = {
@@ -25,6 +29,7 @@ export type CronRouteDeps = {
   readonly anomalyScan: RunAnomalyScanDeps;
   readonly notificationOutbox: DrainNotificationOutboxDeps;
   readonly knowledgeReindex: RunBatchCompanyKnowledgeReindexDeps;
+  readonly trustedSourcesRefresh: RunTrustedSourcesRefreshDeps;
 };
 
 function authorizeCron(c: { req: { header: (name: string) => string | undefined } }, secret: string): boolean {
@@ -193,6 +198,32 @@ export function createCronRoutes(deps: CronRouteDeps): Hono {
 
   routes.get("/knowledge-reindex", (c) => runKnowledgeReindex(c));
   routes.post("/knowledge-reindex", (c) => runKnowledgeReindex(c));
+
+  const runTrustedRefresh = async (c: Parameters<typeof sendError>[0]) => {
+    if (deps.cronSecret.trim().length === 0) {
+      return sendError(
+        c,
+        503,
+        "CRON_DISABLED",
+        "Set CRON_SECRET to enable scheduled jobs",
+      );
+    }
+    if (!authorizeCron(c, deps.cronSecret)) {
+      return sendError(c, 401, "UNAUTHORIZED", "Invalid cron secret");
+    }
+
+    try {
+      const result = await runTrustedSourcesRefresh(
+        deps.trustedSourcesRefresh,
+      );
+      return c.json({ data: result });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  };
+
+  routes.get("/trusted-sources-refresh", (c) => runTrustedRefresh(c));
+  routes.post("/trusted-sources-refresh", (c) => runTrustedRefresh(c));
 
   return routes;
 }

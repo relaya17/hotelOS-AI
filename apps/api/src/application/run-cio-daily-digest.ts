@@ -4,6 +4,7 @@ import type {
   HotelRepository,
   NotificationRepository,
   OrgCommsRepository,
+  TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
 } from "@hotelos/database";
 import { DEMO_CHAIN_ID, DEMO_TENANT_ID } from "@hotelos/database";
@@ -30,6 +31,7 @@ export type RunCioDailyDigestDeps = CioDigestDeps & {
   readonly gateway?: AiGateway;
   readonly companyKnowledge?: CompanyKnowledgeRepository;
   readonly trustedSources?: TrustedSourcesRepository;
+  readonly trustedSourceSnapshots?: TrustedSourceSnapshotsRepository;
   /** Stage ד' follow-up (PO decision 2) — scheduled WhatsApp copy of the digest. */
   readonly notifications?: NotificationRepository;
   readonly whatsapp?: WhatsAppProvider;
@@ -84,6 +86,9 @@ export async function runCioDailyDigest(
         gateway: deps.gateway,
         companyKnowledge: deps.companyKnowledge,
         trustedSources: deps.trustedSources,
+        ...(deps.trustedSourceSnapshots
+          ? { trustedSourceSnapshots: deps.trustedSourceSnapshots }
+          : {}),
       },
       {
         tenantId,

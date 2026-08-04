@@ -1,6 +1,7 @@
 import type { AiGateway } from "@hotelos/ai-gateway";
 import type {
   CompanyKnowledgeRepository,
+  TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
 } from "@hotelos/database";
 import type { HotelId, TenantId, UserId } from "@hotelos/shared";
@@ -34,6 +35,7 @@ export async function synthesizeCioDigest(
     readonly gateway: AiGateway;
     readonly companyKnowledge: CompanyKnowledgeRepository;
     readonly trustedSources: TrustedSourcesRepository;
+    readonly trustedSourceSnapshots?: TrustedSourceSnapshotsRepository;
   },
   input: {
     readonly tenantId: TenantId;
@@ -69,6 +71,7 @@ export async function synthesizeCioDigest(
       deps.trustedSources,
       input.tenantId,
       searchBlob,
+      deps.trustedSourceSnapshots,
     ),
   ]);
   const contextPack =

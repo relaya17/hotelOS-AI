@@ -5,6 +5,7 @@ import type {
   AuditRepository,
   CompanyKnowledgeRepository,
   CorrespondenceRepository,
+  TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
 } from "@hotelos/database";
 import { Ids } from "@hotelos/shared";
@@ -24,6 +25,7 @@ export type CorrespondenceRouteDeps = {
   readonly correspondence: CorrespondenceRepository;
   readonly companyKnowledge: CompanyKnowledgeRepository;
   readonly trustedSources: TrustedSourcesRepository;
+  readonly trustedSourceSnapshots: TrustedSourceSnapshotsRepository;
   readonly gateway: AiGateway;
   readonly audit: AuditRepository;
   readonly tokens: JwtTokenService;
@@ -80,6 +82,7 @@ export function createCorrespondenceRoutes(deps: CorrespondenceRouteDeps): Hono<
           deps.trustedSources,
           principal.scope.tenantId,
           searchBlob,
+          deps.trustedSourceSnapshots,
         ),
       ]);
       const basePack =

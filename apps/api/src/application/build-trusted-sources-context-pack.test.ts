@@ -69,4 +69,49 @@ describe("buildTrustedSourcesContextPack", () => {
     assert.equal(pack.citations.length, 1);
     assert.equal(pack.citations[0]?.source, "trusted");
   });
+
+  it("prefers page snapshot text when available", async () => {
+    const trustedSources = {
+      list: async () => [
+        {
+          id: "s1",
+          tenantId: "t1",
+          title: "בנק ישראל — נתוני מקרו",
+          url: "https://www.boi.org.il",
+          category: "regulator",
+          approvedAt: "2026-01-01T00:00:00.000Z",
+          approvedByUserId: "u1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    } as unknown as TrustedSourcesRepository;
+
+    const snapshots = {
+      listLatestOkForSources: async () => [
+        {
+          id: "snap1",
+          tenantId: "t1",
+          sourceId: "s1",
+          fetchedAt: "2026-01-02T00:00:00.000Z",
+          title: "בנק ישראל",
+          summary: "ריבית בנק ישראל לעמוד זה היא 4.5 אחוזים.",
+          checksum: "abc",
+          status: "ok" as const,
+          error: null,
+          createdAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+    };
+
+    const pack = await buildTrustedSourcesContextPack(
+      trustedSources,
+      Ids.tenant("00000000-0000-4000-8000-000000000001"),
+      "מה אומר בנק ישראל על ריבית?",
+      snapshots as never,
+    );
+    assert.ok(pack?.text);
+    assert.match(pack.text, /Snapshot/);
+    assert.match(pack.text, /4\.5/);
+    assert.equal(pack.citations[0]?.snippet?.includes("4.5"), true);
+  });
 });

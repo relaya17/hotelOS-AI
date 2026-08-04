@@ -374,6 +374,7 @@ export async function composeApp() {
       overview,
       companyKnowledge,
       trustedSources,
+      trustedSourceSnapshots,
       turbo,
       tokens,
     },
@@ -382,6 +383,7 @@ export async function composeApp() {
       correspondence,
       companyKnowledge,
       trustedSources,
+      trustedSourceSnapshots,
       gateway,
       audit,
       tokens,
@@ -449,6 +451,7 @@ export async function composeApp() {
         gateway,
         companyKnowledge,
         trustedSources,
+        trustedSourceSnapshots,
         notifications,
         whatsapp,
         ...(env.DIGEST_WHATSAPP_TO.trim()
@@ -482,6 +485,10 @@ export async function composeApp() {
       knowledgeReindex: {
         companyKnowledge,
         gateway,
+      },
+      trustedSourcesRefresh: {
+        trustedSources,
+        snapshots: trustedSourceSnapshots,
       },
     },
     simulator: {

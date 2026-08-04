@@ -4,6 +4,7 @@ import type { JwtTokenService } from "@hotelos/auth";
 import type {
   CompanyKnowledgeRepository,
   OverviewRepository,
+  TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
   TurboRepository,
 } from "@hotelos/database";
@@ -42,6 +43,7 @@ export type AiGatewayRouteDeps = {
   readonly overview: OverviewRepository;
   readonly companyKnowledge: CompanyKnowledgeRepository;
   readonly trustedSources: TrustedSourcesRepository;
+  readonly trustedSourceSnapshots: TrustedSourceSnapshotsRepository;
   readonly turbo: TurboRepository;
   readonly tokens: JwtTokenService;
 };
@@ -101,6 +103,7 @@ export function createAiGatewayRoutes(deps: AiGatewayRouteDeps): Hono<{
             deps.trustedSources,
             principal.scope.tenantId,
             parsed.data.message,
+            deps.trustedSourceSnapshots,
           ),
         ]);
         contextPack = mergeContextPacks(
