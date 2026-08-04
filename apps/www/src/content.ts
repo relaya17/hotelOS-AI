@@ -306,27 +306,27 @@ export const PACKAGES: readonly PackageTier[] = [
   {
     id: "pilot",
     name: "Pilot",
-    audience: "מלון אחד · הוכחת ערך",
+    audience: "מלון אחד · הוכחת ערך · $5,000 USD / 8 שבועות",
     points: [
       "Wedge: תדריך · תקלות · תחזוקה חזויה MVP",
-      "מדידה ב־ROI Scorecard ל־30 יום",
-      "HITL על פעולות רגישות",
+      "מדידה ב־ROI Scorecard",
+      "HITL על פעולות רגישות · מחיר אחיד USD בכל העולם",
     ],
   },
   {
     id: "network",
     name: "Network",
-    audience: "רשת · כמה מלונות",
+    audience: "רשת · $1,000 USD / מלון / חודש",
     points: [
       "תמונת שרשרת ב־Executive",
       "Land & expand דומיינים אחרי הוכחה",
-      "צ׳אט מתורגם + משימות Work",
+      "צ׳אט מתורגם + משימות Work · prepaid שנתי $10,800 (−10%)",
     ],
   },
   {
     id: "enterprise",
     name: "Enterprise",
-    audience: "קבוצות · ועדת רכש",
+    audience: "קבוצות · from $75,000 USD ACV / שנה",
     points: [
       "DPA עם counsel · שאלון אבטחה",
       "בקרות חיות + נתיב attestation (בלי לספר תעודה שלא קיימת)",

@@ -3,17 +3,19 @@
 **Fill with real numbers before investor meetings.**  
 Currency: ___ (ILS / USD) · Updated: ____
 
-**Pricing talk (directional, not public list):** [sales-pack/pricing-talk-track.md](./sales-pack/pricing-talk-track.md)
+**Pricing talk (USD worldwide list):** [sales-pack/pricing-talk-track.md](./sales-pack/pricing-talk-track.md)
 
-## Pricing talk bands (directional)
+## Pricing talk bands (list — USD only)
 
-Fill from the talk track before modeling. Do not invent closed revenue.
+Israel and all countries use the same USD list.
 
-| Package | Talk-band low | Talk-band high | Assumed logos (yr) | Notes |
-|---------|---------------|----------------|--------------------|-------|
-| Pilot | `[FILL]` | `[FILL]` | | Period fee or waived DP |
-| Network ACV / hotel | `[FILL]` | `[FILL]` | | Steady state |
-| Enterprise ACV | `[FILL]` | `[FILL]` | | Includes security overhead |
+| Package | List | Annualized |
+|---------|------|------------|
+| Pilot (8 weeks, 1 hotel) | **$5,000** | — |
+| Network / hotel / month | **$1,000** | **$10,800** if prepaid annual (−10%) |
+| Enterprise ACV / year | **from $75,000** | quote by property count |
+
+Design partner Pilot: **$0** or **$2,500** (50%) with case-study consent.
 
 ## Packages (direction)
 

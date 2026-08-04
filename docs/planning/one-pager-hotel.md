@@ -48,13 +48,15 @@
 
 ---
 
-## חבילות (כיוון)
+## חבילות (USD · עולם + ישראל)
 
 | | Pilot | Network | Enterprise |
 |--|-------|---------|------------|
-| היקף | מלון אחד · wedge | כמה מלונות | רשת + DPA counsel |
-| מדדים | Scorecard 30 יום | Land & expand דומיינים | Questionnaire + SLA |
-| מחיר | לפי שיחה | לפי שיחה | לפי שיחה |
+| מחיר רשימה | **$5,000** / 8 שבועות / מלון | **$1,000** / מלון / חודש | **from $75,000** ACV / שנה |
+| היקף | wedge + scorecard | שרשרת + expand | DPA counsel · security pack |
+| DP | $0 או $2,500 עם case study | — | — |
+
+מטבע אחיד: **USD בכל המדינות.** פרטים: `docs/gtm/sales-pack/pricing-talk-track.md`
 
 ---
 

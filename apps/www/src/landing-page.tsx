@@ -842,8 +842,8 @@ export function LandingPage() {
           <p className="eyebrow">איך קונים</p>
           <h2 id="packages-title">Pilot · Network · Enterprise</h2>
           <p className="section__lead">
-            מחיר לפי שיחה — בלי מחירון שקרי באתר. החבילות מגדירות היקף ואמון,
-            לא הבטחות ROI שלא נמדדו.
+            מחירון רשימה אחיד ב־USD לכל העולם (כולל ישראל). סגירה בשיחה —
+            בלי ROI מומצא ובלי תעודות שלא קיימות.
           </p>
           <ul className="package-grid">
             {PACKAGES.map((tier) => (
