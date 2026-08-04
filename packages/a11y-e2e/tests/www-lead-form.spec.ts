@@ -34,7 +34,9 @@ test.describe("www lead form", () => {
 
     await page.getByRole("button", { name: "שליחה" }).click();
 
-    await expect(page.getByRole("status")).toContainText(/קיבלנו את הפרטים/);
+    await expect(page.locator(".lead-form--success")).toContainText(
+      /קיבלנו את הפרטים/,
+    );
     expect(posted).toMatchObject({
       name: "Dana Cohen",
       hotelOrChain: "Coastal Hotels",

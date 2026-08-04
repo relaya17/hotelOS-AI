@@ -11,6 +11,7 @@ import {
   WORLD_COMPARISON,
 } from "./content.js";
 import { LIST_PRICES_USD } from "./list-prices.js";
+import { NAV_LINKS } from "./nav-links.js";
 
 describe("landing content", () => {
   it("ships seven outcome rows and four taglines", () => {
@@ -26,6 +27,24 @@ describe("landing content", () => {
       assert.ok(row.category.length > 0);
       assert.ok(row.typicalPain.length > 0);
       assert.ok(row.hotelosAnswer.length > 0);
+    }
+  });
+});
+
+describe("nav ↔ sections", () => {
+  it("includes previously orphaned anchors in the header", () => {
+    const hrefs = new Set(NAV_LINKS.map((link) => link.href));
+    for (const href of ["#how-pilot", "#measure", "#excellence", "#faq"]) {
+      assert.ok(hrefs.has(href), `missing nav link ${href}`);
+    }
+  });
+
+  it("uses unique href and non-empty labels", () => {
+    const hrefs = NAV_LINKS.map((link) => link.href);
+    assert.equal(new Set(hrefs).size, hrefs.length);
+    for (const link of NAV_LINKS) {
+      assert.match(link.href, /^#[a-z0-9-]+$/);
+      assert.ok(link.label.trim().length > 0);
     }
   });
 });

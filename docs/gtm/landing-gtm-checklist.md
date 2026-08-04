@@ -10,7 +10,7 @@ Use this on **every** change to `apps/www` marketing copy, pricing, meta tags, o
 - [ ] **PACKAGES / on-page prices** — strings reference the same USD amounts as list-prices (Pilot $5,000 · Network $1,000/mo · Enterprise from $75,000 ACV).
 - [ ] **Honesty** — no SOC2 / ISO / PCI certification claims; no invented logos or measured ROI %.
 - [ ] **Lead form** — primary path is `POST /v1/leads` with success/error UI; mailto is backup only.
-- [ ] **Nav ↔ sections** — every `#anchor` in the header exists; orphan sections are either linked or intentionally removed.
+- [ ] **Nav ↔ sections** — every `#anchor` in the header exists; orphan sections are either linked or intentionally removed. Required set includes `#how-pilot`, `#measure`, `#excellence`, `#faq` (enforced by `apps/www` nav tests).
 - [ ] **Banned narrative voice** — speak *to* the buyer (אתם/שלכם), not about “ועדת הנהלה / שיווק נכון” in third person on www.
 
 ## After deploy (smoke)

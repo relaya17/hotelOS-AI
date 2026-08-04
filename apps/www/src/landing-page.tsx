@@ -36,6 +36,7 @@ import {
   WORLD_COMPARISON,
 } from "./content.js";
 import { StatusSectionContent } from "./status-section.js";
+import { NAV_LINKS } from "./nav-links.js";
 
 const PILOT_MAIL =
   "mailto:pilot@hotelos.ai?subject=HotelOS%20AI%20Pilot&body=שלום%2C%20אשמח%20לדבר%20על%20פיילוט%20HotelOS%20AI%20לרשת%20שלנו.";
@@ -54,16 +55,6 @@ const PARTNER_NAMES = (
   ?.split(",")
   .map((name) => name.trim())
   .filter((name) => name.length > 0) ?? [];
-
-const NAV_LINKS = [
-  { href: "#platform", label: "הפלטפורמה" },
-  { href: "#outcomes", label: "תוצאות" },
-  { href: "#demo", label: "דמו" },
-  { href: "#profit", label: "רווחיות" },
-  { href: "#packages", label: "חבילות" },
-  { href: "#trust", label: "אמון" },
-  { href: "#contact", label: "פיילוט" },
-] as const;
 
 function ContactLeadForm() {
   const [name, setName] = useState("");
