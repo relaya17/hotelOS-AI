@@ -4,6 +4,7 @@ import {
   approveCompanyKnowledgeDoc,
   createCompanyKnowledgeDoc,
   listCompanyKnowledgeDocs,
+  reindexCompanyKnowledgeDoc,
   searchCompanyKnowledgeDocs,
   type CompanyKnowledgeDocDto,
 } from "@hotelos/web-client";
@@ -66,7 +67,8 @@ export function KnowledgePanel() {
       <h2>Company Knowledge</h2>
       <p className="muted">
         מסמכים פנימיים לאישור לפני שימוש כציטוט ע״י סוכנים (מילות מפתח +
-        embeddings באישור → Gateway).
+        embeddings + chunks באישור → Gateway). מסמכים ישנים יקבלו chunks
+        אוטומטית בשימוש, או ידנית ב״רענון אינדקס״.
       </p>
       {error ? <p className="error">{error}</p> : null}
 
@@ -130,6 +132,31 @@ export function KnowledgePanel() {
                 }
               >
                 אשר מסמך
+              </Button>
+            ) : null}
+            {doc.status === "approved" ? (
+              <Button
+                type="button"
+                onClick={() =>
+                  void reindexCompanyKnowledgeDoc(doc.id)
+                    .then((result) => {
+                      setError(undefined);
+                      window.alert(
+                        `רענון הושלם: ${result.chunkCount} chunks` +
+                          (result.embedded ? ", embedding עודכן" : ""),
+                      );
+                      return reload();
+                    })
+                    .catch((reindexError: unknown) => {
+                      setError(
+                        reindexError instanceof Error
+                          ? reindexError.message
+                          : "רענון נכשל",
+                      );
+                    })
+                }
+              >
+                רענון אינדקס
               </Button>
             ) : null}
           </li>

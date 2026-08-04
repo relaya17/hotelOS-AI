@@ -9,6 +9,7 @@ import type { JwtTokenService } from "@hotelos/auth";
 import { z } from "@hotelos/validation";
 import { chunkCompanyKnowledgeDoc } from "../../application/chunk-company-knowledge-doc.js";
 import { embedCompanyKnowledgeDoc } from "../../application/embed-company-knowledge-doc.js";
+import { reindexCompanyKnowledgeDoc } from "../../application/reindex-company-knowledge-doc.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
 
@@ -170,6 +171,39 @@ export function createKnowledgeRoutes(deps: KnowledgeRouteDeps): Hono<{
         // Keyword pack can still use full body when chunk write fails.
       }
       return c.json({ data: updated });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/company-docs/:id/reindex", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const result = await reindexCompanyKnowledgeDoc(
+        {
+          companyKnowledge: deps.companyKnowledge,
+          gateway: deps.gateway,
+        },
+        {
+          tenantId: principal.scope.tenantId,
+          docId: c.req.param("id"),
+        },
+      );
+      if (!result) {
+        return sendError(
+          c,
+          404,
+          "DOC_NOT_FOUND",
+          "Approved document not found",
+        );
+      }
+      return c.json({
+        data: {
+          doc: result.doc,
+          chunkCount: result.chunkCount,
+          embedded: result.embedded,
+        },
+      });
     } catch (error) {
       return mapUnknownError(c, error);
     }

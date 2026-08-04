@@ -140,4 +140,51 @@ describe("buildKnowledgeContextPack", () => {
     assert.ok(pack);
     assert.match(pack, /קנס מיוחד/);
   });
+
+  it("lazy-chunks approved docs that have no stored chunks yet", async () => {
+    let replaced = 0;
+    const companyKnowledge = {
+      search: async () => [
+        {
+          id: "doc-legacy",
+          tenantId: "t1",
+          title: "מדיניות ישנה",
+          body: "ביטול עד 24 שעות לפני הגעה.",
+          category: "policy",
+          status: "approved",
+          createdByUserId: "u1",
+          approvedByUserId: "u1",
+          approvedAt: "2026-01-01T00:00:00.000Z",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+      searchByEmbedding: async () => [],
+      listChunksForDocs: async () =>
+        replaced === 0
+          ? []
+          : [
+              {
+                id: "c-new",
+                docId: "doc-legacy",
+                tenantId: "t1",
+                chunkIndex: 0,
+                text: "ביטול עד 24 שעות לפני הגעה.",
+                contentHash: "new",
+                createdAt: "2026-01-02T00:00:00.000Z",
+              },
+            ],
+      replaceChunks: async () => {
+        replaced += 1;
+      },
+    } as unknown as CompanyKnowledgeRepository;
+
+    const pack = await buildKnowledgeContextPack(
+      companyKnowledge,
+      Ids.tenant("00000000-0000-4000-8000-000000000001"),
+      "מה מדיניות הביטולים?",
+    );
+    assert.ok(pack);
+    assert.equal(replaced, 1);
+    assert.match(pack, /24 שעות/);
+  });
 });

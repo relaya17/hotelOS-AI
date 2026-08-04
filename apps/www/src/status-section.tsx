@@ -10,6 +10,10 @@ type HealthState =
     }
   | { readonly kind: "error"; readonly message: string; readonly checkedAt: string };
 
+const EXTERNAL_STATUS_PAGE_URL = (
+  import.meta.env.VITE_STATUS_PAGE_URL as string | undefined
+)?.trim();
+
 /** Inner content for www `#status` — parent supplies the section landmark. */
 export function StatusSectionContent() {
   const [state, setState] = useState<HealthState>({ kind: "loading" });
@@ -100,13 +104,28 @@ export function StatusSectionContent() {
         </button>
       </div>
 
-      <p className="status-note">
-        לניטור חיצוני רציף (Better Stack / UptimeRobot) ראו את{" "}
-        <a href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/deployment/uptime-monitoring.md">
-          מדריך ה־uptime
-        </a>
-        .
-      </p>
+      {EXTERNAL_STATUS_PAGE_URL ? (
+        <p className="status-note">
+          דף סטטוס חיצוני עם היסטוריה:{" "}
+          <a
+            href={EXTERNAL_STATUS_PAGE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            פתיחת דף הסטטוס
+          </a>
+          .
+        </p>
+      ) : (
+        <p className="status-note">
+          לניטור חיצוני רציף (Better Stack / UptimeRobot) ראו את{" "}
+          <a href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/deployment/uptime-monitoring.md">
+            מדריך ה־uptime
+          </a>
+          . אפשר להגדיר <code>VITE_STATUS_PAGE_URL</code> כדי להציג קישור לדף
+          סטטוס מאוחסן כאן.
+        </p>
+      )}
     </>
   );
 }

@@ -63,8 +63,9 @@ apps). Set `HOTELOS_API_ORIGIN` on the www Vercel project when the hostname
 does not auto-map to `-api-`.
 
 This is **not** a historical uptime / incident page. For stakeholder history,
-use Better Stack / UptimeRobot status pages (steps above) and link them from
-Trust Center only after they exist.
+use Better Stack / UptimeRobot status pages (steps above). When a public page
+exists, set `VITE_STATUS_PAGE_URL` on the www Vercel project — `#status` then
+shows a link to that page (otherwise it only points at this runbook).
 
 ## Related
 

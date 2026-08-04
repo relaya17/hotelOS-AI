@@ -4,6 +4,7 @@ import type {
   PersistedCompanyKnowledgeDoc,
 } from "@hotelos/database";
 import type { TenantId } from "@hotelos/shared";
+import { chunkCompanyKnowledgeDoc } from "./chunk-company-knowledge-doc.js";
 
 const MAX_DOCS = 5;
 const MAX_SNIPPET = 400;
@@ -11,7 +12,7 @@ const MAX_PACK = 4000;
 
 /**
  * Hybrid keyword + embedding hits from approved company knowledge.
- * Prefers stored chunks for snippets when available.
+ * Prefers stored chunks for snippets; lazy-chunks docs that predate the table.
  * Gateway never searches; API builds the pack (Vol. 5 / ADR 0008).
  */
 export async function buildKnowledgeContextPack(
@@ -58,9 +59,29 @@ export async function buildKnowledgeContextPack(
 
   if (byId.size === 0) return undefined;
 
-  const chunks = await companyKnowledge.listChunksForDocs(tenantId, [
+  let chunks = await companyKnowledge.listChunksForDocs(tenantId, [
     ...byId.keys(),
   ]);
+  const present = new Set(chunks.map((chunk) => chunk.docId));
+  for (const doc of byId.values()) {
+    if (present.has(doc.id)) continue;
+    try {
+      await chunkCompanyKnowledgeDoc(companyKnowledge, {
+        tenantId,
+        docId: doc.id,
+        title: doc.title,
+        body: doc.body,
+      });
+    } catch {
+      // Fall back to body prefix for this doc.
+    }
+  }
+  if (present.size < byId.size) {
+    chunks = await companyKnowledge.listChunksForDocs(tenantId, [
+      ...byId.keys(),
+    ]);
+  }
+
   const chunksByDoc = new Map<string, string[]>();
   for (const chunk of chunks) {
     const list = chunksByDoc.get(chunk.docId) ?? [];

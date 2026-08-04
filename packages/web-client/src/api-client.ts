@@ -4078,6 +4078,22 @@ export async function approveCompanyKnowledgeDoc(
   return payload.data;
 }
 
+export type CompanyKnowledgeReindexDto = {
+  readonly doc: CompanyKnowledgeDocDto;
+  readonly chunkCount: number;
+  readonly embedded: boolean;
+};
+
+export async function reindexCompanyKnowledgeDoc(
+  id: string,
+): Promise<CompanyKnowledgeReindexDto> {
+  const payload = (await authPost(
+    `/v1/knowledge/company-docs/${id}/reindex`,
+    {},
+  )) as { data: CompanyKnowledgeReindexDto };
+  return payload.data;
+}
+
 export async function searchCompanyKnowledgeDocs(
   query: string,
 ): Promise<readonly CompanyKnowledgeDocDto[]> {

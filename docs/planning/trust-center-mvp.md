@@ -10,7 +10,7 @@
 | Legal docs (terms / privacy / cookies / security / meetings / subprocessors / **DPA template**) | `@hotelos/legal` → `GET /v1/public/legal` → Guest `/?doc=` |
 | Legal footer + cookie banner | www, Admin, Executive, Work, Guest |
 | www trust section `#trust` | Live controls only + links to security / subprocessors / DPA template |
-| www status section `#status` | Live `GET /v1/health` probe (not a third-party uptime page) |
+| www status section `#status` | Live `GET /v1/health` probe; optional `VITE_STATUS_PAGE_URL` link when set |
 | www footer grid | Product / Trust / Start columns + legal bar |
 | `security.txt` | `apps/www/public/.well-known/security.txt` |
 | HITL Suggest→Approve→Act | Approvals UI + autonomy routes |
@@ -25,7 +25,7 @@
 
 - SOC 2 / ISO attestation pack
 - Counsel-**signed** DPA per customer (public page is an **unsigned template**)
-- Hosted third-party status page with history (Better Stack / similar)
+- Hosted third-party status page with history (set `VITE_STATUS_PAGE_URL` once Better Stack / similar exists)
 - Live external PCI gateway UX (beyond `PAYMENT_PROVIDER=external` + provider-side PCI)
 - Full cookie category matrix (analytics/marketing) if introduced
 - Full Vector DB / per-chunk embeddings (text chunks + whole-doc embed live — see rag-embeddings-mvp.md)
