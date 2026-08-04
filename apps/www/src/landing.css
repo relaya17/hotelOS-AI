@@ -1,16 +1,66 @@
 :root {
-  --ink: #07090d;
-  --ink-elevated: #10141c;
-  --mist: #e9e2d6;
-  --mist-dim: rgb(233 226 214 / 72%);
-  --brass: #d4b07a;
-  --brass-hot: #e8c89a;
-  --jade: #6eb5a8;
-  --line: rgb(233 226 214 / 14%);
-  --font-display: "Fraunces", "Times New Roman", serif;
-  --font-body: "Sora", system-ui, sans-serif;
-  --space: clamp(1.25rem, 3vw, 2.5rem);
-  --max: 72rem;
+  /* Brand bridge — www ↔ product tokens */
+  --www-ink: #07090d;
+  --www-ink-elevated: #10141c;
+  --www-mist: #e9e2d6;
+  --www-mist-dim: rgb(233 226 214 / 72%);
+  /* Sea / brass / jade palette, aligned with product tokens */
+  --www-sea: #0e6b5c; /* ≈ packages/ui --color-sea */
+  --www-sea-soft: #6eb5a8;
+  --www-brass: #d4b07a;
+  --www-brass-hot: #e8c89a;
+  --www-jade: #6eb5a8;
+  --www-line: rgb(233 226 214 / 14%);
+
+  --www-font-display: "Fraunces", "Times New Roman", serif;
+  --www-font-body: "Sora", system-ui, sans-serif;
+  --www-space-page: clamp(1.25rem, 3vw, 2.5rem);
+  --www-content-max: 72rem;
+
+  /* Existing landing tokens stay wired through the www-* layer */
+  --ink: var(--www-ink);
+  --ink-elevated: var(--www-ink-elevated);
+  --mist: var(--www-mist);
+  --mist-dim: var(--www-mist-dim);
+  --brass: var(--www-brass);
+  --brass-hot: var(--www-brass-hot);
+  --jade: var(--www-sea-soft);
+  --line: var(--www-line);
+  --font-display: var(--www-font-display);
+  --font-body: var(--www-font-body);
+  --space: var(--www-space-page);
+  --max: var(--www-content-max);
+
+  /*
+    Bridge for the shared @hotelos/ui + @hotelos/features product tokens
+    (CookieBanner, LegalFooter, Button) — mapped onto the www dark palette
+    instead of importing the light-mode @hotelos/ui/styles.css.
+  */
+  --color-ink: var(--www-mist);
+  --color-ink-soft: var(--www-mist-dim);
+  --color-paper-elevated: var(--www-ink-elevated);
+  --color-sea: var(--www-brass);
+  --color-sea-deep: var(--www-brass-hot);
+  --color-sea-soft: rgb(212 176 122 / 14%);
+  --color-line: var(--www-line);
+  --color-line-strong: rgb(233 226 214 / 24%);
+  --color-focus: var(--www-brass);
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 1rem;
+  --shadow-soft: 0 1px 0 rgb(0 0 0 / 25%), 0 12px 32px rgb(0 0 0 / 35%);
+  --shadow-lift: 0 2px 0 rgb(0 0 0 / 30%), 0 18px 44px rgb(0 0 0 / 50%);
+  --text-small: 0.9375rem;
+  --motion-fast: 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-med: 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --touch-min: 2.75rem;
+
   color-scheme: dark;
 }
 
@@ -859,6 +909,49 @@ a {
   color: var(--jade);
 }
 
+.trust-grid {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  gap: 1.1rem 1.5rem;
+}
+
+.trust-control {
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: rgb(233 226 214 / 3%);
+}
+
+.trust-control h3 {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--brass-hot);
+}
+
+.trust-control p {
+  margin: 0;
+  color: var(--mist-dim);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.trust-note {
+  margin: 0;
+  max-width: 40rem;
+  color: var(--mist-dim);
+  font-size: 0.95rem;
+}
+
+.trust-note a {
+  color: var(--brass-hot);
+  font-weight: 600;
+}
+
 .chat-demo {
   display: grid;
   gap: 1rem;
@@ -976,6 +1069,11 @@ a {
   margin: 0 auto;
   padding: 2rem 0 3rem;
   border-top: 1px solid var(--line);
+  display: grid;
+  gap: 1.5rem;
+}
+
+.foot__top {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -998,6 +1096,57 @@ a {
 
 .foot__links a:hover {
   color: var(--brass-hot);
+}
+
+/* LegalFooter (@hotelos/features) — already inherits the dark token bridge
+   above for colors/spacing; only the layout needs realigning to sit flush
+   inside `.foot`, which already provides the outer border + centering. */
+.foot .legal-bar {
+  padding: 1.25rem 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.foot .legal-bar a:hover,
+.foot .legal-bar a:focus-visible {
+  text-decoration: underline;
+}
+
+/* CookieBanner (@hotelos/ui) — dark glass card to match the www hero,
+   overriding the component's light-mode literal colors. Scoped under
+   `.site` so specificity beats the component's own inline <style>. */
+.site .cookie {
+  background: rgb(16 20 28 / 92%);
+  border-color: var(--line);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 45%);
+}
+
+.site .cookie p {
+  color: var(--mist-dim);
+}
+
+.site .cookie a {
+  color: var(--brass-hot);
+}
+
+.site .cookie .hotelos-button--ghost {
+  background: transparent;
+  border-color: rgb(233 226 214 / 26%);
+  color: var(--mist);
+}
+
+.site .cookie .hotelos-button--ghost:hover:not(:disabled) {
+  background: rgb(233 226 214 / 8%);
+  border-color: rgb(233 226 214 / 45%);
+}
+
+.site .cookie .hotelos-button--primary {
+  background: var(--brass);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.site .cookie .hotelos-button--primary:hover:not(:disabled) {
+  background: var(--brass-hot);
 }
 
 @keyframes rise {
@@ -1097,6 +1246,32 @@ a {
 
   .cta-group > *,
   .hero__actions > * {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .trust-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .foot .legal-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .site .cookie {
+    inset-inline: 0.6rem;
+    padding: 1rem;
+  }
+
+  .site .cookie .actions {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .site .cookie .actions .hotelos-button {
     width: 100%;
     justify-content: center;
     text-align: center;

@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { LegalFooter } from "@hotelos/features";
 import { Button, CookieBanner, TextField, SkipLink } from "@hotelos/ui";
 import {
   APP_URLS,
@@ -37,16 +38,8 @@ function readLegalDoc(): string | null {
 
 function SiteFooter() {
   return (
-    <footer className="site-footer">
-      <p className="site-footer__legal">
-        <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
-        {" · "}
-        <a href={APP_URLS.legal("cookies")}>עוגיות</a>
-        {" · "}
-        <a href={APP_URLS.legal("security")}>אבטחה</a>
-        {" · "}
-        <a href={APP_URLS.legal("privacy")}>פרטיות</a>
-      </p>
+    <div className="site-footer">
+      <LegalFooter legalUrl={(doc) => APP_URLS.legal(doc)} />
       <p className="site-footer__staff">
         <a href={APP_URLS.work}>work</a>
         {" · "}
@@ -62,14 +55,13 @@ function SiteFooter() {
           gap: var(--space-2);
           font-size: var(--text-small);
           color: var(--color-ink-soft);
-          border-top: 1px solid var(--color-line);
         }
         .site-footer p { margin: 0; }
         .site-footer__staff { opacity: .55; font-size: .8rem; }
-        .site-footer a { color: inherit; font-weight: 600; text-decoration: none; }
-        .site-footer a:hover { text-decoration: underline; }
+        .site-footer__staff a { color: inherit; font-weight: 600; text-decoration: none; }
+        .site-footer__staff a:hover { text-decoration: underline; }
       `}</style>
-    </footer>
+    </div>
   );
 }
 

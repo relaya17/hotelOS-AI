@@ -21,6 +21,12 @@ export type WorldComparisonRow = {
   readonly isHotelos?: boolean;
 };
 
+export type TrustControl = {
+  readonly id: string;
+  readonly title: string;
+  readonly body: string;
+};
+
 export const OUTCOMES: readonly OutcomeRow[] = [
   {
     id: "briefing",
@@ -164,6 +170,45 @@ export const CAPABILITIES: readonly Capability[] = [
     title: "תפעול חוצה־רשת",
     body: "Multi-hotel, מוניטין→משימות, Incident Center, אנרגיה ו־VMS — תובנות לרשת במקום דוחות לכל מלון בנפרד.",
     proof: "Chain dashboard · Incidents · Energy · VMS",
+  },
+] as const;
+
+/**
+ * Only controls that actually exist in the shipped standard/codebase — no
+ * SOC2/ISO/compliance-certification claims until an audit backs them.
+ * See docs/engineering-standard/08-security.md · docs/security/README.md ·
+ * docs/security/live-stream-threat-model.md · docs/adr/0008-ai-gateway.md.
+ */
+export const TRUST_CONTROLS: readonly TrustControl[] = [
+  {
+    id: "hitl",
+    title: "אישור אנושי על פעולות רגישות (HITL)",
+    body: "Suggest → Approve → Act: המלצות תמחור, סגירת חודש ופעולות כספיות אחרות ממתינות לאישור CFO/מנהל לפני ביצוע — בלי אוטונומיה כספית עיוורת.",
+  },
+  {
+    id: "webauthn",
+    title: "כניסה עם Passkeys (WebAuthn)",
+    body: "לצוות Admin/Executive — כניסה ביומטרית/מפתח מכשיר לצד Google OAuth, מעבר לסיסמה בלבד.",
+  },
+  {
+    id: "rate-limit",
+    title: "הגבלת קצב לכל משטח API",
+    body: "Buckets ייעודיים ל־API, לקריאות AI ולזרמי מידע חיים — מונעים עומס והתקפות brute-force/DoS.",
+  },
+  {
+    id: "stream-acl",
+    title: "הרשאת מלון על זרמי מידע חיים",
+    body: "כל חיבור לזרם אירועים דורש JWT + בדיקת הרשאת מלון (ACL) לפני הרשמה — וללא טוקן גלוי בכתובת URL.",
+  },
+  {
+    id: "no-pan",
+    title: "לא נשמר מספר כרטיס אשראי (PAN)",
+    body: "תשלומים עוברים Tokenization/Vault חיצוני; מסד הנתונים העסקי אינו מאחסן PAN, בהתאם להפרדת scope תשלומים.",
+  },
+  {
+    id: "ai-gateway",
+    title: "AI Gateway מרכזי — לא קריאה חופשית למודלים",
+    body: "כל קריאת AI עוברת שכבת AI Platform מרכזית עם הרשאות מצומצמות לכל סוכן (least privilege) — קוד עסקי לא פונה למודל ישירות.",
   },
 ] as const;
 

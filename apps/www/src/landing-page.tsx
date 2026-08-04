@@ -6,6 +6,13 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { LegalFooter } from "@hotelos/features";
+import { CookieBanner } from "@hotelos/ui";
+import {
+  APP_URLS,
+  getConsentSubjectKey,
+  saveCookieConsent,
+} from "@hotelos/web-client";
 import {
   CAPABILITIES,
   CEO_BARS,
@@ -15,6 +22,7 @@ import {
   ORG_NODES,
   OUTCOMES,
   TAGLINES,
+  TRUST_CONTROLS,
   WORLD_COMPARISON,
 } from "./content.js";
 
@@ -29,6 +37,7 @@ const NAV_LINKS = [
   { href: "#chat", label: "צ׳אט" },
   { href: "#os", label: "מערכת הפעלה" },
   { href: "#ceo-value", label: "ערך למנכ״ל" },
+  { href: "#trust", label: "אבטחה ואמון" },
   { href: "#faq", label: "שאלות" },
 ] as const;
 
@@ -547,6 +556,31 @@ export function LandingPage() {
         </RevealSection>
 
         <RevealSection
+          id="trust"
+          className="section trust"
+          aria-labelledby="trust-title"
+        >
+          <p className="eyebrow">אבטחה ואמון</p>
+          <h2 id="trust-title">בקרות אמיתיות — לא תעודות שיווק</h2>
+          <p className="section__lead">
+            אין לנו הצהרת SOC2 או ISO — ולא נטען שיש. אלה הבקרות שקיימות
+            בפועל במערכת היום.
+          </p>
+          <ul className="trust-grid">
+            {TRUST_CONTROLS.map((control) => (
+              <li key={control.id} className="trust-control">
+                <h3>{control.title}</h3>
+                <p>{control.body}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="trust-note">
+            הפירוט המלא, כולל מדיניות אימות ונתונים רגישים, במסמך{" "}
+            <a href={APP_URLS.legal("security")}>מדיניות האבטחה</a>.
+          </p>
+        </RevealSection>
+
+        <RevealSection
           id="faq"
           className="section faq"
           aria-labelledby="faq-title"
@@ -618,17 +652,32 @@ export function LandingPage() {
         </RevealSection>
       </main>
 
-      <footer className="foot">
-        <p>
-          <strong>HotelOS AI</strong> — Intelligence Layer for Hotels
-        </p>
-        <p className="foot__links">
-          <a href="#intelligence">סוכנים</a>
-          <a href="#chat">צ׳אט</a>
-          <a href="#outcomes">תוצאות</a>
-          <a href={PILOT_MAIL}>צור קשר</a>
-        </p>
-      </footer>
+      <div className="foot">
+        <div className="foot__top">
+          <p>
+            <strong>HotelOS AI</strong> — Intelligence Layer for Hotels
+          </p>
+          <p className="foot__links">
+            <a href="#intelligence">סוכנים</a>
+            <a href="#chat">צ׳אט</a>
+            <a href="#outcomes">תוצאות</a>
+            <a href="#trust">אבטחה</a>
+            <a href={PILOT_MAIL}>צור קשר</a>
+          </p>
+        </div>
+        <LegalFooter legalUrl={(doc) => APP_URLS.legal(doc)} />
+      </div>
+
+      <CookieBanner
+        legalCookiesUrl={APP_URLS.legal("cookies")}
+        onConsent={(consent) => {
+          void saveCookieConsent({
+            subjectKey: getConsentSubjectKey("www"),
+            necessary: consent.necessary,
+            functional: consent.functional,
+          });
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AttendancePage } from "@hotelos/features";
+import { AttendancePage, LegalFooter } from "@hotelos/features";
 import { Button, CookieBanner, SkipLink } from "@hotelos/ui";
 import {
   APP_URLS,
@@ -269,6 +269,7 @@ export function App() {
           {" · "}
           <a href={APP_URLS.book}>book</a>
         </footer>
+        <LegalFooter legalUrl={(doc) => APP_URLS.legal(doc)} />
       </div>
       <WorkCookieBanner />
       <style>{`
