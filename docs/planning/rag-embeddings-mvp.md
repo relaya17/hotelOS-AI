@@ -34,6 +34,8 @@ vector index + evals ship. Keyword path remains the reliable default.
 | Manual reindex | `POST .../reindex` + Admin «רענון אינדקס» |
 | **Batch cron reindex** (missing chunks/embeddings) | `GET/POST /v1/cron/knowledge-reindex` (04:00 UTC) |
 | Admin citation UX | `GET .../chunks` + «הצג ציטוטים» |
+| Shared `@hotelos/ui` `CitationList` | Executive Ask / CIO / Finance Doctor |
+| Snapshot DTO without vectors | `hasEmbedding` / `embeddedAt` on CFO snapshots API |
 | OpenAI-compatible `/embeddings` provider | `packages/ai-gateway` |
 
 When embeddings / chunks are unavailable, packs fall back to keyword + body
@@ -42,7 +44,7 @@ prefix — Gateway still never searches the DB itself (Vol. 5 / ADR 0008).
 ## Not live (roadmap)
 
 - Dedicated Vector DB (or Turso vector index) with ANN + retrieval evals
-- Shared `@hotelos/ui` `CitationList` component (Admin/Executive ship local lists today)
+- Admin Company Knowledge chunk inspector remains local (doc chunks ≠ Gateway citations)
 
 ## Public claims
 

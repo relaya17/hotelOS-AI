@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, TextField } from "@hotelos/ui";
+import { Button, CitationList, TextField } from "@hotelos/ui";
 import {
   fetchCfoFinanceBrief,
   fetchCfoMarketSnapshots,
@@ -326,29 +326,7 @@ export function KnowledgeCommandPage({
           <div className="kc-answer">
             <p className="narrative">{askResult.answerHe}</p>
             {askResult.citations.length > 0 ? (
-              <ul className="kc-cites" aria-label="ציטוטים">
-                {askResult.citations.map((cite) => (
-                  <li key={`${cite.source}-${cite.title}-${cite.url ?? ""}`}>
-                    <span className={`kc-chip kc-chip--${cite.source}`}>
-                      {cite.source === "company"
-                        ? "ארגון"
-                        : cite.source === "trusted"
-                          ? "אמין"
-                          : "פנימי"}
-                    </span>
-                    {cite.url ? (
-                      <a href={cite.url} target="_blank" rel="noreferrer">
-                        {cite.title}
-                      </a>
-                    ) : (
-                      <span>{cite.title}</span>
-                    )}
-                    {cite.snippet ? (
-                      <span className="kc-cite-snippet"> — {cite.snippet}</span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
+              <CitationList citations={askResult.citations} />
             ) : null}
             <p className="hint">
               {askResult.provider} · {askResult.confidence} · {askResult.latencyMs}
@@ -507,6 +485,7 @@ export function KnowledgeCommandPage({
                       {snap?.status === "failed"
                         ? `כשל · ${ageLabelHe(snap.fetchedAt)}`
                         : ageLabelHe(snap?.fetchedAt)}
+                      {snap?.hasEmbedding ? " · embedding ✓" : ""}
                     </span>
                   </div>
                   {source.url ? (

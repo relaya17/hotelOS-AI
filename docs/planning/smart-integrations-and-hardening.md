@@ -67,7 +67,7 @@
 
 **מיושם (2026-07-19):** `SkipLink` + `#main-content` + focus אחרי ניווט SPA; `--touch-min` (44px) על כפתורים/שדות/טאבים; `:focus-visible` + `prefers-reduced-motion` + `forced-colors` ב־`tokens.css`; `aria-modal` בבאנר עוגיות.
 
-**עדיין חסר:** סריקת axe במסכי ליבה מעבר ל-login, jsx-a11y ב־CI, הצהרת נגישות מעודכנת.
+**עדיין חסר:** axe במסכים מאומתים / jsx-a11y ב־CI. הצהרת נגישות legal + axe על login + www/guest public shells כבר חיים.
 
 **Playwright login axe (2026-08-03):** `@hotelos/a11y-e2e` — `pnpm test:a11y-e2e` (דורש Chromium; `SKIP_A11Y_E2E=1` לדילוג; `RUN_A11Y_E2E=1` לכשל אם דפדפנים חסרים). CI job `a11y-login` אחרי build.
 

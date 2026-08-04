@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, TextField } from "@hotelos/ui";
+import { Button, CitationList, TextField } from "@hotelos/ui";
 import {
   createTrustedSource,
   decideRevenueSuggestion,
@@ -646,6 +646,9 @@ export function CioDigestPage() {
         {smart ? (
           <div className="smart-block">
             <p className="narrative">{smart.narrativeHe}</p>
+            {smart.citations?.length ? (
+              <CitationList citations={smart.citations} />
+            ) : null}
             {smart.suggestedActionsHe.length > 0 ? (
               <div>
                 <h3>מומלץ היום · Suggest→Approve→Act</h3>

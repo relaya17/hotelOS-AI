@@ -1,4 +1,9 @@
 export { Button, type ButtonProps } from "./button.js";
+export {
+  CitationList,
+  type CitationListItem,
+  type CitationListProps,
+} from "./citation-list.js";
 export { TextField, type TextFieldProps } from "./text-field.js";
 export { CookieBanner, type CookieBannerProps } from "./cookie-banner.js";
 export { SignaturePad, type SignaturePadProps } from "./signature-pad.js";

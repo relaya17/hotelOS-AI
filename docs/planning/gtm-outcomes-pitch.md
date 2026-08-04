@@ -15,10 +15,10 @@ HotelOS AI ממוקמת כ־**Operating System / Intelligence Layer** — לא �
 |--------|------|
 | **Closed (MVP)** | Trust Center product surfaces — legal, `#trust` / `#status`, HITL, WebAuthn/OAuth, rate limits, no PAN in HotelOS |
 | **Closed (MVP)** | RAG **hybrid** — keyword + optional whole-doc / per-chunk embeddings + citations (not Vector DB / ANN) |
+| **Closed (MVP)** | Trusted allowlist **page fetch → snapshot (+ best-effort embed)** all categories |
 | **Remaining** | Certifications (SOC 2 / ISO) · counsel-signed DPA per customer |
 | **Remaining** | Employee depth (full HR dossier / advanced workflows beyond invite + assessments MVP) |
-| **Remaining** | WCAG full suite (beyond login axe smoke + foundations CI) |
-| **Remaining** | Trusted fetch — allowlist **page fetch → embed** for all categories (finance market snapshot ingest for CFO is live; general fetch/embed is not) |
+| **Remaining** | WCAG full suite (beyond login + www/guest public axe + foundations CI) |
 
 ---
 
@@ -165,7 +165,7 @@ flowchart TB
 | 18 | GTM | רשתות → פיילוט → land & expand domains | |
 | 19 | Pricing sketch | לפי מלון / חדר / דומיין (טיוטה — לא מחייב) | |
 | 20 | Market | Hospitality software + AI ops TAM (מקור חיצוני + תאריך) | |
-| 21 | Roadmap | Readiness board + next | Trusted fetch, Employee depth, WCAG suite, certs |
+| 21 | Roadmap | Readiness board + next | Employee depth, WCAG suite, certs (Trusted fetch+embed MVP closed) |
 | 22 | Team | | |
 | 23 | Ask | גיוס / פיילוט רשת | |
 | 24 | Appendix | ארכיטקטורה, מסכים | RAG = hybrid MVP, not Vector DB |
@@ -184,7 +184,7 @@ flowchart TB
 | AI Alerts | reputation, equipment, Sentry, VMS | **Live (MVP)** |
 | Chat מתורגם | Turbo staff chat | **Live** |
 | Trust / legal | `#trust`, legal docs, DPA **template**, payments status | **Live** · certs / signed DPA → roadmap |
-| Knowledge / RAG | Hybrid keyword + optional embeddings + citations | **Live (hybrid MVP)** · Vector DB / Trusted fetch → roadmap |
+| Knowledge / RAG | Hybrid keyword + optional embeddings + citations + Trusted snapshots/embed | **Live (hybrid MVP)** · Vector DB / ANN → roadmap |
 
 מיצוב טכני: [`hotel-intelligence-platform.md`](./hotel-intelligence-platform.md)  
 מדדי פיילוט: [`pilot-roi-scorecard.md`](./pilot-roi-scorecard.md)  

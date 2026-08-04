@@ -1,4 +1,4 @@
-import type { AiGateway } from "@hotelos/ai-gateway";
+import type { AiCitation, AiGateway } from "@hotelos/ai-gateway";
 import type {
   CompanyKnowledgeRepository,
   TrustedSourceSnapshotsRepository,
@@ -19,6 +19,7 @@ export type SynthesizeCioDigestResult = {
   readonly digest: CioDigest;
   readonly narrativeHe: string;
   readonly suggestedActionsHe: readonly string[];
+  readonly citations: readonly AiCitation[];
   readonly provider: string;
   readonly confidence: string;
   readonly latencyMs: number;
@@ -95,6 +96,7 @@ export async function synthesizeCioDigest(
     digest,
     narrativeHe: ai.answerHe,
     suggestedActionsHe: extractSuggestedActions(ai.answerHe),
+    citations: ai.citations,
     provider: ai.provider,
     confidence: ai.confidence,
     latencyMs: ai.latencyMs,

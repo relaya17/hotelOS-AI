@@ -1,4 +1,4 @@
-import type { AiGateway } from "@hotelos/ai-gateway";
+import type { AiCitation, AiGateway } from "@hotelos/ai-gateway";
 import type { CompanyKnowledgeRepository } from "@hotelos/database";
 import type { HotelId, TenantId, UserId } from "@hotelos/shared";
 import { buildAccountingContextPack } from "./build-accounting-context-pack.js";
@@ -24,6 +24,7 @@ export type SynthesizeCfoFinanceBriefResult = {
   readonly agentId: string;
   readonly narrativeHe: string;
   readonly suggestedActionsHe: readonly string[];
+  readonly citations: readonly AiCitation[];
   readonly provider: string;
   readonly confidence: string;
   readonly latencyMs: number;
@@ -174,6 +175,7 @@ export async function synthesizeCfoFinanceBrief(
     agentId,
     narrativeHe: ai.answerHe,
     suggestedActionsHe: extractSuggestedActions(ai.answerHe),
+    citations: ai.citations,
     provider: ai.provider,
     confidence: ai.confidence,
     latencyMs: ai.latencyMs,

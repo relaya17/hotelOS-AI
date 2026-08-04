@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, TextField } from "@hotelos/ui";
+import { Button, CitationList, TextField } from "@hotelos/ui";
 import {
   fetchCfoFinanceBrief,
   fetchCfoMarketSnapshots,
@@ -287,6 +287,9 @@ export function FinanceDoctorPage() {
             · {smart.provider}
           </p>
           <p className="narrative">{smart.narrativeHe}</p>
+          {smart.citations?.length ? (
+            <CitationList citations={smart.citations} />
+          ) : null}
           {smart.suggestedActionsHe.length > 0 ? (
             <>
               <h3>המלצות להיום — שליחה לאוטומציה (Suggest)</h3>
@@ -369,6 +372,9 @@ export function FinanceDoctorPage() {
                   <span className={snap.status === "ok" ? "ok" : "fail"}>
                     {snap.status === "ok" ? "OK" : "FAILED"}
                   </span>
+                  {snap.hasEmbedding ? (
+                    <span className="ok"> · embedding ✓</span>
+                  ) : null}
                 </strong>
                 <span className="meta">
                   {new Date(snap.fetchedAt).toLocaleString("he-IL")}

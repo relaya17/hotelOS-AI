@@ -1454,6 +1454,7 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
           gateway: deps.gateway,
           companyKnowledge: deps.companyKnowledge,
           trustedSources: deps.trustedSources,
+          trustedSourceSnapshots: deps.snapshots,
         },
         {
           tenantId: principal.scope.tenantId,
@@ -1635,7 +1636,20 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         principal.scope.tenantId,
         { limit: 30 },
       );
-      return c.json({ data: rows });
+      return c.json({
+        data: rows.map((row) => ({
+          id: row.id,
+          sourceId: row.sourceId,
+          fetchedAt: row.fetchedAt,
+          title: row.title,
+          summary: row.summary,
+          status: row.status,
+          error: row.error,
+          hasEmbedding: row.embedding !== null && row.embedding.length > 0,
+          embeddedAt: row.embeddedAt,
+          embeddingModel: row.embeddingModel,
+        })),
+      });
     } catch (error) {
       return mapUnknownError(c, error);
     }

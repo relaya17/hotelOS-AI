@@ -125,3 +125,76 @@ test("ingestTrustedMarketFeeds stores ok and failed snapshots", async () => {
     "failed",
   );
 });
+
+test("ingestTrustedMarketFeeds embeds ok snapshots via gateway", async () => {
+  const tenantId = Ids.tenant("11111111-1111-4111-8111-111111111111");
+  const trustedSources = {
+    list: async () => [
+      {
+        id: "s-ok",
+        tenantId,
+        title: "OECD",
+        url: "https://data.oecd.org",
+        category: "market_data",
+        approvedAt: "2026-08-03T00:00:00.000Z",
+        approvedByUserId: null,
+        createdAt: "2026-08-03T00:00:00.000Z",
+      },
+    ],
+    create: async () => {
+      throw new Error("unused");
+    },
+  } satisfies TrustedSourcesRepository;
+
+  let embedded = 0;
+  const snapshots = {
+    create: async (input) => ({
+      id: input.id,
+      tenantId: input.tenantId,
+      sourceId: input.sourceId,
+      fetchedAt: input.fetchedAt,
+      title: input.title,
+      summary: input.summary,
+      checksum: input.checksum,
+      status: input.status,
+      error: input.error ?? null,
+      createdAt: input.createdAt,
+      embedding: null,
+      embeddingModel: null,
+      embeddedAt: null,
+    }),
+    listLatestByTenant: async () => [],
+    listLatestOkForSources: async () => [],
+    upsertEmbedding: async () => {
+      embedded += 1;
+    },
+    searchSourcesBySnapshotEmbedding: async () => [],
+  } satisfies TrustedSourceSnapshotsRepository;
+
+  const fetchImpl: typeof fetch = async () =>
+    new Response(
+      "<html><head><title>OECD</title></head><body>Rates</body></html>",
+      { status: 200, headers: { "Content-Type": "text/html" } },
+    );
+
+  const gateway = {
+    embed: async () => ({
+      model: "test-embed",
+      vectors: [[0.2, 0.4, 0.6]],
+    }),
+  };
+
+  const result = await ingestTrustedMarketFeeds(
+    {
+      trustedSources,
+      snapshots,
+      fetchImpl,
+      gateway: gateway as never,
+    },
+    tenantId,
+  );
+
+  assert.equal(result.ok, 1);
+  assert.equal(result.embedded, 1);
+  assert.equal(embedded, 1);
+});

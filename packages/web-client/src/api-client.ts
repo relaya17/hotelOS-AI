@@ -2954,6 +2954,12 @@ export type SynthesizedCioDigestDto = {
   readonly digest: CioDigestDto;
   readonly narrativeHe: string;
   readonly suggestedActionsHe: readonly string[];
+  readonly citations: readonly {
+    readonly title: string;
+    readonly url?: string;
+    readonly source: "internal" | "trusted" | "company";
+    readonly snippet?: string;
+  }[];
   readonly provider: string;
   readonly confidence: string;
   readonly latencyMs: number;
@@ -3006,6 +3012,12 @@ export type SynthesizedCfoFinanceBriefDto = {
   readonly agentId: string;
   readonly narrativeHe: string;
   readonly suggestedActionsHe: readonly string[];
+  readonly citations: readonly {
+    readonly title: string;
+    readonly url?: string;
+    readonly source: "internal" | "trusted" | "company";
+    readonly snippet?: string;
+  }[];
   readonly provider: string;
   readonly confidence: string;
   readonly latencyMs: number;
@@ -3021,6 +3033,9 @@ export type TrustedSourceSnapshotDto = {
   readonly summary: string;
   readonly status: "ok" | "failed";
   readonly error: string | null;
+  readonly hasEmbedding: boolean;
+  readonly embeddedAt: string | null;
+  readonly embeddingModel: string | null;
 };
 
 export async function fetchCfoFinanceBrief(): Promise<CfoFinanceBriefDto> {
