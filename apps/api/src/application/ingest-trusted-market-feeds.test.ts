@@ -77,6 +77,9 @@ test("ingestTrustedMarketFeeds stores ok and failed snapshots", async () => {
         status: input.status,
         error: input.error ?? null,
         createdAt: input.createdAt,
+        embedding: null,
+        embeddingModel: null,
+        embeddedAt: null,
       };
       created.push(row);
       return row;
@@ -84,6 +87,10 @@ test("ingestTrustedMarketFeeds stores ok and failed snapshots", async () => {
     listLatestByTenant: async () => created,
     listLatestOkForSources: async () =>
       created.filter((row) => row.status === "ok"),
+    upsertEmbedding: async () => {
+      // unused in this test
+    },
+    searchSourcesBySnapshotEmbedding: async () => [],
   } satisfies TrustedSourceSnapshotsRepository;
 
   const fetchImpl: typeof fetch = async (input) => {
@@ -110,6 +117,7 @@ test("ingestTrustedMarketFeeds stores ok and failed snapshots", async () => {
   assert.equal(result.attempted, 2);
   assert.equal(result.ok, 1);
   assert.equal(result.failed, 1);
+  assert.equal(result.embedded, 0);
   assert.equal(created.length, 2);
   assert.equal(created.find((row) => row.sourceId === "s-ok")?.status, "ok");
   assert.equal(

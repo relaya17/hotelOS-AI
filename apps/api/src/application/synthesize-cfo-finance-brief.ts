@@ -142,6 +142,7 @@ export async function synthesizeCfoFinanceBrief(
       input.tenantId,
       searchBlob,
       deps.snapshots,
+      deps.gateway,
     ),
   ]);
 

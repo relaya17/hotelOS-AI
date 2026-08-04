@@ -72,6 +72,7 @@ export async function synthesizeCioDigest(
       input.tenantId,
       searchBlob,
       deps.trustedSourceSnapshots,
+      deps.gateway,
     ),
   ]);
   const contextPack =

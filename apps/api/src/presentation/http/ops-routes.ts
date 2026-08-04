@@ -1601,6 +1601,7 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
         {
           trustedSources: deps.trustedSources,
           snapshots: deps.snapshots,
+          gateway: deps.gateway,
         },
         principal.scope.tenantId,
       );
@@ -1616,6 +1617,7 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
           attempted: result.attempted,
           ok: result.ok,
           failed: result.failed,
+          embedded: result.embedded,
         },
         createdAt: new Date().toISOString(),
       });

@@ -1,4 +1,4 @@
-import type { AiCitation } from "@hotelos/ai-gateway";
+import type { AiCitation, AiGateway } from "@hotelos/ai-gateway";
 import type {
   TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
@@ -26,8 +26,15 @@ export type TrustedSourcesContextPack = {
   readonly citations: readonly AiCitation[];
 };
 
+type PackSource = {
+  readonly id: string;
+  readonly title: string;
+  readonly url: string;
+  readonly category: string;
+};
+
 /**
- * Keyword hits from approved Trusted Sources allowlist — external facts only.
+ * Hybrid keyword + optional snapshot embeddings from approved Trusted Sources.
  * Prefers stored page snapshots when present (fetch cron / CFO ingest).
  * Gateway never searches the open web; API builds the pack (Vol. 5 / ADR 0007).
  */
@@ -36,33 +43,68 @@ export async function buildTrustedSourcesContextPack(
   tenantId: TenantId,
   message: string,
   snapshots?: TrustedSourceSnapshotsRepository,
+  gateway?: AiGateway,
 ): Promise<TrustedSourcesContextPack | undefined> {
   const terms = extractSearchTerms(message);
-  if (terms.length === 0) return undefined;
-
   const sources = await trustedSources.list(tenantId);
   if (sources.length === 0) return undefined;
 
-  const scored = sources
-    .map((source) => {
-      const haystack =
-        `${source.title} ${source.category} ${source.url}`.toLowerCase();
-      let score = 0;
-      for (const term of terms) {
-        if (haystack.includes(term)) score += 1;
+  const byId = new Map<string, PackSource>();
+
+  if (terms.length > 0) {
+    const scored = sources
+      .map((source) => {
+        const haystack =
+          `${source.title} ${source.category} ${source.url}`.toLowerCase();
+        let score = 0;
+        for (const term of terms) {
+          if (haystack.includes(term)) score += 1;
+        }
+        return { source, score };
+      })
+      .filter((row) => row.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    if (scored.length > 0) {
+      const topScore = scored[0]?.score ?? 0;
+      for (const row of scored) {
+        if (row.score !== topScore && row.score < 2) continue;
+        byId.set(row.source.id, row.source);
+        if (byId.size >= MAX_SOURCES) break;
       }
-      return { source, score };
-    })
-    .filter((row) => row.score > 0)
-    .sort((a, b) => b.score - a.score);
+    }
+  }
 
-  if (scored.length === 0) return undefined;
+  if (
+    gateway !== undefined &&
+    snapshots !== undefined &&
+    byId.size < MAX_SOURCES
+  ) {
+    try {
+      const embedded = await gateway.embed([message.slice(0, 2000)]);
+      const queryVector = embedded.vectors[0];
+      if (queryVector && queryVector.length > 0) {
+        const semanticHits = await snapshots.searchSourcesBySnapshotEmbedding(
+          tenantId,
+          queryVector,
+          MAX_SOURCES,
+        );
+        const sourceById = new Map(sources.map((s) => [s.id, s]));
+        for (const hit of semanticHits) {
+          const source = sourceById.get(hit.sourceId);
+          if (!source || byId.has(source.id)) continue;
+          byId.set(source.id, source);
+          if (byId.size >= MAX_SOURCES) break;
+        }
+      }
+    } catch {
+      // Keyword pack remains valid when embeddings are unavailable.
+    }
+  }
 
-  const topScore = scored[0]?.score ?? 0;
-  const hits = scored
-    .filter((row) => row.score === topScore || row.score >= 2)
-    .slice(0, MAX_SOURCES)
-    .map((row) => row.source);
+  if (byId.size === 0) return undefined;
+
+  const hits = [...byId.values()].slice(0, MAX_SOURCES);
 
   const snapshotBySource = new Map<string, string>();
   if (snapshots !== undefined) {

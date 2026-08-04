@@ -76,6 +76,11 @@ export function App() {
   const [selectedStayIndex, setSelectedStayIndex] = useState(0);
 
   useEffect(() => {
+    const main = document.getElementById("main-content");
+    main?.focus({ preventScroll: true });
+  }, [view, legalId]);
+
+  useEffect(() => {
     if (!legalId) {
       setLegalDoc(null);
       return;

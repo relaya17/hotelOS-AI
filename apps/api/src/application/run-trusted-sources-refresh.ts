@@ -1,3 +1,4 @@
+import type { AiGateway } from "@hotelos/ai-gateway";
 import type {
   TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
@@ -9,10 +10,12 @@ import { ingestTrustedAllowlistFeeds } from "./ingest-trusted-market-feeds.js";
 export type RunTrustedSourcesRefreshDeps = {
   readonly trustedSources: TrustedSourcesRepository;
   readonly snapshots: TrustedSourceSnapshotsRepository;
+  readonly gateway?: AiGateway;
 };
 
 /**
- * Nightly allowlist page fetch → text snapshot for all Trusted Source categories.
+ * Nightly allowlist page fetch → text snapshot (+ best-effort embed) for all
+ * Trusted Source categories.
  */
 export async function runTrustedSourcesRefresh(
   deps: RunTrustedSourcesRefreshDeps,

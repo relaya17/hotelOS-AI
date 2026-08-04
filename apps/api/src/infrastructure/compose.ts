@@ -489,6 +489,7 @@ export async function composeApp() {
       trustedSourcesRefresh: {
         trustedSources,
         snapshots: trustedSourceSnapshots,
+        gateway,
       },
     },
     simulator: {

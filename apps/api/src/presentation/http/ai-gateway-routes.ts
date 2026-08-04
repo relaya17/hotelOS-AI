@@ -104,6 +104,7 @@ export function createAiGatewayRoutes(deps: AiGatewayRouteDeps): Hono<{
             principal.scope.tenantId,
             parsed.data.message,
             deps.trustedSourceSnapshots,
+            deps.gateway,
           ),
         ]);
         contextPack = mergeContextPacks(

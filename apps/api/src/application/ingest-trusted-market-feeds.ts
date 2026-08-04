@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import type { AiGateway } from "@hotelos/ai-gateway";
 import type {
   TrustedSourceSnapshotsRepository,
   TrustedSourcesRepository,
@@ -21,6 +22,8 @@ export type IngestTrustedFeedsDeps = {
   readonly trustedSources: TrustedSourcesRepository;
   readonly snapshots: TrustedSourceSnapshotsRepository;
   readonly fetchImpl?: typeof fetch;
+  /** Optional — best-effort snapshot embeddings via Gateway (Vol. 5). */
+  readonly gateway?: AiGateway;
 };
 
 /** @deprecated Use IngestTrustedFeedsDeps */
@@ -31,13 +34,14 @@ export type IngestTrustedFeedsResult = {
   readonly ok: number;
   readonly failed: number;
   readonly snapshotIds: readonly string[];
+  readonly embedded: number;
 };
 
 /** @deprecated Use IngestTrustedFeedsResult */
 export type IngestTrustedMarketFeedsResult = IngestTrustedFeedsResult;
 
 /**
- * Fetch approved Trusted Sources and store text snapshots.
+ * Fetch approved Trusted Sources and store text snapshots (+ optional embed).
  * Allowlist URLs only — never open-web discovery as truth (ADR 0007).
  */
 export async function ingestTrustedAllowlistFeeds(
@@ -55,6 +59,7 @@ export async function ingestTrustedAllowlistFeeds(
   const snapshotIds: string[] = [];
   let ok = 0;
   let failed = 0;
+  let embedded = 0;
   const now = new Date().toISOString();
 
   for (const source of sources) {
@@ -97,6 +102,25 @@ export async function ingestTrustedAllowlistFeeds(
       });
       snapshotIds.push(id);
       ok += 1;
+
+      if (deps.gateway && summary.trim().length > 0) {
+        try {
+          const result = await deps.gateway.embed([summary.slice(0, 8000)]);
+          const vector = result.vectors[0];
+          if (vector && vector.length > 0) {
+            await deps.snapshots.upsertEmbedding({
+              snapshotId: id,
+              tenantId,
+              model: result.model,
+              embedding: vector,
+              embeddedAt: new Date().toISOString(),
+            });
+            embedded += 1;
+          }
+        } catch {
+          // Snapshot text remains valid without embedding.
+        }
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message.slice(0, 240) : "fetch failed";
@@ -122,6 +146,7 @@ export async function ingestTrustedAllowlistFeeds(
     ok,
     failed,
     snapshotIds,
+    embedded,
   };
 }
 

@@ -114,4 +114,52 @@ describe("buildTrustedSourcesContextPack", () => {
     assert.match(pack.text, /4\.5/);
     assert.equal(pack.citations[0]?.snippet?.includes("4.5"), true);
   });
+
+  it("fills pack from snapshot embeddings when keywords miss", async () => {
+    const trustedSources = {
+      list: async () => [
+        {
+          id: "s1",
+          tenantId: "t1",
+          title: "OECD Data Hub",
+          url: "https://data.oecd.org",
+          category: "market_data",
+          approvedAt: "2026-01-01T00:00:00.000Z",
+          approvedByUserId: "u1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    } as unknown as TrustedSourcesRepository;
+
+    const snapshots = {
+      listLatestOkForSources: async () => [
+        {
+          id: "snap1",
+          sourceId: "s1",
+          summary: "Interest rates and macro dashboard excerpt.",
+        },
+      ],
+      searchSourcesBySnapshotEmbedding: async () => [
+        { sourceId: "s1", score: 0.82 },
+      ],
+    };
+
+    const gateway = {
+      embed: async () => ({
+        model: "test-embed",
+        vectors: [[0.1, 0.2, 0.3]],
+      }),
+    };
+
+    const pack = await buildTrustedSourcesContextPack(
+      trustedSources,
+      Ids.tenant("00000000-0000-4000-8000-000000000001"),
+      "מה הריבית העולמית כרגע?",
+      snapshots as never,
+      gateway as never,
+    );
+    assert.ok(pack?.text);
+    assert.match(pack.text, /OECD/);
+    assert.match(pack.text, /Snapshot/);
+  });
 });

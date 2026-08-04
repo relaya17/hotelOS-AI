@@ -97,6 +97,10 @@ export const trustedSourceSnapshots = sqliteTable(
     status: text("status").notNull(),
     error: text("error"),
     createdAt: text("created_at").notNull(),
+    embeddingModel: text("embedding_model"),
+    embeddingDims: text("embedding_dims"),
+    embeddingJson: text("embedding_json"),
+    embeddedAt: text("embedded_at"),
   },
   (table) => [
     index("trusted_source_snapshots_tenant_idx").on(table.tenantId),

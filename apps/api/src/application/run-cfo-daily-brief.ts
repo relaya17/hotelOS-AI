@@ -40,6 +40,7 @@ export type CfoDailyBriefResult = {
     readonly attempted: number;
     readonly ok: number;
     readonly failed: number;
+    readonly embedded: number;
   };
 };
 
@@ -128,6 +129,7 @@ export async function runCfoDailyBrief(
       attempted: ingest.attempted,
       ok: ingest.ok,
       failed: ingest.failed,
+      embedded: ingest.embedded,
     },
   };
 }

@@ -764,7 +764,11 @@ export async function migrate(client: Client): Promise<void> {
       checksum TEXT NOT NULL,
       status TEXT NOT NULL,
       error TEXT,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      embedding_model TEXT,
+      embedding_dims TEXT,
+      embedding_json TEXT,
+      embedded_at TEXT
     );
     CREATE INDEX IF NOT EXISTS trusted_source_snapshots_tenant_idx ON trusted_source_snapshots(tenant_id);
     CREATE INDEX IF NOT EXISTS trusted_source_snapshots_source_idx ON trusted_source_snapshots(source_id);
@@ -973,6 +977,31 @@ export async function migrate(client: Client): Promise<void> {
   await ensureColumn(
     client,
     "company_knowledge_chunks",
+    "embedded_at",
+    "embedded_at TEXT",
+  );
+
+  await ensureColumn(
+    client,
+    "trusted_source_snapshots",
+    "embedding_model",
+    "embedding_model TEXT",
+  );
+  await ensureColumn(
+    client,
+    "trusted_source_snapshots",
+    "embedding_dims",
+    "embedding_dims TEXT",
+  );
+  await ensureColumn(
+    client,
+    "trusted_source_snapshots",
+    "embedding_json",
+    "embedding_json TEXT",
+  );
+  await ensureColumn(
+    client,
+    "trusted_source_snapshots",
     "embedded_at",
     "embedded_at TEXT",
   );

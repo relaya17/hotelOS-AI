@@ -83,6 +83,7 @@ export function createCorrespondenceRoutes(deps: CorrespondenceRouteDeps): Hono<
           principal.scope.tenantId,
           searchBlob,
           deps.trustedSourceSnapshots,
+          deps.gateway,
         ),
       ]);
       const basePack =
