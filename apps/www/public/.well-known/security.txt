@@ -1,0 +1,10 @@
+Contact: mailto:privacy@hotelos.ai
+Contact: mailto:pilot@hotelos.ai
+Expires: 2027-08-04T00:00:00.000Z
+Preferred-Languages: he, en
+Canonical: https://www.hotelos.ai/.well-known/security.txt
+Policy: https://www.hotelos.ai/#trust
+# Full Security Policy HTML lives on the Guest legal surface (/?doc=security).
+# Set VITE_APP_URL_GUEST in production and update Policy to that absolute URL when stable.
+Acknowledgments: https://github.com/relaya17/hotelOS-AI
+Hiring: mailto:pilot@hotelos.ai

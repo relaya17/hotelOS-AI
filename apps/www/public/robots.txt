@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://www.hotelos.ai/sitemap.xml
+# Security contact: https://www.hotelos.ai/.well-known/security.txt

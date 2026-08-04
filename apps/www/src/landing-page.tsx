@@ -576,7 +576,9 @@ export function LandingPage() {
           </ul>
           <p className="trust-note">
             הפירוט המלא, כולל מדיניות אימות ונתונים רגישים, במסמך{" "}
-            <a href={APP_URLS.legal("security")}>מדיניות האבטחה</a>.
+            <a href={APP_URLS.legal("security")}>מדיניות האבטחה</a>
+            {" · "}
+            <a href="/.well-known/security.txt">security.txt</a>.
           </p>
         </RevealSection>
 
@@ -653,17 +655,35 @@ export function LandingPage() {
       </main>
 
       <div className="foot">
-        <div className="foot__top">
+        <div className="foot__brand">
           <p>
-            <strong>HotelOS AI</strong> — Intelligence Layer for Hotels
+            <strong>HotelOS AI</strong>
           </p>
-          <p className="foot__links">
+          <p className="foot__tag">Intelligence Layer for Hotels</p>
+        </div>
+        <div className="foot__grid" aria-label="ניווט תחתון">
+          <div className="foot__col">
+            <h3>מוצר</h3>
+            <a href="#outcomes">תוצאות</a>
             <a href="#intelligence">סוכנים</a>
             <a href="#chat">צ׳אט</a>
-            <a href="#outcomes">תוצאות</a>
-            <a href="#trust">אבטחה</a>
-            <a href={PILOT_MAIL}>צור קשר</a>
-          </p>
+            <a href="#wedge">הבידול</a>
+          </div>
+          <div className="foot__col">
+            <h3>אמון</h3>
+            <a href="#trust">בקרות אבטחה</a>
+            <a href={APP_URLS.legal("security")}>מדיניות אבטחה</a>
+            <a href={APP_URLS.legal("privacy")}>פרטיות</a>
+            <a href={APP_URLS.legal("cookies")}>עוגיות</a>
+            <a href="/.well-known/security.txt">security.txt</a>
+          </div>
+          <div className="foot__col">
+            <h3>התחלה</h3>
+            <a href={PILOT_MAIL}>פיילוט</a>
+            <a href={APP_URLS.legal("terms")}>תנאי שימוש</a>
+            <a href={APP_URLS.legal("meetings")}>מדיניות פגישות</a>
+            <a href="#faq">שאלות נפוצות</a>
+          </div>
         </div>
         <LegalFooter legalUrl={(doc) => APP_URLS.legal(doc)} />
       </div>

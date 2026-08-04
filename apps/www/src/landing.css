@@ -1067,35 +1067,62 @@ a {
 .foot {
   width: min(100% - 2 * var(--space), var(--max));
   margin: 0 auto;
-  padding: 2rem 0 3rem;
+  padding: 2.5rem 0 calc(3rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line);
   display: grid;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
-.foot__top {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 1rem;
+.foot__brand strong {
+  color: var(--brass-hot);
+  font-size: 1.05rem;
+}
+
+.foot__tag {
+  margin: 0.35rem 0 0;
   color: var(--mist-dim);
   font-size: 0.9rem;
 }
 
-.foot__links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin: 0;
+.foot__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem 2rem;
 }
 
-.foot__links a {
+.foot__col {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+}
+
+.foot__col h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--jade);
+  font-weight: 700;
+}
+
+.foot__col a {
   color: var(--mist-dim);
   text-decoration: none;
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
-.foot__links a:hover {
+.foot__col a:hover,
+.foot__col a:focus-visible {
   color: var(--brass-hot);
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .foot__grid {
+    grid-template-columns: 1fr;
+    gap: 1.35rem;
+  }
 }
 
 /* LegalFooter (@hotelos/features) — already inherits the dark token bridge

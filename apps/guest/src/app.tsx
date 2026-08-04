@@ -184,34 +184,79 @@ export function App() {
       <>
         <SkipLink />
         <main id="main-content" className="legal" tabIndex={-1}>
-          <p className="hotelos-eyebrow">HotelOS AI · Legal</p>
-          <h1>{legalDoc.titleHe}</h1>
-          <p className="meta">
-            v{legalDoc.version} · עודכן {legalDoc.updatedAt}
-          </p>
-          {legalDoc.sections.map((section) => (
-            <section key={section.heading}>
+          <header className="legal__head">
+            <p className="hotelos-eyebrow">HotelOS AI · Legal</p>
+            <h1>{legalDoc.titleHe}</h1>
+            {legalDoc.titleEn ? (
+              <p className="legal__title-en">{legalDoc.titleEn}</p>
+            ) : null}
+            <p className="meta">
+              v{legalDoc.version} · עודכן {legalDoc.updatedAt}
+            </p>
+            <nav className="legal__toc" aria-label="סעיפים">
+              {legalDoc.sections.map((section, index) => {
+                const sectionId = `legal-section-${index + 1}`;
+                return (
+                  <a key={sectionId} href={`#${sectionId}`}>
+                    {section.heading}
+                  </a>
+                );
+              })}
+            </nav>
+          </header>
+          {legalDoc.sections.map((section, index) => (
+            <section
+              key={`legal-section-${index + 1}`}
+              id={`legal-section-${index + 1}`}
+              className="legal__section"
+            >
               <h2>{section.heading}</h2>
               <p>{section.body}</p>
             </section>
           ))}
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              window.history.replaceState({}, "", "/");
-              setLegalId(null);
-              setView("landing");
-            }}
-          >
-            חזרה לדף הבית
-          </Button>
+          <div className="legal__actions">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                window.history.replaceState({}, "", "/");
+                setLegalId(null);
+                setView("landing");
+              }}
+            >
+              חזרה לדף הבית
+            </Button>
+            {legalId === "security" ? (
+              <a className="legal__security-txt" href={APP_URLS.legal("privacy")}>
+                מדיניות פרטיות
+              </a>
+            ) : (
+              <a
+                className="legal__security-txt"
+                href={APP_URLS.legal("security")}
+              >
+                מדיניות אבטחה
+              </a>
+            )}
+          </div>
+          <SiteFooter />
           <GuestCookieBanner />
           <style>{`
             .legal{max-width:48rem;margin:0 auto;padding:clamp(1.5rem,4vw,3rem);display:grid;gap:var(--space-4);animation:hotelos-enter var(--motion-med) var(--ease-out) both}
+            .legal__head{display:grid;gap:var(--space-2)}
+            .legal__title-en{margin:0;color:var(--color-ink-soft);font-weight:600}
             .meta{color:var(--color-ink-soft);font-weight:500}
-            section h2{font-size:1.2rem;margin-bottom:var(--space-2)}
-            section p{color:var(--color-ink-soft);line-height:1.7;font-weight:500}
+            .legal__toc{display:flex;flex-wrap:wrap;gap:.45rem .75rem;padding:var(--space-3);border:1px solid var(--color-line);border-radius:var(--radius-md);background:var(--color-paper-elevated)}
+            .legal__toc a{font-size:var(--text-small);font-weight:600;color:var(--color-sea-deep);text-decoration:none}
+            .legal__toc a:hover,.legal__toc a:focus-visible{text-decoration:underline}
+            .legal__section{padding-top:var(--space-2);border-top:1px solid var(--color-line)}
+            .legal__section h2{font-size:1.15rem;margin:0 0 var(--space-2);scroll-margin-top:5rem}
+            .legal__section p{margin:0;color:var(--color-ink-soft);line-height:1.75;font-weight:500;white-space:pre-wrap}
+            .legal__actions{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:center}
+            .legal__security-txt{font-weight:700;color:var(--color-sea-deep)}
+            @media (max-width:480px){
+              .legal__toc{flex-direction:column}
+            }
           `}</style>
         </main>
       </>

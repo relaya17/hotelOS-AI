@@ -9,6 +9,9 @@
 |---------|--------|
 | Legal docs (terms / privacy / cookies / security / meetings) | `@hotelos/legal` → `GET /v1/public/legal` → Guest `/?doc=` |
 | Legal footer + cookie banner | www, Admin, Executive, Work, Guest |
+| www trust section `#trust` | Live controls only + link to security policy |
+| www footer grid | Product / Trust / Start columns + legal bar |
+| `security.txt` | `apps/www/public/.well-known/security.txt` |
 | HITL Suggest→Approve→Act | Approvals UI + autonomy routes |
 | WebAuthn / Google OAuth (staff) | Trust / login flows |
 | API rate limits + AI rate budget | API middleware |
@@ -19,7 +22,7 @@
 ## Roadmap (not claimed on www)
 
 - SOC 2 / ISO attestation pack
-- Public status page + `security.txt`
+- Public status page (uptime)
 - Counsel-signed DPA / subprocessors schedule per customer
 - Live external PCI gateway UX (beyond stub/demo)
 - Full cookie category matrix (analytics/marketing) if introduced
