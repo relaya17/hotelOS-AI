@@ -27,54 +27,94 @@ export type TrustControl = {
   readonly body: string;
 };
 
+export type PlatformPillar = {
+  readonly id: string;
+  readonly eyebrow: string;
+  readonly title: string;
+  readonly body: string;
+  readonly proof: string;
+};
+
+/** Four executive pillars — capabilities / reliability / stability / innovation. */
+export const PLATFORM_PILLARS: readonly PlatformPillar[] = [
+  {
+    id: "capabilities",
+    eyebrow: "יכולות",
+    title: "מערכת הפעלה לרשת — לא עוד אפליקציה למחלקה",
+    body: "Executive לרשת, Admin למלון, Work לעובד, Guest לאורח — על אותה ליבת אותות. תדריך מנכ״ל, מרכז תקלות, תחזית, תחזוקה חזויה, המלצות הכנסה, צ׳אט רב־לשוני וסוכנים דרך AI Gateway אחד.",
+    proof: "ארבע אפליקציות · AI Gateway · Land & Expand",
+  },
+  {
+    id: "reliability",
+    eyebrow: "אמינות",
+    title: "AI שמציע — אדם שמאשר — מערכת שמבצעת",
+    body: "Suggest → Approve → Act על כסף ותעריף. בלי קופסה שחורה. בלי הבטחת «הסוכן סגר לבד». ככה רשת סוגרת פיילוט בלי פחד מוועדת כספים.",
+    proof: "HITL · אישורי AI · Audit לתהליכים רגישים",
+  },
+  {
+    id: "stability",
+    eyebrow: "יציבות",
+    title: "שכבה מעל ה־PMS — לא פרויקט החלפה של 18 חודשים",
+    body: "Opera / Protel / Fidelio / Clock נשארים מקור האמת להזמנות. HotelOS מתחברת כשכבת בינה: פחות סיכון הטמעה, יותר מהירות לערך, בלי לשבור את חדר האוכל של המערכת הקיימת.",
+    proof: "GR-016 · Intelligence Layer · ללא rip-and-replace",
+  },
+  {
+    id: "innovation",
+    eyebrow: "חדשנות",
+    title: "נבנית כקטגוריה: Intelligence Layer למלונות",
+    body: "לא צ׳אטבוט על Excel ולא דשבורד אתמול. סוכנים, Digital Twin ויזואלי, תחזית, אנרגיה, מוניטין→משימה, ו־10 שפות מאומתות — מוצר שמוגדר כמערכת הפעלה לרשת, לא כתוסף נקודתי.",
+    proof: "Twin · Forecast · i18n verified · Turbo OS",
+  },
+] as const;
+
 export const OUTCOMES: readonly OutcomeRow[] = [
   {
     id: "briefing",
-    pain: "מנהלים מבזבזים זמן על דוחות",
-    cost: "שעות עבודה רבות בכל שבוע",
-    outcome: "AI Executive Briefing + סוכנים אוטומטיים",
+    pain: "הבוקר מתחיל בציד מידע משבע מערכות",
+    cost: "שעות הנהלה כל שבוע — לפני שהאורח בכלל בדלפק",
+    outcome: "תדריך מנכ״ל אחד: מצב עכשיו + מה צפוי",
     href: "#intelligence",
   },
   {
     id: "incidents",
-    pain: "תקלות שלא מטופלות בזמן",
-    cost: "פיצויים ותלונות",
-    outcome: "Incident Center · Predictive Maint · Alerts",
-    href: "#ceo-value",
+    pain: "תקלות נופלות בין מחלקות ו־WhatsApp",
+    cost: "פיצויים, ביקורות רעות, חדרים סגורים",
+    outcome: "מרכז תקלות מאוחד עם דחיפות ואחריות",
+    href: "#demo",
   },
   {
     id: "foresight",
-    pain: "החלטות בלי ראיית עתיד",
-    cost: "תפוסה, כוח אדם ותחזוקה מגיבים מאוחר",
-    outcome: "סוכנים שרואים תחזיות ואנומליות מראש",
+    pain: "מחליטים לפי אתמול",
+    cost: "כוח אדם, תפוסה ותחזוקה מגיבים מאוחר מדי",
+    outcome: "תחזית + אנומליות + תחזוקה חזויה",
     href: "#intelligence",
   },
   {
     id: "rooms",
-    pain: "חדרים לא מוכנים בזמן",
-    cost: "אובדן הכנסות ואי־שביעות רצון",
-    outcome: "Housekeeping AI ותיעדוף משימות",
+    pain: "חדר לא מוכן בזמן הצ׳ק־אין",
+    cost: "אורח ממתין · שדרוג חירום · אובדן אמון",
+    outcome: "תיעדוף משק בית ומשימות חיות",
     href: "#outcomes",
   },
   {
     id: "finance",
-    pain: "כספים וסגירת חודש ידניים",
-    cost: "סיכון, עיכובים ועומס על CFO",
-    outcome: "סוכן כספים + אישור אנושי (HITL)",
+    pain: "המלצות כסף בלי בקרה",
+    cost: "סיכון ל־CFO ולרשת",
+    outcome: "הכנסה ואנרגיה עם אישור אנושי (HITL)",
     href: "#intelligence",
   },
   {
     id: "bookings",
-    pain: "הזמנות בלי אוטומציית הכנסה",
-    cost: "פספוס upsell והכנסות נלוות",
-    outcome: "הזמנות חכמות + הצעות upsell",
-    href: "#intelligence",
+    pain: "הכנסה נלווית בלי תהליך",
+    cost: "upsell שלא קורה · מוניטין בלי תור טיפול",
+    outcome: "תהליך upsell + מוניטין→משימה (כשסוגרים בהיקף)",
+    href: "#profit",
   },
   {
     id: "chat",
-    pain: "צוותים מדברים בשפות שונות",
-    cost: "טעויות, עיכובים ואובדן הקשר",
-    outcome: "צ׳אט צוות ב־Executive (i18n) · Work: משימות ו־Copilot לפי תפקיד",
+    pain: "הצוות מדבר בעשר שפות — המערכת לא",
+    cost: "טעויות תפעול בין קבלה למשק בית",
+    outcome: "הוראה אחת · כל עובד בשפתו · אוטומציה משותפת",
     href: "#chat",
   },
 ] as const;
@@ -137,39 +177,39 @@ export const FRAGMENTED_STACK = [
 export const CAPABILITIES: readonly Capability[] = [
   {
     id: "layer",
-    title: "שכבה אחת מעל המערכות — לא במקומן",
-    body: "PMS, HR, כספים, תחזוקה ו־BI נשארים. HotelOS מאחד אותות ומציג החלטות למנכ״ל ולעובד — בלי פרויקט החלפת תשתית.",
-    proof: "Intelligence Layer · connectors מודולריים · GR-016",
+    title: "שכבת בינה אחת מעל התשתית שכבר שלמה",
+    body: "PMS, HR, כספים, תחזוקה ו־BI לא נזרקים. HotelOS אוספת אותות ומחזירה החלטות למנכ״ל, למנהל מלון ולעובד — בלי פרויקט «יום ד׳ של החלפת מערכת».",
+    proof: "Intelligence Layer · connectors מודולריים",
   },
   {
     id: "agents",
-    title: "סוכני AI שמפעילים תהליך — לא רק עונים",
-    body: "רשת סוכנים (CIO, HR, Guest, CFO, Meeting Secretary…) דרך AI Gateway: מציעים, מתזמנים, מתריעים — ואתם מאשרים מה שקריטי.",
-    proof: "Suggest → Approve → Act עם human-in-the-loop",
+    title: "רשת סוכנים שמרכיבה תהליך תפעולי",
+    body: "CIO, תפעול, כספים, אורח, HR ומזכירת פגישות — דרך AI Gateway יחיד. מציעים, מתריעים, מתזמנים. מה שרגיש עובר אישור אנושי לפני פעולה.",
+    proof: "AI Gateway · Suggest → Approve → Act",
   },
   {
     id: "foresight",
-    title: "Digital Twin · תחזית · תחזוקה חזויה",
-    body: "תמונת מלון חיה, תחזית 7 ימים, אנומליות ותחזוקה חזויה — כדי לנהל מחר היום, לא רק לדווח אתמול.",
+    title: "רואים את המלון — ומחר שלו",
+    body: "Digital Twin לחדרי מלון, תחזית שבעה ימים, אנומליות ותחזוקה חזויה. ניהול לפי מה שמתהווה — לא רק סיכום מה שכבר קרה.",
     proof: "Twin · Forecast · Predictive maintenance",
   },
   {
     id: "finance",
-    title: "כספים ו־Revenue עם שליטה",
-    body: "המלצות תמחור וסגירת חודש עם אישור CFO/רו״ח — בלי ביצוע כספי אוטונומי עיוור.",
-    proof: "Revenue HITL · Ledger · Accountant role",
+    title: "הכנסה וכסף עם שליטת CFO",
+    body: "המלצות תעריף ואנרגיה, סגירות ותהליכים כספיים — עם HITL. חדשנות בלי לוותר על בקרה שרשת דורשת.",
+    proof: "Revenue HITL · Energy · Ledger path",
   },
   {
     id: "chat",
-    title: "צ׳אט הנהלה + Copilot לעובד",
-    body: "Staff chat רב־לשוני חי ב־Executive (Turbo i18n). ב־Work — משימות מחלקתיות, מבחנים ו־Copilot לפי תפקיד (לא צ׳אט מתורגם מלא לעובד ב־MVP).",
-    proof: "Executive Turbo chat · Work tasks/HR · Role-based agents",
+    title: "שפה אחת לרשת — כל עובד בשפתו",
+    body: "הוראה נכתבת פעם אחת ב־Executive; העובדים מקבלים בשפתם. ב־Work — משימות, נוכחות ו־Copilot לפי תפקיד. עשר שפות מאומתות בפלטפורמה.",
+    proof: "Turbo i18n · Work Copilot · 10 locales verified",
   },
   {
     id: "ops",
-    title: "תפעול חוצה־רשת",
-    body: "Multi-hotel, מוניטין→משימות, Incident Center, אנרגיה ו־VMS — תובנות לרשת במקום דוחות לכל מלון בנפרד.",
-    proof: "Chain dashboard · Incidents · Energy · VMS",
+    title: "תמונת שרשרת במקום דוח לכל מלון",
+    body: "Multi-hotel, Incident Center, מוניטין שמפעיל משימה, אנרגיה ו־VMS — אותה שפה תפעולית לרשת, לא עוד ייצוא Excel לכל נכס.",
+    proof: "Chain Executive · Incidents · Reputation · Energy",
   },
 ] as const;
 
@@ -223,10 +263,10 @@ export const CHAT_DEMO = {
 } as const;
 
 export const TAGLINES = [
-  "One AI Platform. Every Hotel. Every Employee. Every Guest.",
-  "Agents that automate ops, finance, bookings — and see what's next.",
-  "Write in your language. They read in theirs. Automations for both.",
-  "We don't replace your PMS. We make it smarter.",
+  "שכבת הבינה מעל כל מערכת מלון.",
+  "סוכנים שמזיזים תפעול — עם אישור אדם על הכסף.",
+  "כתבו בשפה אחת. הצוות קורא בשלו. הרשת רואה הכל.",
+  "לא מחליפים את ה־PMS. הופכים אותו לחכם.",
 ] as const;
 
 export const ORG_NODES = {
@@ -374,36 +414,36 @@ export const DEMO_BEATS = [
 export const PROFIT_LEVERS = [
   {
     id: "time",
-    title: "זמן הנהלה חוזר לכסף",
-    body: "תדריך ומעקב תקלות שגוזלים שעות כל שבוע — אחרי baseline מודדים כמה שעות חזרו. זה הבסיס ל־payback מול $5,000 Pilot / $1,000 Network.",
+    title: "שעות הנהלה חוזרות להחלטות",
+    body: "כשתדריך הבוקר יורד מציד מידע ל־תמונה אחת, השעות שנמדדו ב־scorecard הן payback מול Pilot $5,000 ו־Network $1,000 לחודש — לא סלוגן.",
   },
   {
     id: "risk",
-    title: "פחות פיצויים ותלונות",
-    body: "מרכז תקלות + HITL מקצרים זמן תגובה לדחוף. פחות חדר סגור / פיצוי אורח = שורה תחתונה, לא סלוגן.",
+    title: "סיכון תפעולי יורד כשהדחוף לא נעלם",
+    body: "מרכז תקלות + אחריות ברורה מקצרים זמן לתגובה. פחות פיצוי, פחות חדר סגור, פחות ביקורת שמתגלגלת בלי בעלים.",
   },
   {
     id: "lift",
-    title: "הכנסה נלווית כשבוחרים",
-    body: "Upsell / מוניטין נכנסים רק אם סוגרים אותם בהיקף הפיילוט. לא חובה ביום 1 — land & expand אחרי הוכחה.",
+    title: "הכנסה נלווית נכנסת רק כשיש תהליך",
+    body: "Upsell ומוניטין→משימה הם דומיינים להרחבה אחרי ה־wedge. משלמים על מה שסוגרים בהיקף — ורואים המרה במדידה, לא במצגת.",
   },
 ] as const;
 
 export const MODULAR_PATHS = [
   {
     id: "wedge",
-    title: "מתחילים ב־wedge",
-    body: "תדריך + תקלות + HITL. שלושה מסכים בדמו — לא 16 טאבים. זה מה שמוכיח ריווחיות מהר.",
+    title: "יום 1: wedge שמנצח את הספקנות",
+    body: "תדריך · תקלות · HITL. שלושה מסכים בדמו. זה מה שרשת מאשרת בוועדה — לפני שמראים 16 מחלקות.",
   },
   {
     id: "expand",
-    title: "מרחיבים דומיין־דומיין",
-    body: "משק בית, קבלה, תחזוקה, HR, Guest — רק אחרי שהאלוף רואה ערך. אפשר Network על חלק מהמערכת.",
+    title: "אחרי הוכחה: דומיין־דומיין",
+    body: "משק בית, קבלה, תחזוקה, HR, Guest — Land & Expand. אפשר Network על חלק מהמערכת בלי לקנות «הכל» ביום חתימה.",
   },
   {
     id: "integrate",
-    title: "מתממשקים מעל ה־PMS",
-    body: "ה־PMS נשאר מקור אמת להזמנות. HotelOS שכבה מעל: קריאה/אותות + אישורים — בלי writeback עיוור ובלי החלפת מערכת.",
+    title: "התממשקות נכונה = מעל, לא במקום",
+    body: "PMS = מקור אמת להזמנות. HotelOS = אותות, המלצות, אישורים ואוטומציות. בלי writeback עיוור. בלי פרויקט החלפת ליבה.",
   },
 ] as const;
 

@@ -1,24 +1,29 @@
 # HotelOS AI
 
-**The Intelligence Layer Above Every Hotel System.**
+**שכבת הבינה מעל כל מערכת מלון · The Intelligence Layer Above Every Hotel System**
 
-> HotelOS AI is the Intelligence Layer for Hotels. We connect people, operations, finance, AI, compliance and guest experience into one unified operating system.
+> HotelOS AI היא מערכת הפעלה לרשת מלונות מעל ה־PMS הקיים: תמונה חיה, סוכנים עם אישור אדם (HITL), ומדידת תוצאה בפיילוט — לפני שמרחיבים דומיין.
 
-מנהלים קונים **תוצאות** — לא עוד תוכנת הזמנות: פחות זמן על דוחות, חדרים מוכנים בזמן, תקלות שמטופלות, צוות מתואם בכל שפה.  
-**We don't replace your PMS. We make it smarter.** (Opera · Protel · Fidelio · Clock · Mews…) — בוחרים דומיינים לפיילוט, מודדים ROI.
+**We don't replace your PMS. We make it smarter.**  
+(Opera · Protel · Fidelio · Clock · Mews…)
 
-| כאב | תוצאה עם HotelOS | סטטוס |
-|-----|------------------|--------|
-| זמן על דוחות | AI Executive Briefing | Live |
-| מחסור בעובדים | AI HR + תרגום + אוטומציות | Live (wedge) · Employee depth → roadmap |
-| חדרים לא מוכנים | Housekeeping AI / תיעדוף | Live (MVP) |
-| מידע מפוזר | Dashboard אחד לרשת | Live |
-| תקלות באיחור | Alerts + Incident Center | Live (MVP) |
-| תקשורת בין מחלקות | Chat מתורגם (10 שפות) | Live |
+### למה זה קטגוריה אחרת
 
-**כנות שיווקית:** אין SOC 2 / ISO attestation ואין מצג PCI-DSS של HotelOS; RAG = hybrid MVP (לא Vector DB מלא). לוח מוכנות: [`gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) · Trust: [`trust-center-mvp.md`](docs/planning/trust-center-mvp.md) · RAG: [`rag-embeddings-mvp.md`](docs/planning/rag-embeddings-mvp.md).
+| | |
+|--|--|
+| **יכולות** | Executive · Admin · Work · Guest על אותה ליבה · AI Gateway · Twin · Forecast · Incidents |
+| **אמינות** | Suggest → Approve → Act · בלי אוטונומיה כספית עיוורת |
+| **יציבות** | Intelligence Layer מעל PMS — לא rip-and-replace של 18 חודשים |
+| **חדשנות** | נבנית כ־OS לרשת + 10 שפות מאומתות — לא צ׳אטבוט על Excel |
 
-מצגת / GTM: [`docs/planning/gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) · פיילוט: [`pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md) · טכני: [`hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md)
+מנהלים קונים **תוצאות שנמדדות**: פחות ציד מידע בבוקר, תקלות עם בעלים, החלטות בזמן.  
+מתחילים ב־**wedge** (תדריך + תקלות + HITL) → scorecard → Land & Expand.
+
+**תמחור USD אחיד (עולם + ישראל):** Pilot **$5,000** / 8 שבועות · Network **$1,000**/מלון/חודש · Enterprise **from $75,000** ACV — ראו [`docs/gtm/sales-pack/pricing/`](docs/gtm/sales-pack/pricing/).
+
+**כנות שיווקית:** אין SOC 2 / ISO attestation ואין מצג PCI של HotelOS; RAG = hybrid MVP. Trust: [`trust-center-mvp.md`](docs/planning/trust-center-mvp.md) · GTM: [`gtm-excellence-closeout.md`](docs/planning/gtm-excellence-closeout.md) · דף נחיתה: `@hotelos/www` `#platform`.
+
+מצגת / פיילוט: [`gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) · [`pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md) · טכני: [`hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md)
 
 ## האפליקציות
 
@@ -29,7 +34,7 @@
 | **Guest** | אורח | חיפוש שהייה, הזמנה, מסמכי Legal | http://localhost:5175 |
 | **Work** | עובד | נוכחות, הזמנה עצמית (invite), סוכן HR, מסמכים | http://localhost:5176 |
 | **API** | שרת נפרד | Auth, תפעול, Turbo, Trust, סוכנים, webhooks | http://localhost:3001 |
-| **WWW** | שיווק | דף נחיתה — תוצאות / OS / פיילוט | http://localhost:5177 |
+| **WWW** | שיווק | דף נחיתה עברי הייטק — פלטפורמה / תוצאות / רווחיות / פיילוט | http://localhost:5177 |
 
 ארכיטקטורה בפרודקשן: אורח · מלון · הנהלה · עובדים · **שיווק (www)** · **API נפרד**.  
 ב־Vercel הדפדפן קורא לאותו דומיין; `middleware.ts` מעביר ל־API (בלי CORS/localhost).  

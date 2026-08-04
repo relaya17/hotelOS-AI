@@ -28,6 +28,7 @@ import {
   OUTCOMES,
   PACKAGES,
   PILOT_STEPS,
+  PLATFORM_PILLARS,
   PROFIT_LEVERS,
   TAGLINES,
   TRUST_CONTROLS,
@@ -54,15 +55,13 @@ const PARTNER_NAMES = (
   .filter((name) => name.length > 0) ?? [];
 
 const NAV_LINKS = [
+  { href: "#platform", label: "הפלטפורמה" },
   { href: "#outcomes", label: "תוצאות" },
   { href: "#demo", label: "דמו" },
-  { href: "#how-pilot", label: "פיילוט" },
-  { href: "#packages", label: "חבילות" },
   { href: "#profit", label: "רווחיות" },
-  { href: "#measure", label: "מדידה" },
+  { href: "#packages", label: "חבילות" },
   { href: "#trust", label: "אמון" },
-  { href: "#excellence", label: "מצוינות" },
-  { href: "#faq", label: "שאלות" },
+  { href: "#contact", label: "פיילוט" },
 ] as const;
 
 function ContactLeadForm() {
@@ -393,18 +392,18 @@ export function LandingPage() {
               />
             </div>
             <h1 className="hero__title">
-              The Intelligence Layer for Hotels
+              שכבת הבינה למלונות
             </h1>
             <p className="hero__lead">
-              תמונה אחת מעל ה־PMS: מה קורה עכשיו, מה צפוי מחר — בלי להחליף את
-              מערכת ההזמנות.
+              מערכת הפעלה לרשת מעל ה־PMS: תמונה חיה, סוכנים עם אישור אדם,
+              והוכחת ערך בפיילוט — בלי להחליף את מערכת ההזמנות.
             </p>
             <div className="hero__actions">
               <a className="btn btn--primary" href="#contact">
-                בקשת פיילוט לרשת
+                שיחת פיילוט לרשת
               </a>
-              <a className="btn btn--ghost" href="#demo">
-                סיור דמו · 3 פעימות
+              <a className="btn btn--ghost" href="#platform">
+                למה זה קטגוריה אחרת
               </a>
             </div>
           </div>
@@ -416,16 +415,41 @@ export function LandingPage() {
         </p>
 
         <RevealSection
+          id="platform"
+          className="section platform"
+          aria-labelledby="platform-title"
+          tabIndex={-1}
+        >
+          <p className="eyebrow">הפלטפורמה</p>
+          <h2 id="platform-title">
+            יכולות. אמינות. יציבות. חדשנות — כמערכת אחת לרשת.
+          </h2>
+          <p className="section__lead">
+            HotelOS AI לא נבנית כעוד צ׳אטבוט למלון. היא נבנית כ־Intelligence Layer:
+            ארבע אפליקציות, AI Gateway אחד, ומדידת תוצאה לפני שמרחיבים דומיין.
+          </p>
+          <ul className="pillar-grid">
+            {PLATFORM_PILLARS.map((pillar) => (
+              <li key={pillar.id} className="pillar">
+                <p className="pillar__eyebrow">{pillar.eyebrow}</p>
+                <h3>{pillar.title}</h3>
+                <p>{pillar.body}</p>
+                <p className="pillar__proof">{pillar.proof}</p>
+              </li>
+            ))}
+          </ul>
+        </RevealSection>
+
+        <RevealSection
           id="outcomes"
           className="section outcomes"
           aria-labelledby="outcomes-title"
-          tabIndex={-1}
         >
-          <p className="eyebrow">קונים תוצאות — לא תוכנה</p>
-          <h2 id="outcomes-title">הכאב. העלות. מה HotelOS עושה.</h2>
+          <p className="eyebrow">תוצאות שנמדדות</p>
+          <h2 id="outcomes-title">הכאב עולה כסף. HotelOS מחזירה שליטה.</h2>
           <p className="section__lead">
-            לא עוד מסך הזמנות — אלא אוטומציה, סוכנים שצופים קדימה, כספים
-            בהשגחה, ושיח בין מחלקות בלי מחסום שפה.
+            מנכ״ל רשת לא קונה פיצ׳רים — הוא קונה פחות שעות ציד, פחות תקלות
+            שנופלות בין כיסאות, והחלטות שמגיעות בזמן. זה מה שמופיע ב־scorecard.
           </p>
           <div className="outcome-table" role="table" aria-label="כאב עלות תוצאה">
             <div className="outcome-table__head" role="row">
@@ -457,11 +481,11 @@ export function LandingPage() {
           aria-labelledby="wedge-title"
         >
           <p className="eyebrow">למה זה שונה</p>
-          <h2 id="wedge-title">שבע מערכות. מידע אחד חסר.</h2>
+          <h2 id="wedge-title">שבע מערכות רצות. התמונה עדיין חסרה.</h2>
           <p className="section__lead">
-            מלונות רצים על PMS, HR, הנה״ח, CRM, תחזוקה, BI ואפליקציית עובדים —
-            בנפרד. העבודה כפולה; ההחלטות מאוחרות. HotelOS היא שכבת האינטליגנציה
-            שמאחדת — בלי להחליף את התשתית.
+            PMS, HR, הנה״ח, CRM, תחזוקה, BI ואפליקציית עובדים — כל אחת חזקה
+            לבד. יחד הן מייצרות ציד בוקר, כפילויות ועיכוב החלטות. HotelOS היא
+            השכבה שמאחדת אותות להחלטה — בלי לקרוע את התשתית.
           </p>
           <ul className="wedge-stack" aria-label="מערכות מפוצלות היום">
             {FRAGMENTED_STACK.map((item) => (
@@ -469,8 +493,8 @@ export function LandingPage() {
             ))}
           </ul>
           <p className="wedge-punch">
-            AI שרק עונה בצ׳אט — לא מספיק. אנחנו מפעילים תהליכים, עם אישור אנושי
-            על מה שקריטי.
+            צ׳אט GPT על Excel אינו מערכת הפעלה. HotelOS מפעילה תהליכים —
+            עם אישור אדם על מה שנוגע בכסף ובסיכון.
           </p>
         </RevealSection>
 
@@ -525,14 +549,13 @@ export function LandingPage() {
           className="section intelligence"
           aria-labelledby="intelligence-title"
         >
-          <p className="eyebrow">אוטומציה · סוכנים · עתיד</p>
+          <p className="eyebrow">אוטומציה · סוכנים · ראיית עתיד</p>
           <h2 id="intelligence-title">
-            רוחב היכולות — אחרי שמוכיחים ערך בפיילוט
+            היכולות המלאות — אחרי שה־wedge מוכיח את עצמו
           </h2>
           <p className="section__lead">
-            אחרי שה־wedge מוכיח ערך — תדריך, תקלות ותחזוקה חזויה — מרחיבים
-            land &amp; expand לכספים, אורח, צ׳אט מתורגם והזמנות. אותה שכבה מעל
-            ה־PMS; בלי פרויקט החלפת מערכת.
+            קודם תדריך, תקלות ותחזוקה חזויה. אחר כך land &amp; expand לכספים,
+            אורח, צ׳אט רשת והכנסה נלווית. אותה פלטפורמה; בלי פרויקט החלפת PMS.
           </p>
           <ul className="cap-grid">
             {CAPABILITIES.map((cap) => (
@@ -585,10 +608,10 @@ export function LandingPage() {
 
         <RevealSection id="os" className="section os" aria-labelledby="os-title">
           <p className="eyebrow">השקף החזק</p>
-          <h2 id="os-title">HotelOS AI = Operating System for Hotels</h2>
+          <h2 id="os-title">HotelOS AI = מערכת הפעלה לרשת מלונות</h2>
           <p className="section__lead">
-            שכבה אחת בין ההנהלה למחלקות — ולכל אורח. לא מחליפה את ה־PMS; מחברת
-            את הארגון סביבו עם סוכנים ואוטומציות.
+            מהמנכ״ל עד האורח — אותה שכבת בינה. ארבע אפליקציות, תפקידים ברורים,
+            וסוכנים תחת Gateway אחד. לא מחליפה את ה־PMS; מחברת את הארגון מעליו.
           </p>
           <div className="os-map" aria-hidden="false">
             <div className="os-map__exec">
@@ -868,15 +891,17 @@ export function LandingPage() {
           className="section profit"
           aria-labelledby="profit-title"
         >
-          <p className="eyebrow">רווחיות · מודולריות</p>
-          <h2 id="profit-title">לא קונים «הכל». קונים תוצאה שנמדדת.</h2>
+          <p className="eyebrow">רווחיות · מודולריות · סגירה</p>
+          <h2 id="profit-title">
+            ככה רשת מבינה שזה משתלם — בלי למכור לה «הכל או כלום»
+          </h2>
           <p className="section__lead">
-            מלון מבין שזה ריווחי כשיש baseline, חיסכון בזמן/סיכון, ומחיר USD
-            ברור — לא כשמבטיחים אחוזים במצגת. אפשר להתחיל בחלק מהמערכת ולהתממשק
-            מעל ה־PMS הקיים.
+            שיווק נכון הוא מדידה: baseline, חיסכון בזמן ובסיכון, ומחיר USD
+            שקוף. אתם בוחרים wedge, מוכיחים, ורק אז מרחיבים דומיינים — מעל
+            ה־PMS הקיים.
           </p>
 
-          <h3 className="profit__sub">מה גורם להם להבין שזה משתלם</h3>
+          <h3 className="profit__sub">מה משכנע ועדת הנהלה</h3>
           <ul className="profit-grid">
             {PROFIT_LEVERS.map((lever) => (
               <li key={lever.id} className="profit-item">
@@ -886,7 +911,7 @@ export function LandingPage() {
             ))}
           </ul>
 
-          <h3 className="profit__sub">הכל או רק חלק — איך מתממשקים נכון</h3>
+          <h3 className="profit__sub">הכל או רק חלק — ההתממשקות הנכונה</h3>
           <ul className="modular-grid">
             {MODULAR_PATHS.map((path) => (
               <li key={path.id} className="modular-item">
@@ -951,10 +976,13 @@ export function LandingPage() {
           aria-labelledby="trust-title"
         >
           <p className="eyebrow">אבטחה ואמון</p>
-          <h2 id="trust-title">בקרות אמיתיות — לא תעודות שיווק</h2>
+          <h2 id="trust-title">
+            אמינות שמנצחת ועדת רכש — בלי תעודות שקריות
+          </h2>
           <p className="section__lead">
-            אין לנו הצהרת SOC2 או ISO — ולא נטען שיש. אלה הבקרות שקיימות
-            בפועל במערכת היום.
+            רשת רצינית בודקת HITL, הרשאות, שיעור קצב, ו־AI Gateway — לא באנר
+            SOC2 מזויף. אין לנו attestation עדיין; יש בקרות חיות ונתיב certification
+            מוכן. זו האמינות שסוגרת פיילוט.
           </p>
           <ul className="trust-grid">
             {TRUST_CONTROLS.map((control) => (
@@ -1104,14 +1132,11 @@ export function LandingPage() {
         <div className="foot__grid" aria-label="ניווט תחתון">
           <div className="foot__col">
             <h3>מוצר</h3>
+            <a href="#platform">הפלטפורמה</a>
             <a href="#outcomes">תוצאות</a>
-            <a href="#demo">דמו</a>
-            <a href="#how-pilot">פיילוט</a>
-            <a href="#packages">חבילות</a>
             <a href="#profit">רווחיות</a>
-            <a href="#measure">מדידה</a>
-            <a href="#excellence">מצוינות / data room</a>
-            <a href="/sales-pack/index.html">Sales pack · PDF</a>
+            <a href="#packages">חבילות</a>
+            <a href="#demo">דמו</a>
           </div>
           <div className="foot__col">
             <h3>אמון</h3>
