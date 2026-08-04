@@ -1,7 +1,7 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import {
-  formatBlockingViolations,
+  formatBlockingViolationsDetailed,
   listBlockingViolations,
 } from "../src/axe-helpers.js";
 import { PUBLIC_APP_TARGETS, publicPreviewUrl } from "../src/public-apps.js";
@@ -28,7 +28,7 @@ for (const app of PUBLIC_APP_TARGETS) {
       expect(
         blocking,
         blocking.length > 0
-          ? `${app.id} public violations:\n${formatBlockingViolations(blocking)}`
+          ? `${app.id} public violations:\n${formatBlockingViolationsDetailed(results)}`
           : undefined,
       ).toEqual([]);
     });

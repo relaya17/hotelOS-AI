@@ -175,7 +175,7 @@ export function LandingPage({
         .landing-top__link {
           border: 0;
           background: transparent;
-          color: rgb(242 246 244 / 82%);
+          color: #f2f6f4;
           font: inherit;
           font-weight: 600;
           font-size: var(--text-small);
@@ -251,13 +251,13 @@ export function LandingPage({
         .landing-hero h1 {
           font-size: clamp(1.45rem, 3.6vw, 2.05rem);
           font-weight: 500;
-          color: rgb(247 250 248 / 94%);
+          color: #f7faf8;
           max-width: 22ch;
         }
 
         .landing-hero__lede {
           max-width: 34ch;
-          color: rgb(242 246 244 / 78%);
+          color: #edf3f0;
           font-size: 1.08rem;
           font-weight: 500;
           line-height: 1.65;
@@ -282,7 +282,7 @@ export function LandingPage({
         .landing-hero__cta .hotelos-button--ghost {
           background: transparent;
           color: #f2f6f4;
-          border-color: rgb(242 246 244 / 45%);
+          border-color: rgb(242 246 244 / 70%);
         }
         .landing-hero__cta .hotelos-button--ghost:hover:not(:disabled) {
           background: rgb(242 246 244 / 10%);
@@ -311,7 +311,7 @@ export function LandingPage({
 
         .landing-section__lede {
           max-width: 40ch;
-          color: var(--color-ink-soft);
+          color: #3a4e48;
           font-size: 1.05rem;
           font-weight: 500;
           line-height: 1.7;
@@ -345,7 +345,7 @@ export function LandingPage({
         }
 
         .landing-promise p {
-          color: var(--color-ink-soft);
+          color: #3a4e48;
           font-weight: 500;
           line-height: 1.6;
           max-width: 36ch;
@@ -357,17 +357,17 @@ export function LandingPage({
           display: grid;
           gap: var(--space-2);
           font-size: var(--text-small);
-          color: var(--color-ink-soft);
+          color: #3a4e48;
           border-top: 1px solid var(--color-line);
         }
 
         .landing-footer a {
-          color: inherit;
+          color: var(--color-sea-deep);
           font-weight: 600;
           text-decoration: none;
         }
         .landing-footer a:hover { text-decoration: underline; }
-        .landing-footer__staff { opacity: 0.55; }
+        .landing-footer__staff { color: var(--color-sea-deep); }
 
         @keyframes landing-kenburns {
           from { transform: scale(1.08); }

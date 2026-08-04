@@ -31,3 +31,22 @@ export function formatBlockingViolations(
     .map((v) => `${v.id} (${v.impact}, ${v.nodes} nodes): ${v.help}`)
     .join("\n");
 }
+
+/** Include sample CSS selectors when present (axe node targets). */
+export function formatBlockingViolationsDetailed(
+  results: AxeResults,
+): string {
+  return results.violations
+    .filter(
+      (violation) =>
+        violation.impact === "critical" || violation.impact === "serious",
+    )
+    .map((violation) => {
+      const samples = violation.nodes
+        .slice(0, 4)
+        .map((node) => node.target.join(" "))
+        .join(" · ");
+      return `${violation.id} (${violation.impact}, ${violation.nodes.length} nodes): ${violation.help}${samples ? `\n  → ${samples}` : ""}`;
+    })
+    .join("\n");
+}

@@ -54,10 +54,10 @@ function SiteFooter() {
           display: grid;
           gap: var(--space-2);
           font-size: var(--text-small);
-          color: var(--color-ink-soft);
+          color: #3a4e48;
         }
         .site-footer p { margin: 0; }
-        .site-footer__staff { opacity: .55; font-size: .8rem; }
+        .site-footer__staff { font-size: .8rem; color: var(--color-sea-deep); }
         .site-footer__staff a { color: inherit; font-weight: 600; text-decoration: none; }
         .site-footer__staff a:hover { text-decoration: underline; }
       `}</style>
