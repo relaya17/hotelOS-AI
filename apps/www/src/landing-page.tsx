@@ -210,10 +210,8 @@ export function LandingPage() {
               The Intelligence Layer for Hotels
             </h1>
             <p className="hero__lead">
-              מתחילים מ־wedge ברור מעל ה־PMS: תדריך מנכ״ל יומי, מרכז תקלות עם
-              התראות, ותחזוקה חזויה — תמונה אחת של מה קורה עכשיו ומה צפוי מחר.
-              בלי להחליף Opera / Protel; עם Suggest → Approve → Act על מה
-              שקריטי.
+              תמונה אחת מעל ה־PMS: מה קורה עכשיו, מה צפוי מחר — בלי להחליף את
+              מערכת ההזמנות.
             </p>
             <div className="hero__actions">
               <a className="btn btn--primary" href="#contact">

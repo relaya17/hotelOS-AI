@@ -322,9 +322,9 @@ export function PilotRoiPanel({ hotelId: hotelIdProp, compact }: PilotRoiPanelPr
         .pilot-roi__filters label { display: grid; gap: .35rem; font-size: var(--text-small); font-weight: 600; }
         .pilot-roi__meta { font-size: var(--text-small); color: var(--color-ink-faint); margin-bottom: var(--space-2); }
         .pilot-roi__illustrative { font-size: var(--text-small); color: var(--color-ink-soft); background: var(--color-surface-muted); padding: .65rem .85rem; border-radius: var(--radius-sm); margin-bottom: var(--space-3); line-height: 1.45; }
-        .pilot-roi__table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+        .pilot-roi__table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--color-line); border-radius: var(--radius-md); }
         .pilot-roi__table { width: 100%; border-collapse: collapse; min-width: 52rem; }
-        .pilot-roi__table th, .pilot-roi__table td { padding: .65rem .75rem; text-align: start; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+        .pilot-roi__table th, .pilot-roi__table td { padding: .65rem .75rem; text-align: start; border-bottom: 1px solid var(--color-line); vertical-align: top; }
         .pilot-roi__table th { background: var(--color-surface-muted); font-size: var(--text-small); white-space: nowrap; }
         .pilot-roi__table tr:last-child td { border-bottom: none; }
         .pilot-roi__current { font-weight: 600; }
@@ -334,7 +334,7 @@ export function PilotRoiPanel({ hotelId: hotelIdProp, compact }: PilotRoiPanelPr
         .pilot-roi__notes-cell { min-width: 12rem; }
         .pilot-roi__static-note { margin: 0 0 .35rem; font-size: var(--text-small); color: var(--color-ink-soft); line-height: 1.35; }
         .pilot-roi__delta { font-weight: 600; font-size: var(--text-small); }
-        .pilot-roi__delta--good { color: var(--color-success, #0a7a3e); }
+        .pilot-roi__delta--good { color: var(--color-sea-deep); }
         .pilot-roi__delta--warn { color: var(--color-danger); }
         .pilot-roi__delta-pct { font-weight: 500; color: var(--color-ink-faint); }
         .pilot-roi__api-notes { margin-top: var(--space-4); padding: var(--space-3); background: var(--color-surface-muted); border-radius: var(--radius-md); }
@@ -351,7 +351,7 @@ export function PilotRoiPanel({ hotelId: hotelIdProp, compact }: PilotRoiPanelPr
           }
           .pilot-roi__table tr {
             padding: .85rem .9rem;
-            border-bottom: 1px solid var(--color-border);
+            border-bottom: 1px solid var(--color-line);
           }
           .pilot-roi__table tr:last-child { border-bottom: none; }
           .pilot-roi__table td {

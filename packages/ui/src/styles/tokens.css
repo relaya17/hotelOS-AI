@@ -326,6 +326,23 @@ textarea {
   box-shadow: 0 1px 2px rgb(12 31 26 / 8%);
 }
 
+.hotelos-nav-stack {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hotelos-nav-stack__groups {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.hotelos-nav-stack__tabs {
+  width: fit-content;
+  max-width: 100%;
+}
+
 .hotelos-field-control,
 .hotelos-select {
   font: inherit;

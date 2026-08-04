@@ -142,7 +142,7 @@ a {
 }
 
 #outcomes:focus-visible {
-  outline: 2px solid var(--color-accent, #c45c26);
+  outline: 2px solid var(--brass-hot);
   outline-offset: 4px;
 }
 
@@ -247,6 +247,10 @@ a {
   font-size: 0.88rem;
   font-weight: 500;
   color: var(--mist-dim);
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.15rem;
 }
 
 .top__nav a:hover,
@@ -255,10 +259,12 @@ a {
 }
 
 .top__cta {
-  padding: 0.4rem 0.85rem;
+  padding: 0.55rem 1rem;
+  min-height: 2.75rem;
   border: 1px solid rgb(212 176 122 / 55%);
   border-radius: 999px;
   color: var(--brass-hot) !important;
+  box-sizing: border-box;
 }
 
 /* Desktop / tablet: always show full nav, never hamburger */
@@ -867,7 +873,7 @@ a {
 
 .compare-row__category {
   font-weight: 600;
-  color: var(--ink-bright);
+  color: var(--mist);
 }
 
 .compare-row__answer {

@@ -565,8 +565,9 @@ export function TwinVisual({
             transform: none;
           }
           .twin-visual__room {
-            min-width: 3.8rem;
-            padding: .45rem .4rem;
+            min-width: 4.4rem;
+            min-height: var(--touch-min, 2.75rem);
+            padding: .55rem .45rem;
             transform: none;
           }
           .twin-visual__room:hover,

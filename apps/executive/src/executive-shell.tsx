@@ -110,6 +110,48 @@ function navigateToView(kind: View["kind"], roomId?: string): void {
   }
 }
 
+type NavKind = Exclude<View["kind"], "meet">;
+
+type NavGroup = {
+  readonly id: string;
+  readonly label: string;
+  readonly items: readonly NavKind[];
+};
+
+const NAV_GROUPS: readonly NavGroup[] = [
+  {
+    id: "overview",
+    label: "תמונה",
+    items: ["portfolio", "ops", "incidents", "cio"],
+  },
+  {
+    id: "intel",
+    label: "בינה",
+    items: ["knowledge", "briefings", "chat", "voice", "automations"],
+  },
+  {
+    id: "money",
+    label: "כסף",
+    items: ["finance", "accounting", "approvals", "pilot-roi"],
+  },
+  {
+    id: "trust",
+    label: "אמון",
+    items: ["trust"],
+  },
+];
+
+function navKindForView(kind: View["kind"]): NavKind {
+  return kind === "meet" ? "briefings" : kind;
+}
+
+function groupIdForKind(kind: View["kind"]): string {
+  const navKind = navKindForView(kind);
+  return (
+    NAV_GROUPS.find((group) => group.items.includes(navKind))?.id ?? "overview"
+  );
+}
+
 const LOCALE_KEY = "hotelos.locale";
 
 function readLocale(): LocaleCode {
@@ -165,22 +207,25 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
     });
   }, [view.kind, opsScrollTarget]);
 
-  const navItems = [
-    ["portfolio", tUi(locale, "nav.portfolio")],
-    ["ops", tUi(locale, "nav.ops")],
-    ["incidents", tUi(locale, "nav.incidents")],
-    ["knowledge", tUi(locale, "nav.knowledge")],
-    ["cio", tUi(locale, "nav.cio")],
-    ["pilot-roi", "מדדי פיילוט"],
-    ["finance", tUi(locale, "nav.finance")],
-    ["approvals", tUi(locale, "nav.approvals")],
-    ["briefings", tUi(locale, "nav.briefings")],
-    ["accounting", tUi(locale, "nav.accounting")],
-    ["chat", tUi(locale, "nav.chat")],
-    ["automations", tUi(locale, "nav.automations")],
-    ["voice", tUi(locale, "nav.voice")],
-    ["trust", tUi(locale, "nav.trust")],
-  ] as const;
+  const navLabels: Record<NavKind, string> = {
+    portfolio: tUi(locale, "nav.portfolio"),
+    ops: tUi(locale, "nav.ops"),
+    incidents: tUi(locale, "nav.incidents"),
+    knowledge: tUi(locale, "nav.knowledge"),
+    cio: tUi(locale, "nav.cio"),
+    "pilot-roi": "מדדי פיילוט",
+    finance: tUi(locale, "nav.finance"),
+    approvals: tUi(locale, "nav.approvals"),
+    briefings: tUi(locale, "nav.briefings"),
+    accounting: tUi(locale, "nav.accounting"),
+    chat: tUi(locale, "nav.chat"),
+    automations: tUi(locale, "nav.automations"),
+    voice: tUi(locale, "nav.voice"),
+    trust: tUi(locale, "nav.trust"),
+  };
+
+  const activeGroupId = groupIdForKind(view.kind);
+  const activeGroup = NAV_GROUPS.find((group) => group.id === activeGroupId)!;
 
   return (
     <div className="shell">
@@ -225,31 +270,68 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
             </Button>
           </div>
         </div>
-        <div className="tabs hotelos-nav-scroll hotelos-seg" role="tablist">
-          {navItems.map(([kind, label]) => {
-            const on =
-              view.kind === kind ||
-              (kind === "briefings" && view.kind === "meet");
-            return (
-              <button
-                key={kind}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                className={
-                  on
-                    ? "hotelos-seg__item hotelos-seg__item--on hotelos-touch-target"
-                    : "hotelos-seg__item hotelos-touch-target"
-                }
-                onClick={() => {
-                  setView({ kind });
-                  navigateToView(kind);
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
+        <div className="hotelos-nav-stack">
+          <div
+            className="hotelos-nav-stack__groups hotelos-nav-scroll hotelos-seg"
+            role="tablist"
+            aria-label="קבוצות ניווט"
+          >
+            {NAV_GROUPS.map((group) => {
+              const on = group.id === activeGroupId;
+              return (
+                <button
+                  key={group.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  className={
+                    on
+                      ? "hotelos-seg__item hotelos-seg__item--on hotelos-touch-target"
+                      : "hotelos-seg__item hotelos-touch-target"
+                  }
+                  onClick={() => {
+                    if (on) return;
+                    const first = group.items[0];
+                    if (!first) return;
+                    setView({ kind: first });
+                    navigateToView(first);
+                  }}
+                >
+                  {group.label}
+                </button>
+              );
+            })}
+          </div>
+          <div
+            className="hotelos-nav-stack__tabs hotelos-nav-scroll hotelos-seg"
+            role="tablist"
+            aria-label={activeGroup.label}
+          >
+            {activeGroup.items.map((kind) => {
+              const on =
+                view.kind === kind ||
+                (kind === "briefings" && view.kind === "meet");
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  className={
+                    on
+                      ? "hotelos-seg__item hotelos-seg__item--on hotelos-touch-target"
+                      : "hotelos-seg__item hotelos-touch-target"
+                  }
+                  onClick={() => {
+                    setView({ kind });
+                    navigateToView(kind);
+                  }}
+                >
+                  {navLabels[kind]}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </nav>
 
@@ -348,7 +430,6 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
           letter-spacing:var(--tracking-display);
         }
         .brand__sub { font-size:var(--text-micro); font-weight:600; color:var(--color-ink-faint); letter-spacing:.04em; }
-        .tabs { width:fit-content; max-width:100%; min-width:0; }
         .nav__actions { display:flex; gap:var(--space-2); align-items:center; flex-wrap:wrap; justify-content:flex-end; min-width:0; }
         .nav__ops { font-weight:600; font-size:var(--text-small); color:var(--color-sea-deep); white-space:nowrap; text-decoration:none; }
         .nav__ops:hover { text-decoration:underline; }
@@ -361,7 +442,8 @@ export function ExecutiveShell({ user, onLogout }: ExecutiveShellProps) {
           .brand__sub{ display:none; }
           .nav__actions{ width:100%; justify-content:flex-start; }
           .nav__ops{ display:none; }
-          .tabs{ width:100%; }
+          .hotelos-nav-stack__groups,
+          .hotelos-nav-stack__tabs{ width:100%; }
         }
       `}</style>
     </div>

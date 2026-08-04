@@ -180,7 +180,8 @@ export function LandingPage({
           font-weight: 600;
           font-size: var(--text-small);
           cursor: pointer;
-          padding: 0.4rem 0;
+          min-height: var(--touch-min, 2.75rem);
+          padding: 0.55rem 0.25rem;
           text-underline-offset: 0.2em;
         }
         .landing-top__link:hover { color: #fff; text-decoration: underline; }

@@ -53,6 +53,56 @@ const tabs: readonly { readonly key: SubView; readonly label: string }[] = [
   { key: "pilot-roi", label: "מדדי פיילוט / ROI" },
 ];
 
+type TabGroup = {
+  readonly id: string;
+  readonly label: string;
+  readonly keys: readonly SubView[];
+};
+
+const TAB_GROUPS: readonly TabGroup[] = [
+  {
+    id: "day",
+    label: "יום",
+    keys: ["briefing", "incidents", "departments"],
+  },
+  {
+    id: "depts",
+    label: "מחלקות",
+    keys: [
+      "housekeeping",
+      "reception",
+      "maintenance",
+      "procurement",
+      "feedback",
+    ],
+  },
+  {
+    id: "people",
+    label: "אנשים",
+    keys: ["recruiting", "hr"],
+  },
+  {
+    id: "system",
+    label: "מערכת",
+    keys: [
+      "approvals",
+      "knowledge",
+      "integrations",
+      "twin",
+      "simulator",
+      "pilot-roi",
+    ],
+  },
+];
+
+function labelForTab(key: SubView): string {
+  return tabs.find((tab) => tab.key === key)?.label ?? key;
+}
+
+function groupIdForView(view: SubView): string {
+  return TAB_GROUPS.find((group) => group.keys.includes(view))?.id ?? "day";
+}
+
 function readHotelIdFromUrl(): string | undefined {
   const value = new URLSearchParams(window.location.search).get("hotelId");
   return value && value.length > 0 ? value : undefined;
@@ -108,6 +158,8 @@ export function FacilitiesPage() {
   }, []);
 
   const selectedHotel = hotels.find((hotel) => hotel.id === selectedHotelId);
+  const activeGroupId = groupIdForView(view);
+  const activeGroup = TAB_GROUPS.find((group) => group.id === activeGroupId)!;
 
   return (
     <div className="facilities">
@@ -140,22 +192,55 @@ export function FacilitiesPage() {
         </p>
       ) : null}
 
-      <nav className="facilities__tabs hotelos-seg hotelos-nav-scroll" aria-label="מחלקות תפעול">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            className={
-              view === tab.key
-                ? "hotelos-seg__item hotelos-seg__item--on"
-                : "hotelos-seg__item"
-            }
-            onClick={() => setView(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+      <div className="facilities__nav hotelos-nav-stack">
+        <nav
+          className="facilities__groups hotelos-seg hotelos-nav-scroll"
+          aria-label="קבוצות מחלקות"
+        >
+          {TAB_GROUPS.map((group) => {
+            const on = group.id === activeGroupId;
+            return (
+              <button
+                key={group.id}
+                type="button"
+                className={
+                  on
+                    ? "hotelos-seg__item hotelos-seg__item--on hotelos-touch-target"
+                    : "hotelos-seg__item hotelos-touch-target"
+                }
+                aria-pressed={on}
+                onClick={() => {
+                  if (on) return;
+                  const first = group.keys[0];
+                  if (first) setView(first);
+                }}
+              >
+                {group.label}
+              </button>
+            );
+          })}
+        </nav>
+        <nav
+          className="facilities__tabs hotelos-seg hotelos-nav-scroll"
+          aria-label={activeGroup.label}
+        >
+          {activeGroup.keys.map((key) => (
+            <button
+              key={key}
+              type="button"
+              className={
+                view === key
+                  ? "hotelos-seg__item hotelos-seg__item--on hotelos-touch-target"
+                  : "hotelos-seg__item hotelos-touch-target"
+              }
+              aria-pressed={view === key}
+              onClick={() => setView(key)}
+            >
+              {labelForTab(key)}
+            </button>
+          ))}
+        </nav>
+      </div>
 
       {selectedHotelId ? (
         <div className="facilities__content">
@@ -208,9 +293,12 @@ export function FacilitiesPage() {
         .select-field { display:grid; gap:var(--space-2); }
         .select-field span { font-size:var(--text-small); font-weight:600; color:var(--color-ink-soft); }
         .select-field select { font:inherit; border:1px solid var(--color-line-strong); border-radius:var(--radius-sm); padding:.65rem .85rem; background:#fff; min-height:2.6rem; }
+        .facilities__nav { width:100%; max-width:100%; }
+        .facilities__groups,
         .facilities__tabs { width:100%; max-width:100%; }
         .facilities__content { display:grid; min-width:0; }
         @media (min-width:769px){
+          .facilities__groups,
           .facilities__tabs { flex-wrap:wrap; width:fit-content; }
         }
         @media (max-width:480px){

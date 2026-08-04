@@ -321,8 +321,8 @@ export function IncidentCenterPanel({
         .incident-center__status { margin:0; color:var(--color-ink-soft); font-weight:500; font-size:var(--text-small); }
         .incident-center__updated { color:var(--color-ink-faint); }
         .incident-center__chips { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:var(--space-2); }
-        .incident-chip { display:inline-flex; align-items:center; gap:.45rem; border:1px solid var(--color-line); background:var(--color-paper-elevated); border-radius:999px; padding:.45rem .85rem; font:inherit; font-weight:600; cursor:pointer; min-height:2.5rem; }
-        .incident-chip--on { border-color:var(--color-sea-deep); background:var(--color-sea-muted); color:var(--color-sea-deep); }
+        .incident-chip { display:inline-flex; align-items:center; gap:.45rem; border:1px solid var(--color-line); background:var(--color-paper-elevated); border-radius:999px; padding:.45rem .85rem; font:inherit; font-weight:600; cursor:pointer; min-height:var(--touch-min, 2.75rem); }
+        .incident-chip--on { border-color:var(--color-sea-deep); background:var(--color-sea-soft); color:var(--color-sea-deep); }
         .incident-chip__count { font-size:var(--text-micro); opacity:.85; }
         #incident-list-heading { margin:0 0 var(--space-3); font-size:var(--text-title); }
         .incident-list { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
