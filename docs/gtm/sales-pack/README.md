@@ -16,7 +16,9 @@
 |------|-----|
 | [demo-script-15min.md](./demo-script-15min.md) | שיחת דמו |
 | [truth-strip-copy.md](./truth-strip-copy.md) | משפטי אמת לשיווק |
-| [pricing-talk-track.md](./pricing-talk-track.md) | תמחור כיוון לשיחה בלבד |
+| [pricing-talk-track.md](./pricing-talk-track.md) | Hub תמחור USD + קישורים |
+| [pricing/README.md](./pricing/README.md) | **הסבר מלא בכל 10 שפות האפליקציה (verified)** |
+| [pricing/pricing.he.md](./pricing/pricing.he.md) | עברית — קובץ מלא |
 | [case-study-frame.md](./case-study-frame.md) | אחרי 30 יום פיילוט |
 | [../one-pager ב־planning](../../planning/one-pager-hotel.md) | Leave-behind מלון |
 | [investor one-pager](../../planning/one-pager-investor.md) | Leave-behind משקיע |

@@ -1,93 +1,38 @@
 # Pricing — USD worldwide (Israel + all markets)
 
-**Currency / מטבע:** USD only — מחיר אחיד לכל המדינות, כולל ישראל.  
-**Model / מודל:** Sales-assisted list · לא קופה עצמית באתר.  
-**Rule / כלל:** הנחת design partner מפורשת — לעולם לא ממציאים ROI כדי להצדיק מחיר.
+**מטבע / Currency:** USD only — מחיר אחיד לכל המדינות, כולל ישראל.  
+**Locales:** כל שפות האפליקציה (`@hotelos/i18n`) — תרגום מאומת לכל אחת.
 
 Updated: 2026-08-04
 
 ---
 
-## הסבר בעברית (קצר)
+## איפה העברית וכל השפות
 
-HotelOS AI נמכרת כ**שכבת בינה מעל ה־PMS** — לא כהחלפת Opera / Protel / Fidelio / Clock.
+| שפה | קובץ מלא |
+|-----|-----------|
+| **עברית** | [pricing/pricing.he.md](./pricing/pricing.he.md) |
+| English | [pricing/pricing.en.md](./pricing/pricing.en.md) |
+| العربية | [pricing/pricing.ar.md](./pricing/pricing.ar.md) |
+| Русский | [pricing/pricing.ru.md](./pricing/pricing.ru.md) |
+| Español | [pricing/pricing.es.md](./pricing/pricing.es.md) |
+| ไทย | [pricing/pricing.th.md](./pricing/pricing.th.md) |
+| 中文 | [pricing/pricing.zh.md](./pricing/pricing.zh.md) |
+| हिन्दी | [pricing/pricing.hi.md](./pricing/pricing.hi.md) |
+| Türkçe | [pricing/pricing.tr.md](./pricing/pricing.tr.md) |
+| Ελληνικά | [pricing/pricing.el.md](./pricing/pricing.el.md) |
 
-- המחיר **אחיד בדולר** בכל העולם (גם בישראל) — בלי מחירון נפרד בשקלים.
-- **Pilot** = הוכחת ערך קצרה במלון אחד.
-- **Network** = מנוי שוטף אחרי שהוכחתם.
-- **Enterprise** = רשתות שצריכות חבילת אמון/משפטי + כמה מלונות.
-
-המחיר יושב **מתחת ל־PMS מלא** ובטווח סביר של כלי תפעול / שכבות (ops overlays) בעולם.
-
----
-
-## List price (unified) · מחירון רשימה
-
-| Package | מחיר רשימה (USD) | מה כלול | הערות |
-|---------|------------------|---------|--------|
-| **Pilot** | **$5,000** / מלון | 8 שבועות · wedge (תדריך + תקלות + HITL) · ROI scorecard · kickoff הצלחה | מלון אחד. DP אופציונלי: **$0** או **50% ($2,500)** תמורת הסכמה ל־case study (עם שם או אנונימי) |
-| **Network** | **$1,000** / מלון / חודש | תמונת שרשרת ב־Executive · הרחבת דומיינים · Work + תפעול בהיקף שסוכם | חיוב חודשי או **$10,800 / מלון / שנה** (הנחה 10% בתשלום שנתי מראש) |
-| **Enterprise** | **from $75,000** ACV / שנה | מולטי־מלון · נתיב DPA עם counsel · ליווי שאלון אבטחה · success + שיחת roadmap | הצעת מחיר לפי מספר מלונות × Network + פרמיום Enterprise |
-
-### Add-ons · תוספות (אופציונלי, אותו מחיר בכל העולם)
-
-| תוספת | מחיר רשימה (USD) | הסבר |
-|--------|------------------|------|
-| מלון פיילוט נוסף (אותם 8 שבועות) | **$3,500** / מלון | כשרוצים להוכיח על יותר מנכס אחד באותה תקופה |
-| Onboarding מורחב (הדרכה מוגברת / בשטח) | **$2,000** חד־פעמי | מעבר ל־kickoff הסטנדרטי של הפיילוט |
-| סדנת status + security pack (חצי יום) | **$1,500** | הכנה לוועדת רכש / אבטחה — בלי לטעון SOC2 |
+**אינדקס מאומת:** [pricing/README.md](./pricing/README.md)
 
 ---
 
-## מה אומרים בשיחה (עברית)
+## מחירון רשימה (מספרים זהים בכל השפות)
 
-1. «המחירון אחיד ב־USD בכל העולם — גם בישראל, בלי מחירון שקלי נפרד.»  
-2. «פיילוט $5,000 ל־8 שבועות על מלון אחד; אחר כך Network ב־$1,000 למלון לחודש.»  
-3. «Enterprise מ־$75,000 ACV לשנה — תלוי במספר מלונות ובחבילת האמון/משפטי.»  
-4. «אנחנו לא מחליפים את ה־PMS; משלמים על שכבת הבינה + אישור אדם (HITL).»
+| Package | USD |
+|---------|-----|
+| **Pilot** | **$5,000** / hotel · 8 weeks |
+| **Network** | **$1,000** / hotel / month · or **$10,800** / year |
+| **Enterprise** | **from $75,000** ACV / year |
+| DP Pilot | **$0** or **$2,500** (50%) with case-study consent |
 
-### English (same meaning)
-
-1. «List is USD worldwide — Israel included, no local list.»  
-2. «Pilot $5,000 for 8 weeks on one hotel; Network $1,000 per hotel per month after.»  
-3. «Enterprise from $75k ACV — depends on property count and legal pack.»  
-4. «We don’t replace your PMS; price is for the intelligence layer + HITL.»
-
----
-
-## מה **לא** אומרים
-
-| לא בעברית | Not in English |
-|-----------|----------------|
-| מחירון «רק בשקלים» לישראל | ILS-only pricing |
-| חיוב לפי חדר חובה כבר בפיילוט | Per-room required at Pilot stage |
-| «אנחנו SOC2» בלי דוח | SOC2 included as certification |
-| הבטחת ROI ₪/% בחוזה | Guaranteed ₪/% ROI in the contract |
-
----
-
-## למה זה הגיוני מול השוק העולמי
-
-| קטגוריה | טווח מקובל בעולם | HotelOS |
-|---------|------------------|---------|
-| PMS מלא | ~$4–$15 / חדר / חודש · לעיתים $300–$2,000+ / נכס / חודש | נשארים **מתחת** ל־PMS מלא |
-| שכבות תפעול (Alice/HotSOS-class) | לעיתים ~$500–$1,500+ / חודש ל־SMB | Network **$1,000 / מלון / חודש** בתוך הטווח |
-| פיילוט AI מוקדם | לעיתים חינם → ארבעה מספרים באמצע | Pilot **$5,000** = רציני אבל סגיר |
-
----
-
-## חשבון מהיר (לפי מחירון)
-
-```text
-מלון אחד Network שנתי (prepaid) = $10,800
-5 מלונות Network שנתי            ≈ $54,000
-Pilot + שנת Network למלון אחד   = $5,000 + $10,800 = $15,800 (שנה ראשונה)
-```
-
-מלאו CAC/payback ב־[unit-economics-model.md](../unit-economics-model.md) עם **המספרים האלה** — לא ARR מומצא.
-
----
-
-## www
-
-באתר מופיעים מספרי הרשימה ב־`#packages`. הסבר מלא + מה אומרים בשיחה — כאן וב־sales pack להדפסה.
+הסבר מלא, משפטי שיחה, ו«מה לא אומרים» — בקובץ השפה הרלוונטי למעלה.

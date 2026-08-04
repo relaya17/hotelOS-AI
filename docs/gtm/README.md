@@ -16,6 +16,8 @@
 
 ## For hotel owners / chains
 
+Also see multilingual pricing: **[sales-pack/pricing/](./sales-pack/pricing/)** (he/en/ar/ru/es/th/zh/hi/tr/el · verified).
+
 | Doc | Purpose |
 |-----|---------|
 | [pilot-playbook.md](./pilot-playbook.md) | 4-week pilot, roles, success criteria |
