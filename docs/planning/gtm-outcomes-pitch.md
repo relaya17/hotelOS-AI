@@ -18,7 +18,7 @@ HotelOS AI ממוקמת כ־**Operating System / Intelligence Layer** — לא �
 | **Closed (MVP)** | Trusted allowlist **page fetch → snapshot (+ best-effort embed)** all categories |
 | **Remaining** | Certifications (SOC 2 / ISO) · counsel-signed DPA per customer |
 | **Remaining** | Employee depth (HR dossier / advanced workflows; Work claim + invite + assessments MVP live) |
-| **Remaining** | WCAG full suite (beyond login + www/guest public axe + foundations CI) |
+| **Remaining** | WCAG full suite (beyond login + www/guest shells + invite/privacy deep paths) |
 
 ---
 

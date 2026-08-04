@@ -5,6 +5,7 @@ import {
   listDepartments,
   listHotels,
   fetchDepartmentTasks,
+  releaseDepartmentTask,
   updateDepartmentTaskStatus,
   type DepartmentTaskDto,
   type StoredUser,
@@ -103,13 +104,28 @@ export function MyTasksPanel({ user }: { readonly user: StoredUser }) {
     }
   }
 
+  async function release(taskId: string) {
+    setBusyId(taskId);
+    setError(undefined);
+    try {
+      await releaseDepartmentTask(taskId);
+      await reload();
+    } catch (releaseError) {
+      setError(
+        releaseError instanceof Error ? releaseError.message : "שחרור נכשל",
+      );
+    } finally {
+      setBusyId(undefined);
+    }
+  }
+
   if (loading) return <p>טוען משימות…</p>;
 
   return (
     <section className="tasks">
       <h2>המשימות שלי</h2>
       <p className="muted">
-        תור מחלקתי מהמלון. אפשר לקחת משימה פתוחה («שייך אליי») ואז לסמן התחלה /
+        תור מחלקתי מהמלון. אפשר לקחת משימה פתוחה («שייך אליי»), לשחרר, או לסמן
         בוצע.
       </p>
       {error ? (
@@ -146,6 +162,16 @@ export function MyTasksPanel({ user }: { readonly user: StoredUser }) {
                       onClick={() => void claim(task.id)}
                     >
                       שייך אליי
+                    </Button>
+                  ) : null}
+                  {isMine ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={busyId === task.id}
+                      onClick={() => void release(task.id)}
+                    >
+                      שחרר
                     </Button>
                   ) : null}
                   {isMine && task.status === "open" ? (

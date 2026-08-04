@@ -170,6 +170,7 @@ function createDeps(input?: {
                 priority: "high",
                 status: "open",
                 assignedToUserId: null,
+                assignedToDisplayName: null,
                 dueAt: null,
                 createdAt: "2026-08-03T08:00:00.000Z",
                 updatedAt: "2026-08-03T08:00:00.000Z",

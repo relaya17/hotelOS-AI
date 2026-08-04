@@ -42,6 +42,7 @@ export type PersistedDepartmentTask = {
   readonly priority: TaskPriority;
   readonly status: TaskStatus;
   readonly assignedToUserId: string | null;
+  readonly assignedToDisplayName: string | null;
   readonly dueAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -74,6 +75,7 @@ function mapTask(row: typeof departmentTasks.$inferSelect): PersistedDepartmentT
     priority: row.priority as TaskPriority,
     status: row.status as TaskStatus,
     assignedToUserId: row.assignedToUserId ?? null,
+    assignedToDisplayName: null,
     dueAt: row.dueAt ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -108,8 +110,7 @@ export type OpsRepository = {
     updatedAt: string,
   ) => Promise<PersistedDepartmentTask | null>;
   /**
-   * Soft claim / reassign. Does not overwrite another assignee unless
-   * `force` is true (reserved — claim path never steals).
+   * Soft claim. Does not overwrite another assignee.
    */
   claimTask: (
     tenantId: TenantId,
@@ -119,6 +120,19 @@ export type OpsRepository = {
   ) => Promise<
     | { readonly ok: true; readonly task: PersistedDepartmentTask }
     | { readonly ok: false; readonly reason: "NOT_FOUND" | "ALREADY_CLAIMED" }
+  >;
+  /** Release ownership — only the current assignee may release. */
+  releaseTask: (
+    tenantId: TenantId,
+    taskId: string,
+    assigneeUserId: string,
+    updatedAt: string,
+  ) => Promise<
+    | { readonly ok: true; readonly task: PersistedDepartmentTask }
+    | {
+        readonly ok: false;
+        readonly reason: "NOT_FOUND" | "NOT_OWNER" | "NOT_ASSIGNED";
+      }
   >;
   countStaffByDepartment: (departmentId: string) => Promise<number>;
 };
@@ -188,8 +202,12 @@ export function createOpsRepository(db: HotelOsDb): OpsRepository {
 
     async listTasksByDepartment(tenantId, hotelId, departmentId) {
       const rows = await db
-        .select()
+        .select({
+          task: departmentTasks,
+          assigneeName: users.displayName,
+        })
         .from(departmentTasks)
+        .leftJoin(users, eq(departmentTasks.assignedToUserId, users.id))
         .where(
           and(
             eq(departmentTasks.tenantId, tenantId),
@@ -199,7 +217,10 @@ export function createOpsRepository(db: HotelOsDb): OpsRepository {
         )
         .orderBy(desc(departmentTasks.createdAt))
         .all();
-      return rows.map(mapTask);
+      return rows.map((row) => ({
+        ...mapTask(row.task),
+        assignedToDisplayName: row.assigneeName ?? null,
+      }));
     },
 
     async createTask(input) {
@@ -271,6 +292,63 @@ export function createOpsRepository(db: HotelOsDb): OpsRepository {
         .set({
           assignedToUserId: assigneeUserId,
           status: nextStatus,
+          updatedAt,
+        })
+        .where(
+          and(
+            eq(departmentTasks.id, taskId),
+            eq(departmentTasks.tenantId, tenantId),
+          ),
+        )
+        .run();
+
+      const row = await db
+        .select()
+        .from(departmentTasks)
+        .where(eq(departmentTasks.id, taskId))
+        .get();
+      if (!row) {
+        return { ok: false as const, reason: "NOT_FOUND" as const };
+      }
+      const assignee = await db
+        .select({ displayName: users.displayName })
+        .from(users)
+        .where(eq(users.id, assigneeUserId))
+        .get();
+      return {
+        ok: true as const,
+        task: {
+          ...mapTask(row),
+          assignedToDisplayName: assignee?.displayName ?? null,
+        },
+      };
+    },
+
+    async releaseTask(tenantId, taskId, assigneeUserId, updatedAt) {
+      const existing = await db
+        .select()
+        .from(departmentTasks)
+        .where(
+          and(
+            eq(departmentTasks.id, taskId),
+            eq(departmentTasks.tenantId, tenantId),
+          ),
+        )
+        .get();
+      if (!existing) {
+        return { ok: false as const, reason: "NOT_FOUND" as const };
+      }
+      if (!existing.assignedToUserId) {
+        return { ok: false as const, reason: "NOT_ASSIGNED" as const };
+      }
+      if (existing.assignedToUserId !== assigneeUserId) {
+        return { ok: false as const, reason: "NOT_OWNER" as const };
+      }
+
+      await db
+        .update(departmentTasks)
+        .set({
+          assignedToUserId: null,
           updatedAt,
         })
         .where(

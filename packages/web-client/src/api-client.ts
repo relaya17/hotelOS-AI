@@ -1915,6 +1915,7 @@ export type DepartmentTaskDto = {
   readonly priority: TaskPriority;
   readonly status: TaskStatus;
   readonly assignedToUserId: string | null;
+  readonly assignedToDisplayName?: string | null;
   readonly dueAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -2120,6 +2121,17 @@ export async function claimDepartmentTask(
 ): Promise<DepartmentTaskDto> {
   const payload = (await authPatch(`/v1/ops/tasks/${taskId}`, {
     claim: true,
+  })) as {
+    data: DepartmentTaskDto;
+  };
+  return payload.data;
+}
+
+export async function releaseDepartmentTask(
+  taskId: string,
+): Promise<DepartmentTaskDto> {
+  const payload = (await authPatch(`/v1/ops/tasks/${taskId}`, {
+    release: true,
   })) as {
     data: DepartmentTaskDto;
   };

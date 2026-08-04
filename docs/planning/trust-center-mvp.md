@@ -11,7 +11,7 @@
 | **Closed (MVP)** | RAG hybrid MVP — see [rag-embeddings-mvp.md](./rag-embeddings-mvp.md) |
 | **Remaining** | Certifications (SOC 2 / ISO attestation) · counsel-signed DPA per customer |
 | **Remaining** | Employee depth |
-| **Remaining** | WCAG full suite (beyond login axe + foundations) |
+| **Remaining** | WCAG full suite (beyond login axe + www/guest + invite/privacy deep paths) |
 
 ## Live today (honest)
 

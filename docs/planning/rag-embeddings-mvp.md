@@ -15,7 +15,7 @@ vector index + evals ship. Keyword path remains the reliable default.
 | **Closed (MVP)** | Trusted snapshot **embeddings** (best-effort via Gateway on fetch) |
 | **Remaining** | Certifications (SOC 2 / ISO) |
 | **Remaining** | Employee depth (Blob binary for sensitive HR intentionally hash-only) |
-| **Remaining** | WCAG full suite (axe now covers login + www/guest public shells) |
+| **Remaining** | WCAG full suite (axe: login + www/guest shells + invite/privacy deep paths; authenticated hubs still open) |
 
 ## Live today
 

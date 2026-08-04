@@ -254,6 +254,10 @@ export function DepartmentsPanel({ hotelId }: DepartmentsPanelProps) {
                   <p className="meta">
                     סוג: {task.taskType} · עדיפות: {priorityLabel[task.priority]}
                     {task.dueAt ? ` · יעד: ${task.dueAt.slice(0, 10)}` : ""}
+                    {" · "}
+                    {task.assignedToUserId
+                      ? `אחראי: ${task.assignedToDisplayName ?? "משויכת"}`
+                      : "פנויה"}
                   </p>
                 </div>
                 <div className="row__actions">

@@ -61,6 +61,7 @@ describe("executeApprovalAct", () => {
         priority: input.priority,
         status: "open",
         assignedToUserId: null,
+        assignedToDisplayName: null,
         dueAt: null,
         createdAt: input.createdAt,
         updatedAt: input.createdAt,

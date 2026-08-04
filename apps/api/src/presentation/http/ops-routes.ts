@@ -107,10 +107,18 @@ const updateTaskStatusSchema = z
       .enum(["open", "in_progress", "blocked", "done", "cancelled"])
       .optional(),
     claim: z.boolean().optional(),
+    release: z.boolean().optional(),
   })
   .refine(
-    (body) => body.status !== undefined || body.claim === true,
-    { message: "Provide status and/or claim: true" },
+    (body) =>
+      body.status !== undefined ||
+      body.claim === true ||
+      body.release === true,
+    { message: "Provide status and/or claim/release: true" },
+  )
+  .refine(
+    (body) => !(body.claim === true && body.release === true),
+    { message: "claim and release are mutually exclusive" },
   );
 
 const createMaintenanceRequestSchema = z.object({
@@ -337,6 +345,47 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
       const taskId = c.req.param("id");
       const body = updateTaskStatusSchema.parse(await c.req.json());
       const now = new Date().toISOString();
+
+      if (body.release === true) {
+        const released = await deps.ops.releaseTask(
+          principal.scope.tenantId,
+          taskId,
+          principal.userId,
+          now,
+        );
+        if (!released.ok) {
+          if (released.reason === "NOT_FOUND") {
+            return sendError(c, 404, "TASK_NOT_FOUND", "Task not found");
+          }
+          if (released.reason === "NOT_ASSIGNED") {
+            return sendError(
+              c,
+              409,
+              "TASK_NOT_ASSIGNED",
+              "Task is not currently assigned",
+            );
+          }
+          return sendError(
+            c,
+            403,
+            "TASK_NOT_OWNER",
+            "Only the assignee can release this task",
+          );
+        }
+        if (body.status !== undefined && body.status !== released.task.status) {
+          const updated = await deps.ops.updateTaskStatus(
+            principal.scope.tenantId,
+            taskId,
+            body.status,
+            now,
+          );
+          if (!updated) {
+            return sendError(c, 404, "TASK_NOT_FOUND", "Task not found");
+          }
+          return c.json({ data: updated });
+        }
+        return c.json({ data: released.task });
+      }
 
       if (body.claim === true) {
         const claimed = await deps.ops.claimTask(
