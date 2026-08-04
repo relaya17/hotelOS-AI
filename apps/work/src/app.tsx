@@ -36,6 +36,24 @@ type WorkTab =
   | "finance"
   | "docs";
 
+const WORK_TABS = new Set<WorkTab>([
+  "attendance",
+  "tasks",
+  "assessments",
+  "agent",
+  "copilot",
+  "finance",
+  "docs",
+]);
+
+function readInitialTab(): WorkTab {
+  const value = new URLSearchParams(window.location.search).get("tab");
+  if (value && WORK_TABS.has(value as WorkTab)) {
+    return value as WorkTab;
+  }
+  return "attendance";
+}
+
 function focusMain() {
   window.requestAnimationFrame(() => {
     document.getElementById("main-content")?.focus();
@@ -82,7 +100,7 @@ export function App() {
   );
   const [user, setUser] = useState<StoredUser | null>(null);
   const [booting, setBooting] = useState(true);
-  const [tab, setTab] = useState<WorkTab>("attendance");
+  const [tab, setTab] = useState<WorkTab>(readInitialTab);
   const showCopilot = user ? canAccessOpsCopilot(user.roles) : false;
   const showFinance = user ? canAccessFinancePanel(user.roles) : false;
 

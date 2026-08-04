@@ -49,6 +49,7 @@ Platform narrative (capabilities / reliability / stability / innovation): **[sal
 | [review-gap-status.md](./review-gap-status.md) | What the engineering review closed in code vs still human |
 | [landing-gtm-checklist.md](./landing-gtm-checklist.md) | Meta / JSON-LD / honesty checklist on every www change |
 | [business-fill.md](./business-fill.md) | Founder fill: Calendly, pilot@ monitoring, design partner |
+| [lead-ops.md](./lead-ops.md) | How to monitor `marketing_leads` + audit after www submit |
 
 ## Trust path (honest)
 

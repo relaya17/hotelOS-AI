@@ -7,25 +7,13 @@ import {
   listPendingAiApprovals,
   listRecentAiApprovals,
   type AiApprovalDto,
-  type ApprovalActDto,
   type KashrutProcurementGateDto,
 } from "@hotelos/web-client";
-
-function actMessage(act: ApprovalActDto): string {
-  if (act.status === "executed") return act.summaryHe;
-  return act.reasonHe;
-}
-
-function approvalStatusHe(status: string): string {
-  if (status === "approved") return "אושר";
-  if (status === "rejected") return "נדחה";
-  return status;
-}
-
-function formatPayload(payload: unknown): string {
-  if (payload === null || payload === undefined) return "—";
-  return JSON.stringify(payload, null, 2);
-}
+import {
+  actMessage,
+  approvalStatusHe,
+  formatPayload,
+} from "./approvals-copy.js";
 
 function ApprovalPayloadPreview({ payload }: { readonly payload: unknown }) {
   if (payload === null || payload === undefined) return null;

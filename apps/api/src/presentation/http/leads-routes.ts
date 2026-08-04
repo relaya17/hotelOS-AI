@@ -1,11 +1,17 @@
 import { Hono } from "hono";
 import { randomUUID } from "node:crypto";
-import type { MarketingLeadsRepository } from "@hotelos/database";
+import type { AuditRepository, MarketingLeadsRepository } from "@hotelos/database";
+import type { Logger } from "@hotelos/logger";
+import { Ids } from "@hotelos/shared";
 import { z } from "@hotelos/validation";
 import { mapUnknownError } from "./errors.js";
 
 export type LeadsRouteDeps = {
   readonly leads: MarketingLeadsRepository;
+  /** Platform/demo tenant used only for audit_events FK (anonymous www leads). */
+  readonly auditTenantId?: string;
+  readonly audit?: AuditRepository;
+  readonly logger?: Logger;
 };
 
 const createLeadSchema = z.object({
@@ -32,6 +38,42 @@ export function createLeadsRoutes(deps: LeadsRouteDeps): Hono {
         source: body.source,
         createdAt: new Date().toISOString(),
       });
+
+      deps.logger?.info("marketing lead created", {
+        leadId: created.id,
+        source: created.source,
+        hotelOrChain: created.hotelOrChain,
+      });
+
+      if (deps.audit && deps.auditTenantId) {
+        try {
+          await deps.audit.append({
+            id: randomUUID(),
+            tenantId: Ids.tenant(deps.auditTenantId),
+            action: "marketing.lead.created",
+            resourceType: "marketing_lead",
+            resourceId: created.id,
+            metadata: {
+              source: created.source,
+              hotelOrChain: created.hotelOrChain,
+              emailDomain: created.email.includes("@")
+                ? (created.email.split("@")[1] ?? null)
+                : null,
+              hasNote: note !== null,
+            },
+            createdAt: created.createdAt,
+          });
+        } catch (auditError) {
+          deps.logger?.warn("marketing lead audit write failed", {
+            leadId: created.id,
+            message:
+              auditError instanceof Error
+                ? auditError.message
+                : String(auditError),
+          });
+        }
+      }
+
       return c.json(
         {
           data: {

@@ -12,7 +12,8 @@ Last update: 2026-08-05 · code on `main`.
 | Giant www landing | **Split** — `apps/www/src/landing/` |
 | JSON-LD currency drift | **CI** — `pnpm check:www-jsonld` |
 | Near-zero front tests | **Partial** — www content/nav + web-client smoke (login/HITL/lead/HR) |
-| Axe only login + public | **Expanded** — secured stubs: approvals, HR, ops dashboard, portfolio, work attendance |
+| Axe only login + public | **Expanded** — approvals, HR, maintenance, twin, ops dashboard, portfolio, work attendance + tasks |
+| Lead ops after submit | **Audit** — `marketing.lead.created` + logger; see [lead-ops.md](./lead-ops.md) |
 | Orphan nav sections | **Restored** — `#how-pilot` `#measure` `#excellence` `#faq` |
 | Locale HE-only vs USD | **Documented** — `locale-strategy.md` (intentional) |
 | GTM meta checklist | **Added** — `landing-gtm-checklist.md` |

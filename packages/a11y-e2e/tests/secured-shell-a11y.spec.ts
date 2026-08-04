@@ -29,6 +29,16 @@ const SECURED_TARGETS: readonly SecuredTarget[] = [
   },
   {
     id: "admin",
+    path: "/?panel=maintenance",
+    ready: /קריאות תחזוקה/,
+  },
+  {
+    id: "admin",
+    path: "/?panel=twin",
+    ready: /Digital Twin/,
+  },
+  {
+    id: "admin",
     path: "/",
     ready: /חדרים|הזמנות|מלון פעיל/,
   },
@@ -46,6 +56,11 @@ const SECURED_TARGETS: readonly SecuredTarget[] = [
     id: "work",
     path: "/",
     ready: /שעון משמרת/,
+  },
+  {
+    id: "work",
+    path: "/?tab=tasks",
+    ready: /המשימות שלי/,
   },
 ];
 

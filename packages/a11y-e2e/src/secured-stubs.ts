@@ -207,6 +207,49 @@ export async function installSecuredApiStubs(page: Page): Promise<void> {
       await json(route, 200, { data: [] });
       return;
     }
+    if (path.startsWith("/v1/ops/maintenance-requests") && method === "GET") {
+      await json(route, 200, { data: [] });
+      return;
+    }
+    if (path.startsWith("/v1/ops/vendors") && method === "GET") {
+      await json(route, 200, { data: [] });
+      return;
+    }
+    if (path.match(/^\/v1\/twin\/hotels\//) && method === "GET") {
+      await json(route, 200, {
+        data: {
+          hotelId: AXE_STUB_HOTEL_ID,
+          generatedAt: "2026-08-04T12:00:00.000Z",
+          rooms: [
+            {
+              roomNumber: "101",
+              status: "vacant",
+              source: "stub",
+              floor: "1",
+            },
+          ],
+          equipment: [],
+        },
+      });
+      return;
+    }
+    if (path.startsWith("/v1/ops/departments") && method === "GET") {
+      await json(route, 200, {
+        data: [
+          {
+            id: "d1000000-0000-4000-8000-000000000001",
+            code: "housekeeping",
+            nameHe: "משק בית",
+            hotelId: AXE_STUB_HOTEL_ID,
+          },
+        ],
+      });
+      return;
+    }
+    if (path.includes("/tasks") && path.startsWith("/v1/ops/") && method === "GET") {
+      await json(route, 200, { data: [] });
+      return;
+    }
     if (path.startsWith("/v1/hotels/") && path.endsWith("/rooms") && method === "GET") {
       await json(route, 200, {
         data: [

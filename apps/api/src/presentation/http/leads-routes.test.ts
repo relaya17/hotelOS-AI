@@ -75,4 +75,40 @@ describe("leads routes", () => {
 
     assert.equal(res.status, 400);
   });
+
+  it("writes marketing.lead.created audit when wired", async () => {
+    const audits: { action: string; resourceId?: string }[] = [];
+    const app = createLeadsRoutes({
+      leads: {
+        async create(input) {
+          return input;
+        },
+      },
+      auditTenantId: "11111111-1111-4111-8111-111111111111",
+      audit: {
+        async append(event) {
+          audits.push({
+            action: event.action,
+            ...(event.resourceId !== undefined
+              ? { resourceId: event.resourceId }
+              : {}),
+          });
+        },
+      },
+    });
+
+    const res = await app.request("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Dana",
+        hotelOrChain: "Coastal",
+        email: "dana@example.com",
+      }),
+    });
+
+    assert.equal(res.status, 201);
+    assert.equal(audits.length, 1);
+    assert.equal(audits[0]?.action, "marketing.lead.created");
+  });
 });

@@ -43,6 +43,7 @@ import {
   createTrustRepository,
   createMarketingLeadsRepository,
   createTurboRepository,
+  DEMO_TENANT_ID,
   createUpsellRepository,
   createUserRepository,
   createHrRepository,
@@ -256,7 +257,12 @@ export async function composeApp() {
       tokens,
     },
     overview: { overview, tokens },
-    leads: { leads: marketingLeads },
+    leads: {
+      leads: marketingLeads,
+      audit,
+      auditTenantId: DEMO_TENANT_ID,
+      logger,
+    },
     publicRoutes: {
       guestStays,
       feedback,
