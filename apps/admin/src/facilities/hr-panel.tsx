@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, useCallback } from "react";
 import { Button, TextField } from "@hotelos/ui";
 import {
   APP_URLS,
@@ -109,7 +109,7 @@ export function HrPanel({ hotelId }: HrPanelProps) {
   const mayReviewCriminal =
     canReviewCriminalRecord || serverAllowsCriminalReview;
 
-  async function reload() {
+  const reload = useCallback(async () => {
     setLoading(true);
     setError(undefined);
     try {
@@ -123,22 +123,18 @@ export function HrPanel({ hotelId }: HrPanelProps) {
       setInvites(inv);
       setDrafts(letters);
       setTemplates(tmpls);
-      if (!selectedEmployeeId && emps[0]) {
-        setSelectedEmployeeId(emps[0].id);
-      }
-      if (!selectedTemplateId && tmpls[0]) {
-        setSelectedTemplateId(tmpls[0].id);
-      }
+      setSelectedEmployeeId((prev) => prev || emps[0]?.id || "");
+      setSelectedTemplateId((prev) => prev || tmpls[0]?.id || "");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "שגיאה בטעינה");
     } finally {
       setLoading(false);
     }
-  }
+  }, [hotelId]);
 
   useEffect(() => {
     void reload();
-  }, [hotelId]);
+  }, [reload]);
 
   useEffect(() => {
     if (!selectedEmployeeId) {

@@ -11,6 +11,7 @@ const FRONTEND_APPS = [
   "apps/admin",
   "apps/guest",
   "apps/www",
+  "apps/work",
 ];
 
 export default tseslint.config(
@@ -80,6 +81,8 @@ export default tseslint.config(
     files: ["**/*.test.ts", "**/*.test.tsx"],
     rules: {
       "@typescript-eslint/no-floating-promises": "off",
+      // In-memory / stub repos implement async interfaces without I/O.
+      "@typescript-eslint/require-await": "off",
       // Tests often use explicit casts for fixtures; keep signal on app code only.
       "@typescript-eslint/no-unnecessary-type-assertion": "off",
       "@typescript-eslint/no-unsafe-argument": "off",

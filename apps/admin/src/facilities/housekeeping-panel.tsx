@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@hotelos/ui";
 import {
   listBookings,
@@ -29,7 +29,7 @@ export function HousekeepingPanel({ hotelId }: HousekeepingPanelProps) {
   const [suggesting, setSuggesting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 
-  async function reload() {
+  const reload = useCallback(async () => {
     setLoading(true);
     setError(undefined);
     try {
@@ -51,11 +51,11 @@ export function HousekeepingPanel({ hotelId }: HousekeepingPanelProps) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [hotelId]);
 
   useEffect(() => {
     void reload();
-  }, [hotelId]);
+  }, [reload]);
 
   const dirtyRooms = rooms.filter((room) => room.status === "dirty");
 

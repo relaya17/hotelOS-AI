@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@hotelos/ui";
 import { TwinVisual, useIntervalRefresh } from "@hotelos/features";
 import {
@@ -157,7 +157,7 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
   const [actionNotice, setActionNotice] = useState<string | undefined>();
   const [actionError, setActionError] = useState<string | undefined>();
 
-  async function reload() {
+  const reload = useCallback(async () => {
     setLoading(true);
     setError(undefined);
     try {
@@ -167,11 +167,11 @@ export function TwinPanel({ hotelId }: TwinPanelProps) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [hotelId]);
 
   useEffect(() => {
     void reload();
-  }, [hotelId]);
+  }, [reload]);
 
   useIntervalRefresh(() => {
     void reload();

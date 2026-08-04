@@ -50,6 +50,16 @@ Four separate frontends **plus a separate API** is the correct production
 shape (ADR 0003): Guest / Admin (hotel) / Executive (management) / Work
 (employees) / API. Or run `./scripts/deploy-five-vercel.ps1`.
 
+### Rate limits (GitHub → Vercel)
+
+Vercel Hobby caps concurrent Git integrations. If GitHub shows
+`Deployment rate limited — retry in 24 hours` on several projects at once,
+**that is not a code failure** — wait out the window or pause auto-deploy on
+unused duplicate projects (keep only the five live targets). An API project
+with literal `Deployment failed` is separate: check the Vercel build log and
+env (`pnpm check:vercel-api`). Do not spam redeploy from git until the
+rate-limit window ends.
+
 In Vercel: **Add New → Project**, import the same Git repo five times. Name
 them with a shared prefix so sibling URLs auto-resolve, e.g.:
 
