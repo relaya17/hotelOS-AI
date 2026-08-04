@@ -101,9 +101,17 @@ const createTaskSchema = z.object({
   dueAt: z.string().datetime().optional(),
 });
 
-const updateTaskStatusSchema = z.object({
-  status: z.enum(["open", "in_progress", "blocked", "done", "cancelled"]),
-});
+const updateTaskStatusSchema = z
+  .object({
+    status: z
+      .enum(["open", "in_progress", "blocked", "done", "cancelled"])
+      .optional(),
+    claim: z.boolean().optional(),
+  })
+  .refine(
+    (body) => body.status !== undefined || body.claim === true,
+    { message: "Provide status and/or claim: true" },
+  );
 
 const createMaintenanceRequestSchema = z.object({
   category: z.enum(["repair", "renovation", "pool", "linen", "general"]),
@@ -328,11 +336,46 @@ export function createOpsRoutes(deps: OpsRouteDeps): Hono<{
       const principal = c.get("principal");
       const taskId = c.req.param("id");
       const body = updateTaskStatusSchema.parse(await c.req.json());
+      const now = new Date().toISOString();
+
+      if (body.claim === true) {
+        const claimed = await deps.ops.claimTask(
+          principal.scope.tenantId,
+          taskId,
+          principal.userId,
+          now,
+        );
+        if (!claimed.ok) {
+          if (claimed.reason === "NOT_FOUND") {
+            return sendError(c, 404, "TASK_NOT_FOUND", "Task not found");
+          }
+          return sendError(
+            c,
+            409,
+            "TASK_ALREADY_CLAIMED",
+            "Task is already assigned to another user",
+          );
+        }
+        if (body.status !== undefined && body.status !== claimed.task.status) {
+          const updated = await deps.ops.updateTaskStatus(
+            principal.scope.tenantId,
+            taskId,
+            body.status,
+            now,
+          );
+          if (!updated) {
+            return sendError(c, 404, "TASK_NOT_FOUND", "Task not found");
+          }
+          return c.json({ data: updated });
+        }
+        return c.json({ data: claimed.task });
+      }
+
       const updated = await deps.ops.updateTaskStatus(
         principal.scope.tenantId,
         taskId,
-        body.status,
-        new Date().toISOString(),
+        body.status!,
+        now,
       );
       if (!updated) {
         return sendError(c, 404, "TASK_NOT_FOUND", "Task not found");

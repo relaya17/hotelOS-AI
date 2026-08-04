@@ -2115,6 +2115,17 @@ export async function updateDepartmentTaskStatus(
   return payload.data;
 }
 
+export async function claimDepartmentTask(
+  taskId: string,
+): Promise<DepartmentTaskDto> {
+  const payload = (await authPatch(`/v1/ops/tasks/${taskId}`, {
+    claim: true,
+  })) as {
+    data: DepartmentTaskDto;
+  };
+  return payload.data;
+}
+
 export async function listMaintenanceRequests(
   hotelId: string,
 ): Promise<readonly MaintenanceRequestDto[]> {

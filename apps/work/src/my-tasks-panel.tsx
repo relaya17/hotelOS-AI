@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@hotelos/ui";
 import {
+  claimDepartmentTask,
   listDepartments,
   listHotels,
   fetchDepartmentTasks,
@@ -37,17 +38,30 @@ export function MyTasksPanel({ user }: { readonly user: StoredUser }) {
           rows.push({ ...task, departmentCode: dept.code });
         }
       }
-      const assigned = rows.filter((task) => task.assignedToUserId === user.id);
-      const active = (list: readonly TaskRow[]) =>
-        list.filter(
-          (task) =>
-            task.status === "open" ||
+      const mine = rows.filter((task) => task.assignedToUserId === user.id);
+      const unclaimedOpen = rows.filter(
+        (task) =>
+          !task.assignedToUserId &&
+          (task.status === "open" ||
             task.status === "in_progress" ||
-            task.status === "blocked",
-        );
-      const preferred = active(assigned.length > 0 ? assigned : rows);
-      preferred.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
-      setTasks(preferred);
+            task.status === "blocked"),
+      );
+      const activeMine = mine.filter(
+        (task) =>
+          task.status === "open" ||
+          task.status === "in_progress" ||
+          task.status === "blocked",
+      );
+      const preferred = [...activeMine, ...unclaimedOpen].filter(
+        (task, index, all) => all.findIndex((row) => row.id === task.id) === index,
+      );
+      preferred.sort((a, b) => {
+        const aMine = a.assignedToUserId === user.id ? 0 : 1;
+        const bMine = b.assignedToUserId === user.id ? 0 : 1;
+        if (aMine !== bMine) return aMine - bMine;
+        return a.updatedAt.localeCompare(b.updatedAt);
+      });
+      setTasks(preferred.slice(0, 40));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "טעינה נכשלה");
     } finally {
@@ -74,14 +88,29 @@ export function MyTasksPanel({ user }: { readonly user: StoredUser }) {
     }
   }
 
+  async function claim(taskId: string) {
+    setBusyId(taskId);
+    setError(undefined);
+    try {
+      await claimDepartmentTask(taskId);
+      await reload();
+    } catch (claimError) {
+      setError(
+        claimError instanceof Error ? claimError.message : "שיוך נכשל",
+      );
+    } finally {
+      setBusyId(undefined);
+    }
+  }
+
   if (loading) return <p>טוען משימות…</p>;
 
   return (
     <section className="tasks">
       <h2>המשימות שלי</h2>
       <p className="muted">
-        תור מחלקתי מהמלון — משימות פתוחות / בביצוע. אם אין משימות משויכות
-        אליך, מוצגות משימות המחלקות במלון.
+        תור מחלקתי מהמלון. אפשר לקחת משימה פתוחה («שייך אליי») ואז לסמן התחלה /
+        בוצע.
       </p>
       {error ? (
         <p className="error" role="alert">
@@ -92,37 +121,56 @@ export function MyTasksPanel({ user }: { readonly user: StoredUser }) {
         <p className="muted">אין משימות פעילות כרגע.</p>
       ) : (
         <ul className="tasks__list">
-          {tasks.map((task) => (
-            <li key={task.id} className="tasks__item">
-              <div className="tasks__head">
-                <strong>{task.title}</strong>
-                <span className="tasks__meta">
-                  {task.departmentCode} · {task.priority} · {task.status}
-                </span>
-              </div>
-              {task.description ? <p>{task.description}</p> : null}
-              <div className="tasks__actions">
-                {task.status === "open" ? (
-                  <Button
-                    type="button"
-                    disabled={busyId === task.id}
-                    onClick={() => void setStatus(task.id, "in_progress")}
-                  >
-                    התחל
-                  </Button>
-                ) : null}
-                {task.status === "open" || task.status === "in_progress" ? (
-                  <Button
-                    type="button"
-                    disabled={busyId === task.id}
-                    onClick={() => void setStatus(task.id, "done")}
-                  >
-                    סמן בוצע
-                  </Button>
-                ) : null}
-              </div>
-            </li>
-          ))}
+          {tasks.map((task) => {
+            const isMine = task.assignedToUserId === user.id;
+            const canClaim = !task.assignedToUserId;
+            return (
+              <li key={task.id} className="tasks__item">
+                <div className="tasks__head">
+                  <strong>{task.title}</strong>
+                  <span className="tasks__meta">
+                    {task.departmentCode} · {task.priority} · {task.status}
+                    {isMine
+                      ? " · שלי"
+                      : task.assignedToUserId
+                        ? " · משויכת"
+                        : " · פנויה"}
+                  </span>
+                </div>
+                {task.description ? <p>{task.description}</p> : null}
+                <div className="tasks__actions">
+                  {canClaim ? (
+                    <Button
+                      type="button"
+                      disabled={busyId === task.id}
+                      onClick={() => void claim(task.id)}
+                    >
+                      שייך אליי
+                    </Button>
+                  ) : null}
+                  {isMine && task.status === "open" ? (
+                    <Button
+                      type="button"
+                      disabled={busyId === task.id}
+                      onClick={() => void setStatus(task.id, "in_progress")}
+                    >
+                      התחל
+                    </Button>
+                  ) : null}
+                  {isMine &&
+                  (task.status === "open" || task.status === "in_progress") ? (
+                    <Button
+                      type="button"
+                      disabled={busyId === task.id}
+                      onClick={() => void setStatus(task.id, "done")}
+                    >
+                      סמן בוצע
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
       <style>{`

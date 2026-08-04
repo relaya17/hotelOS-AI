@@ -107,6 +107,19 @@ export type OpsRepository = {
     status: TaskStatus,
     updatedAt: string,
   ) => Promise<PersistedDepartmentTask | null>;
+  /**
+   * Soft claim / reassign. Does not overwrite another assignee unless
+   * `force` is true (reserved — claim path never steals).
+   */
+  claimTask: (
+    tenantId: TenantId,
+    taskId: string,
+    assigneeUserId: string,
+    updatedAt: string,
+  ) => Promise<
+    | { readonly ok: true; readonly task: PersistedDepartmentTask }
+    | { readonly ok: false; readonly reason: "NOT_FOUND" | "ALREADY_CLAIMED" }
+  >;
   countStaffByDepartment: (departmentId: string) => Promise<number>;
 };
 
@@ -227,6 +240,56 @@ export function createOpsRepository(db: HotelOsDb): OpsRepository {
         .where(eq(departmentTasks.id, taskId))
         .get();
       return row ? mapTask(row) : null;
+    },
+
+    async claimTask(tenantId, taskId, assigneeUserId, updatedAt) {
+      const existing = await db
+        .select()
+        .from(departmentTasks)
+        .where(
+          and(
+            eq(departmentTasks.id, taskId),
+            eq(departmentTasks.tenantId, tenantId),
+          ),
+        )
+        .get();
+      if (!existing) {
+        return { ok: false as const, reason: "NOT_FOUND" as const };
+      }
+      if (
+        existing.assignedToUserId &&
+        existing.assignedToUserId !== assigneeUserId
+      ) {
+        return { ok: false as const, reason: "ALREADY_CLAIMED" as const };
+      }
+
+      const nextStatus =
+        existing.status === "open" ? "in_progress" : existing.status;
+
+      await db
+        .update(departmentTasks)
+        .set({
+          assignedToUserId: assigneeUserId,
+          status: nextStatus,
+          updatedAt,
+        })
+        .where(
+          and(
+            eq(departmentTasks.id, taskId),
+            eq(departmentTasks.tenantId, tenantId),
+          ),
+        )
+        .run();
+
+      const row = await db
+        .select()
+        .from(departmentTasks)
+        .where(eq(departmentTasks.id, taskId))
+        .get();
+      if (!row) {
+        return { ok: false as const, reason: "NOT_FOUND" as const };
+      }
+      return { ok: true as const, task: mapTask(row) };
     },
 
     async countStaffByDepartment(departmentId) {
