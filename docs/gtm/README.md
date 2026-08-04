@@ -16,7 +16,8 @@
 
 ## For hotel owners / chains
 
-Also see multilingual pricing: **[sales-pack/pricing/](./sales-pack/pricing/)** (he/en/ar/ru/es/th/zh/hi/tr/el · verified).
+Also see multilingual pricing: **[sales-pack/pricing/](./sales-pack/pricing/)** (he/en/ar/ru/es/th/zh/hi/tr/el · verified).  
+Platform narrative (capabilities / reliability / stability / innovation): **[sales-pack/platform/](./sales-pack/platform/)**.
 
 | Doc | Purpose |
 |-----|---------|

@@ -19,6 +19,8 @@
 | [pricing-talk-track.md](./pricing-talk-track.md) | Hub תמחור USD + קישורים |
 | [pricing/README.md](./pricing/README.md) | **הסבר מלא בכל 10 שפות האפליקציה (verified)** |
 | [pricing/pricing.he.md](./pricing/pricing.he.md) | עברית — קובץ מלא |
+| [platform/README.md](./platform/README.md) | **נרטיב פלטפורמה בכל 10 השפות (יכולות/אמינות/יציבות/חדשנות)** |
+| [platform/platform.he.md](./platform/platform.he.md) | עברית — פלטפורמה + רווחיות |
 | [case-study-frame.md](./case-study-frame.md) | אחרי 30 יום פיילוט |
 | [../one-pager ב־planning](../../planning/one-pager-hotel.md) | Leave-behind מלון |
 | [investor one-pager](../../planning/one-pager-investor.md) | Leave-behind משקיע |

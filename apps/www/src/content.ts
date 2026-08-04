@@ -459,6 +459,16 @@ export const EXCELLENCE_LINKS = [
     href: "/sales-pack/index.html",
   },
   {
+    id: "platform-he",
+    label: "נרטיב פלטפורמה (עברית)",
+    href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/sales-pack/platform/platform.he.md",
+  },
+  {
+    id: "platform-all",
+    label: "Platform · 10 languages",
+    href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/sales-pack/platform/README.md",
+  },
+  {
     id: "demo-script",
     label: "Demo script 15 min",
     href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/sales-pack/demo-script-15min.md",

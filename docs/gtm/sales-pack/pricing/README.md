@@ -17,7 +17,8 @@
 | tr | Türkçe | [pricing.tr.md](./pricing.tr.md) | verified |
 | el | Ελληνικά | [pricing.el.md](./pricing.el.md) | verified |
 
-**Hub (HE+EN summary):** [../pricing-talk-track.md](../pricing-talk-track.md)
+**Hub (HE+EN summary):** [../pricing-talk-track.md](../pricing-talk-track.md)  
+**Platform narrative (all locales):** [../platform/README.md](../platform/README.md)
 
 ### Unchanged terms (all languages)
 
