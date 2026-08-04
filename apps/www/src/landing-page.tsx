@@ -18,7 +18,9 @@ import {
   CAPABILITIES,
   CEO_BARS,
   CHAT_DEMO,
+  DEMO_BEATS,
   DIGITIZATION,
+  EXCELLENCE_LINKS,
   FRAGMENTED_STACK,
   INTEGRATIONS,
   ORG_NODES,
@@ -38,14 +40,25 @@ const CALENDLY_URL = (
   import.meta.env["VITE_CALENDLY_URL"] as string | undefined
 )?.trim();
 
+const DEMO_VIDEO_URL = (
+  import.meta.env["VITE_DEMO_VIDEO_URL"] as string | undefined
+)?.trim();
+
+const PARTNER_NAMES = (
+  import.meta.env["VITE_PARTNER_NAMES"] as string | undefined
+)
+  ?.split(",")
+  .map((name) => name.trim())
+  .filter((name) => name.length > 0) ?? [];
+
 const NAV_LINKS = [
   { href: "#outcomes", label: "תוצאות" },
-  { href: "#wedge", label: "הבידול" },
-  { href: "#compare", label: "השוואה" },
-  { href: "#intelligence", label: "סוכנים" },
+  { href: "#demo", label: "דמו" },
   { href: "#how-pilot", label: "פיילוט" },
   { href: "#packages", label: "חבילות" },
+  { href: "#measure", label: "מדידה" },
   { href: "#trust", label: "אמון" },
+  { href: "#excellence", label: "מצוינות" },
   { href: "#faq", label: "שאלות" },
 ] as const;
 
@@ -142,6 +155,81 @@ function ContactLeadForm() {
         <code>VITE_CALENDLY_URL</code> לקישור יומן.
       </p>
     </form>
+  );
+}
+
+function MeasurePlanner() {
+  const [briefingMin, setBriefingMin] = useState(45);
+  const [managers, setManagers] = useState(3);
+  const [days, setDays] = useState(6);
+  const hoursNow = (briefingMin * managers * days) / 60;
+  const hoursTarget = hoursNow * 0.3;
+  const hoursSaved = Math.max(0, hoursNow - hoursTarget);
+
+  return (
+    <div className="measure">
+      <p className="measure__disclaimer">
+        כלי תכנון לפיילוט בלבד — לא הבטחת ROI. המספרים האמיתיים נמדדים ב־
+        Pilot ROI Scorecard אחרי baseline.
+      </p>
+      <div className="measure__controls">
+        <label>
+          <span>דק׳ תדריך בוקר היום</span>
+          <input
+            type="range"
+            min={15}
+            max={90}
+            value={briefingMin}
+            onChange={(event) => setBriefingMin(Number(event.target.value))}
+          />
+          <strong>{briefingMin}</strong>
+        </label>
+        <label>
+          <span>מנהלים בתדריך</span>
+          <input
+            type="range"
+            min={1}
+            max={8}
+            value={managers}
+            onChange={(event) => setManagers(Number(event.target.value))}
+          />
+          <strong>{managers}</strong>
+        </label>
+        <label>
+          <span>ימי תדריך / שבוע</span>
+          <input
+            type="range"
+            min={3}
+            max={7}
+            value={days}
+            onChange={(event) => setDays(Number(event.target.value))}
+          />
+          <strong>{days}</strong>
+        </label>
+      </div>
+      <dl className="measure__out">
+        <div>
+          <dt>שעות תדריך / שבוע היום</dt>
+          <dd>{hoursNow.toFixed(1)}</dd>
+        </div>
+        <div>
+          <dt>יעד תכנון (−70%)</dt>
+          <dd>{hoursTarget.toFixed(1)}</dd>
+        </div>
+        <div>
+          <dt>פוטנציאל לחיסכון לתכנון</dt>
+          <dd>{hoursSaved.toFixed(1)}</dd>
+        </div>
+      </dl>
+      <p className="section__note">
+        יעד −70% מגיע מ־
+        <a href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/planning/pilot-roi-scorecard.md">
+          scorecard
+        </a>
+        {" "}
+        ככיוון מדידה — לא כהבטחה חוזית.
+      </p>
+    </div>
   );
 }
 
@@ -662,6 +750,60 @@ export function LandingPage() {
         </RevealSection>
 
         <RevealSection
+          id="demo"
+          className="section demo"
+          aria-labelledby="demo-title"
+        >
+          <p className="eyebrow">דמו מוצר</p>
+          <h2 id="demo-title">סיור wedge ב־3 פעימות</h2>
+          <p className="section__lead">
+            זה מה שמראים בשיחה של רבע שעה. כשיהיה וידאו מוקלט — הוא יופיע כאן
+            אוטומטית.
+          </p>
+          {DEMO_VIDEO_URL ? (
+            <div className="demo-video">
+              <iframe
+                title="HotelOS AI product demo"
+                src={DEMO_VIDEO_URL}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : null}
+          <ol className="demo-beats">
+            {DEMO_BEATS.map((beat, index) => (
+              <li key={beat.id} className="demo-beat">
+                <span className="demo-beat__n">{index + 1}</span>
+                <div>
+                  <h3>{beat.title}</h3>
+                  <p>{beat.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </RevealSection>
+
+        {PARTNER_NAMES.length > 0 ? (
+          <RevealSection
+            id="partners"
+            className="section partners"
+            aria-labelledby="partners-title"
+          >
+            <p className="eyebrow">Design partners</p>
+            <h2 id="partners-title">רשתות בפיילוט / שותפות</h2>
+            <p className="section__lead">
+              שמות מוצגים רק בהסכמה כתובה — דרך{" "}
+              <code>VITE_PARTNER_NAMES</code>.
+            </p>
+            <ul className="partner-list">
+              {PARTNER_NAMES.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+          </RevealSection>
+        ) : null}
+
+        <RevealSection
           id="how-pilot"
           className="section how-pilot"
           aria-labelledby="how-pilot-title"
@@ -718,6 +860,20 @@ export function LandingPage() {
               </li>
             ))}
           </ul>
+        </RevealSection>
+
+        <RevealSection
+          id="measure"
+          className="section measure-section"
+          aria-labelledby="measure-title"
+        >
+          <p className="eyebrow">מדידה</p>
+          <h2 id="measure-title">מתכננים את הפיילוט — לא ממציאים תוצאות</h2>
+          <p className="section__lead">
+            כוונו את נקודת הפתיחה לתדריך. אחרי שבוע 0 על ה־scorecard תחליפו
+            תכנון במספרים שלכם.
+          </p>
+          <MeasurePlanner />
         </RevealSection>
 
         <RevealSection
@@ -833,6 +989,28 @@ export function LandingPage() {
         </RevealSection>
 
         <RevealSection
+          id="excellence"
+          className="section excellence"
+          aria-labelledby="excellence-title"
+        >
+          <p className="eyebrow">מצוינות לסגירה</p>
+          <h2 id="excellence-title">Data room מוכן — בלי שיווק מזויף</h2>
+          <p className="section__lead">
+            כל מה שצריך לסגור רשת או משקיע: playbook, שאלון אבטחה, נתיב SOC2,
+            unit economics. מה שדורש חתימה חיצונית מופיע כצ׳קליסט — לא כתעודה.
+          </p>
+          <ul className="excellence-links">
+            {EXCELLENCE_LINKS.map((link) => (
+              <li key={link.id}>
+                <a href={link.href} target="_blank" rel="noreferrer">
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </RevealSection>
+
+        <RevealSection
           id="contact"
           className="section contact"
           aria-labelledby="contact-title"
@@ -871,10 +1049,11 @@ export function LandingPage() {
           <div className="foot__col">
             <h3>מוצר</h3>
             <a href="#outcomes">תוצאות</a>
+            <a href="#demo">דמו</a>
             <a href="#how-pilot">פיילוט</a>
             <a href="#packages">חבילות</a>
-            <a href="#integrations">אינטגרציות</a>
-            <a href="#wedge">הבידול</a>
+            <a href="#measure">מדידה</a>
+            <a href="#excellence">מצוינות / data room</a>
           </div>
           <div className="foot__col">
             <h3>אמון</h3>

@@ -352,3 +352,49 @@ export const INTEGRATIONS = [
     body: "המלצות תעריף ופעולות כספיות עוברות אישור אנושי. אין הבטחת writeback אוטומטי ב־MVP.",
   },
 ] as const;
+
+export const DEMO_BEATS = [
+  {
+    id: "briefing",
+    title: "תדריך מנכ״ל",
+    body: "תמונת בוקר אחת: תפוסה, תקלות, תחזית — במקום איסוף מ־7 מערכות.",
+  },
+  {
+    id: "incidents",
+    title: "מרכז תקלות",
+    body: "דחוף מאוחד למחלקות. רואים מה פתוח ומי אחראי.",
+  },
+  {
+    id: "approve",
+    title: "Suggest → Approve → Act",
+    body: "ה־AI מציע; אדם מאשר; המערכת מבצעת פעולה מוגדרת — בלי קופסה שחורה על כסף.",
+  },
+] as const;
+
+export const EXCELLENCE_LINKS = [
+  {
+    id: "playbook",
+    label: "Pilot playbook",
+    href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/pilot-playbook.md",
+  },
+  {
+    id: "security",
+    label: "Security questionnaire",
+    href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/security-questionnaire-pack.md",
+  },
+  {
+    id: "soc2",
+    label: "SOC 2 path (checklist)",
+    href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/soc2-attestation-checklist.md",
+  },
+  {
+    id: "dataroom",
+    label: "Data room index",
+    href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/README.md",
+  },
+  {
+    id: "closeout",
+    label: "Excellence board",
+    href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/planning/gtm-excellence-closeout.md",
+  },
+] as const;
