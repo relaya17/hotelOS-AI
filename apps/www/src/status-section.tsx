@@ -11,7 +11,7 @@ type HealthState =
   | { readonly kind: "error"; readonly message: string; readonly checkedAt: string };
 
 const EXTERNAL_STATUS_PAGE_URL = (
-  import.meta.env.VITE_STATUS_PAGE_URL as string | undefined
+  import.meta.env["VITE_STATUS_PAGE_URL"] as string | undefined
 )?.trim();
 
 /** Inner content for www `#status` — parent supplies the section landmark. */
