@@ -9,7 +9,8 @@ export type LegalFooterProps = {
       | "privacy"
       | "meetings"
       | "subprocessors"
-      | "dpa",
+      | "dpa"
+      | "accessibility",
   ) => string;
 };
 
@@ -39,6 +40,9 @@ export function LegalFooter({ legalUrl }: LegalFooterProps) {
       <a href={legalUrl("meetings")}>{tUi(locale, "legal.meetings")}</a>
       <a href={legalUrl("subprocessors")}>{tUi(locale, "legal.subprocessors")}</a>
       <a href={legalUrl("dpa")}>{tUi(locale, "legal.dpa")}</a>
+      <a href={legalUrl("accessibility")}>
+        {tUi(locale, "legal.accessibility")}
+      </a>
       <style>{`
         .legal-bar{display:flex;flex-wrap:wrap;gap:var(--space-3);padding:var(--space-3) clamp(1rem,3vw,2rem);border-top:1px solid var(--color-line);font-size:var(--text-small)}
         .legal-bar a{color:var(--color-sea-deep);font-weight:600}

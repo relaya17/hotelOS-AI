@@ -26,7 +26,7 @@ HotelOS = **Hotel Intelligence Platform**: תדריכים, משימות, אנו�
 | Channel / OTA | inbound webhook | MVP |
 | VMS | Milestone, Genetec | MVP |
 | Reputation | Google, Booking, Tripadvisor | MVP |
-| Payments | external PCI gateway | MVP |
+| Payments | external provider (PAN at provider; **no HotelOS PCI-DSS claim**) | MVP |
 | Messaging | WhatsApp outbox | MVP |
 | Energy / BMS | meter webhook + occupancy heuristics | MVP |
 | Predictive Maintenance | sensor webhook stub + history rules | MVP |

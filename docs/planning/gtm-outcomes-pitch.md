@@ -5,6 +5,21 @@ HotelOS AI ממוקמת כ־**Operating System / Intelligence Layer** — לא �
 
 **דף נחיתה חי:** אפליקציית `@hotelos/www` · `pnpm dev:www` · http://localhost:5177
 
+**כלל זהב לשיווק:** רק מה שחי בקוד. אין SOC 2 / ISO attestation, אין מצג PCI-DSS של HotelOS, אין «full Vector RAG». ראו [trust-center-mvp.md](./trust-center-mvp.md) · [rag-embeddings-mvp.md](./rag-embeddings-mvp.md).
+
+---
+
+## Readiness board
+
+| סטטוס | פריט |
+|--------|------|
+| **Closed (MVP)** | Trust Center product surfaces — legal, `#trust` / `#status`, HITL, WebAuthn/OAuth, rate limits, no PAN in HotelOS |
+| **Closed (MVP)** | RAG **hybrid** — keyword + optional whole-doc / per-chunk embeddings + citations (not Vector DB / ANN) |
+| **Remaining** | Certifications (SOC 2 / ISO) · counsel-signed DPA per customer |
+| **Remaining** | Employee depth (full HR dossier / advanced workflows beyond invite + assessments MVP) |
+| **Remaining** | WCAG full suite (beyond login axe smoke + foundations CI) |
+| **Remaining** | Trusted fetch — allowlist **page fetch → embed** for all categories (finance market snapshot ingest for CFO is live; general fetch/embed is not) |
+
 ---
 
 ## שקף 1 — המשפט הפותח
@@ -16,16 +31,16 @@ HotelOS AI ממוקמת כ־**Operating System / Intelligence Layer** — לא �
 
 ---
 
-## כאב → עלות → תוצאה (HotelOS)
+## כאב → עלות → תוצאה (HotelOS) — חי מול roadmap
 
-| כאב של המלון | העלות למלון | מה HotelOS AI עושה |
-|--------------|-------------|---------------------|
-| מנהלים מבזבזים זמן על דוחות | שעות עבודה רבות בכל שבוע | **AI Executive Briefing** אוטומטי (CIO digest / Meet + מזכירה) |
-| מחסור בעובדים | ירידה בשירות ועלייה בעלויות | **AI HR** + תרגום 10 שפות + אוטומציות |
-| חדרים לא מוכנים בזמן | אובדן הכנסות ואי־שביעות רצון | **Housekeeping AI** + תיעדוף משימות / room prep |
-| מידע מפוזר בין מערכות | החלטות איטיות | **Dashboard אחד** לרשת (Executive) מעל PMS |
-| תקלות שלא מטופלות בזמן | פיצויים ותלונות | **AI Alerts** · Incident Center · Predictive Maint |
-| תקשורת בין מחלקות | טעויות ועיכובים | **Chat מתורגם** לכל שפה (Turbo i18n) |
+| כאב של המלון | העלות למלון | מה HotelOS AI עושה | סטטוס |
+|--------------|-------------|---------------------|--------|
+| מנהלים מבזבזים זמן על דוחות | שעות עבודה רבות בכל שבוע | **AI Executive Briefing** (CIO digest / Meet + מזכירה) | **Live** |
+| מחסור בעובדים | ירידה בשירות ועלייה בעלויות | Work / HR agent + תרגום 10 שפות + אוטומציות בסיסיות | **Live (wedge)** · Employee depth — **roadmap** |
+| חדרים לא מוכנים בזמן | אובדן הכנסות ואי־שביעות רצון | Housekeeping AI + תיעדוף / room prep | **Live (MVP)** |
+| מידע מפוזר בין מערכות | החלטות איטיות | Dashboard אחד לרשת (Executive) מעל PMS | **Live** |
+| תקלות שלא מטופלות בזמן | פיצויים ותלונות | Alerts · Incident Center · equipment / reputation ingest | **Live (MVP)** · Predictive Maint depth — **roadmap / stub** |
+| תקשורת בין מחלקות | טעויות ועיכובים | Chat מתורגם (Turbo i18n) | **Live** |
 
 ---
 
@@ -77,6 +92,8 @@ flowchart TB
   OS --> G
 ```
 
+> דיאגרמה זו היא **מיצוב** (שכבה מעל מחלקות) — לא רשימת מודולים שכולם באותה עומק במוצר.
+
 ---
 
 ## מסרים שיווקיים (מפחיתים התנגדות)
@@ -105,7 +122,8 @@ flowchart TB
   0% └─────────────────────────────────────
 ```
 
-**מסר:** רוב המלונות כבר מנהלים הזמנות ב־PMS — חסרה **שכבת אינטליגנציה** שמחברת אנשים, מחלקות ואורח.
+**מסר:** רוב המלונות כבר מנהלים הזמנות ב־PMS — חסרה **שכבת אינטליגנציה** שמחברת אנשים, מחלקות ואורח.  
+**הערה:** הגרף הוא איור כיוון — לא מדד מדוד של «אחוז דיגיטליזציה».
 
 ---
 
@@ -125,50 +143,54 @@ flowchart TB
 
 ## מבנה מצגת 20–25 שקפים (רמת Salesforce / Monday)
 
-| # | שקף | תוכן |
-|---|-----|------|
-| 1 | Title | משפט פותח + לוגו |
-| 2 | Problem | כאבי רשת מלון (טבלה למעלה) |
-| 3 | Cost of inaction | שעות / תלונות / הכנסות אבודות (איכותי עד שיש פיילוט) |
-| 4 | Insight | PMS ≠ Intelligence |
-| 5 | Solution | OS diagram |
-| 6 | Tagline | We don't replace your PMS… |
-| 7 | Digitization curve | Excel → PMS → HotelOS |
-| 8 | Outcomes map | כאב→תוצאה × 6 |
-| 9 | Product tour | Executive / Admin / Work / Guest |
-| 10 | AI layer | Gateway + agents + HITL |
-| 11 | Integrations | דומיינים מודולריים |
-| 12 | Security & compliance | Audit, תיקון 13 checklist, meetings policy |
-| 13 | Pilot model | 30–90 יום, דומיין אחד–שניים |
-| 14 | ROI scorecard | מדדים מדידים בלבד |
-| 15 | Case placeholder | מקום לנתוני פיילוט אמיתיים |
-| 16 | Competitive landscape | PMS / channel / point AI tools vs layer |
-| 17 | Moat | Multi-tenant + ops graph + agents + connectors |
-| 18 | GTM | רשתות → פיילוט → land & expand domains |
-| 19 | Pricing sketch | לפי מלון / חדר / דומיין (טיוטה — לא מחייב) |
-| 20 | Market | Hospitality software + AI ops TAM (מקור חיצוני + תאריך) |
-| 21 | Roadmap | מה חי / מה next |
-| 22 | Team | |
-| 23 | Ask | גיוס / פיילוט רשת |
-| 24 | Appendix | ארכיטקטורה, מסכים |
-| 25 | Contact | |
+| # | שקף | תוכן | הערת כנות |
+|---|-----|------|-----------|
+| 1 | Title | משפט פותח + לוגו | |
+| 2 | Problem | כאבי רשת מלון (טבלה למעלה) | |
+| 3 | Cost of inaction | שעות / תלונות / הכנסות אבודות (איכותי עד שיש פיילוט) | בלי מספרים מומצאים |
+| 4 | Insight | PMS ≠ Intelligence | |
+| 5 | Solution | OS diagram | מיצוב, לא checklist פיצ׳רים |
+| 6 | Tagline | We don't replace your PMS… | |
+| 7 | Digitization curve | Excel → PMS → HotelOS | איור בלבד |
+| 8 | Outcomes map | כאב→תוצאה × 6 עם Live/Roadmap | |
+| 9 | Product tour | Executive / Admin / Work / Guest | מה חי בדמו |
+| 10 | AI layer | Gateway + agents + HITL | AI רק דרך Gateway |
+| 11 | Integrations | דומיינים מודולריים | stubs ≠ live connector |
+| 12 | Security & compliance | Audit, trust surfaces, תיקון 13 checklist, meetings | **אין** SOC 2 / ISO / HotelOS PCI-DSS |
+| 13 | Pilot model | 30–90 יום, דומיין אחד–שניים | |
+| 14 | ROI scorecard | מדדים מדידים בלבד | |
+| 15 | Case placeholder | מקום לנתוני פיילוט אמיתיים | ריק עד שיש פיילוט |
+| 16 | Competitive landscape | PMS / channel / point AI tools vs layer | |
+| 17 | Moat | Multi-tenant + ops graph + agents + connectors | |
+| 18 | GTM | רשתות → פיילוט → land & expand domains | |
+| 19 | Pricing sketch | לפי מלון / חדר / דומיין (טיוטה — לא מחייב) | |
+| 20 | Market | Hospitality software + AI ops TAM (מקור חיצוני + תאריך) | |
+| 21 | Roadmap | Readiness board + next | Trusted fetch, Employee depth, WCAG suite, certs |
+| 22 | Team | | |
+| 23 | Ask | גיוס / פיילוט רשת | |
+| 24 | Appendix | ארכיטקטורה, מסכים | RAG = hybrid MVP, not Vector DB |
+| 25 | Contact | | |
 
 ---
 
 ## קישור למוצר בפועל
 
-| תוצאה שיווקית | יכולת בקוד |
-|---------------|------------|
-| AI Executive Briefing | CIO digest, Meet secretary, Forecast |
-| AI HR + תרגום | Work / HR agent, `@hotelos/i18n` |
-| Housekeeping AI | ops tasks, room prep, anomalies |
-| Dashboard אחד | Executive chain + Incident Center |
-| AI Alerts | reputation, equipment, Sentry, VMS |
-| Chat מתורגם | Turbo staff chat |
+| תוצאה שיווקית | יכולת בקוד | סטטוס |
+|---------------|------------|--------|
+| AI Executive Briefing | CIO digest, Meet secretary, Forecast | **Live** |
+| AI HR + תרגום | Work / HR agent, `@hotelos/i18n`, invite + assessments MVP | **Live (wedge)** · depth → roadmap |
+| Housekeeping AI | ops tasks, room prep, anomalies | **Live (MVP)** |
+| Dashboard אחד | Executive chain + Incident Center | **Live** |
+| AI Alerts | reputation, equipment, Sentry, VMS | **Live (MVP)** |
+| Chat מתורגם | Turbo staff chat | **Live** |
+| Trust / legal | `#trust`, legal docs, DPA **template**, payments status | **Live** · certs / signed DPA → roadmap |
+| Knowledge / RAG | Hybrid keyword + optional embeddings + citations | **Live (hybrid MVP)** · Vector DB / Trusted fetch → roadmap |
 
 מיצוב טכני: [`hotel-intelligence-platform.md`](./hotel-intelligence-platform.md)  
 מדדי פיילוט: [`pilot-roi-scorecard.md`](./pilot-roi-scorecard.md)  
-מיצוב תחרותי / wedge: [`competitive-wedge.md`](./competitive-wedge.md)
+מיצוב תחרותי / wedge: [`competitive-wedge.md`](./competitive-wedge.md)  
+Trust: [`trust-center-mvp.md`](./trust-center-mvp.md)  
+RAG: [`rag-embeddings-mvp.md`](./rag-embeddings-mvp.md)
 
 ---
 
@@ -180,5 +202,6 @@ flowchart TB
 | AI שעונה בצ׳אט | AI שמפעיל תהליך (Suggest→Approve→Act) |
 | מערכת לכל מחלקה | תמונה אחת לרשת + צ׳אט מתורגם |
 | מצגת רחבה בלי מדידה | פיילוט עם [`pilot-roi-scorecard.md`](./pilot-roi-scorecard.md) |
+| «SOC2 / PCI / Vector RAG» כסיסמת שיווק | בקרות חיות בלבד — בלי הסמכות שלא הושלמו |
 
 **חשוב לזכור:** מוכרים קודם wedge אחד (תדריך + תפעול מעל PMS); את הרוחב מרחיבים אחרי ROI — ראו [`competitive-wedge.md`](./competitive-wedge.md).

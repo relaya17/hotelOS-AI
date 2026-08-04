@@ -7,14 +7,16 @@
 מנהלים קונים **תוצאות** — לא עוד תוכנת הזמנות: פחות זמן על דוחות, חדרים מוכנים בזמן, תקלות שמטופלות, צוות מתואם בכל שפה.  
 **We don't replace your PMS. We make it smarter.** (Opera · Protel · Fidelio · Clock · Mews…) — בוחרים דומיינים לפיילוט, מודדים ROI.
 
-| כאב | תוצאה עם HotelOS |
-|-----|------------------|
-| זמן על דוחות | AI Executive Briefing |
-| מחסור בעובדים | AI HR + תרגום + אוטומציות |
-| חדרים לא מוכנים | Housekeeping AI / תיעדוף |
-| מידע מפוזר | Dashboard אחד לרשת |
-| תקלות באיחור | Alerts + Incident Center |
-| תקשורת בין מחלקות | Chat מתורגם (10 שפות) |
+| כאב | תוצאה עם HotelOS | סטטוס |
+|-----|------------------|--------|
+| זמן על דוחות | AI Executive Briefing | Live |
+| מחסור בעובדים | AI HR + תרגום + אוטומציות | Live (wedge) · Employee depth → roadmap |
+| חדרים לא מוכנים | Housekeeping AI / תיעדוף | Live (MVP) |
+| מידע מפוזר | Dashboard אחד לרשת | Live |
+| תקלות באיחור | Alerts + Incident Center | Live (MVP) |
+| תקשורת בין מחלקות | Chat מתורגם (10 שפות) | Live |
+
+**כנות שיווקית:** אין SOC 2 / ISO attestation ואין מצג PCI-DSS של HotelOS; RAG = hybrid MVP (לא Vector DB מלא). לוח מוכנות: [`gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) · Trust: [`trust-center-mvp.md`](docs/planning/trust-center-mvp.md) · RAG: [`rag-embeddings-mvp.md`](docs/planning/rag-embeddings-mvp.md).
 
 מצגת / GTM: [`docs/planning/gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) · פיילוט: [`pilot-roi-scorecard.md`](docs/planning/pilot-roi-scorecard.md) · טכני: [`hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md)
 
@@ -273,7 +275,9 @@ Runbooks נוספים:
 | [`docs/adr/0006-libsql-turso-hosted-db.md`](docs/adr/0006-libsql-turso-hosted-db.md) | libSQL/Turso |
 | [`docs/adr/0008-ai-gateway.md`](docs/adr/0008-ai-gateway.md) | AI Gateway |
 | [`docs/openapi/README.md`](docs/openapi/README.md) | OpenAPI spec + inventory · live at `/v1/meta/openapi.yaml` |
-| [`docs/planning/gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) | שיווק: תוצאות, OS diagram, מצגת משקיעים |
+| [`docs/planning/gtm-outcomes-pitch.md`](docs/planning/gtm-outcomes-pitch.md) | שיווק: תוצאות, OS diagram, מצגת משקיעים · Readiness board |
+| [`docs/planning/trust-center-mvp.md`](docs/planning/trust-center-mvp.md) | Trust surfaces חיים מול roadmap (ללא SOC2/PCI מומצאים) |
+| [`docs/planning/rag-embeddings-mvp.md`](docs/planning/rag-embeddings-mvp.md) | RAG hybrid MVP · לא Vector DB / Trusted fetch מלא |
 | [`docs/planning/competitive-wedge.md`](docs/planning/competitive-wedge.md) | מיצוב תחרותי: חוזקות, פערים, סדר land & expand |
 | [`docs/planning/twin-visual-stage-a.md`](docs/planning/twin-visual-stage-a.md) | Twin Visual 2.5D — שלב א׳ מעל Digital Twin החי |
 | [`docs/planning/hotel-intelligence-platform.md`](docs/planning/hotel-intelligence-platform.md) | מיצוב HIP + התממשקות מודולרית מעל PMS |

@@ -24,6 +24,7 @@ export type UiMessageKey =
   | "legal.meetings"
   | "legal.subprocessors"
   | "legal.dpa"
+  | "legal.accessibility"
   | "legal.nav"
   | "action.logout"
   | "action.openWork"
@@ -71,6 +72,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.meetings": "מדיניות פגישות והקלטות",
       "legal.subprocessors": "ספקי עיבוד",
       "legal.dpa": "תבנית DPA",
+      "legal.accessibility": "הצהרת נגישות",
       "legal.nav": "מסמכים משפטיים",
     "action.logout": "התנתקות",
     "action.openWork": "פורטל עובדים",
@@ -111,6 +113,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.meetings": "Meetings & recordings policy",
       "legal.subprocessors": "Subprocessors",
       "legal.dpa": "DPA template",
+      "legal.accessibility": "Accessibility statement",
       "legal.nav": "Legal documents",
     "action.logout": "Sign out",
     "action.openWork": "Employee portal",
@@ -151,6 +154,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.meetings": "سياسة الاجتماعات والتسجيلات",
       "legal.subprocessors": "مقدمو المعالجة",
       "legal.dpa": "نموذج DPA",
+      "legal.accessibility": "بيان إمكانية الوصول",
       "legal.nav": "مستندات قانونية",
     "action.logout": "تسجيل الخروج",
     "action.openWork": "بوابة الموظفين",
@@ -191,6 +195,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.meetings": "Политика встреч и записей",
       "legal.subprocessors": "Субпроцессоры",
       "legal.dpa": "Шаблон DPA",
+      "legal.accessibility": "Заявление о доступности",
       "legal.nav": "Юридические документы",
     "action.logout": "Выйти",
     "action.openWork": "Портал сотрудников",
@@ -231,6 +236,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.meetings": "Política de reuniones y grabaciones",
       "legal.subprocessors": "Subprocesadores",
       "legal.dpa": "Plantilla DPA",
+      "legal.accessibility": "Declaración de accesibilidad",
       "legal.nav": "Documentos legales",
     "action.logout": "Cerrar sesión",
     "action.openWork": "Portal de empleados",
@@ -271,6 +277,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.meetings": "นโยบายการประชุมและการบันทึก",
       "legal.subprocessors": "ผู้ประมวลผลช่วง",
       "legal.dpa": "แบบ DPA",
+      "legal.accessibility": "คำชี้แจงการเข้าถึง",
       "legal.nav": "เอกสารทางกฎหมาย",
     "action.logout": "ออกจากระบบ",
     "action.openWork": "พอร์ทัลพนักงาน",
@@ -311,6 +318,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.meetings": "会议与录音政策",
       "legal.subprocessors": "处理者清单",
       "legal.dpa": "DPA 模板",
+      "legal.accessibility": "无障碍声明",
       "legal.nav": "法律文件",
     "action.logout": "退出登录",
     "action.openWork": "员工门户",
@@ -351,6 +359,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.meetings": "बैठक और रिकॉर्डिंग नीति",
       "legal.subprocessors": "उप-संसाधक",
       "legal.dpa": "DPA टेम्पलेट",
+      "legal.accessibility": "पहुँच कथन",
       "legal.nav": "कानूनी दस्तावेज़",
     "action.logout": "साइन आउट",
     "action.openWork": "कर्मचारी पोर्टल",
@@ -391,6 +400,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.meetings": "Toplantı ve kayıt politikası",
       "legal.subprocessors": "Alt işleyiciler",
       "legal.dpa": "DPA şablonu",
+      "legal.accessibility": "Erişilebilirlik beyanı",
       "legal.nav": "Yasal belgeler",
     "action.logout": "Çıkış yap",
     "action.openWork": "Çalışan portalı",
@@ -431,6 +441,7 @@ const DICTS: Record<LocaleCode, Dictionary> = {
       "legal.meetings": "Πολιτική συσκέψεων και καταγραφών",
       "legal.subprocessors": "Υπεργολάβοι επεξεργασίας",
       "legal.dpa": "Πρότυπο DPA",
+      "legal.accessibility": "Δήλωση προσβασιμότητας",
       "legal.nav": "Νομικά έγγραφα",
     "action.logout": "Αποσύνδεση",
     "action.openWork": "Πύλη εργαζομένων",

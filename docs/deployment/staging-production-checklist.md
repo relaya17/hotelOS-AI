@@ -44,6 +44,20 @@ Sync env vars to the Vercel **API** project first, then the four frontends
 3. One cron path: `curl -H "Authorization: Bearer $CRON_SECRET" https://<api>/v1/cron/anomaly-scan` → not 503
 4. Optional: `pnpm ping:turso` from a machine with staging `.env`
 
+## Trust / RAG honesty (staging + prod copy)
+
+Before go-live marketing or www deploy, confirm public claims match shipped surfaces:
+
+| Check | Expected |
+|-------|----------|
+| www `#trust` | Live controls only — **no** SOC 2 / ISO / HotelOS PCI-DSS claims |
+| Payments UI | Mode from `GET /v1/public/payments/status` (`demo` / `stripe_stub` / `external`); no HotelOS PCI badge |
+| Knowledge / RAG | Hybrid keyword + optional embeddings — **not** “full Vector RAG” |
+| Trusted fetch | **Not live** (CFO market snapshot ingest ≠ general page fetch→embed) |
+| DPA | Public page is an **unsigned template** until counsel signs per customer |
+
+Source of truth: [trust-center-mvp.md](../planning/trust-center-mvp.md) · [rag-embeddings-mvp.md](../planning/rag-embeddings-mvp.md) · [gtm-outcomes-pitch.md](../planning/gtm-outcomes-pitch.md) (Readiness board).
+
 ## Hobby plan note
 
 If Vercel returns **Deployment rate limited — retry in 24 hours**, do not retry

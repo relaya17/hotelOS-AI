@@ -5,7 +5,8 @@ export type LegalDocumentId =
   | "privacy"
   | "meetings"
   | "subprocessors"
-  | "dpa";
+  | "dpa"
+  | "accessibility";
 
 export type LegalDocument = {
   readonly id: LegalDocumentId;
@@ -358,6 +359,39 @@ export const LEGAL_DOCUMENTS: readonly LegalDocument[] = [
       {
         heading: "8. איך מפעילים גרסה מחייבת",
         body: "ליצירת קשר לחתימת DPA מותאם: legal@hotelos.ai · privacy@hotelos.ai. עד לחתימה — מסמך זה הוא תבנית בלבד; תנאי Enterprise ספציפיים גוברים כשהם נחתמים.",
+      },
+    ],
+  },
+  {
+    id: "accessibility",
+    titleHe: "הצהרת נגישות",
+    titleEn: "Accessibility Statement",
+    updatedAt: UPDATED,
+    version: "2026.1",
+    sections: [
+      {
+        heading: "1. מחויבות",
+        body: "HotelOS AI מחויבת לאפשר שימוש במערכת לאנשים עם מוגבלויות, בהתאם ליעד WCAG 2.2 ברמת AA כסטנדרט הנדסי מחייב (Engineering Standard כרך 4). אפליקציות הממשק כוללות קישורי דילוג, מבני landmark, ותמיכה בניווט מקלדת במסכים העיקריים.",
+      },
+      {
+        heading: "2. היקף",
+        body: "הצהרה זו חלה על אפליקציות www (שיווק), Guest, Work, Admin ו-Executive כפי שהן מופעלות על ידי HotelOS AI. תכני צד־שלישי שהרשת מחברת (PMS, WhatsApp, ספק מודל שפה) כפופים להצהרות הנגישות של אותם ספקים.",
+      },
+      {
+        heading: "3. עמידה ורמת תאימות",
+        body: "היעד הוא WCAG 2.2 AA. מסכי ליבה (התחברות, שעון נוכחות, Guest stay hub, באנר עוגיות ועוד) מוגדרים כיעד שאיפה ל־AAA לפי סטנדרט הנגישות הפנימי. בדיקות אוטומטיות (axe) רצות ב־CI על מסכי התחברות; סריקות נוספות ועם קורא מסך מבוצעות לפני שחרורים משמעותיים.",
+      },
+      {
+        heading: "4. מגבלות ידועות",
+        body: "חלק ממשטחי Employee (למשל העלאת מסמכים מלאה ל־Blob) עדיין ב־MVP ועלולים לכלול פערים זמניים. תצוגות צפיפות גבוהה ב־Admin/Executive עלולות לדרוש ניווט מקלדת זהיר בטבלאות ארוכות. אנו מתקנים פערים לפי עדיפות שימוש ומסכי ליבה.",
+      },
+      {
+        heading: "5. משוב ופניות",
+        body: "דיווח על חסם נגישות: accessibility@hotelos.ai (או privacy@hotelos.ai אם הכתובת הראשונה אינה זמינה). ציינו את האפליקציה, הדף, והמכשיר/טכנולוגיית הסיוע בשימוש. נשתדל להשיב תוך זמן סביר ולהציע חלופה תפעולית כשנדרש.",
+      },
+      {
+        heading: "6. עדכון",
+        body: "הצהרה זו מתעדכנת עם שינויי מוצר מהותיים. גרסה ותאריך מופיעים בראש המסמך.",
       },
     ],
   },

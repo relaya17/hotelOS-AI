@@ -1,9 +1,20 @@
 # RAG / Embeddings MVP — status (honest)
 
 **Updated:** 2026-08-04  
-**Status:** Shippable MVP complete for hybrid retrieval (not Vector DB / ANN).  
+**Status:** Shippable MVP complete for **hybrid** retrieval (not Vector DB / ANN).  
 **Rule:** Do not market “full Vector DB / semantic RAG production” until managed
 vector index + evals ship. Keyword path remains the reliable default.
+
+## Readiness board
+
+| סטטוס | פריט |
+|--------|------|
+| **Closed (MVP)** | Trust Center product surfaces — [trust-center-mvp.md](./trust-center-mvp.md) |
+| **Closed (MVP)** | RAG hybrid (keyword + optional embeddings + chunks + citations) |
+| **Remaining** | Certifications (SOC 2 / ISO) |
+| **Remaining** | Employee depth |
+| **Remaining** | WCAG full suite |
+| **Remaining** | Trusted fetch — page fetch → embed for all allowlist categories (**not live**) |
 
 ## Live today
 
@@ -20,6 +31,7 @@ vector index + evals ship. Keyword path remains the reliable default.
 | **Batch cron reindex** (missing chunks/embeddings) | `GET/POST /v1/cron/knowledge-reindex` (04:00 UTC) |
 | Admin citation UX | `GET .../chunks` + «הצג ציטוטים» |
 | OpenAI-compatible `/embeddings` provider | `packages/ai-gateway` |
+| CFO Trusted **market snapshot** ingest (finance feeds) | `ingest-trusted-market-feeds.ts` + cron — **not** general page fetch→embed |
 
 When embeddings / chunks are unavailable, packs fall back to keyword + body
 prefix — Gateway still never searches the DB itself (Vol. 5 / ADR 0008).
@@ -27,7 +39,7 @@ prefix — Gateway still never searches the DB itself (Vol. 5 / ADR 0008).
 ## Not live (roadmap)
 
 - Dedicated Vector DB (or Turso vector index) with ANN + retrieval evals
-- Trusted-source **page fetch → embed** for all allowlist categories (finance snapshot ingest exists for CFO)
+- **Trusted fetch:** Trusted-source **page fetch → embed** for all allowlist categories (finance snapshot ingest exists for CFO; that is not full Trusted fetch)
 - Shared `@hotelos/ui` `CitationList` component (Admin/Executive ship local lists today)
 
 ## Public claims
@@ -35,4 +47,5 @@ prefix — Gateway still never searches the DB itself (Vol. 5 / ADR 0008).
 Safe: “Company knowledge uses approved documents; optional whole-doc and
 per-chunk embeddings when the AI provider supports them; answers can cite the
 best-matching chunk; otherwise keyword retrieval.”  
-Unsafe: “We have enterprise Vector RAG / SOC-backed knowledge graph.”
+Unsafe: “We have enterprise Vector RAG / SOC-backed knowledge graph.”  
+Unsafe: “HotelOS is SOC 2 / PCI certified.” (out of scope of this MVP; see trust-center-mvp.md)

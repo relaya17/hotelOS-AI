@@ -16,6 +16,8 @@ import { HrAgentPanel } from "./hr-agent-panel.js";
 import { MeetJoinPage } from "./meet-join-page.js";
 import { InvitePage } from "./invite-page.js";
 import { LoginPage } from "./login-page.js";
+import { MyTasksPanel } from "./my-tasks-panel.js";
+import { AssessmentsPanel } from "./assessments-panel.js";
 import {
   canAccessFinancePanel,
   FinancePanel,
@@ -25,7 +27,20 @@ import {
   OpsCopilotPanel,
 } from "./ops-copilot-panel.js";
 
-type WorkTab = "attendance" | "agent" | "copilot" | "finance" | "docs";
+type WorkTab =
+  | "attendance"
+  | "tasks"
+  | "assessments"
+  | "agent"
+  | "copilot"
+  | "finance"
+  | "docs";
+
+function focusMain() {
+  window.requestAnimationFrame(() => {
+    document.getElementById("main-content")?.focus();
+  });
+}
 
 function readInviteToken(): string | null {
   const params = new URLSearchParams(window.location.search);
@@ -183,9 +198,42 @@ export function App() {
                   : "hotelos-seg__item"
               }
               aria-pressed={tab === "attendance"}
-              onClick={() => setTab("attendance")}
+              onClick={() => {
+                setTab("attendance");
+                focusMain();
+              }}
             >
               נוכחות
+            </button>
+            <button
+              type="button"
+              className={
+                tab === "tasks"
+                  ? "hotelos-seg__item hotelos-seg__item--on"
+                  : "hotelos-seg__item"
+              }
+              aria-pressed={tab === "tasks"}
+              onClick={() => {
+                setTab("tasks");
+                focusMain();
+              }}
+            >
+              משימות
+            </button>
+            <button
+              type="button"
+              className={
+                tab === "assessments"
+                  ? "hotelos-seg__item hotelos-seg__item--on"
+                  : "hotelos-seg__item"
+              }
+              aria-pressed={tab === "assessments"}
+              onClick={() => {
+                setTab("assessments");
+                focusMain();
+              }}
+            >
+              מבחנים
             </button>
             <button
               type="button"
@@ -195,7 +243,10 @@ export function App() {
                   : "hotelos-seg__item"
               }
               aria-pressed={tab === "agent"}
-              onClick={() => setTab("agent")}
+              onClick={() => {
+                setTab("agent");
+                focusMain();
+              }}
             >
               סוכן HR
             </button>
@@ -208,7 +259,10 @@ export function App() {
                     : "hotelos-seg__item"
                 }
                 aria-pressed={tab === "copilot"}
-                onClick={() => setTab("copilot")}
+                onClick={() => {
+                  setTab("copilot");
+                  focusMain();
+                }}
               >
                 Copilot תפעול
               </button>
@@ -222,7 +276,10 @@ export function App() {
                     : "hotelos-seg__item"
                 }
                 aria-pressed={tab === "finance"}
-                onClick={() => setTab("finance")}
+                onClick={() => {
+                  setTab("finance");
+                  focusMain();
+                }}
               >
                 כספים
               </button>
@@ -235,7 +292,10 @@ export function App() {
                   : "hotelos-seg__item"
               }
               aria-pressed={tab === "docs"}
-              onClick={() => setTab("docs")}
+              onClick={() => {
+                setTab("docs");
+                focusMain();
+              }}
             >
               מסמכים
             </button>
@@ -260,11 +320,15 @@ export function App() {
                 (קול/חתימה/Passkey) לפי המדיניות של הרשת. פרטיות:{" "}
                 <a href={APP_URLS.legal("privacy")}>מדיניות פרטיות</a>
                 {" · "}
-                <a href={APP_URLS.legal("security")}>אבטחה</a>.
+                <a href={APP_URLS.legal("security")}>אבטחה</a>
+                {" · "}
+                <a href={APP_URLS.legal("accessibility")}>נגישות</a>.
               </p>
               <AttendancePage />
             </>
           ) : null}
+          {tab === "tasks" ? <MyTasksPanel user={user} /> : null}
+          {tab === "assessments" ? <AssessmentsPanel user={user} /> : null}
           {tab === "agent" ? <HrAgentPanel /> : null}
           {tab === "copilot" && user ? <OpsCopilotPanel user={user} /> : null}
           {tab === "finance" && user ? (
