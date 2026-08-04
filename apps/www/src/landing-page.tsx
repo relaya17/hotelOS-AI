@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type FormEvent,
   type ReactNode,
 } from "react";
 import { LegalFooter } from "@hotelos/features";
@@ -19,8 +20,11 @@ import {
   CHAT_DEMO,
   DIGITIZATION,
   FRAGMENTED_STACK,
+  INTEGRATIONS,
   ORG_NODES,
   OUTCOMES,
+  PACKAGES,
+  PILOT_STEPS,
   TAGLINES,
   TRUST_CONTROLS,
   WORLD_COMPARISON,
@@ -30,18 +34,116 @@ import { StatusSectionContent } from "./status-section.js";
 const PILOT_MAIL =
   "mailto:pilot@hotelos.ai?subject=HotelOS%20AI%20Pilot&body=שלום%2C%20אשמח%20לדבר%20על%20פיילוט%20HotelOS%20AI%20לרשת%20שלנו.";
 
+const CALENDLY_URL = (
+  import.meta.env["VITE_CALENDLY_URL"] as string | undefined
+)?.trim();
+
 const NAV_LINKS = [
   { href: "#outcomes", label: "תוצאות" },
   { href: "#wedge", label: "הבידול" },
   { href: "#compare", label: "השוואה" },
   { href: "#intelligence", label: "סוכנים" },
-  { href: "#chat", label: "צ׳אט" },
-  { href: "#os", label: "מערכת הפעלה" },
-  { href: "#ceo-value", label: "ערך למנכ״ל" },
-  { href: "#trust", label: "אבטחה ואמון" },
-  { href: "#status", label: "סטטוס" },
+  { href: "#how-pilot", label: "פיילוט" },
+  { href: "#packages", label: "חבילות" },
+  { href: "#trust", label: "אמון" },
   { href: "#faq", label: "שאלות" },
 ] as const;
+
+function ContactLeadForm() {
+  const [name, setName] = useState("");
+  const [hotel, setHotel] = useState("");
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+
+  function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    const body = [
+      "שלום,",
+      "",
+      "אשמח לדבר על פיילוט HotelOS AI.",
+      "",
+      `שם: ${name.trim() || "—"}`,
+      `מלון / רשת: ${hotel.trim() || "—"}`,
+      `אימייל: ${email.trim() || "—"}`,
+      note.trim() ? `הערה: ${note.trim()}` : "",
+    ]
+      .filter((line) => line.length > 0)
+      .join("\n");
+    const href = `mailto:pilot@hotelos.ai?subject=${encodeURIComponent(
+      "HotelOS AI Pilot",
+    )}&body=${encodeURIComponent(body)}`;
+    window.location.href = href;
+  }
+
+  return (
+    <form className="lead-form" onSubmit={onSubmit} noValidate>
+      <div className="lead-form__grid">
+        <label className="lead-form__field">
+          <span>שם</span>
+          <input
+            name="name"
+            autoComplete="name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            required
+          />
+        </label>
+        <label className="lead-form__field">
+          <span>מלון / רשת</span>
+          <input
+            name="hotel"
+            value={hotel}
+            onChange={(event) => setHotel(event.target.value)}
+            required
+          />
+        </label>
+        <label className="lead-form__field lead-form__field--full">
+          <span>אימייל</span>
+          <input
+            type="email"
+            name="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+        </label>
+        <label className="lead-form__field lead-form__field--full">
+          <span>הערה (אופציונלי)</span>
+          <textarea
+            name="note"
+            rows={3}
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+          />
+        </label>
+      </div>
+      <div className="lead-form__actions">
+        <button className="btn btn--primary" type="submit">
+          שליחה לפתיחת מייל
+        </button>
+        {CALENDLY_URL ? (
+          <a
+            className="btn btn--ghost"
+            href={CALENDLY_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            קביעת שיחה ביומן
+          </a>
+        ) : (
+          <a className="btn btn--ghost" href={PILOT_MAIL}>
+            או מייל ישיר
+          </a>
+        )}
+      </div>
+      <p className="lead-form__hint">
+        הטופס פותח את תוכנת המייל שלכם עם הפרטים — בלי שרת לידים. אפשר להגדיר{" "}
+        <code>VITE_CALENDLY_URL</code> לקישור יומן.
+      </p>
+    </form>
+  );
+}
 
 function useReveal() {
   const ref = useRef<HTMLElement | null>(null);
@@ -560,6 +662,86 @@ export function LandingPage() {
         </RevealSection>
 
         <RevealSection
+          id="how-pilot"
+          className="section how-pilot"
+          aria-labelledby="how-pilot-title"
+        >
+          <p className="eyebrow">איך נראה הפיילוט</p>
+          <h2 id="how-pilot-title">ארבעה שבועות. תוצאות מדידות.</h2>
+          <p className="section__lead">
+            בלי להחליף את ה־PMS. מתחילים מדומיין אחד־שניים ומודדים מול baseline —
+            לא מול שקף מצגת.
+          </p>
+          <ol className="pilot-steps">
+            {PILOT_STEPS.map((step) => (
+              <li key={step.id} className="pilot-step">
+                <p className="pilot-step__week">{step.week}</p>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="section__note">
+            תבנית המדידה:{" "}
+            <a href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/planning/pilot-roi-scorecard.md">
+              Pilot ROI Scorecard
+            </a>
+            {" · "}
+            <a href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/planning/one-pager-hotel.md">
+              One-pager לרשת
+            </a>
+            .
+          </p>
+        </RevealSection>
+
+        <RevealSection
+          id="packages"
+          className="section packages"
+          aria-labelledby="packages-title"
+        >
+          <p className="eyebrow">איך קונים</p>
+          <h2 id="packages-title">Pilot · Network · Enterprise</h2>
+          <p className="section__lead">
+            מחיר לפי שיחה — בלי מחירון שקרי באתר. החבילות מגדירות היקף ואמון,
+            לא הבטחות ROI שלא נמדדו.
+          </p>
+          <ul className="package-grid">
+            {PACKAGES.map((tier) => (
+              <li key={tier.id} className="package-tier">
+                <h3>{tier.name}</h3>
+                <p className="package-tier__audience">{tier.audience}</p>
+                <ul>
+                  {tier.points.map((point) => (
+                    <li key={point}>{point}</li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </RevealSection>
+
+        <RevealSection
+          id="integrations"
+          className="section integrations"
+          aria-labelledby="integrations-title"
+        >
+          <p className="eyebrow">אינטגרציות</p>
+          <h2 id="integrations-title">מעל המערכות שכבר רצות אצלכם</h2>
+          <p className="section__lead">
+            PMS נשאר מקור האמת להזמנות. HotelOS מוסיף אותות, המלצות ואישורים —
+            לא מחליף את מערכת החדרים.
+          </p>
+          <ul className="integrate-grid">
+            {INTEGRATIONS.map((item) => (
+              <li key={item.id} className="integrate-item">
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </li>
+            ))}
+          </ul>
+        </RevealSection>
+
+        <RevealSection
           id="trust"
           className="section trust"
           aria-labelledby="trust-title"
@@ -657,18 +839,22 @@ export function LandingPage() {
         >
           <h2 id="contact-title">פיילוט לרשת. תוצאות מדידות.</h2>
           <p className="section__lead">
-            מתחילים מדומיין אחד־שניים מעל ה־PMS הקיים — עם סוכנים, צ׳אט מתורגם
-            ואוטומציות — ומודדים תדריכים, תקלות, ניקיון ו־upsell.
+            מלאו פרטים — נפתח מייל מוכן ל־pilot@hotelos.ai. אפשר גם לקבוע שיחה
+            אם הוגדר יומן.
           </p>
-          <div className="contact__actions">
-            <a className="btn btn--primary" href={PILOT_MAIL}>
-              דברו איתנו על פיילוט
+          <ContactLeadForm />
+          <div className="contact__actions contact__actions--secondary">
+            <a
+              className="btn btn--ghost"
+              href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/planning/one-pager-hotel.md"
+            >
+              One-pager לרשת
             </a>
             <a
               className="btn btn--ghost"
-              href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/planning/gtm-outcomes-pitch.md"
+              href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/planning/pitch-deck-12-slides.md"
             >
-              קראו את הנרטיב המלא
+              Deck למשקיע (12 שקפים)
             </a>
           </div>
         </RevealSection>
@@ -685,8 +871,9 @@ export function LandingPage() {
           <div className="foot__col">
             <h3>מוצר</h3>
             <a href="#outcomes">תוצאות</a>
-            <a href="#intelligence">סוכנים</a>
-            <a href="#chat">צ׳אט</a>
+            <a href="#how-pilot">פיילוט</a>
+            <a href="#packages">חבילות</a>
+            <a href="#integrations">אינטגרציות</a>
             <a href="#wedge">הבידול</a>
           </div>
           <div className="foot__col">

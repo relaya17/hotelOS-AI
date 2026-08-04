@@ -260,3 +260,95 @@ export const CEO_BARS = {
     { label: "שיתוף מידע", value: 90 },
   ],
 } as const;
+
+export type PilotStep = {
+  readonly id: string;
+  readonly week: string;
+  readonly title: string;
+  readonly body: string;
+};
+
+export const PILOT_STEPS: readonly PilotStep[] = [
+  {
+    id: "w0",
+    week: "שבוע 0",
+    title: "חיבור + baseline",
+    body: "מלון אחד מעל ה־PMS הקיים. ממלאים Pilot ROI Scorecard — בלי הבטחות מספרים מוקדמות.",
+  },
+  {
+    id: "w12",
+    week: "שבוע 1–2",
+    title: "Wedge חי",
+    body: "תדריך מנכ״ל יומי, מרכז תקלות, והתראות — תמונה אחת להנהלה.",
+  },
+  {
+    id: "w3",
+    week: "שבוע 3",
+    title: "הרחבה מדודה",
+    body: "Upsell / מוניטין / תחזוקה חזויה — לפי מה שסוכם בפיילוט, עם Suggest → Approve → Act.",
+  },
+  {
+    id: "w4",
+    week: "שבוע 4",
+    title: "החלטה",
+    body: "מדידה מול baseline. ממשיכים ל־Network, עוצרים, או מרחיבים דומיין — בלי לחץ החלפת PMS.",
+  },
+] as const;
+
+export type PackageTier = {
+  readonly id: string;
+  readonly name: string;
+  readonly audience: string;
+  readonly points: readonly string[];
+};
+
+export const PACKAGES: readonly PackageTier[] = [
+  {
+    id: "pilot",
+    name: "Pilot",
+    audience: "מלון אחד · הוכחת ערך",
+    points: [
+      "Wedge: תדריך · תקלות · תחזוקה חזויה MVP",
+      "מדידה ב־ROI Scorecard ל־30 יום",
+      "HITL על פעולות רגישות",
+    ],
+  },
+  {
+    id: "network",
+    name: "Network",
+    audience: "רשת · כמה מלונות",
+    points: [
+      "תמונת שרשרת ב־Executive",
+      "Land & expand דומיינים אחרי הוכחה",
+      "צ׳אט מתורגם + משימות Work",
+    ],
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    audience: "קבוצות · ועדת רכש",
+    points: [
+      "DPA עם counsel · שאלון אבטחה",
+      "בקרות חיות + נתיב attestation (בלי לספר תעודה שלא קיימת)",
+      "SLA ותיאום אינטגרציות לפי היקף",
+    ],
+  },
+] as const;
+
+export const INTEGRATIONS = [
+  {
+    id: "pms",
+    title: "PMS נשאר מקור אמת",
+    body: "Opera · Protel · Fidelio · Clock ועוד — שכבה מעליהם, לא החלפה.",
+  },
+  {
+    id: "channels",
+    title: "אותות מבחוץ",
+    body: "מוניטין (Google / Booking / TripAdvisor ingest) · ציוד · אנרגיה — לפי חיבורים שסוכמו.",
+  },
+  {
+    id: "hitl",
+    title: "בלי כתיבה עיוורת ל־PMS",
+    body: "המלצות תעריף ופעולות כספיות עוברות אישור אנושי. אין הבטחת writeback אוטומטי ב־MVP.",
+  },
+] as const;

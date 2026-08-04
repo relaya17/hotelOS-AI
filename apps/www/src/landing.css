@@ -1152,6 +1152,236 @@ a {
   gap: 0.75rem;
 }
 
+.contact__actions--secondary {
+  margin-top: 1.25rem;
+}
+
+.pilot-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 769px) {
+  .pilot-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+.pilot-step {
+  min-width: 0;
+  padding-block: 0.25rem;
+  border-block-start: 1px solid var(--line);
+}
+
+.pilot-step__week {
+  margin: 0.85rem 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brass-hot);
+}
+
+.pilot-step h3 {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 550;
+  color: var(--mist);
+}
+
+.pilot-step p {
+  margin: 0;
+  color: var(--mist-dim);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.package-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 769px) {
+  .package-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.package-tier {
+  min-width: 0;
+  padding-block: 0.35rem;
+  border-block-start: 1px solid var(--line);
+}
+
+.package-tier h3 {
+  margin: 0.9rem 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  color: var(--brass-hot);
+}
+
+.package-tier__audience {
+  margin: 0 0 0.85rem;
+  color: var(--mist-dim);
+  font-size: 0.95rem;
+}
+
+.package-tier ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.package-tier li {
+  color: var(--mist);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  padding-inline-start: 0.9rem;
+  position: relative;
+}
+
+.package-tier li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.55em;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--jade);
+}
+
+.integrate-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 769px) {
+  .integrate-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+.integrate-item {
+  min-width: 0;
+  border-block-start: 1px solid var(--line);
+  padding-block: 0.85rem 0.25rem;
+}
+
+.integrate-item h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1.05rem;
+  color: var(--mist);
+}
+
+.integrate-item p {
+  margin: 0;
+  color: var(--mist-dim);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.section__note {
+  margin: 1.5rem 0 0;
+  color: var(--mist-dim);
+  font-size: 0.92rem;
+}
+
+.section__note a {
+  color: var(--brass-hot);
+}
+
+.lead-form {
+  width: min(100%, 34rem);
+  margin: 0 auto;
+  text-align: start;
+  display: grid;
+  gap: 1rem;
+}
+
+.lead-form__grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 560px) {
+  .lead-form__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lead-form__field--full {
+    grid-column: 1 / -1;
+  }
+}
+
+.lead-form__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.lead-form__field span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--mist-dim);
+}
+
+.lead-form__field input,
+.lead-form__field textarea {
+  font: inherit;
+  color: var(--mist);
+  background: rgb(233 226 214 / 4%);
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  min-height: var(--touch-min);
+}
+
+.lead-form__field textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.lead-form__field input:focus-visible,
+.lead-form__field textarea:focus-visible {
+  outline: 2px solid var(--brass-hot);
+  outline-offset: 2px;
+}
+
+.lead-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.lead-form__hint {
+  margin: 0;
+  color: var(--mist-dim);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.lead-form__hint code {
+  font-size: 0.78rem;
+  color: var(--brass-hot);
+}
+
 .foot {
   width: min(100% - 2 * var(--space), var(--max));
   margin: 0 auto;
