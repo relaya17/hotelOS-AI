@@ -279,7 +279,9 @@ export {
 export {
   cosineSimilarity,
   createCompanyKnowledgeRepository,
+  splitKnowledgeBodyIntoChunks,
   type CompanyKnowledgeRepository,
+  type PersistedCompanyKnowledgeChunk,
   type PersistedCompanyKnowledgeDoc,
   type PersistedCompanyKnowledgeEmbedding,
 } from "./repositories/company-knowledge-repository.js";

@@ -1,4 +1,4 @@
-import { index, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { hotels, tenants, users } from "./tenancy.js";
 
 export const letterDrafts = sqliteTable(
@@ -68,6 +68,28 @@ export const companyKnowledgeEmbeddings = sqliteTable(
   },
   (table) => [
     index("company_knowledge_embeddings_tenant_idx").on(table.tenantId),
+  ],
+);
+
+/** Paragraph-ish text chunks for approved docs (keyword pack snippets). */
+export const companyKnowledgeChunks = sqliteTable(
+  "company_knowledge_chunks",
+  {
+    id: text("id").primaryKey(),
+    docId: text("doc_id")
+      .notNull()
+      .references(() => companyKnowledgeDocs.id),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    chunkIndex: integer("chunk_index").notNull(),
+    text: text("text").notNull(),
+    contentHash: text("content_hash").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("company_knowledge_chunks_tenant_idx").on(table.tenantId),
+    index("company_knowledge_chunks_doc_idx").on(table.docId),
   ],
 );
 

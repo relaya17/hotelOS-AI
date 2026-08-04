@@ -915,6 +915,20 @@ export async function migrate(client: Client): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS company_knowledge_embeddings_tenant_idx
       ON company_knowledge_embeddings(tenant_id);
+
+    CREATE TABLE IF NOT EXISTS company_knowledge_chunks (
+      id TEXT PRIMARY KEY,
+      doc_id TEXT NOT NULL REFERENCES company_knowledge_docs(id),
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      chunk_index INTEGER NOT NULL,
+      text TEXT NOT NULL,
+      content_hash TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS company_knowledge_chunks_tenant_idx
+      ON company_knowledge_chunks(tenant_id);
+    CREATE INDEX IF NOT EXISTS company_knowledge_chunks_doc_idx
+      ON company_knowledge_chunks(doc_id);
   `);
 
   // Column added after initial release (ADR 0007) — existing on-disk DBs

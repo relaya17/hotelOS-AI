@@ -9,6 +9,7 @@ describe("buildKnowledgeContextPack", () => {
     const companyKnowledge = {
       search: async () => [],
       searchByEmbedding: async () => [],
+      listChunksForDocs: async () => [],
     } as unknown as CompanyKnowledgeRepository;
 
     const pack = await buildKnowledgeContextPack(
@@ -41,6 +42,7 @@ describe("buildKnowledgeContextPack", () => {
         ];
       },
       searchByEmbedding: async () => [],
+      listChunksForDocs: async () => [],
     } as unknown as CompanyKnowledgeRepository;
 
     const pack = await buildKnowledgeContextPack(
@@ -71,6 +73,7 @@ describe("buildKnowledgeContextPack", () => {
           createdAt: "2026-01-01T00:00:00.000Z",
         },
       ],
+      listChunksForDocs: async () => [],
     } as unknown as CompanyKnowledgeRepository;
 
     const gateway = {
@@ -88,5 +91,53 @@ describe("buildKnowledgeContextPack", () => {
     );
     assert.ok(pack);
     assert.match(pack, /נוהל קבלה/);
+  });
+
+  it("prefers a matching chunk snippet over the body prefix", async () => {
+    const companyKnowledge = {
+      search: async () => [
+        {
+          id: "doc-1",
+          tenantId: "t1",
+          title: "מדריך ארוך",
+          body: `${"א".repeat(50)}\n\nביטול מאוחר כפוף לקנס מיוחד בסעיף זה.`,
+          category: "policy",
+          status: "approved",
+          createdByUserId: "u1",
+          approvedByUserId: "u1",
+          approvedAt: "2026-01-01T00:00:00.000Z",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+      searchByEmbedding: async () => [],
+      listChunksForDocs: async () => [
+        {
+          id: "c1",
+          docId: "doc-1",
+          tenantId: "t1",
+          chunkIndex: 0,
+          text: "א".repeat(50),
+          contentHash: "h0",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "c2",
+          docId: "doc-1",
+          tenantId: "t1",
+          chunkIndex: 1,
+          text: "ביטול מאוחר כפוף לקנס מיוחד בסעיף זה.",
+          contentHash: "h1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    } as unknown as CompanyKnowledgeRepository;
+
+    const pack = await buildKnowledgeContextPack(
+      companyKnowledge,
+      Ids.tenant("00000000-0000-4000-8000-000000000001"),
+      "מה קורה בביטול מאוחר?",
+    );
+    assert.ok(pack);
+    assert.match(pack, /קנס מיוחד/);
   });
 });

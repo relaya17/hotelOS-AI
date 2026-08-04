@@ -19,7 +19,7 @@
 | SSE ops stream ACL (Bearer + hotel scope) | Stream routes + threat model doc |
 | No PAN storage in HotelOS | Config / payment provider + `GET /v1/public/payments/status` + Guest/Executive copy |
 | AI only via Gateway | Engineering Standard Vol. 5 |
-| Hybrid keyword + optional embeddings | [rag-embeddings-mvp.md](./rag-embeddings-mvp.md) |
+| Hybrid keyword + optional embeddings + **text chunks** | [rag-embeddings-mvp.md](./rag-embeddings-mvp.md) |
 
 ## Roadmap (not claimed on www)
 
@@ -28,7 +28,7 @@
 - Hosted third-party status page with history (Better Stack / similar)
 - Live external PCI gateway UX (beyond `PAYMENT_PROVIDER=external` + provider-side PCI)
 - Full cookie category matrix (analytics/marketing) if introduced
-- Full Vector DB / chunked RAG (see rag-embeddings-mvp.md)
+- Full Vector DB / per-chunk embeddings (text chunks + whole-doc embed live — see rag-embeddings-mvp.md)
 
 ## Public narrative
 

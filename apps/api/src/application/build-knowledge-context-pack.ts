@@ -11,8 +11,8 @@ const MAX_PACK = 4000;
 
 /**
  * Hybrid keyword + embedding hits from approved company knowledge.
+ * Prefers stored chunks for snippets when available.
  * Gateway never searches; API builds the pack (Vol. 5 / ADR 0008).
- * When embed fails or no vectors exist, falls back to keyword-only.
  */
 export async function buildKnowledgeContextPack(
   companyKnowledge: CompanyKnowledgeRepository,
@@ -58,16 +58,23 @@ export async function buildKnowledgeContextPack(
 
   if (byId.size === 0) return undefined;
 
+  const chunks = await companyKnowledge.listChunksForDocs(tenantId, [
+    ...byId.keys(),
+  ]);
+  const chunksByDoc = new Map<string, string[]>();
+  for (const chunk of chunks) {
+    const list = chunksByDoc.get(chunk.docId) ?? [];
+    list.push(chunk.text);
+    chunksByDoc.set(chunk.docId, list);
+  }
+
   const lines = [
     "Context pack — Company Knowledge (approved only)",
     "השתמש רק בעובדות להלן. אל תמציא מדיניות. ציטוט: Company Knowledge.",
   ];
 
   for (const doc of byId.values()) {
-    const snippet =
-      doc.body.length > MAX_SNIPPET
-        ? `${doc.body.slice(0, MAX_SNIPPET)}…`
-        : doc.body;
+    const snippet = pickSnippet(doc.body, chunksByDoc.get(doc.id) ?? [], terms);
     lines.push(`• [${doc.category}] ${doc.title}: ${snippet}`);
   }
 
@@ -76,6 +83,34 @@ export async function buildKnowledgeContextPack(
     pack = `${pack.slice(0, MAX_PACK)}…`;
   }
   return pack;
+}
+
+function pickSnippet(
+  body: string,
+  chunkTexts: readonly string[],
+  terms: readonly string[],
+): string {
+  if (chunkTexts.length > 0) {
+    let best = chunkTexts[0] ?? body;
+    let bestScore = -1;
+    for (const text of chunkTexts) {
+      const lower = text.toLowerCase();
+      let score = 0;
+      for (const term of terms) {
+        if (lower.includes(term)) score += 1;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = text;
+      }
+    }
+    return best.length > MAX_SNIPPET
+      ? `${best.slice(0, MAX_SNIPPET)}…`
+      : best;
+  }
+  return body.length > MAX_SNIPPET
+    ? `${body.slice(0, MAX_SNIPPET)}…`
+    : body;
 }
 
 function extractSearchTerms(message: string): readonly string[] {

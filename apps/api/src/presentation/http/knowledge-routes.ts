@@ -7,6 +7,7 @@ import type {
 } from "@hotelos/database";
 import type { JwtTokenService } from "@hotelos/auth";
 import { z } from "@hotelos/validation";
+import { chunkCompanyKnowledgeDoc } from "../../application/chunk-company-knowledge-doc.js";
 import { embedCompanyKnowledgeDoc } from "../../application/embed-company-knowledge-doc.js";
 import { requireAuth, type AuthVariables } from "./auth-middleware.js";
 import { mapUnknownError, sendError } from "./errors.js";
@@ -150,7 +151,7 @@ export function createKnowledgeRoutes(deps: KnowledgeRouteDeps): Hono<{
       if (!updated) {
         return sendError(c, 404, "DOC_NOT_FOUND", "Document not found");
       }
-      // Best-effort embed — approve must succeed even if embeddings are down.
+      // Best-effort embed + chunk — approve must succeed even if these fail.
       await embedCompanyKnowledgeDoc(
         {
           companyKnowledge: deps.companyKnowledge,
@@ -158,6 +159,16 @@ export function createKnowledgeRoutes(deps: KnowledgeRouteDeps): Hono<{
         },
         { tenantId: principal.scope.tenantId, doc: updated },
       );
+      try {
+        await chunkCompanyKnowledgeDoc(deps.companyKnowledge, {
+          tenantId: principal.scope.tenantId,
+          docId: updated.id,
+          title: updated.title,
+          body: updated.body,
+        });
+      } catch {
+        // Keyword pack can still use full body when chunk write fails.
+      }
       return c.json({ data: updated });
     } catch (error) {
       return mapUnknownError(c, error);

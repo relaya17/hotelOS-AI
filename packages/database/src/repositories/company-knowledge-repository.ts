@@ -1,7 +1,8 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { TenantId, UserId } from "@hotelos/shared";
 import type { HotelOsDb } from "../client.js";
 import {
+  companyKnowledgeChunks,
   companyKnowledgeDocs,
   companyKnowledgeEmbeddings,
 } from "../schema/ai.js";
@@ -27,6 +28,16 @@ export type PersistedCompanyKnowledgeEmbedding = {
   readonly embedding: readonly number[];
   readonly contentHash: string;
   readonly embeddedAt: string;
+};
+
+export type PersistedCompanyKnowledgeChunk = {
+  readonly id: string;
+  readonly docId: string;
+  readonly tenantId: string;
+  readonly chunkIndex: number;
+  readonly text: string;
+  readonly contentHash: string;
+  readonly createdAt: string;
 };
 
 export type CompanyKnowledgeRepository = {
@@ -74,7 +85,83 @@ export type CompanyKnowledgeRepository = {
     tenantId: TenantId,
     docId: string,
   ) => Promise<PersistedCompanyKnowledgeEmbedding | null>;
+  replaceChunks: (input: {
+    readonly docId: string;
+    readonly tenantId: TenantId;
+    readonly createdAt: string;
+    readonly chunks: readonly {
+      readonly id: string;
+      readonly chunkIndex: number;
+      readonly text: string;
+      readonly contentHash: string;
+    }[];
+  }) => Promise<void>;
+  listChunksForDocs: (
+    tenantId: TenantId,
+    docIds: readonly string[],
+  ) => Promise<readonly PersistedCompanyKnowledgeChunk[]>;
 };
+
+/** Split body into ~maxChars chunks on paragraph / whitespace boundaries. */
+export function splitKnowledgeBodyIntoChunks(
+  body: string,
+  maxChars = 900,
+): readonly string[] {
+  const normalized = body.replace(/\r\n/g, "\n").trim();
+  if (!normalized) return [];
+  if (normalized.length <= maxChars) return [normalized];
+
+  const paragraphs = normalized
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+
+  const chunks: string[] = [];
+  let current = "";
+
+  const flush = () => {
+    if (current.length > 0) {
+      chunks.push(current);
+      current = "";
+    }
+  };
+
+  const pushLongPiece = (piece: string) => {
+    let rest = piece;
+    while (rest.length > maxChars) {
+      let cut = rest.lastIndexOf(" ", maxChars);
+      if (cut < maxChars * 0.5) cut = maxChars;
+      chunks.push(rest.slice(0, cut).trim());
+      rest = rest.slice(cut).trim();
+    }
+    if (rest.length > 0) {
+      if (current.length === 0) current = rest;
+      else if (`${current}\n\n${rest}`.length <= maxChars) {
+        current = `${current}\n\n${rest}`;
+      } else {
+        flush();
+        current = rest;
+      }
+    }
+  };
+
+  for (const para of paragraphs) {
+    if (para.length > maxChars) {
+      flush();
+      pushLongPiece(para);
+      continue;
+    }
+    const next = current.length === 0 ? para : `${current}\n\n${para}`;
+    if (next.length <= maxChars) {
+      current = next;
+    } else {
+      flush();
+      current = para;
+    }
+  }
+  flush();
+  return chunks;
+}
 
 function mapRow(
   row: typeof companyKnowledgeDocs.$inferSelect,
@@ -326,6 +413,59 @@ export function createCompanyKnowledgeRepository(
         contentHash: row.contentHash,
         embeddedAt: row.embeddedAt,
       };
+    },
+
+    async replaceChunks(input) {
+      await db
+        .delete(companyKnowledgeChunks)
+        .where(
+          and(
+            eq(companyKnowledgeChunks.tenantId, input.tenantId),
+            eq(companyKnowledgeChunks.docId, input.docId),
+          ),
+        )
+        .run();
+      for (const chunk of input.chunks) {
+        await db
+          .insert(companyKnowledgeChunks)
+          .values({
+            id: chunk.id,
+            docId: input.docId,
+            tenantId: input.tenantId,
+            chunkIndex: chunk.chunkIndex,
+            text: chunk.text,
+            contentHash: chunk.contentHash,
+            createdAt: input.createdAt,
+          })
+          .run();
+      }
+    },
+
+    async listChunksForDocs(tenantId, docIds) {
+      if (docIds.length === 0) return [];
+      const rows = await db
+        .select()
+        .from(companyKnowledgeChunks)
+        .where(
+          and(
+            eq(companyKnowledgeChunks.tenantId, tenantId),
+            inArray(companyKnowledgeChunks.docId, [...docIds]),
+          ),
+        )
+        .orderBy(
+          asc(companyKnowledgeChunks.docId),
+          asc(companyKnowledgeChunks.chunkIndex),
+        )
+        .all();
+      return rows.map((row) => ({
+        id: row.id,
+        docId: row.docId,
+        tenantId: row.tenantId,
+        chunkIndex: row.chunkIndex,
+        text: row.text,
+        contentHash: row.contentHash,
+        createdAt: row.createdAt,
+      }));
     },
   };
 }
