@@ -113,6 +113,16 @@ function mapTemplate(
 export type AssessmentRepository = {
   ensureGlobalTemplates: () => Promise<void>;
   listTemplates: (tenantId: TenantId) => Promise<readonly PersistedAssessmentTemplate[]>;
+  createTemplate: (input: {
+    readonly id: string;
+    readonly tenantId: TenantId;
+    readonly titleHe: string;
+    readonly titleEn: string;
+    readonly category: string;
+    readonly passingScore: number;
+    readonly questions: readonly AssessmentQuestion[];
+    readonly createdAt: string;
+  }) => Promise<PersistedAssessmentTemplate>;
   assign: (input: {
     readonly id: string;
     readonly tenantId: TenantId;
@@ -191,6 +201,34 @@ export function createAssessmentRepository(db: HotelOsDb): AssessmentRepository 
         )
         .all();
       return rows.map(mapTemplate);
+    },
+
+    async createTemplate(input) {
+      if (input.questions.length === 0) {
+        throw new Error("ASSESSMENT_TEMPLATE_EMPTY");
+      }
+      if (input.passingScore < 1 || input.passingScore > 100) {
+        throw new Error("ASSESSMENT_TEMPLATE_SCORE");
+      }
+      for (const question of input.questions) {
+        if (
+          !question.options.some((opt) => opt.id === question.correctOptionId)
+        ) {
+          throw new Error("ASSESSMENT_TEMPLATE_CORRECT");
+        }
+      }
+      const row = {
+        id: input.id,
+        tenantId: input.tenantId,
+        titleHe: input.titleHe,
+        titleEn: input.titleEn,
+        category: input.category,
+        passingScore: String(input.passingScore),
+        questionsJson: JSON.stringify(input.questions),
+        createdAt: input.createdAt,
+      };
+      await db.insert(assessmentTemplates).values(row).run();
+      return mapTemplate(row);
     },
 
     async assign(input) {

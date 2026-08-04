@@ -17,7 +17,7 @@ HotelOS AI ממוקמת כ־**Operating System / Intelligence Layer** — לא �
 | **Closed (MVP)** | RAG **hybrid** — keyword + optional whole-doc / per-chunk embeddings + citations (not Vector DB / ANN) |
 | **Closed (MVP)** | Trusted allowlist **page fetch → snapshot (+ best-effort embed)** all categories |
 | **Remaining** | Certifications (SOC 2 / ISO) · counsel-signed DPA per customer |
-| **Remaining** | Employee depth (HR dossier / advanced workflows; Work claim + invite + assessments MVP live) |
+| **Remaining** | Employee depth (HR dossier / Blob; invite + assessments + tenant templates + Work claim live) |
 | **Remaining** | WCAG full suite (beyond login + www/guest shells + invite/privacy deep paths) |
 
 ---

@@ -4027,6 +4027,7 @@ export async function postErrorEvent(input: {
 
 export type AssessmentTemplateDto = {
   readonly id: string;
+  readonly tenantId?: string | null;
   readonly titleHe: string;
   readonly titleEn: string;
   readonly category: string;
@@ -4039,6 +4040,32 @@ export async function listAssessmentTemplates(): Promise<
 > {
   const payload = (await authGet("/v1/hr/assessment-templates")) as {
     data: AssessmentTemplateDto[];
+  };
+  return payload.data;
+}
+
+export async function createAssessmentTemplate(input: {
+  readonly titleHe: string;
+  readonly titleEn: string;
+  readonly category:
+    | "service"
+    | "role_knowledge"
+    | "safety"
+    | "compliance"
+    | "other";
+  readonly passingScore: number;
+  readonly questions: readonly {
+    readonly id: string;
+    readonly promptHe: string;
+    readonly options: readonly {
+      readonly id: string;
+      readonly labelHe: string;
+    }[];
+    readonly correctOptionId: string;
+  }[];
+}): Promise<AssessmentTemplateDto> {
+  const payload = (await authPost("/v1/hr/assessment-templates", input)) as {
+    data: AssessmentTemplateDto;
   };
   return payload.data;
 }

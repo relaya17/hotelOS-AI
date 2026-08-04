@@ -50,6 +50,38 @@ const documentFlagSchema = z.object({
   notes: z.string().trim().max(1000).optional(),
 });
 
+const createAssessmentTemplateSchema = z.object({
+  titleHe: z.string().trim().min(2).max(120),
+  titleEn: z.string().trim().min(2).max(120),
+  category: z.enum([
+    "service",
+    "role_knowledge",
+    "safety",
+    "compliance",
+    "other",
+  ]),
+  passingScore: z.number().int().min(1).max(100),
+  questions: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1).max(40),
+        promptHe: z.string().trim().min(4).max(400),
+        options: z
+          .array(
+            z.object({
+              id: z.string().trim().min(1).max(20),
+              labelHe: z.string().trim().min(1).max(200),
+            }),
+          )
+          .min(2)
+          .max(6),
+        correctOptionId: z.string().trim().min(1).max(20),
+      }),
+    )
+    .min(1)
+    .max(20),
+});
+
 export function createHrRoutes(deps: HrRouteDeps): Hono<{
   Variables: AuthVariables;
 }> {
@@ -229,6 +261,7 @@ export function createHrRoutes(deps: HrRouteDeps): Hono<{
       return c.json({
         data: data.map((tmpl) => ({
           id: tmpl.id,
+          tenantId: tmpl.tenantId,
           titleHe: tmpl.titleHe,
           titleEn: tmpl.titleEn,
           category: tmpl.category,
@@ -236,6 +269,65 @@ export function createHrRoutes(deps: HrRouteDeps): Hono<{
           questionCount: tmpl.questions.length,
         })),
       });
+    } catch (error) {
+      return mapUnknownError(c, error);
+    }
+  });
+
+  routes.post("/assessment-templates", async (c) => {
+    try {
+      const principal = c.get("principal");
+      const body = createAssessmentTemplateSchema.parse(await c.req.json());
+      for (const question of body.questions) {
+        if (
+          !question.options.some((opt) => opt.id === question.correctOptionId)
+        ) {
+          return sendError(
+            c,
+            400,
+            "INVALID_CORRECT_OPTION",
+            "correctOptionId must match one of the question options",
+          );
+        }
+      }
+      const created = await deps.assessments.createTemplate({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        titleHe: body.titleHe,
+        titleEn: body.titleEn,
+        category: body.category,
+        passingScore: body.passingScore,
+        questions: body.questions,
+        createdAt: new Date().toISOString(),
+      });
+      await deps.audit.append({
+        id: randomUUID(),
+        tenantId: principal.scope.tenantId,
+        actorUserId: principal.userId,
+        action: "hr.assessment_template.create",
+        resourceType: "assessment_template",
+        resourceId: created.id,
+        metadata: {
+          category: created.category,
+          questionCount: created.questions.length,
+          passingScore: created.passingScore,
+        },
+        createdAt: new Date().toISOString(),
+      });
+      return c.json(
+        {
+          data: {
+            id: created.id,
+            tenantId: created.tenantId,
+            titleHe: created.titleHe,
+            titleEn: created.titleEn,
+            category: created.category,
+            passingScore: created.passingScore,
+            questionCount: created.questions.length,
+          },
+        },
+        201,
+      );
     } catch (error) {
       return mapUnknownError(c, error);
     }

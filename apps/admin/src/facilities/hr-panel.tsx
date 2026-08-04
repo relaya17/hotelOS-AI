@@ -3,6 +3,7 @@ import { Button, TextField } from "@hotelos/ui";
 import {
   APP_URLS,
   assignAssessment,
+  createAssessmentTemplate,
   createHrInvite,
   createLetterDraft,
   fetchAssessmentDetail,
@@ -27,6 +28,25 @@ import {
   type LetterDraftDto,
 } from "@hotelos/web-client";
 
+type DraftQuestion = {
+  readonly id: string;
+  promptHe: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  correctOptionId: "a" | "b" | "c";
+};
+
+function emptyQuestion(id: string): DraftQuestion {
+  return {
+    id,
+    promptHe: "",
+    optionA: "",
+    optionB: "",
+    optionC: "",
+    correctOptionId: "b",
+  };
+}
 export type HrPanelProps = {
   readonly hotelId: string;
 };
@@ -51,6 +71,16 @@ export function HrPanel({ hotelId }: HrPanelProps) {
   );
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [tmplTitleHe, setTmplTitleHe] = useState("");
+  const [tmplTitleEn, setTmplTitleEn] = useState("");
+  const [tmplCategory, setTmplCategory] = useState<
+    "service" | "role_knowledge" | "safety" | "compliance" | "other"
+  >("service");
+  const [tmplPassing, setTmplPassing] = useState("70");
+  const [tmplQuestions, setTmplQuestions] = useState<DraftQuestion[]>([
+    emptyQuestion("q1"),
+  ]);
+  const [tmplBusy, setTmplBusy] = useState(false);
   const [employeeAssessments, setEmployeeAssessments] = useState<
     readonly { readonly id: string; readonly status: string; readonly titleHe?: string }[]
   >([]);
@@ -450,6 +480,188 @@ export function HrPanel({ hotelId }: HrPanelProps) {
         className="stack"
         onSubmit={(e) => {
           e.preventDefault();
+          const passingScore = Number(tmplPassing);
+          if (!Number.isFinite(passingScore)) return;
+          setTmplBusy(true);
+          setError(undefined);
+          void createAssessmentTemplate({
+            titleHe: tmplTitleHe.trim(),
+            titleEn: tmplTitleEn.trim() || tmplTitleHe.trim(),
+            category: tmplCategory,
+            passingScore,
+            questions: tmplQuestions.map((question, index) => ({
+              id: question.id || `q${index + 1}`,
+              promptHe: question.promptHe.trim(),
+              options: [
+                { id: "a", labelHe: question.optionA.trim() },
+                { id: "b", labelHe: question.optionB.trim() },
+                { id: "c", labelHe: question.optionC.trim() },
+              ],
+              correctOptionId: question.correctOptionId,
+            })),
+          })
+            .then((created) => listAssessmentTemplates().then((tmpls) => {
+              setTemplates(tmpls);
+              setSelectedTemplateId(created.id);
+              setTmplTitleHe("");
+              setTmplTitleEn("");
+              setTmplPassing("70");
+              setTmplQuestions([emptyQuestion("q1")]);
+            }))
+            .catch((createError: unknown) => {
+              setError(
+                createError instanceof Error
+                  ? createError.message
+                  : "יצירת תבנית נכשלה",
+              );
+            })
+            .finally(() => setTmplBusy(false));
+        }}
+      >
+        <h3>תבנית מבחן חדשה (לדייר)</h3>
+        <p className="hint">
+          תבניות גלובליות נשארות לקריאה בלבד. כאן נוצרת תבנית של המלון/הרשת
+          בלבד — שאלות בטקסט, בלי קבצים.
+        </p>
+        <TextField
+          label="כותרת (עברית)"
+          value={tmplTitleHe}
+          onChange={(e) => setTmplTitleHe(e.target.value)}
+          required
+        />
+        <TextField
+          label="כותרת (אנגלית)"
+          value={tmplTitleEn}
+          onChange={(e) => setTmplTitleEn(e.target.value)}
+          placeholder="אופציונלי — יועתק מהעברית"
+        />
+        <label>
+          קטגוריה
+          <select
+            value={tmplCategory}
+            onChange={(e) =>
+              setTmplCategory(
+                e.target.value as
+                  | "service"
+                  | "role_knowledge"
+                  | "safety"
+                  | "compliance"
+                  | "other",
+              )
+            }
+          >
+            <option value="service">שירות</option>
+            <option value="role_knowledge">ידע תפקיד</option>
+            <option value="safety">בטיחות</option>
+            <option value="compliance">ציות</option>
+            <option value="other">אחר</option>
+          </select>
+        </label>
+        <TextField
+          label="ציון עובר (%)"
+          value={tmplPassing}
+          onChange={(e) => setTmplPassing(e.target.value)}
+          required
+        />
+        {tmplQuestions.map((question, index) => (
+          <fieldset key={question.id} className="tmpl-q">
+            <legend>שאלה {index + 1}</legend>
+            <TextField
+              label="ניסוח"
+              value={question.promptHe}
+              onChange={(e) => {
+                const value = e.target.value;
+                setTmplQuestions((prev) =>
+                  prev.map((row, i) =>
+                    i === index ? { ...row, promptHe: value } : row,
+                  ),
+                );
+              }}
+              required
+            />
+            <TextField
+              label="אפשרות א"
+              value={question.optionA}
+              onChange={(e) => {
+                const value = e.target.value;
+                setTmplQuestions((prev) =>
+                  prev.map((row, i) =>
+                    i === index ? { ...row, optionA: value } : row,
+                  ),
+                );
+              }}
+              required
+            />
+            <TextField
+              label="אפשרות ב"
+              value={question.optionB}
+              onChange={(e) => {
+                const value = e.target.value;
+                setTmplQuestions((prev) =>
+                  prev.map((row, i) =>
+                    i === index ? { ...row, optionB: value } : row,
+                  ),
+                );
+              }}
+              required
+            />
+            <TextField
+              label="אפשרות ג"
+              value={question.optionC}
+              onChange={(e) => {
+                const value = e.target.value;
+                setTmplQuestions((prev) =>
+                  prev.map((row, i) =>
+                    i === index ? { ...row, optionC: value } : row,
+                  ),
+                );
+              }}
+              required
+            />
+            <label>
+              תשובה נכונה
+              <select
+                value={question.correctOptionId}
+                onChange={(e) => {
+                  const value = e.target.value as "a" | "b" | "c";
+                  setTmplQuestions((prev) =>
+                    prev.map((row, i) =>
+                      i === index ? { ...row, correctOptionId: value } : row,
+                    ),
+                  );
+                }}
+              >
+                <option value="a">א</option>
+                <option value="b">ב</option>
+                <option value="c">ג</option>
+              </select>
+            </label>
+          </fieldset>
+        ))}
+        <div className="row">
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={tmplQuestions.length >= 10 || tmplBusy}
+            onClick={() =>
+              setTmplQuestions((prev) => [
+                ...prev,
+                emptyQuestion(`q${prev.length + 1}`),
+              ])
+            }
+          >
+            הוסף שאלה
+          </Button>
+          <Button type="submit" disabled={tmplBusy || !tmplTitleHe.trim()}>
+            {tmplBusy ? "שומר…" : "צור תבנית"}
+          </Button>
+        </div>
+      </form>
+
+      <form
+        className="stack"
+        onSubmit={(e) => {
+          e.preventDefault();
           if (!selectedEmployeeId || !selectedTemplateId) return;
           void assignAssessment(selectedEmployeeId, selectedTemplateId)
             .then(() => listEmployeeAssessments(selectedEmployeeId))
@@ -486,6 +698,7 @@ export function HrPanel({ hotelId }: HrPanelProps) {
             {templates.map((tmpl) => (
               <option key={tmpl.id} value={tmpl.id}>
                 {tmpl.titleHe} ({tmpl.questionCount} שאלות)
+                {tmpl.tenantId ? " · מקומית" : " · גלובלית"}
               </option>
             ))}
           </select>
@@ -696,6 +909,8 @@ export function HrPanel({ hotelId }: HrPanelProps) {
 
       <style>{`
         .hr-panel .stack{display:grid;gap:.75rem;max-width:28rem;margin-block:1rem}
+        .hr-panel .row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+        .hr-panel .tmpl-q{display:grid;gap:.5rem;max-width:28rem}
         .hr-panel .hint{background:rgb(16 36 31 / 6%);padding:.75rem;border-radius:8px;word-break:break-all}
         .hr-panel .draft-body{white-space:pre-wrap;font:inherit;background:var(--color-paper);padding:.75rem;border-radius:8px}
         .hr-panel .error{color:#8b1e1e}
