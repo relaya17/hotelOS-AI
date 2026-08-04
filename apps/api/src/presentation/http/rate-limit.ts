@@ -143,6 +143,7 @@ export function selectRateLimitPolicy(pathname: string): SlidingWindowPolicy {
   }
   if (
     pathname === "/v1/auth/login" ||
+    pathname === "/v1/leads" ||
     pathname.startsWith("/v1/public/stays/")
   ) {
     return STRICT_RATE_LIMIT_POLICY;

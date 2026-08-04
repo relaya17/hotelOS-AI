@@ -12,6 +12,7 @@ describe("meta OpenAPI routes", () => {
     const body = (await res.json()) as typeof OPENAPI_SPEC;
     assert.equal(body.openapi, "3.1.0");
     assert.ok(body.paths["/v1/guests/by-email"]);
+    assert.ok(body.paths["/v1/leads"]);
     assert.ok(body.paths["/v1/twin/hotels/{hotelId}"]);
     assert.ok(body.paths["/v1/ops/forecast"]);
     assert.ok(body.paths["/v1/streams/ops-dashboard"]);

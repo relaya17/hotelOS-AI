@@ -21,6 +21,7 @@
     "check:vercel-api": "node scripts/check-vercel-api-ready.mjs",
     "generate:ops-secrets": "node scripts/generate-ops-secrets.mjs",
     "ping:turso": "node scripts/ping-turso.mjs",
+    "check:www-jsonld": "node scripts/check-www-jsonld.mjs",
     "qa": "pnpm install --frozen-lockfile && pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "clean": "turbo run clean && rimraf node_modules"
   },

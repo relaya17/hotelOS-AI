@@ -31,6 +31,7 @@ node -e "const fs=require('fs');const yaml=require('yaml');const p='docs/openapi
 | POST | `/v1/public/stays/lookup` |
 | POST | `/v1/public/stays/check-in` |
 | POST | `/v1/public/feedback` (if enabled) |
+| POST | `/v1/leads` (www marketing contact) |
 
 ## Auth
 

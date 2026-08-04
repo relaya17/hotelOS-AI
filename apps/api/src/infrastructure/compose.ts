@@ -41,6 +41,7 @@ import {
   createTrustedSourceSnapshotsRepository,
   createGuestProfileRepository,
   createTrustRepository,
+  createMarketingLeadsRepository,
   createTurboRepository,
   createUpsellRepository,
   createUserRepository,
@@ -110,6 +111,7 @@ export async function composeApp() {
   const briefing = createBriefingRepository(db);
   const turbo = createTurboRepository(db);
   const trust = createTrustRepository(db);
+  const marketingLeads = createMarketingLeadsRepository(db);
   const ops = createOpsRepository(db);
 
   /** Append + best-effort IT task for sensitive actions (stage א' alerting). */
@@ -254,6 +256,7 @@ export async function composeApp() {
       tokens,
     },
     overview: { overview, tokens },
+    leads: { leads: marketingLeads },
     publicRoutes: {
       guestStays,
       feedback,

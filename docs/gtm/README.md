@@ -38,6 +38,10 @@ Platform narrative (capabilities / reliability / stability / innovation): **[sal
 | [use-of-funds-template.md](./use-of-funds-template.md) | Raise allocation template |
 | [company-readiness-checklist.md](./company-readiness-checklist.md) | Entity / IP / bank / cap hygiene |
 
+## Locale strategy
+
+**[locale-strategy.md](./locale-strategy.md)** — why `apps/www` is Hebrew-only on purpose while the sales pack is 10 locales, plus the trigger conditions for revisiting.
+
 ## Trust path (honest)
 
 | Doc | Purpose |

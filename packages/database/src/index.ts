@@ -101,11 +101,18 @@ export * from "./schema/briefing.js";
 export * from "./schema/turbo.js";
 export * from "./schema/trust.js";
 export * from "./schema/ops.js";
+export * from "./schema/marketing.js";
 export {
   createTrustRepository,
   hashVoiceSample,
   type TrustRepository,
 } from "./repositories/trust-repository.js";
+export {
+  createMarketingLeadsRepository,
+  type CreateMarketingLeadInput,
+  type MarketingLeadsRepository,
+  type PersistedMarketingLead,
+} from "./repositories/marketing-leads-repository.js";
 export {
   createOpsRepository,
   STANDARD_DEPARTMENTS,

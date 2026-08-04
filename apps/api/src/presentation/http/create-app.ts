@@ -32,7 +32,13 @@ import {
   createTurboRoutes,
   type TurboRouteDeps,
 } from "./turbo-routes.js";
-import { createLegalRoutes } from "./legal-routes.js";
+import {
+  createLegalRoutes,
+} from "./legal-routes.js";
+import {
+  createLeadsRoutes,
+  type LeadsRouteDeps,
+} from "./leads-routes.js";
 import {
   createTrustRoutes,
   type TrustRouteDeps,
@@ -120,6 +126,7 @@ export type ApiDependencies = {
   readonly hotels: HotelRouteDeps;
   readonly overview: OverviewRouteDeps;
   readonly publicRoutes: PublicRouteDeps;
+  readonly leads: LeadsRouteDeps;
   readonly agents: AgentRouteDeps;
   readonly briefing: BriefingRouteDeps;
   readonly turbo: TurboRouteDeps;
@@ -275,6 +282,7 @@ export function createApp(deps: ApiDependencies): Hono {
   app.route("/v1/overview", createOverviewRoutes(deps.overview));
   app.route("/v1/public", createPublicRoutes(deps.publicRoutes));
   app.route("/v1/public/legal", createLegalRoutes());
+  app.route("/v1/leads", createLeadsRoutes(deps.leads));
   app.route("/v1/agents", createAgentRoutes(deps.agents));
   app.route("/v1/briefing-rooms", createBriefingRoutes(deps.briefing));
   app.route("/v1/turbo", createTurboRoutes(deps.turbo));

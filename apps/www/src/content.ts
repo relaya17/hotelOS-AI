@@ -1,3 +1,5 @@
+import { LIST_PRICES_USD } from "./list-prices.js";
+
 export type OutcomeRow = {
   readonly id: string;
   readonly pain: string;
@@ -346,7 +348,7 @@ export const PACKAGES: readonly PackageTier[] = [
   {
     id: "pilot",
     name: "Pilot",
-    audience: "מלון אחד · הוכחת ערך · $5,000 USD / 8 שבועות",
+    audience: `מלון אחד · הוכחת ערך · ${LIST_PRICES_USD.pilot.label} USD / 8 שבועות`,
     points: [
       "Wedge: תדריך · תקלות · תחזוקה חזויה MVP",
       "מדידה ב־ROI Scorecard",
@@ -356,17 +358,17 @@ export const PACKAGES: readonly PackageTier[] = [
   {
     id: "network",
     name: "Network",
-    audience: "רשת · $1,000 USD / מלון / חודש",
+    audience: `רשת · ${LIST_PRICES_USD.networkMonthlyPerHotel.label} USD / מלון / חודש`,
     points: [
       "תמונת שרשרת ב־Executive",
       "Land & expand דומיינים אחרי הוכחה",
-      "צ׳אט מתורגם + משימות Work · prepaid שנתי $10,800 (−10%)",
+      `צ׳אט מתורגם + משימות Work · prepaid שנתי ${LIST_PRICES_USD.networkAnnualPerHotel.label} (−10%)`,
     ],
   },
   {
     id: "enterprise",
     name: "Enterprise",
-    audience: "קבוצות · from $75,000 USD ACV / שנה",
+    audience: `קבוצות · from ${LIST_PRICES_USD.enterpriseAcvFrom.label} USD ACV / שנה`,
     points: [
       "DPA עם counsel · שאלון אבטחה",
       "בקרות חיות + נתיב attestation (בלי לספר תעודה שלא קיימת)",

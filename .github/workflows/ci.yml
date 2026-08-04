@@ -40,6 +40,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Check www JSON-LD prices
+        run: pnpm check:www-jsonld
+
       - name: Build
         run: pnpm build
 

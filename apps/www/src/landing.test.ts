@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
-import { OUTCOMES, TAGLINES, TRUST_CONTROLS, WORLD_COMPARISON } from "./content.js";
+import {
+  OUTCOMES,
+  PACKAGES,
+  TAGLINES,
+  TRUST_CONTROLS,
+  WORLD_COMPARISON,
+} from "./content.js";
+import { LIST_PRICES_USD } from "./list-prices.js";
 
 describe("landing content", () => {
   it("ships seven outcome rows and four taglines", () => {
@@ -17,6 +27,29 @@ describe("landing content", () => {
       assert.ok(row.typicalPain.length > 0);
       assert.ok(row.hotelosAnswer.length > 0);
     }
+  });
+});
+
+describe("list prices", () => {
+  it("keeps PACKAGE audiences on the USD list", () => {
+    assert.equal(LIST_PRICES_USD.currency, "USD");
+    assert.match(PACKAGES[0]?.audience ?? "", /\$5,000/);
+    assert.match(PACKAGES[1]?.audience ?? "", /\$1,000/);
+    assert.match(PACKAGES[2]?.audience ?? "", /\$75,000/);
+  });
+
+  it("JSON-LD Offer matches list-prices.ts", () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+    const result = spawnSync(
+      process.execPath,
+      [join(root, "scripts/check-www-jsonld.mjs")],
+      { encoding: "utf8" },
+    );
+    assert.equal(
+      result.status,
+      0,
+      result.stderr || result.stdout || "check-www-jsonld failed",
+    );
   });
 });
 

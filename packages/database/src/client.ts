@@ -4,6 +4,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import * as briefingSchema from "./schema/briefing.js";
 import * as cioSchema from "./schema/cio.js";
+import * as marketingSchema from "./schema/marketing.js";
 import * as opsSchema from "./schema/ops.js";
 import * as tenancySchema from "./schema/tenancy.js";
 import * as trustSchema from "./schema/trust.js";
@@ -16,6 +17,7 @@ const schema = {
   ...trustSchema,
   ...opsSchema,
   ...cioSchema,
+  ...marketingSchema,
 };
 
 export type HotelOsSchema = typeof schema;
@@ -1298,6 +1300,18 @@ export async function migrate(client: Client): Promise<void> {
       ON maintenance_predictions(hotel_id, status);
     CREATE INDEX IF NOT EXISTS maintenance_predictions_asset_idx
       ON maintenance_predictions(asset_id);
+
+    CREATE TABLE IF NOT EXISTS marketing_leads (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      hotel_or_chain TEXT NOT NULL,
+      email TEXT NOT NULL,
+      note TEXT,
+      source TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS marketing_leads_email_idx ON marketing_leads(email);
+    CREATE INDEX IF NOT EXISTS marketing_leads_created_idx ON marketing_leads(created_at);
   `);
 }
 

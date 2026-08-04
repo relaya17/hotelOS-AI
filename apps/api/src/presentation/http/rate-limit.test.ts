@@ -44,6 +44,7 @@ test("selectRateLimitPolicy applies a dedicated AI budget to /v1/ai/*", () => {
     AI_RATE_LIMIT_POLICY,
   );
   assert.equal(selectRateLimitPolicy("/v1/auth/login"), STRICT_RATE_LIMIT_POLICY);
+  assert.equal(selectRateLimitPolicy("/v1/leads"), STRICT_RATE_LIMIT_POLICY);
   assert.equal(
     selectRateLimitPolicy("/v1/hotels"),
     DEFAULT_RATE_LIMIT_POLICY,

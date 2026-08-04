@@ -264,6 +264,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/DataEnvelope"
 
+  /v1/leads:
+    post:
+      tags: [Public]
+      summary: Submit marketing lead from www contact form
+      security: []
+      operationId: createMarketingLead
+      description: |
+        Anonymous write for HotelOS AI website pilot / contact leads.
+        Persists to marketing_leads. Rate-limited (strict).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, hotelOrChain, email]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                hotelOrChain: { type: string, minLength: 1, maxLength: 200 }
+                email: { type: string, format: email, maxLength: 254 }
+                note: { type: string, maxLength: 2000 }
+                source: { type: string, maxLength: 64, default: www_contact }
+      responses:
+        "201":
+          description: Lead recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelope"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
   /v1/auth/login:
     post:
       tags: [Auth]

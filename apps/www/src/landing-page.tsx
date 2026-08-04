@@ -13,6 +13,7 @@ import {
   APP_URLS,
   getConsentSubjectKey,
   saveCookieConsent,
+  submitLead,
 } from "@hotelos/web-client";
 import {
   CAPABILITIES,
@@ -69,9 +70,12 @@ function ContactLeadForm() {
   const [hotel, setHotel] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
+  const [status, setStatus] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  function onSubmit(event: FormEvent) {
-    event.preventDefault();
+  function mailtoHref(): string {
     const body = [
       "שלום,",
       "",
@@ -84,10 +88,46 @@ function ContactLeadForm() {
     ]
       .filter((line) => line.length > 0)
       .join("\n");
-    const href = `mailto:pilot@hotelos.ai?subject=${encodeURIComponent(
+    return `mailto:pilot@hotelos.ai?subject=${encodeURIComponent(
       "HotelOS AI Pilot",
     )}&body=${encodeURIComponent(body)}`;
-    window.location.href = href;
+  }
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    setStatus("submitting");
+    setErrorMessage(null);
+    try {
+      await submitLead({
+        name: name.trim(),
+        hotelOrChain: hotel.trim(),
+        email: email.trim(),
+        ...(note.trim() ? { note: note.trim() } : {}),
+        source: "www_contact",
+      });
+      setStatus("success");
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "השליחה נכשלה. נסו שוב או השתמשו בקישור המייל.",
+      );
+    }
+  }
+
+  if (status === "success") {
+    return (
+      <div className="lead-form lead-form--success" role="status">
+        <p>
+          תודה. קיבלנו את הפרטים ונחזור אליכם בהקדם לגבי פיילוט.
+        </p>
+        <p className="lead-form__hint">
+          אפשר גם לקבוע שיחה ישירות אם יש לכם לינק יומן, או לכתוב ל־
+          <a href={PILOT_MAIL}>pilot@hotelos.ai</a>.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -101,6 +141,7 @@ function ContactLeadForm() {
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
+            disabled={status === "submitting"}
           />
         </label>
         <label className="lead-form__field">
@@ -110,6 +151,7 @@ function ContactLeadForm() {
             value={hotel}
             onChange={(event) => setHotel(event.target.value)}
             required
+            disabled={status === "submitting"}
           />
         </label>
         <label className="lead-form__field lead-form__field--full">
@@ -121,6 +163,7 @@ function ContactLeadForm() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
+            disabled={status === "submitting"}
           />
         </label>
         <label className="lead-form__field lead-form__field--full">
@@ -130,12 +173,23 @@ function ContactLeadForm() {
             rows={3}
             value={note}
             onChange={(event) => setNote(event.target.value)}
+            disabled={status === "submitting"}
           />
         </label>
       </div>
+      {status === "error" && errorMessage ? (
+        <p className="lead-form__error" role="alert">
+          {errorMessage}{" "}
+          <a href={mailtoHref()}>פתיחת מייל כגיבוי</a>
+        </p>
+      ) : null}
       <div className="lead-form__actions">
-        <button className="btn btn--primary" type="submit">
-          שליחה לפתיחת מייל
+        <button
+          className="btn btn--primary"
+          type="submit"
+          disabled={status === "submitting"}
+        >
+          {status === "submitting" ? "שולחים…" : "שליחה"}
         </button>
         {CALENDLY_URL ? (
           <a
@@ -147,14 +201,14 @@ function ContactLeadForm() {
             קביעת שיחה ביומן
           </a>
         ) : (
-          <a className="btn btn--ghost" href={PILOT_MAIL}>
+          <a className="btn btn--ghost" href={mailtoHref()}>
             או מייל ישיר
           </a>
         )}
       </div>
       <p className="lead-form__hint">
-        הטופס פותח את תוכנת המייל שלכם עם הפרטים — בלי שרת לידים. אפשר להגדיר{" "}
-        <code>VITE_CALENDLY_URL</code> לקישור יומן.
+        השליחה נשמרת בשרת. אם אין גישה ל־API — השתמשו בקישור המייל כגיבוי.
+        אפשר להגדיר <code>VITE_CALENDLY_URL</code> לקישור יומן.
       </p>
     </form>
   );
@@ -484,8 +538,8 @@ export function LandingPage() {
           <h2 id="wedge-title">שבע מערכות רצות. התמונה עדיין חסרה.</h2>
           <p className="section__lead">
             PMS, HR, הנה״ח, CRM, תחזוקה, BI ואפליקציית עובדים — כל אחת חזקה
-            לבד. יחד הן מייצרות ציד בוקר, כפילויות ועיכוב החלטות. HotelOS היא
-            השכבה שמאחדת אותות להחלטה — בלי לקרוע את התשתית.
+            לבד. אצלכם יחד הן מייצרות ציד בוקר וכפילויות. HotelOS מאחדת את
+            האותות להחלטה — בלי לקרוע את התשתית שלכם.
           </p>
           <ul className="wedge-stack" aria-label="מערכות מפוצלות היום">
             {FRAGMENTED_STACK.map((item) => (
@@ -1020,7 +1074,7 @@ export function LandingPage() {
           aria-labelledby="faq-title"
         >
           <p className="eyebrow">שאלות נפוצות</p>
-          <h2 id="faq-title">מה שרשתות שואלות לפני פיילוט</h2>
+          <h2 id="faq-title">שאלות שאתם שואלים לפני פיילוט</h2>
           <div className="faq__list">
             <details className="faq__item" open>
               <summary>האם HotelOS מחליף את ה־PMS?</summary>
@@ -1075,11 +1129,11 @@ export function LandingPage() {
           className="section excellence"
           aria-labelledby="excellence-title"
         >
-          <p className="eyebrow">מצוינות לסגירה</p>
-          <h2 id="excellence-title">Data room מוכן — בלי שיווק מזויף</h2>
+          <p className="eyebrow">מסמכים ומוכנות</p>
+          <h2 id="excellence-title">הכול מוכן לבדיקה שלכם — בלי הבטחות ריקות</h2>
           <p className="section__lead">
-            כל מה שצריך לסגור רשת או משקיע: playbook, שאלון אבטחה, נתיב SOC2,
-            unit economics. מה שדורש חתימה חיצונית מופיע כצ׳קליסט — לא כתעודה.
+            Playbook, שאלון אבטחה, נתיב SOC2 ו־unit economics — פתוחים לעיון.
+            מה שדורש חתימה חיצונית מופיע כצ׳קליסט, לא כתעודה.
           </p>
           <ul className="excellence-links">
             {EXCELLENCE_LINKS.map((link) => (
@@ -1097,10 +1151,10 @@ export function LandingPage() {
           className="section contact"
           aria-labelledby="contact-title"
         >
-          <h2 id="contact-title">פיילוט לרשת. תוצאות מדידות.</h2>
+          <h2 id="contact-title">פיילוט לרשת שלכם. תוצאות שאתם מודדים.</h2>
           <p className="section__lead">
-            מלאו פרטים — נפתח מייל מוכן ל־pilot@hotelos.ai. אפשר גם לקבוע שיחה
-            אם הוגדר יומן.
+            השאירו פרטים — נפתח מייל מוכן ל־pilot@hotelos.ai. אפשר גם לקבוע
+            שיחה אם הוגדר יומן.
           </p>
           <ContactLeadForm />
           <div className="contact__actions contact__actions--secondary">

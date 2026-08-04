@@ -1579,6 +1579,44 @@ export async function saveCookieConsent(input: {
   if (!response.ok) throw new Error("Failed to save cookie consent");
 }
 
+export type SubmitLeadInput = {
+  readonly name: string;
+  readonly hotelOrChain: string;
+  readonly email: string;
+  readonly note?: string;
+  readonly source?: string;
+};
+
+export type SubmitLeadResult = {
+  readonly id: string;
+  readonly createdAt: string;
+};
+
+/** Anonymous marketing lead from www (POST /v1/leads). */
+export async function submitLead(
+  input: SubmitLeadInput,
+): Promise<SubmitLeadResult> {
+  const response = await fetch(`${getApiBase()}/v1/leads`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: input.name,
+      hotelOrChain: input.hotelOrChain,
+      email: input.email,
+      ...(input.note !== undefined && input.note.trim().length > 0
+        ? { note: input.note.trim() }
+        : {}),
+      source: input.source ?? "www_contact",
+    }),
+  });
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(payload, "Failed to submit lead"));
+  }
+  const data = (payload as { data: SubmitLeadResult }).data;
+  return data;
+}
+
 export async function loginWithGoogleDemo(input: {
   tenantId: string;
   email: string;
