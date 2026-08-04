@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HotelOS AI — Sales Pack (Print → PDF)</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #10141c;
+        --muted: #4a5560;
+        --line: #d8dde3;
+        --accent: #0e6b5c;
+        --font: "Segoe UI", Tahoma, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--font);
+        color: var(--ink);
+        background: #fff;
+        line-height: 1.5;
+      }
+      main {
+        width: min(100% - 2.5rem, 52rem);
+        margin: 0 auto;
+        padding: 2rem 0 3rem;
+      }
+      h1 {
+        font-size: 1.75rem;
+        margin: 0 0 0.35rem;
+      }
+      h2 {
+        font-size: 1.2rem;
+        margin: 1.75rem 0 0.5rem;
+        color: var(--accent);
+      }
+      p,
+      li {
+        color: var(--muted);
+      }
+      .truth {
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 0.85rem 0;
+        margin: 1rem 0 1.5rem;
+        font-weight: 600;
+        color: var(--ink);
+        font-size: 0.95rem;
+      }
+      ol,
+      ul {
+        padding-inline-start: 1.25rem;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin: 1rem 0 2rem;
+      }
+      .actions button,
+      .actions a {
+        font: inherit;
+        font-weight: 600;
+        min-height: 2.75rem;
+        padding: 0.55rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .actions .primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 0.55rem 0.65rem;
+        text-align: start;
+        vertical-align: top;
+      }
+      th {
+        background: #f4f6f8;
+      }
+      .note {
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+      @media print {
+        .actions {
+          display: none;
+        }
+        main {
+          width: 100%;
+          padding: 0;
+        }
+        a[href]::after {
+          content: "";
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>HotelOS AI — Sales Pack</h1>
+      <p class="note">
+        Intelligence Layer for Hotels · הדפסה → Save as PDF · אין SOC2 / ISO /
+        ROI מומצא
+      </p>
+      <p class="truth">
+        לא מחליפים PMS · HITL על פעולות רגישות · בלי SOC2 עדיין · בלי שמירת PAN ·
+        HotelOS אינה ספק סליקה
+      </p>
+      <div class="actions">
+        <button class="primary" type="button" onclick="window.print()">
+          הדפסה / PDF
+        </button>
+        <a href="/">חזרה לאתר</a>
+      </div>
+
+      <h2>1 · דמו 15 דקות (3 מסכים)</h2>
+      <ol>
+        <li>תדריך מנכ״ל — תמונת בוקר אחת</li>
+        <li>מרכז תקלות — תור דחוף מאוחד</li>
+        <li>Suggest → Approve → Act — בלי קופסה שחורה על כסף</li>
+      </ol>
+      <p class="note">אל תציגו mega-nav / 16 טאבים בדמו ראשון.</p>
+
+      <h2>2 · פיילוט 4 שבועות</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>שבוע</th>
+            <th>מיקוד</th>
+            <th>סיום</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>0</td>
+            <td>חיבור + baseline scorecard</td>
+            <td>טבלת שבוע 0 מלאה</td>
+          </tr>
+          <tr>
+            <td>1–2</td>
+            <td>Wedge: תדריך + תקלות</td>
+            <td>שימוש חוזר של האלוף</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>הרחבה מדודה (לפי הסכם)</td>
+            <td>דומיין כתוב</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>מדידה + go/no-go</td>
+            <td>החלטת Network / עצירה</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>3 · חבילות (בלי מחירון ציבורי)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Pilot</th>
+            <th>Network</th>
+            <th>Enterprise</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>מלון אחד · wedge · scorecard</td>
+            <td>רשת · land &amp; expand</td>
+            <td>DPA counsel · security pack · SLA talk</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">מחיר לפי שיחה — מלאו טווחים ב־pricing-talk-track לפני פגישה.</p>
+
+      <h2>4 · Case study (רק אחרי מדידה)</h2>
+      <p>
+        3 מדדים מה־scorecard בלבד · אנונימי אם אין הסכמה לשם · אסור למלא מספרים
+        «מייצגים».
+      </p>
+
+      <h2>5 · אמון</h2>
+      <ul>
+        <li>בקרות חיות באתר (#trust) — לא תעודת SOC2</li>
+        <li>NPA / PAN: לא נשמר ב־HotelOS</li>
+        <li>שאלון אבטחה + Phase 0 ל־SOC2 זמינים ב־docs/gtm</li>
+      </ul>
+
+      <p class="note">
+        מקורות מלאים:
+        github.com/relaya17/hotelOS-AI/tree/main/docs/gtm/sales-pack
+      </p>
+    </main>
+  </body>
+</html>

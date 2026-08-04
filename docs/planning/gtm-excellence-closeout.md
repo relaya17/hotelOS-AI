@@ -17,13 +17,15 @@
 | Packages | **Live** | www `#packages` |
 | Integrations narrative | **Live** | www `#integrations` |
 | Lead capture | **Live** | www `#contact` · `VITE_CALENDLY_URL` |
+| Sales pack (Print→PDF) | **Live** | [../gtm/sales-pack/](../gtm/sales-pack/) · `/sales-pack/` |
+| Truth strip | **Live** | www `.truth-strip` · [truth-strip-copy.md](../gtm/sales-pack/truth-strip-copy.md) |
 | One-pagers | **Live** | [one-pager-hotel.md](./one-pager-hotel.md) · [one-pager-investor.md](./one-pager-investor.md) |
 | 12-slide deck | **Live** | [pitch-deck-12-slides.md](./pitch-deck-12-slides.md) |
 | Data room index | **Live** | [../gtm/README.md](../gtm/README.md) |
 | Unit economics model | **Live (template)** | [../gtm/unit-economics-model.md](../gtm/unit-economics-model.md) |
 | TAM/SAM/SOM | **Live (sourced)** | [../gtm/tam-sam-som.md](../gtm/tam-sam-som.md) |
 | Security questionnaire | **Live (buyer pack)** | [../gtm/security-questionnaire-pack.md](../gtm/security-questionnaire-pack.md) |
-| SOC2 path | **Ready to start** | [../gtm/soc2-attestation-checklist.md](../gtm/soc2-attestation-checklist.md) |
+| SOC2 path | **Ready to start** | [../gtm/soc2-phase0.md](../gtm/soc2-phase0.md) · [../gtm/soc2-attestation-checklist.md](../gtm/soc2-attestation-checklist.md) |
 | Design partner close | **Ready to sign** | [../gtm/design-partner-checklist.md](../gtm/design-partner-checklist.md) |
 | Demo video on www | **Ready when URL** | `VITE_DEMO_VIDEO_URL` · section `#demo` |
 | Partner logos on www | **Ready when agreed** | `VITE_PARTNER_NAMES` · section `#partners` |

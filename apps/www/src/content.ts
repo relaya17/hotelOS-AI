@@ -339,12 +339,12 @@ export const INTEGRATIONS = [
   {
     id: "pms",
     title: "PMS נשאר מקור אמת",
-    body: "Opera · Protel · Fidelio · Clock ועוד — שכבה מעליהם, לא החלפה.",
+    body: "Opera · Protel · Fidelio · Clock — הקשר תפעולי מעל המערכת הקיימת. לא תו התקן של הספק, ולא החלפת מערכת הזמנות.",
   },
   {
     id: "channels",
     title: "אותות מבחוץ",
-    body: "מוניטין (Google / Booking / TripAdvisor ingest) · ציוד · אנרגיה — לפי חיבורים שסוכמו.",
+    body: "מוניטין (Google / Booking / TripAdvisor ingest) · ציוד · אנרגיה — לפי חיבורים שסוכמו בפיילוט.",
   },
   {
     id: "hitl",
@@ -378,14 +378,24 @@ export const EXCELLENCE_LINKS = [
     href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/pilot-playbook.md",
   },
   {
+    id: "sales-pack",
+    label: "Sales pack (Print → PDF)",
+    href: "/sales-pack/index.html",
+  },
+  {
+    id: "demo-script",
+    label: "Demo script 15 min",
+    href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/sales-pack/demo-script-15min.md",
+  },
+  {
     id: "security",
     label: "Security questionnaire",
     href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/security-questionnaire-pack.md",
   },
   {
     id: "soc2",
-    label: "SOC 2 path (checklist)",
-    href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/soc2-attestation-checklist.md",
+    label: "SOC 2 Phase 0",
+    href: "https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/soc2-phase0.md",
   },
   {
     id: "dataroom",

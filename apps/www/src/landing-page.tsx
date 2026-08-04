@@ -163,14 +163,12 @@ function MeasurePlanner() {
   const [managers, setManagers] = useState(3);
   const [days, setDays] = useState(6);
   const hoursNow = (briefingMin * managers * days) / 60;
-  const hoursTarget = hoursNow * 0.3;
-  const hoursSaved = Math.max(0, hoursNow - hoursTarget);
 
   return (
     <div className="measure">
       <p className="measure__disclaimer">
-        כלי תכנון לפיילוט בלבד — לא הבטחת ROI. המספרים האמיתיים נמדדים ב־
-        Pilot ROI Scorecard אחרי baseline.
+        מחשבים רק את נקודת הפתיחה שלכם לתדריך. יעד השיפור נקבע אחרי baseline
+        ב־Pilot ROI Scorecard — בלי אחוז קבוע מראש באתר.
       </p>
       <div className="measure__controls">
         <label>
@@ -209,25 +207,20 @@ function MeasurePlanner() {
       </div>
       <dl className="measure__out">
         <div>
-          <dt>שעות תדריך / שבוע היום</dt>
+          <dt>שעות תדריך / שבוע — מצב נוכחי</dt>
           <dd>{hoursNow.toFixed(1)}</dd>
-        </div>
-        <div>
-          <dt>יעד תכנון (−70%)</dt>
-          <dd>{hoursTarget.toFixed(1)}</dd>
-        </div>
-        <div>
-          <dt>פוטנציאל לחיסכון לתכנון</dt>
-          <dd>{hoursSaved.toFixed(1)}</dd>
         </div>
       </dl>
       <p className="section__note">
-        יעד −70% מגיע מ־
+        אחרי שבוע 0 ממלאים יעד משלכם ב־
         <a href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/planning/pilot-roi-scorecard.md">
           scorecard
         </a>
-        {" "}
-        ככיוון מדידה — לא כהבטחה חוזית.
+        {" · "}
+        <a href="https://github.com/relaya17/hotelOS-AI/blob/main/docs/gtm/sales-pack/case-study-frame.md">
+          תבנית case study
+        </a>
+        .
       </p>
     </div>
   );
@@ -407,12 +400,17 @@ export function LandingPage() {
               <a className="btn btn--primary" href="#contact">
                 בקשת פיילוט לרשת
               </a>
-              <a className="btn btn--ghost" href="#intelligence">
-                מה הסוכנים עושים
+              <a className="btn btn--ghost" href="#demo">
+                סיור דמו · 3 פעימות
               </a>
             </div>
           </div>
         </section>
+
+        <p className="truth-strip" role="note">
+          לא מחליפים PMS · HITL על פעולות רגישות · בלי SOC2 עדיין · בלי שמירת
+          PAN · HotelOS אינה ספק סליקה
+        </p>
 
         <RevealSection
           id="outcomes"
@@ -870,8 +868,8 @@ export function LandingPage() {
           <p className="eyebrow">מדידה</p>
           <h2 id="measure-title">מתכננים את הפיילוט — לא ממציאים תוצאות</h2>
           <p className="section__lead">
-            כוונו את נקודת הפתיחה לתדריך. אחרי שבוע 0 על ה־scorecard תחליפו
-            תכנון במספרים שלכם.
+            כוונו את נקודת הפתיחה לתדריך. יעד השיפור נקבע רק אחרי baseline בפיילוט
+            — לא כאחוז קבוע באתר.
           </p>
           <MeasurePlanner />
         </RevealSection>
@@ -1054,6 +1052,7 @@ export function LandingPage() {
             <a href="#packages">חבילות</a>
             <a href="#measure">מדידה</a>
             <a href="#excellence">מצוינות / data room</a>
+            <a href="/sales-pack/index.html">Sales pack · PDF</a>
           </div>
           <div className="foot__col">
             <h3>אמון</h3>

@@ -1,10 +1,13 @@
 # SOC 2 attestation checklist — start without claiming
 
 **Rule:** Do not put “SOC 2 certified” on www until the report exists.  
-**Goal:** Be attestation-ready so the “gap” becomes a funded project, not a surprise.
+**Goal:** Be attestation-ready so the work is a funded project, not a surprise.
+
+**Start here:** [soc2-phase0.md](./soc2-phase0.md) — decisions (Type I, quarter, budget owner, vendor shortlist).
 
 ## Phase 0 — decide
 
+- [ ] Complete [soc2-phase0.md](./soc2-phase0.md)  
 - [ ] Pick Type I first (point-in-time) vs jump to Type II later  
 - [ ] Pick framework overlap: Trust Services Criteria (Security minimum)  
 - [ ] Budget owner + target quarter  

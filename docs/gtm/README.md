@@ -3,6 +3,17 @@
 **Rule:** Only claim what is live or explicitly marked template/checklist.  
 **Index updated:** 2026-08-04
 
+## Sales pack (Print → PDF)
+
+| Doc | Purpose |
+|-----|---------|
+| **[sales-pack/README.md](./sales-pack/README.md)** | Index + how to export PDF |
+| [sales-pack/demo-script-15min.md](./sales-pack/demo-script-15min.md) | 15-min wedge demo |
+| [sales-pack/truth-strip-copy.md](./sales-pack/truth-strip-copy.md) | Approved honesty lines |
+| [sales-pack/pricing-talk-track.md](./sales-pack/pricing-talk-track.md) | Conversation price bands |
+| [sales-pack/case-study-frame.md](./sales-pack/case-study-frame.md) | Post-pilot case study |
+| www printable | `/sales-pack/index.html` |
+
 ## For hotel owners / chains
 
 | Doc | Purpose |
@@ -28,7 +39,8 @@
 
 | Doc | Purpose |
 |-----|---------|
-| [soc2-attestation-checklist.md](./soc2-attestation-checklist.md) | Start attestation without claiming it |
+| [soc2-phase0.md](./soc2-phase0.md) | Phase 0 decisions (quarter, vendor) |
+| [soc2-attestation-checklist.md](./soc2-attestation-checklist.md) | Full attestation path |
 | [../planning/trust-center-mvp.md](../planning/trust-center-mvp.md) | Live controls |
 | [../planning/gtm-excellence-closeout.md](../planning/gtm-excellence-closeout.md) | Excellence board |
 
