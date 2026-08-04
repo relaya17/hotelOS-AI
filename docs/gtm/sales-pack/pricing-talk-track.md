@@ -1,67 +1,93 @@
 # Pricing — USD worldwide (Israel + all markets)
 
-**Currency:** USD only (מחיר אחיד לכל המדינות, כולל ישראל).  
-**Model:** Sales-assisted list · not a self-serve checkout.  
-**Rule:** Design-partner discount is explicit — never invent ROI to justify price.
+**Currency / מטבע:** USD only — מחיר אחיד לכל המדינות, כולל ישראל.  
+**Model / מודל:** Sales-assisted list · לא קופה עצמית באתר.  
+**Rule / כלל:** הנחת design partner מפורשת — לעולם לא ממציאים ROI כדי להצדיק מחיר.
 
 Updated: 2026-08-04
 
 ---
 
-## List price (unified)
+## הסבר בעברית (קצר)
 
-| Package | List price (USD) | Includes | Notes |
-|---------|------------------|----------|-------|
-| **Pilot** | **$5,000** / hotel | 8 weeks · wedge (briefing + incidents + HITL) · ROI scorecard · success kickoff | 1 hotel. Optional DP: **$0** or **50% ($2,500)** for named/anonymous case study consent |
-| **Network** | **$1,000** / hotel / month | Executive chain view · land & expand domains · Work + ops surfaces in scope | Billed monthly or **$10,800 / hotel / year** (10% annual prepay discount) |
-| **Enterprise** | **from $75,000** ACV / year | Multi-property · counsel DPA path · security questionnaire support · success + priority roadmap talk | Quote by hotel count × Network + enterprise premium |
+HotelOS AI נמכרת כ**שכבת בינה מעל ה־PMS** — לא כהחלפת Opera / Protel / Fidelio / Clock.
 
-### Add-ons (optional, same worldwide)
+- המחיר **אחיד בדולר** בכל העולם (גם בישראל) — בלי מחירון נפרד בשקלים.
+- **Pilot** = הוכחת ערך קצרה במלון אחד.
+- **Network** = מנוי שוטף אחרי שהוכחתם.
+- **Enterprise** = רשתות שצריכות חבילת אמון/משפטי + כמה מלונות.
 
-| Add-on | List (USD) |
-|--------|------------|
-| Extra pilot hotel (same 8 weeks) | **$3,500** / hotel |
-| Onboarding intensive (on-site / extended training) | **$2,000** flat |
-| Status page + security pack workshop (half-day) | **$1,500** |
+המחיר יושב **מתחת ל־PMS מלא** ובטווח סביר של כלי תפעול / שכבות (ops overlays) בעולם.
 
 ---
 
-## What you say on a call
+## List price (unified) · מחירון רשימה
+
+| Package | מחיר רשימה (USD) | מה כלול | הערות |
+|---------|------------------|---------|--------|
+| **Pilot** | **$5,000** / מלון | 8 שבועות · wedge (תדריך + תקלות + HITL) · ROI scorecard · kickoff הצלחה | מלון אחד. DP אופציונלי: **$0** או **50% ($2,500)** תמורת הסכמה ל־case study (עם שם או אנונימי) |
+| **Network** | **$1,000** / מלון / חודש | תמונת שרשרת ב־Executive · הרחבת דומיינים · Work + תפעול בהיקף שסוכם | חיוב חודשי או **$10,800 / מלון / שנה** (הנחה 10% בתשלום שנתי מראש) |
+| **Enterprise** | **from $75,000** ACV / שנה | מולטי־מלון · נתיב DPA עם counsel · ליווי שאלון אבטחה · success + שיחת roadmap | הצעת מחיר לפי מספר מלונות × Network + פרמיום Enterprise |
+
+### Add-ons · תוספות (אופציונלי, אותו מחיר בכל העולם)
+
+| תוספת | מחיר רשימה (USD) | הסבר |
+|--------|------------------|------|
+| מלון פיילוט נוסף (אותם 8 שבועות) | **$3,500** / מלון | כשרוצים להוכיח על יותר מנכס אחד באותה תקופה |
+| Onboarding מורחב (הדרכה מוגברת / בשטח) | **$2,000** חד־פעמי | מעבר ל־kickoff הסטנדרטי של הפיילוט |
+| סדנת status + security pack (חצי יום) | **$1,500** | הכנה לוועדת רכש / אבטחה — בלי לטעון SOC2 |
+
+---
+
+## מה אומרים בשיחה (עברית)
+
+1. «המחירון אחיד ב־USD בכל העולם — גם בישראל, בלי מחירון שקלי נפרד.»  
+2. «פיילוט $5,000 ל־8 שבועות על מלון אחד; אחר כך Network ב־$1,000 למלון לחודש.»  
+3. «Enterprise מ־$75,000 ACV לשנה — תלוי במספר מלונות ובחבילת האמון/משפטי.»  
+4. «אנחנו לא מחליפים את ה־PMS; משלמים על שכבת הבינה + אישור אדם (HITL).»
+
+### English (same meaning)
 
 1. «List is USD worldwide — Israel included, no local list.»  
 2. «Pilot $5,000 for 8 weeks on one hotel; Network $1,000 per hotel per month after.»  
 3. «Enterprise from $75k ACV — depends on property count and legal pack.»  
 4. «We don’t replace your PMS; price is for the intelligence layer + HITL.»
 
-## What you do **not** say
+---
 
-- ILS-only pricing  
-- Per-room required at Pilot stage  
-- SOC2 included as certification  
-- Guaranteed ₪/% ROI in the contract  
+## מה **לא** אומרים
+
+| לא בעברית | Not in English |
+|-----------|----------------|
+| מחירון «רק בשקלים» לישראל | ILS-only pricing |
+| חיוב לפי חדר חובה כבר בפיילוט | Per-room required at Pilot stage |
+| «אנחנו SOC2» בלי דוח | SOC2 included as certification |
+| הבטחת ROI ₪/% בחוזה | Guaranteed ₪/% ROI in the contract |
 
 ---
 
-## vs world market (why this is coherent)
+## למה זה הגיוני מול השוק העולמי
 
-| Category | Typical world band | HotelOS list |
-|----------|-------------------|--------------|
-| Full PMS | ~$4–$15 / room / mo · often $300–$2,000+ / property / mo | We stay **below** full PMS |
-| Ops overlays (Alice/HotSOS-class) | often ~$500–$1,500+ / mo SMB | Network **$1,000 / hotel / mo** sits in-band |
-| Early AI layer / pilot | often free→mid four-figures | Pilot **$5,000** = serious but closeable |
+| קטגוריה | טווח מקובל בעולם | HotelOS |
+|---------|------------------|---------|
+| PMS מלא | ~$4–$15 / חדר / חודש · לעיתים $300–$2,000+ / נכס / חודש | נשארים **מתחת** ל־PMS מלא |
+| שכבות תפעול (Alice/HotSOS-class) | לעיתים ~$500–$1,500+ / חודש ל־SMB | Network **$1,000 / מלון / חודש** בתוך הטווח |
+| פיילוט AI מוקדם | לעיתים חינם → ארבעה מספרים באמצע | Pilot **$5,000** = רציני אבל סגיר |
 
 ---
 
-## Unit-econ quick math (list)
+## חשבון מהיר (לפי מחירון)
 
 ```text
-1 hotel Network annual (prepaid) = $10,800
-5 hotels Network annual         ≈ $54,000
-Pilot + 1 year Network 1 hotel  = $5,000 + $10,800 = $15,800 year-1
+מלון אחד Network שנתי (prepaid) = $10,800
+5 מלונות Network שנתי            ≈ $54,000
+Pilot + שנת Network למלון אחד   = $5,000 + $10,800 = $15,800 (שנה ראשונה)
 ```
 
-Fill CAC/payback in [unit-economics-model.md](../unit-economics-model.md) with **these** list numbers — not invented ARR.
+מלאו CAC/payback ב־[unit-economics-model.md](../unit-economics-model.md) עם **המספרים האלה** — לא ARR מומצא.
+
+---
 
 ## www
 
-Public site stays **«USD list · talk to us»** — full numbers live in this doc + sales pack PDF. Optional later: publish the three headline numbers on `#packages`.
+באתר מופיעים מספרי הרשימה ב־`#packages`. הסבר מלא + מה אומרים בשיחה — כאן וב־sales pack להדפסה.
