@@ -173,7 +173,6 @@ export function MeetJoinPage({ token, onDone }: MeetJoinPageProps) {
         <section
           className="consent-gate"
           aria-labelledby="work-consent-title"
-          role="region"
         >
           <h2 id="work-consent-title">אישור הקלטה</h2>
           <p>
