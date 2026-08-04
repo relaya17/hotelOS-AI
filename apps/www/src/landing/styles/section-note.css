@@ -1,0 +1,9 @@
+.section__note {
+  margin: 1.5rem 0 0;
+  color: var(--mist-dim);
+  font-size: 0.92rem;
+}
+
+.section__note a {
+  color: var(--brass-hot);
+}

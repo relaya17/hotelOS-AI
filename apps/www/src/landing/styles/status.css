@@ -1,0 +1,72 @@
+.status-card {
+  display: grid;
+  gap: 1rem;
+  max-width: 28rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: rgb(12 28 24 / 55%);
+}
+
+.status-card__badge {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+}
+
+.status-card__badge--ok {
+  color: var(--jade);
+}
+
+.status-card__badge--err {
+  color: #e07070;
+}
+
+.status-card__meta {
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.status-card__meta div {
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.status-card__meta dt {
+  margin: 0;
+  color: var(--mist-dim);
+  font-size: 0.82rem;
+}
+
+.status-card__meta dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.status-card__state,
+.status-card__msg,
+.status-card__hint {
+  margin: 0;
+  color: var(--mist-dim);
+}
+
+.status-card__refresh {
+  justify-self: start;
+}
+
+.status-note {
+  margin: 1.25rem 0 0;
+  max-width: 40rem;
+  color: var(--mist-dim);
+  font-size: 0.95rem;
+}
+
+.status-note a {
+  color: var(--brass-hot);
+  font-weight: 600;
+}

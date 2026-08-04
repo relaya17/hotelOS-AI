@@ -1,0 +1,89 @@
+.os-map {
+  display: grid;
+  justify-items: center;
+  gap: 0.85rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem) 0;
+}
+
+.os-map__exec {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+}
+
+.os-map__cfo-coo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.os-map__spine {
+  width: 1px;
+  height: 1.4rem;
+  background: linear-gradient(var(--brass), transparent);
+}
+
+.os-map__core {
+  margin: 0;
+  min-width: min(100%, 18rem);
+  padding: 1.1rem 1.5rem;
+  text-align: center;
+  border: 1px solid rgb(212 176 122 / 45%);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 30% 20%, rgb(110 181 168 / 18%), transparent 55%),
+    var(--ink-elevated);
+  box-shadow: 0 0 0 1px rgb(7 9 13 / 40%), 0 20px 50px rgb(0 0 0 / 35%);
+}
+
+.os-map__core span {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 650;
+  color: var(--brass-hot);
+}
+
+.os-map__core small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--mist-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.os-map__depts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.os-node {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: rgb(16 20 28 / 80%);
+}
+
+.os-node--ceo {
+  border-color: rgb(212 176 122 / 40%);
+  color: var(--brass-hot);
+}
+
+.os-node--guest {
+  margin: 0;
+  border-color: rgb(110 181 168 / 45%);
+  color: var(--jade);
+}

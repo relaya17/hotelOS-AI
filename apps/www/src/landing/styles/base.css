@@ -1,0 +1,151 @@
+:root {
+  /* Brand bridge — www ↔ product tokens */
+  --www-ink: #07090d;
+  --www-ink-elevated: #10141c;
+  --www-mist: #e9e2d6;
+  --www-mist-dim: rgb(233 226 214 / 72%);
+  /* Sea / brass / jade palette, aligned with product tokens */
+  --www-sea: #0e6b5c; /* ≈ packages/ui --color-sea */
+  --www-sea-soft: #6eb5a8;
+  --www-brass: #d4b07a;
+  --www-brass-hot: #e8c89a;
+  --www-jade: #6eb5a8;
+  --www-line: rgb(233 226 214 / 14%);
+
+  --www-font-display: "Fraunces", "Times New Roman", serif;
+  --www-font-body: "Sora", system-ui, sans-serif;
+  --www-space-page: clamp(1.25rem, 3vw, 2.5rem);
+  --www-content-max: 72rem;
+
+  /* Existing landing tokens stay wired through the www-* layer */
+  --ink: var(--www-ink);
+  --ink-elevated: var(--www-ink-elevated);
+  --mist: var(--www-mist);
+  --mist-dim: var(--www-mist-dim);
+  --brass: var(--www-brass);
+  --brass-hot: var(--www-brass-hot);
+  --jade: var(--www-sea-soft);
+  --line: var(--www-line);
+  --font-display: var(--www-font-display);
+  --font-body: var(--www-font-body);
+  --space: var(--www-space-page);
+  --max: var(--www-content-max);
+
+  /*
+    Bridge for the shared @hotelos/ui + @hotelos/features product tokens
+    (CookieBanner, LegalFooter, Button) — mapped onto the www dark palette
+    instead of importing the light-mode @hotelos/ui/styles.css.
+  */
+  --color-ink: var(--www-mist);
+  --color-ink-soft: var(--www-mist-dim);
+  --color-paper-elevated: var(--www-ink-elevated);
+  --color-sea: var(--www-brass);
+  --color-sea-deep: var(--www-brass-hot);
+  --color-sea-soft: rgb(212 176 122 / 14%);
+  --color-line: var(--www-line);
+  --color-line-strong: rgb(233 226 214 / 24%);
+  --color-focus: var(--www-brass);
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 1rem;
+  --shadow-soft: 0 1px 0 rgb(0 0 0 / 25%), 0 12px 32px rgb(0 0 0 / 35%);
+  --shadow-lift: 0 2px 0 rgb(0 0 0 / 30%), 0 18px 44px rgb(0 0 0 / 50%);
+  --text-small: 0.9375rem;
+  --motion-fast: 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-med: 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --touch-min: 2.75rem;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal,
+  .hero__copy,
+  .digi-bars__fill,
+  .ceo-bars__fill,
+  .taglines__live,
+  .top__nav.is-open {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .reveal {
+    opacity: 1;
+  }
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  background: var(--ink);
+  color: var(--mist);
+  line-height: 1.55;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: -4rem;
+  z-index: 100;
+  padding: 0.65rem 1rem;
+  background: var(--brass);
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0.35rem;
+}
+
+.skip:focus {
+  top: 1rem;
+}
+
+#outcomes:focus {
+  outline: none;
+}
+
+#outcomes:focus-visible {
+  outline: 2px solid var(--brass-hot);
+  outline-offset: 4px;
+}
+
+.site {
+  overflow-x: clip;
+}

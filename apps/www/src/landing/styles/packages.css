@@ -1,0 +1,60 @@
+.package-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 769px) {
+  .package-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.package-tier {
+  min-width: 0;
+  padding-block: 0.35rem;
+  border-block-start: 1px solid var(--line);
+}
+
+.package-tier h3 {
+  margin: 0.9rem 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  color: var(--brass-hot);
+}
+
+.package-tier__audience {
+  margin: 0 0 0.85rem;
+  color: var(--mist-dim);
+  font-size: 0.95rem;
+}
+
+.package-tier ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.package-tier li {
+  color: var(--mist);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  padding-inline-start: 0.9rem;
+  position: relative;
+}
+
+.package-tier li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.55em;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--jade);
+}

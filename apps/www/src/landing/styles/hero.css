@@ -1,0 +1,107 @@
+.hero {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  align-items: end;
+  padding: calc(5.5rem + env(safe-area-inset-top)) var(--space)
+    clamp(3rem, 8vh, 5rem);
+}
+
+.hero__media {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgb(7 9 13 / 35%), transparent 45%),
+    url("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=2400&q=80")
+      center / cover no-repeat;
+  transform: scale(1.04);
+  animation: hero-drift 28s ease-in-out infinite alternate;
+}
+
+.hero__veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(7 9 13 / 35%) 0%, rgb(7 9 13 / 55%) 42%, rgb(7 9 13 / 92%) 100%),
+    radial-gradient(ellipse 80% 50% at 70% 20%, rgb(110 181 168 / 18%), transparent 55%);
+}
+
+.hero__copy {
+  position: relative;
+  z-index: 1;
+  max-width: 42rem;
+  margin-inline: auto;
+  text-align: center;
+  animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero__identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 0 0 1.35rem;
+}
+
+.hero__wordmark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(3.6rem, 13vw, 6.8rem);
+  font-weight: 750;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: #e1cdb5;
+  text-shadow: 0 18px 40px rgb(0 0 0 / 45%);
+}
+
+.hero__wordmark-ai {
+  font-family: var(--font-body);
+  font-size: 0.38em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  vertical-align: super;
+  margin-inline-start: 0.12em;
+}
+
+.hero__mark {
+  display: block;
+  width: clamp(2.6rem, 6vw, 3.4rem);
+  height: auto;
+  opacity: 0.95;
+  filter: drop-shadow(0 10px 24px rgb(0 0 0 / 40%));
+}
+
+.hero__title {
+  margin: 0 0 1rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 3.6vw, 2.35rem);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--mist);
+}
+
+.hero__lead {
+  margin: 0 auto 1.75rem;
+  max-width: 34rem;
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  color: var(--mist-dim);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.truth-strip {
+  width: min(100% - 2 * var(--space), var(--max));
+  margin: 0 auto;
+  padding: 0.85rem 0 0.25rem;
+  border-block-start: 1px solid var(--line);
+  color: var(--mist-dim);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.45;
+}

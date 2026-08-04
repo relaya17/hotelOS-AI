@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { LandingPage } from "./landing-page.js";
-import "./landing.css";
+import "./landing/landing.css";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

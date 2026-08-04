@@ -1,0 +1,33 @@
+.digi-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.35rem;
+}
+
+.digi-bars__meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+  font-size: 0.95rem;
+}
+
+.digi-bars__track {
+  height: 0.55rem;
+  border-radius: 999px;
+  background: rgb(233 226 214 / 8%);
+  overflow: hidden;
+}
+
+.digi-bars__fill {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--jade), var(--brass));
+}
+
+.reveal.is-visible .digi-bars__fill {
+  width: var(--level);
+  transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}

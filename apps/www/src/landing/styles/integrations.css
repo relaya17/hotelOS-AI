@@ -1,0 +1,33 @@
+.integrate-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 769px) {
+  .integrate-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+.integrate-item {
+  min-width: 0;
+  border-block-start: 1px solid var(--line);
+  padding-block: 0.85rem 0.25rem;
+}
+
+.integrate-item h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1.05rem;
+  color: var(--mist);
+}
+
+.integrate-item p {
+  margin: 0;
+  color: var(--mist-dim);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}

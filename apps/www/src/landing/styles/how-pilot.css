@@ -1,0 +1,45 @@
+.pilot-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 769px) {
+  .pilot-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+.pilot-step {
+  min-width: 0;
+  padding-block: 0.25rem;
+  border-block-start: 1px solid var(--line);
+}
+
+.pilot-step__week {
+  margin: 0.85rem 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brass-hot);
+}
+
+.pilot-step h3 {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 550;
+  color: var(--mist);
+}
+
+.pilot-step p {
+  margin: 0;
+  color: var(--mist-dim);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}

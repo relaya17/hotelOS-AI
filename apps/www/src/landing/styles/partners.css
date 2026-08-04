@@ -1,0 +1,16 @@
+.partner-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.partner-list li {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--mist);
+  border-block-end: 1px solid rgb(212 176 122 / 35%);
+  padding-block-end: 0.15rem;
+}

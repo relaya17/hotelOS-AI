@@ -1,0 +1,28 @@
+.excellence-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .excellence-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.excellence-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--brass-hot);
+  text-decoration: none;
+  border-block-end: 1px solid rgb(212 176 122 / 35%);
+  font-weight: 600;
+}
+
+.excellence-links a:hover,
+.excellence-links a:focus-visible {
+  color: var(--mist);
+}

@@ -1,0 +1,97 @@
+@media (max-width: 820px) {
+  .outcome-table__head {
+    display: none;
+  }
+
+  .outcome-row {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    padding-block: 1.25rem;
+  }
+
+  .outcome-row span:nth-child(2) {
+    color: var(--mist-dim);
+    font-size: 0.9rem;
+  }
+
+  .compare-table__head {
+    display: none;
+  }
+
+  .compare-row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+    padding-block: 1.25rem;
+  }
+
+  .compare-row span:nth-child(2) {
+    color: var(--mist-dim);
+    font-size: 0.92rem;
+  }
+
+  .compare-row span:nth-child(2)::before {
+    content: "כאב: ";
+    font-weight: 600;
+    color: var(--mist-dim);
+  }
+
+  .compare-row span:nth-child(3)::before {
+    content: "HotelOS: ";
+    font-weight: 600;
+    color: var(--jade);
+  }
+}
+
+@media (max-width: 480px) {
+  .hero__wordmark {
+    font-size: clamp(2.6rem, 14vw, 3.6rem);
+  }
+
+  .hero__lead {
+    font-size: 1rem;
+  }
+
+  .section {
+    padding-block: clamp(2.5rem, 10vw, 4rem);
+  }
+
+  .cta-group,
+  .hero__actions {
+    display: grid;
+    width: 100%;
+    gap: 0.65rem;
+  }
+
+  .cta-group > *,
+  .hero__actions > * {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .trust-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .foot .legal-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .site .cookie {
+    inset-inline: 0.6rem;
+    padding: 1rem;
+  }
+
+  .site .cookie .actions {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .site .cookie .actions .hotelos-button {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}

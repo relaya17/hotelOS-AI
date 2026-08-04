@@ -1,0 +1,42 @@
+.trust-grid {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  gap: 1.1rem 1.5rem;
+}
+
+.trust-control {
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: rgb(233 226 214 / 3%);
+}
+
+.trust-control h3 {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--brass-hot);
+}
+
+.trust-control p {
+  margin: 0;
+  color: var(--mist-dim);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.trust-note {
+  margin: 0;
+  max-width: 40rem;
+  color: var(--mist-dim);
+  font-size: 0.95rem;
+}
+
+.trust-note a {
+  color: var(--brass-hot);
+  font-weight: 600;
+}

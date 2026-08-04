@@ -1,0 +1,42 @@
+.faq__list {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 40rem;
+}
+
+.faq__item {
+  border-bottom: 1px solid var(--line);
+  padding: 0.35rem 0 0.85rem;
+}
+
+.faq__item summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.05rem;
+  list-style: none;
+  color: var(--mist);
+}
+
+.faq__item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq__item summary::after {
+  content: "+";
+  float: inline-start;
+  margin-inline-end: 0.65rem;
+  color: var(--brass);
+}
+
+.faq__item[open] summary::after {
+  content: "–";
+}
+
+.faq__item p {
+  margin: 0.65rem 0 0;
+  color: var(--mist-dim);
+}
+
+.faq__item a {
+  color: var(--brass-hot);
+}
